@@ -5,10 +5,10 @@ from dataclasses import dataclass
 
 @dataclass
 class Objeto:
-    id_catalogo = str
-    nombre = str
-    peso = int
-    valor = int
+    id_catalogo : str
+    nombre : str
+    peso : int
+    valor : int
 
 #Suma un bonus de ataque al ataque base si esta equipada
 @dataclass
