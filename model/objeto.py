@@ -36,9 +36,12 @@ class Antidoto(Objeto):
 class Llave(Objeto):
     """Permite abrir puertas cuya llave coincide con su id. No se consume.
 
-    Para Persona 3: confirmar contra el Swagger que valor exacto
-    trae el campo `abre`, el motor compara esto contra `Salida.llave` para decidir si una llave
-    concreta abre una puerta.
+    Acordarme contra el Swagger que valor exacto trae el campo "abre", el motor comparara
+    esto contra "salida.llave" para decidir si una llave concreta abre una puerta
+
+    (Scott): Acordarme contra el Swagger que valor exacto trae el campo "abre", 
+    el motor comparara esto contra "salida.llave" para decidir si una llave
+    concreta abre una puerta
     """
 
     abre: str = ""
