@@ -4,7 +4,7 @@ BASE_URL = "https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1
 client_id = str(uuid.uuid4())
 headers = {"X-Cripta-Client-Id": client_id}
 respuesta = requests.get(
-f"{BASE_URL}/criptas/cripta-01/salas?pagina=1",
+f"{BASE_URL}/catalogo?ids=ent_rata_gigante",
 headers=headers,
 timeout=10,
 )
