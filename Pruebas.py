@@ -1,12 +1,15 @@
-import uuid
-import requests
-BASE_URL = "https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1"
-client_id = str(uuid.uuid4())
-headers = {"X-Cripta-Client-Id": client_id}
-respuesta = requests.get(
-f"{BASE_URL}/catalogo?ids=ent_rata_gigante",
-headers=headers,
-timeout=10,
+from DTO.ActorDTO import *
+
+jugador = JugadorDTO(
+    vida_max=100, 
+    ataque=15, 
+    defensa=10, 
+    velocidad=5, 
+    inventario_max=15
 )
-print(respuesta.status_code)
-print(respuesta.json())
+
+# 2. Consultas el límite directamente desde la deque
+print(jugador.inventario.maxlen)  # Imprime: 15
+
+# 3. Compruebas que NO se guardó ningún atributo innecesario
+print(hasattr(jugador, "capacidad_inventario"))  # Imprime: False

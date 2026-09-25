@@ -1,8 +1,8 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from Logica.RelojVirtual import RelojVirtual
-from ActorDTO import JugadorDTO, EnemigoDTO
-from CatalogoDTO import EnemigoCatalogoDTO
+from DTO.ActorDTO import JugadorDTO, EnemigoDTO
+from DTO.CatalogoDTO import EnemigoCatalogoDTO
 from DTO.SalaDTO import SalaDTO
 
 
