@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field, InitVar
 from collections import deque
+from DTO.Objeto import *
 
 
 @dataclass
@@ -18,6 +19,9 @@ class JugadorDTO(ActorDTO):
     inventario_max: InitVar[int] = 0
     inventario: deque = field(init=False)
     id_sala_actual: int = 0
+    armadura: Armadura | None = None
+    arma: Arma | None = None
+    
 
     def __post_init__(self,inventario_max: int):
         self.inventario = deque(maxlen=inventario_max)

@@ -21,6 +21,16 @@ class JugadorLogica:
         if(len(self.jugador.inventario) == self.jugador.inventario.maxlen):
             raise ValueError("No se puede recoger el objeto, el inventario está al máximo")
         self.jugador.inventario.append(objeto)
+        #TODO tecnicamente es de JP así que puede cambiar
+
+    def usarObjeto(self, objeto: Objeto):
+        return
+        #TODO falta toda la lógica, es de inventario así que es de JP Rico
+
+    
+    def tiene_llave(self, id_llave: int) -> bool:
+        """Comprueba si el jugador posee en su inventario (deque) un objeto llave con el ID dado."""
+        return any(item.id_catalogo == id_llave for item in self.jugador.inventario)
 
 
     
