@@ -7,6 +7,7 @@ from Logica.SalasLogica import SalaLogica
 
 
 jugador = JugadorDTO(
+    vida_actual=100,
     vida_max=100,
     ataque=15,
     defensa=10,

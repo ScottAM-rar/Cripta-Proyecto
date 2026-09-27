@@ -7,10 +7,12 @@ from DTO.Objeto import *
 @dataclass
 class ActorDTO:
     """DTO base con las estadísticas comunes."""
+    vida_actual: int
     vida_max: int
     ataque: int
     defensa: int
     velocidad: int
+    id_sala_actual: int = field(default=0, kw_only=True)
 
 
 @dataclass
@@ -18,7 +20,6 @@ class JugadorDTO(ActorDTO):
     """DTO con la información inicial y límites del jugador."""
     inventario_max: InitVar[int] = 0
     inventario: deque = field(init=False)
-    id_sala_actual: int = 0
     armadura: Armadura | None = None
     arma: Arma | None = None
     
@@ -39,5 +40,4 @@ class EnemigoDTO(ActorDTO):
     tipo: str
     nombre: str
     comportamiento: str
-    vida_actual: int
     suelta: list[str] = field(default_factory=list)
