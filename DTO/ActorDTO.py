@@ -2,36 +2,29 @@ from __future__ import annotations
 from dataclasses import dataclass, field, InitVar
 from collections import deque
 from DTO.Objeto import *
+from Logica.InventarioLogica import InventarioLogica
 
 
 @dataclass
 class ActorDTO:
     """DTO base con las estadísticas comunes."""
-    vida_actual: int
     vida_max: int
     ataque: int
     defensa: int
     velocidad: int
-    id_sala_actual: int = field(default=0, kw_only=True)
 
 
 @dataclass
 class JugadorDTO(ActorDTO):
     """DTO con la información inicial y límites del jugador."""
     inventario_max: InitVar[int] = 0
-    inventario: deque = field(init=False)
+    inventario: InventarioLogica = field(init=False)
+    id_sala_actual: int = 0
     armadura: Armadura | None = None
     arma: Arma | None = None
     
-
     def __post_init__(self,inventario_max: int):
-        self.inventario = deque(maxlen=inventario_max)
-        '''Holder, JP tiene que definir como se va a usar el inventario
-            aqui solo definde que estructura es, en LogicaJugador se define como se comporta
-        '''
-
-
-
+        self.inventario = InventarioLogica(inventario_max)
 
 @dataclass
 class EnemigoDTO(ActorDTO):
@@ -40,4 +33,5 @@ class EnemigoDTO(ActorDTO):
     tipo: str
     nombre: str
     comportamiento: str
+    vida_actual: int
     suelta: list[str] = field(default_factory=list)
