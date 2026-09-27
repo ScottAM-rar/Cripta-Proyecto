@@ -21,7 +21,7 @@ def main():
                 "norte": "norte", "n": "norte",
                 "sur": "sur", "s": "sur",
                 "este": "este", "e": "este",
-                "oeste": "oeste", "o": "oeste"
+                "oeste": "oeste", "o": "oeste" # esto era solo para probar, no se va a quedar así
             }
             direccion = dir_map.get(accion)
             motor.ejecutar_accion("moverse", direccion)
