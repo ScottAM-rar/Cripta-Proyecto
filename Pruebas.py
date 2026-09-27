@@ -5,26 +5,24 @@ from DTO.Objeto import Llave
 from DTO.EventoDTO import EventoDTO
 from DTO.EstadoJuegoDTO import EstadoJuego
 from DTO.SalaDTO import SalaDTO, SalidaDTO
-from Logica.GestorEventos import GestorEventos
-from Logica.JugadorLogica import JugadorLogica
-from Logica.SalasLogica import SalaLogica
+from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
+from Logica.RelojVirtual import RelojVirtual
 
+TIEMPO_MOVER = 100
+TIEMPO_ATACAR = 100
+TIEMPO_RECOGER_OBJETO = 25
+TIEMPO_USAR_OBJETO = 50
+TIEMPO_ABRIR_PUERTA = 25
 
 jugador = JugadorDTO(
     vida_actual=100,
     vida_max=100,
     ataque=15,
     defensa=10,
-    velocidad=5,
+    velocidad=100,
     inventario_max=2,
     armadura=None,
     arma=None,
-)
-
-print("Capacidad del inventario:", jugador.inventario.maxlen)
-print(
-    "Tiene capacidad_inventario:",
-    hasattr(jugador, "capacidad_inventario"),
 )
 
 sala = SalaDTO(
@@ -37,23 +35,25 @@ sala = SalaDTO(
                 sala_destino=2,
                 cerrada=True,
                 llave="llave-bronce",
-                cierre_automatico=10,
+                cierre_automatico=400,
             )
         ]
     ),
 )
 
-estado_juego = EstadoJuego(jugador=jugador, salas=[sala])
-jugador_logica = JugadorLogica(jugador)
-sala_logica = SalaLogica(sala)
-gestor_eventos = GestorEventos([sala], jugador_logica, sala_logica)
+estado_juego = EstadoJuego(
+    reloj=RelojVirtual(),
+    jugador=jugador,
+    salas=[sala],
+)
+estado_juego_servicio = EstadoJuegoServicio(estado_juego)
 
 enemigo = EnemigoDTO(
     vida_actual=40,
     vida_max=40,
     ataque=8,
     defensa=5,
-    velocidad=3,
+    velocidad=150,
     id_instancia="enemigo-1",
     tipo="esqueleto",
     nombre="Esqueleto",
@@ -64,35 +64,24 @@ print(
     "Vida del enemigo antes del ataque:",
     enemigo.vida_actual,
 )
-gestor_eventos.procesar_evento(
-    EventoDTO(0, 1, jugador, "ATACAR", [enemigo]),
-    estado_juego,
+estado_juego_servicio.accionJugador(
+    EventoDTO(TIEMPO_ATACAR, 1, jugador, "ATACAR", [enemigo])
 )
+
 print(
     "Vida del enemigo después del ataque:",
     enemigo.vida_actual,
 )
 
-print(
-    "Vida del jugador antes del contraataque:",
-    jugador.vida_actual,
-)
-gestor_eventos.procesar_evento(
-    EventoDTO(0, 2, enemigo, "ATACAR", [jugador]),
-    estado_juego,
-)
-print(
-    "Vida del jugador después del contraataque:",
-    jugador.vida_actual,
-)
+
 
 print(
     "Apertura sin llave:",
-    gestor_eventos.procesar_evento(
-        EventoDTO(0, 1, sala, "ABRIR_PUERTA", [jugador, "norte"]),
-        estado_juego,
+    estado_juego_servicio.accionJugador(
+        EventoDTO(TIEMPO_ABRIR_PUERTA, 1, jugador, "ABRIR_PUERTA", [sala, "norte"])
     ),
 )
+
 
 llave = Llave(
     id_catalogo="llave-bronce",
@@ -101,36 +90,51 @@ llave = Llave(
     valor=0,
 )
 
-gestor_eventos.procesar_evento(
-    EventoDTO(0, 2, jugador, "RECOGER_OBJETO", [llave]),
-    estado_juego,
+estado_juego_servicio.accionJugador(
+    EventoDTO(TIEMPO_RECOGER_OBJETO, 2, jugador, "RECOGER_OBJETO", [llave])
 )
+
+
+estado_juego_servicio.accionJugador(
+    EventoDTO(TIEMPO_USAR_OBJETO, 3, jugador, "USAR_OBJETO", [llave])
+)
+
 
 print(
     "Tiene llave después de recogerla:",
-    gestor_eventos.procesar_evento(
-        EventoDTO(0, 3, jugador, "TIENE_LLAVE", ["llave-bronce"]),
-        estado_juego,
-    ),
+    estado_juego_servicio.tieneLlave("llave-bronce")
+    
 )
+
 
 print(
     "Apertura con llave:",
-    gestor_eventos.procesar_evento(
-        EventoDTO(0, 4, sala, "ABRIR_PUERTA", [jugador, "norte"]),
-        estado_juego,
+    estado_juego_servicio.accionJugador(
+        EventoDTO(TIEMPO_ABRIR_PUERTA, 4, jugador, "ABRIR_PUERTA", [sala, "norte"])
     ),
 )
+estado_juego_servicio.accionJugador(
+    EventoDTO(TIEMPO_ATACAR, 1, jugador, "ATACAR", [enemigo])
+)
+
 
 print(
     "Sala del jugador antes de moverse:",
     jugador.id_sala_actual,
 )
-gestor_eventos.procesar_evento(
-    EventoDTO(0, 5, jugador, "MOVER_JUGADOR", [sala, "norte"]),
-    estado_juego,
+estado_juego_servicio.accionJugador(
+    EventoDTO(TIEMPO_MOVER, 5, jugador, "MOVER_JUGADOR", [sala, "norte"])
 )
+
+
 print(
     "Sala del jugador después de moverse:",
     jugador.id_sala_actual,
+)
+
+estado_juego_servicio.accionJugador(
+    EventoDTO(TIEMPO_ATACAR, 1, jugador, "ATACAR", [enemigo])
+)
+estado_juego_servicio.accionJugador(
+    EventoDTO(TIEMPO_ATACAR, 1, jugador, "ATACAR", [enemigo])
 )

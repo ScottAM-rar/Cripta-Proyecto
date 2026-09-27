@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Depurar Pruebas.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/Pruebas.py",
+            "cwd": "${workspaceFolder}",
+            "python": "${workspaceFolder}/venv/bin/python",
+            "console": "integratedTerminal"
+        }
+    ]
+}
