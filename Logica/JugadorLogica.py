@@ -1,21 +1,17 @@
 from DTO.ActorDTO import JugadorDTO,EnemigoDTO
 from DTO.SalaDTO import SalaDTO
-from DTO.objeto import Objeto
-import random
+from DTO.Objeto import Objeto
+from Logica.ActorLogica import ActorLogica
 
-class JugadorLogica:
+class JugadorLogica(ActorLogica):
     def __init__(self,jugador : JugadorDTO):
         self.jugador = jugador
 
     def mover_jugador(self,sala_destino: SalaDTO) -> None:
-        if not any(s.sala_destino == sala_destino.id for s in sala_destino.salidas):
-            raise ValueError("La sala no es una salida válida.")
-        self.jugador.id_sala_actual = sala_destino.id
+        self._mover(self.jugador,sala_destino)
 
     def atacarEnemigo(self, enemigo : EnemigoDTO):
-        azar = random.Random()
-        daño = max(1,self.jugador.ataque+azar.randint(0,4) - enemigo.defensa)
-        enemigo.vida_actual-=daño
+        self._atacar(self.jugador,enemigo)
 
     def recogerObjeto(self,objeto: Objeto):
         if(len(self.jugador.inventario) == self.jugador.inventario.maxlen):
