@@ -7,8 +7,8 @@ class JugadorLogica(ActorLogica):
     def __init__(self,jugador : JugadorDTO):
         self.jugador = jugador
 
-    def mover_jugador(self,sala_destino: SalaDTO) -> None:
-        self._mover(self.jugador,sala_destino)
+    def mover_jugador(self, sala_actual: SalaDTO, direccion: str) -> None:
+        self._mover(self.jugador, sala_actual, direccion)
 
     def atacarEnemigo(self, enemigo : EnemigoDTO):
         self._atacar(self.jugador,enemigo)
