@@ -1,6 +1,6 @@
 from DTO.ActorDTO import JugadorDTO,EnemigoDTO
 from DTO.SalaDTO import SalaDTO
-from DTO.Objeto import Objeto
+from DTO.objeto import Objeto
 import random
 
 class JugadorLogica:
