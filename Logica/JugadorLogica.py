@@ -21,10 +21,17 @@ class JugadorLogica:
         self.jugador.inventario.agregar_objeto(objeto)
         
     def usarObjeto(self, objeto: Objeto):
-        self.jugador.inventario.eliminar_objeto(objeto)
+        self.jugador.inventario.eliminar_objeto_utilizado(objeto)
         # La logica de uso del objeto 
 
-    
+    def soltarObjeto(self, objeto: Objeto):
+        self.jugador.inventario.soltar_objeto_actual(objeto)
+        
+    def equiparArmaOArmaduraActual(self, objeto: Objeto):
+        if objeto.tipo != "arma" and objeto.tipo != "armadura":
+            raise ValueError("El objeto actual no es equipable.")
+        self.jugador.inventario.equipar_objeto_actual(objeto)
+        
     def tiene_llave(self, id_llave: int) -> bool:
         """Comprueba si el jugador posee en su inventario un objeto llave con el ID dado."""
         nodo = self.jugador.inventario.cabeza
