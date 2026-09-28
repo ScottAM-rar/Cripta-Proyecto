@@ -1,4 +1,4 @@
-from NodoInventario import NodoInventario
+from Logica.NodoInventario import NodoInventario
 from DTO.Objeto import Objeto
 
 CRITERIOS_VALIDOS = ("peso", "valor", "nombre")
