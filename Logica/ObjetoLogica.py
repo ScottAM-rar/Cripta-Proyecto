@@ -9,14 +9,14 @@ class ObjetoLogica:
         """Logica para usar el objeto. Varia segun el tipo de objeto."""
         match objeto:
             case Pocion():
+                self._consumir(objeto)
                 self._aplicar_pocion(objeto)
-                self._consumir(objeto)
             case Antidoto():
+                self._consumir(objeto)
                 self._aplicar_antidoto(objeto)
-                self._consumir(objeto)
             case Antorcha():
-                self._usar_antorcha(objeto, tiempo_actual)
                 self._consumir(objeto)
+                self._usar_antorcha(objeto, tiempo_actual)
             case Arma() | Armadura():
                 self._equipar(objeto)
             case PergaminoRetroceso():
@@ -33,10 +33,9 @@ class ObjetoLogica:
         """Aplica los efectos de la pocion al jugador."""
         if pocion.cura > 0:
             self.jugador.vida_actual = min(self.jugador.vida_max, self.jugador.vida_actual + pocion.cura)
+        if pocion.modificador_velocidad != 0: #Un modificador podria ser negativo? una pocion vencida *(CCSS)* maincra si lo tiene, ya lo puse pero ahi me avisan
             self.jugador.velocidad += pocion.modificador_velocidad
-        if pocion.modificador_velocidad > 0: #Un modificador podria ser negativo? una pocion vencida *(CCSS)* maincra si lo tiene
-            self.jugador.velocidad += pocion.modificador_velocidad
-            # TODO: AQUI FALTA QUE SEA TEMPORAAAL
+            # TODO: implementar evento futuro que revierta el efecto de la pocion 
     
     def _aplicar_antidoto(self, antidoto: Antidoto):
         """Aplica los efectos del antidoto al jugador."""
@@ -48,6 +47,10 @@ class ObjetoLogica:
         
     def _equipar(self, objeto: Arma | Armadura):
         """Equipa el objeto al jugador."""
+        inv = self.jugador.inventario
+        if inv.actual is None or inv.actual.objeto != objeto:
+            raise ValueError("El objeto actual no coincide con el objeto a equipar.")
+        inv.equipar_objeto_actual()
         if isinstance(objeto, Arma):
             self.jugador.arma = objeto
         elif isinstance(objeto, Armadura): #Lo hice con elif por la posibilidad de meter por ejemplo, un baston magico.
