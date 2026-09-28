@@ -19,10 +19,6 @@ class JugadorLogica:
 
     def recogerObjeto(self,objeto: Objeto):
         self.jugador.inventario.agregar_objeto(objeto)
-        
-    def usarObjeto(self, objeto: Objeto):
-        self.jugador.inventario.eliminar_objeto_utilizado(objeto)
-        # La logica de uso del objeto 
 
     def soltarObjeto(self, objeto: Objeto):
         self.jugador.inventario.soltar_objeto_actual(objeto)
@@ -40,8 +36,6 @@ class JugadorLogica:
                 return True
             nodo = nodo.siguiente
         return False
-    
-    #    return any(item.id_catalogo == id_llave for item in self.jugador.inventario)
 
 
     

@@ -8,10 +8,12 @@ from Logica.InventarioLogica import InventarioLogica
 @dataclass
 class ActorDTO:
     """DTO base con las estadísticas comunes."""
+    vida_actual: int
     vida_max: int
     ataque: int
     defensa: int
     velocidad: int
+    id_sala_actual: int = field(default=0, kw_only=True)
 
 
 @dataclass
@@ -26,6 +28,7 @@ class JugadorDTO(ActorDTO):
     def __post_init__(self,inventario_max: int):
         self.inventario = InventarioLogica(inventario_max)
 
+    
 @dataclass
 class EnemigoDTO(ActorDTO):
     """DTO con la información combinada del catálogo e instancia del enemigo."""
