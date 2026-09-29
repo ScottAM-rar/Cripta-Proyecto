@@ -65,6 +65,15 @@ class GestorEventos:
                 jugador: JugadorDTO = evento.actor
                 self.salas_logica.sala = sala
                 return self.salas_logica.intentarAbrirPuerta(jugador,direccion)
+            case "ACCION_ENEMIGO":
+                #Datos Adicionales [Jugador] (se necesitan también las salas pero estas se sacan del estado de juego para evitar desfases)
+                jugador = evento.datos_extra[0]
+                enemigoLogica = EnemigoLogica(evento.actor)
+                return enemigoLogica.decidirAccion(jugador,self.salas)
+
+                
+
+
                 
 
 

@@ -9,6 +9,8 @@ class SalaLogica :
     def _obtener_salida(self, direccion: Direccion) -> SalidaDTO | None:
         """Recorre la deque del DTO externamente y devuelve la salida o None."""
         return next((s for s in self.sala.salidas if s.direccion == direccion), None)
+
+    
     
     #La dirección se envía como un 
     def intentarAbrirPuerta(self, jugador: JugadorDTO, direccion: str) -> tuple[bool, str, EventoDTO | None]:
