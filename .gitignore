@@ -1,0 +1,13 @@
+# Caché de ejecuciones de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Entornos virtuales (opcional, pero muy recomendado)
+.venv/
+venv/
+env/
+
+# Caché de pruebas y linter (opcional)
+.pytest_cache/
+.mypy_cache/
