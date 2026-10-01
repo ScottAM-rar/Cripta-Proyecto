@@ -9,11 +9,16 @@ class EstadoJuegoLogica:
         self.gestorEventos = GestorEventos(estadoJuego.salas,JugadorLogica(estadoJuego.jugador))
         self.jugadorLogica = JugadorLogica(estadoJuego.jugador)
         self.tiempoMovimientoJugador = 0
+        for enemigo in estadoJuego.enemigos_vivos:
+            self.cargarEvento(
+                EventoDTO(100, 0, enemigo, "ACCION_ENEMIGO", [estadoJuego.jugador])
+            )
 
     def tieneLlave(self,id_llave : str):
         return self.jugadorLogica.tiene_llave(id_llave)
 
     def _siguienteAccion(self):
+        respuesta = None
         while True:
             evento = self.estadoJuego.reloj.desencolar()
 
@@ -25,34 +30,24 @@ class EstadoJuegoLogica:
                 f"Tiempo: {evento.tiempo_ejecucion}"
             )
             accion = self.gestorEventos.procesar_evento(evento)
-
+            respuesta = accion
+            print(accion.mensaje)
             if (
-                isinstance(accion, tuple)
-                and len(accion) == 3
-                and accion[2] is not None
+                accion.eventoResultado is not None
             ):
-                newEvento = accion[2]
-                self.estadoJuego.reloj.encolar(
-                    newEvento.tiempo_ejecucion,
-                    newEvento.actor,
-                    newEvento.tipo_accion,
-                    newEvento.datos_extra)
+                self.cargarEvento(accion.eventoResultado)
             if evento.actor == self.estadoJuego.jugador:
                 break
 
+        return respuesta
+
         
-           
-
-
-
-
-   
-
+    
     def cargarEvento(self, evento : EventoDTO) -> int:
         return self.estadoJuego.reloj.encolar(evento.tiempo_ejecucion,evento.actor,evento.tipo_accion,evento.datos_extra)
 
     def accionJugador(self, evento: EventoDTO):
         self.tiempoMovimientoJugador = self.cargarEvento(evento)
-        self._siguienteAccion()
+        return self._siguienteAccion()
         
     

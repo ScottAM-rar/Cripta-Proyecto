@@ -1,140 +1,124 @@
 from collections import deque
 
 from DTO.ActorDTO import EnemigoDTO, JugadorDTO
-from DTO.Objeto import Llave
-from DTO.EventoDTO import EventoDTO
 from DTO.EstadoJuegoDTO import EstadoJuego
+from DTO.EventoDTO import EventoDTO
 from DTO.SalaDTO import SalaDTO, SalidaDTO
-from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
 from Logica.RelojVirtual import RelojVirtual
+from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
+
 
 TIEMPO_MOVER = 100
 TIEMPO_ATACAR = 100
-TIEMPO_RECOGER_OBJETO = 25
-TIEMPO_USAR_OBJETO = 50
-TIEMPO_ABRIR_PUERTA = 25
-
-jugador = JugadorDTO(
-    vida_actual=100,
-    vida_max=100,
-    ataque=15,
-    defensa=10,
-    velocidad=100,
-    inventario_max=2,
-    armadura=None,
-    arma=None,
-)
-
-sala = SalaDTO(
-    id=1,
-    nombre="Entrada",
-    salidas=deque(
-        [
-            SalidaDTO(
-                direccion="norte",
-                sala_destino=2,
-                cerrada=True,
-                llave="llave-bronce",
-                cierre_automatico=400,
-            )
-        ]
-    ),
-)
-
-estado_juego = EstadoJuego(
-    reloj=RelojVirtual(),
-    jugador=jugador,
-    salas=[sala],
-)
-estado_juego_servicio = EstadoJuegoServicio(estado_juego)
-
-enemigo = EnemigoDTO(
-    vida_actual=40,
-    vida_max=40,
-    ataque=8,
-    defensa=5,
-    velocidad=150,
-    id_instancia="enemigo-1",
-    tipo="esqueleto",
-    nombre="Esqueleto",
-    comportamiento="agresivo",
-)
-
-print(
-    "Vida del enemigo antes del ataque:",
-    enemigo.vida_actual,
-)
-estado_juego_servicio.accionJugador(
-    EventoDTO(TIEMPO_ATACAR, 1, jugador, "ATACAR", [enemigo])
-)
-
-print(
-    "Vida del enemigo después del ataque:",
-    enemigo.vida_actual,
-)
 
 
+def prueba_partida_completa():
+    salas = [
+        SalaDTO(id=indice, nombre=f"Sala {indice}", salidas=deque())
+        for indice in range(5)
+    ]
 
-print(
-    "Apertura sin llave:",
-    estado_juego_servicio.accionJugador(
-        EventoDTO(TIEMPO_ABRIR_PUERTA, 1, jugador, "ABRIR_PUERTA", [sala, "norte"])
-    ),
-)
+    for indice in range(4):
+        salas[indice].salidas.append(
+            SalidaDTO(direccion="este", sala_destino=indice + 1)
+        )
+        salas[indice + 1].salidas.append(
+            SalidaDTO(direccion="oeste", sala_destino=indice)
+        )
+
+    jugador = JugadorDTO(
+        vida_actual=100,
+        vida_max=100,
+        ataque=20,
+        defensa=5,
+        velocidad=100,
+        inventario_max=2,
+        id_sala_actual=0,
+    )
+
+    enemigos = [
+        EnemigoDTO(
+            vida_actual=45,
+            vida_max=45,
+            ataque=8,
+            defensa=4,
+            velocidad=100,
+            id_instancia="errante-1",
+            tipo="errante",
+            nombre="Errante de la sala 1",
+            comportamiento="ERRANTE",
+            id_sala_actual=1,
+        ),
+        EnemigoDTO(
+            vida_actual=50,
+            vida_max=50,
+            ataque=9,
+            defensa=5,
+            velocidad=100,
+            id_instancia="errante-2",
+            tipo="errante",
+            nombre="Errante de la sala 3",
+            comportamiento="RASTREADOR",
+            id_sala_actual=2,
+        ),
+        EnemigoDTO(
+            vida_actual=55,
+            vida_max=55,
+            ataque=10,
+            defensa=6,
+            velocidad=100,
+            id_instancia="guardian-1",
+            tipo="guardian",
+            nombre="Guardian de la sala 2",
+            comportamiento="GUARDIAN",
+            id_sala_actual=4,
+        ),
+        EnemigoDTO(
+            vida_actual=60,
+            vida_max=60,
+            ataque=11,
+            defensa=7,
+            velocidad=100,
+            id_instancia="guardian-2",
+            tipo="guardian",
+            nombre="Guardian de la sala 4",
+            comportamiento="GUARDIAN",
+            id_sala_actual=3,
+        ),
+    ]
+
+    for enemigo in enemigos:
+        salas[enemigo.id_sala_actual].enemigos.append(enemigo)
+
+    estado_juego = EstadoJuego(
+        reloj=RelojVirtual(),
+        jugador=jugador,
+        salas=salas,
+        enemigos_vivos=enemigos,
+    )
+    servicio = EstadoJuegoServicio(estado_juego)
+
+    assert len(estado_juego.salas) == 5
+    assert len(estado_juego.enemigos_vivos) == 4
+
+    respuestas_movimiento = []
+    servicio.accionJugador(EventoDTO(TIEMPO_MOVER,None,jugador,"MOVER_JUGADOR",[estado_juego.salas[jugador.id_sala_actual],"este"]))
+    if estado_juego.salas[jugador.id_sala_actual].enemigos:
+        servicio.accionJugador(EventoDTO(TIEMPO_ATACAR,None,jugador,"ATACAR",[estado_juego.salas[jugador.id_sala_actual].enemigos[0]]))
+    servicio.accionJugador(EventoDTO(TIEMPO_MOVER,None,jugador,"MOVER_JUGADOR",[estado_juego.salas[jugador.id_sala_actual],"este"]))
+    if estado_juego.salas[jugador.id_sala_actual].enemigos:
+        servicio.accionJugador(EventoDTO(TIEMPO_ATACAR,None,jugador,"ATACAR",[estado_juego.salas[jugador.id_sala_actual].enemigos[0]]))
+
+    servicio.accionJugador(EventoDTO(TIEMPO_MOVER,None,jugador,"MOVER_JUGADOR",[estado_juego.salas[jugador.id_sala_actual],"este"]))
+    if estado_juego.salas[jugador.id_sala_actual].enemigos:
+        servicio.accionJugador(EventoDTO(TIEMPO_ATACAR,None,jugador,"ATACAR",[estado_juego.salas[jugador.id_sala_actual].enemigos[0]]))
+
+    servicio.accionJugador(EventoDTO(TIEMPO_MOVER,None,jugador,"MOVER_JUGADOR",[estado_juego.salas[jugador.id_sala_actual],"este"]))
+    if estado_juego.salas[jugador.id_sala_actual].enemigos:
+        servicio.accionJugador(EventoDTO(TIEMPO_ATACAR,None,jugador,"ATACAR",[estado_juego.salas[jugador.id_sala_actual].enemigos[0]]))
+
+    print("Prueba única de partida completada correctamente")
 
 
-llave = Llave(
-    id_catalogo="llave-bronce",
-    nombre="Llave de bronce",
-    peso=1,
-    valor=0,
-)
-
-estado_juego_servicio.accionJugador(
-    EventoDTO(TIEMPO_RECOGER_OBJETO, 2, jugador, "RECOGER_OBJETO", [llave])
-)
-
-
-estado_juego_servicio.accionJugador(
-    EventoDTO(TIEMPO_USAR_OBJETO, 3, jugador, "USAR_OBJETO", [llave])
-)
-
-
-print(
-    "Tiene llave después de recogerla:",
-    estado_juego_servicio.tieneLlave("llave-bronce")
-    
-)
-
-
-print(
-    "Apertura con llave:",
-    estado_juego_servicio.accionJugador(
-        EventoDTO(TIEMPO_ABRIR_PUERTA, 4, jugador, "ABRIR_PUERTA", [sala, "norte"])
-    ),
-)
-estado_juego_servicio.accionJugador(
-    EventoDTO(TIEMPO_ATACAR, 1, jugador, "ATACAR", [enemigo])
-)
-
-
-print(
-    "Sala del jugador antes de moverse:",
-    jugador.id_sala_actual,
-)
-estado_juego_servicio.accionJugador(
-    EventoDTO(TIEMPO_MOVER, 5, jugador, "MOVER_JUGADOR", [sala, "norte"])
-)
-
-
-print(
-    "Sala del jugador después de moverse:",
-    jugador.id_sala_actual,
-)
-
-estado_juego_servicio.accionJugador(
-    EventoDTO(TIEMPO_ATACAR, 1, jugador, "ATACAR", [enemigo])
-)
-estado_juego_servicio.accionJugador(
-    EventoDTO(TIEMPO_ATACAR, 1, jugador, "ATACAR", [enemigo])
-)
+if __name__ == "__main__":
+    prueba_partida_completa()
