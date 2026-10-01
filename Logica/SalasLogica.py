@@ -35,5 +35,11 @@ class SalaLogica :
 
         return respuesta
 
+    def actualizarTiempo(self,nuevoTiempo: int):
+        if nuevoTiempo<self.sala.ultimo_paso:
+            return
+        self.sala.ultimo_paso = nuevoTiempo
+
+
 
         

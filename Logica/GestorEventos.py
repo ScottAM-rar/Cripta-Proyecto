@@ -20,11 +20,14 @@ class GestorEventos:
         # Inyección de dependencias de la capa de lógica
         self.jugador_logica = jugador_logica
         #self.enemigos_logica = enemigos_logica
-        self.salas_logica = SalaLogica(salas)
+        self.salas_logica = SalaLogica(None)
 
     def procesar_evento(self, evento: EventoDTO, estado_juego: EstadoJuego | None = None) -> ResultadoEventoDTO:
         """ENRUTADOR, REVISA EL EVENTO Y LO MANDA A RESOLVER DONDE SEA CONVENIENTE"""
-        
+
+        if(evento.actor == EstadoJuego.jugador):
+            self.salas_logica.sala = self.salas[EstadoJuego.jugador.id_sala_actual]
+            self.salas_logica.actualizarTiempo(evento.tiempo_ejecucion)
         match evento.tipo_accion:
             
             case "MOVER_JUGADOR":
@@ -71,6 +74,8 @@ class GestorEventos:
                 jugador = evento.datos_extra[0]
                 enemigoLogica = EnemigoLogica(evento.actor)
                 return enemigoLogica.decidirAccion(jugador,self.salas)
+
+        
 
                 
 
