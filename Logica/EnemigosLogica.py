@@ -3,6 +3,7 @@ from DTO.ActorDTO import EnemigoDTO
 from Logica.ActorLogica import ActorLogica
 from DTO.ActorDTO import ActorDTO
 from DTO.SalaDTO import SalaDTO
+from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.ComportamientoEnemigo import ComportamientoEnemigo
 from Logica.ComportamientoFactory import ComportamientoFactory
 from DTO.EventoDTO import EventoDTO
@@ -17,24 +18,29 @@ class EnemigoLogica(ActorLogica):
         self._comportamiento: ComportamientoEnemigo = comp
 
     def mover_enemigo(self, sala_actual: SalaDTO, direccion: str) -> None:
-        self._mover(self.enemigo, sala_actual, direccion)
+        respuesta = self._mover(self.enemigo, sala_actual, direccion)
+        if(respuesta.exito == True):
+            respuesta.mensaje = f"El enemigo {self.enemigo.id_instancia} se ha movido a la sala {self.enemigo.id_sala_actual}"
+        return respuesta
 
     def atacarJugador(self,jugador: ActorDTO):
         self._atacar(self.enemigo,jugador)
+        return ResultadoEventoDTO(True,f"El enemigo ha atacado al jugador causando daño")
 
-    def decidirAccion(self,jugador: ActorDTO, salas: list[SalaDTO]):
+    def decidirAccion(self,jugador: ActorDTO, salas: list[SalaDTO])-> ResultadoEventoDTO:
         if self.enemigo.vida_actual <= 0:
-            return False, "ESTA MUERTO", None
-        mensaje = ""
+            return ResultadoEventoDTO(False, "ESTA MUERTO")
+        mensaje = f"Enemigo {self.enemigo.id_instancia}"
         if jugador.id_sala_actual == self.enemigo.id_sala_actual:
             self.atacarJugador(jugador)
-            mensaje = "ATACÓ AL JUGADOR"
+            mensaje += " ATACÓ AL JUGADOR"
         else:
-            mensaje = self._comportamiento.acción(self.enemigo,salas)
+            mensaje += " " +self._comportamiento.acción(self.enemigo,salas)
+            
 
         eventoNuevo = EventoDTO(100,0,self.enemigo,"ACCION_ENEMIGO",[jugador])
 
-        return True, mensaje, eventoNuevo
+        return ResultadoEventoDTO(True,mensaje,eventoNuevo)
 
         
     

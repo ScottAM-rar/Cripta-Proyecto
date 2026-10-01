@@ -1,6 +1,7 @@
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import *
 from DTO.SalaDTO import *
+from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from DTO.EstadoJuegoDTO import EstadoJuego
 from Logica.JugadorLogica import JugadorLogica
 from Logica.EnemigosLogica import EnemigoLogica
@@ -21,7 +22,7 @@ class GestorEventos:
         #self.enemigos_logica = enemigos_logica
         self.salas_logica = SalaLogica(salas)
 
-    def procesar_evento(self, evento: EventoDTO, estado_juego: EstadoJuego | None = None):
+    def procesar_evento(self, evento: EventoDTO, estado_juego: EstadoJuego | None = None) -> ResultadoEventoDTO:
         """ENRUTADOR, REVISA EL EVENTO Y LO MANDA A RESOLVER DONDE SEA CONVENIENTE"""
         
         match evento.tipo_accion:

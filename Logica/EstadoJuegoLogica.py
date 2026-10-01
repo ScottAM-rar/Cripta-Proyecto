@@ -18,6 +18,7 @@ class EstadoJuegoLogica:
         return self.jugadorLogica.tiene_llave(id_llave)
 
     def _siguienteAccion(self):
+        respuesta = None
         while True:
             evento = self.estadoJuego.reloj.desencolar()
 
@@ -29,16 +30,16 @@ class EstadoJuegoLogica:
                 f"Tiempo: {evento.tiempo_ejecucion}"
             )
             accion = self.gestorEventos.procesar_evento(evento)
-
+            respuesta = accion
+            print(accion.mensaje)
             if (
-                isinstance(accion, tuple)
-                and len(accion) == 3
-                and accion[2] is not None
+                accion.eventoResultado is not None
             ):
-                newEvento = accion[2]
-                self.cargarEvento(newEvento)
+                self.cargarEvento(accion.eventoResultado)
             if evento.actor == self.estadoJuego.jugador:
                 break
+
+        return respuesta
 
         
     
@@ -47,6 +48,6 @@ class EstadoJuegoLogica:
 
     def accionJugador(self, evento: EventoDTO):
         self.tiempoMovimientoJugador = self.cargarEvento(evento)
-        self._siguienteAccion()
+        return self._siguienteAccion()
         
     

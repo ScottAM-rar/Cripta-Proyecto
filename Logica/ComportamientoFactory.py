@@ -1,6 +1,7 @@
 from Logica.ComportamientoEnemigo import *
 from Logica.CompGuardian import ComportamientoGuardian
 from Logica.CompErrante import ComportamientoErrante
+from Logica.CompRastreador import ComportamientoRastreador
 class ComportamientoFactory:
 
     @staticmethod
@@ -8,5 +9,7 @@ class ComportamientoFactory:
         match tipo:
             case "GUARDIAN":
                 return ComportamientoGuardian()
-            case "Errante": 
+            case "ERRANTE": 
                 return ComportamientoErrante()
+            case "RASTREADOR":
+                return ComportamientoRastreador()

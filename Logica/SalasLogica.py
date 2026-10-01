@@ -2,6 +2,7 @@ from DTO.SalaDTO import *
 from DTO.ActorDTO import JugadorDTO
 from Logica.JugadorLogica import *
 from DTO.EventoDTO import EventoDTO
+from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 class SalaLogica :
     def __init__(self,sala:SalaDTO):
         self.sala: SalaDTO = sala
@@ -13,26 +14,26 @@ class SalaLogica :
     
     
     #La dirección se envía como un 
-    def intentarAbrirPuerta(self, jugador: JugadorDTO, direccion: str) -> tuple[bool, str, EventoDTO | None]:
+    def intentarAbrirPuerta(self, jugador: JugadorDTO, direccion: str) -> ResultadoEventoDTO:
+        respuesta = ResultadoEventoDTO()
         salida: SalidaDTO | None = self._obtener_salida(Direccion(direccion))
         if not salida:
-            raise ValueError("No existe la salida solicitada")
+            respuesta.exito, respuesta.mensaje = False, "No existe la salida solicitada"
+        elif not salida.cerrada:
+            respuesta.exito, respuesta.mensaje = False, "La puerta está abierta"
+        else:
+            jugadorlog = JugadorLogica(jugador)
 
-        if not salida.cerrada:
-            return True, "La puerta está abierta"
+            if salida.llave is not None:
+                if not jugadorlog.tiene_llave(salida.llave):
+                    respuesta.exito,respuesta.mensaje =  False, "No tiene la llave adecuada para abrir la puerta"
 
-        jugadorlog = JugadorLogica(jugador)
+            salida.cerrada = False
+            respuesta.exito,respuesta.mensaje = True, "La puerta ha sido abierta"
+            if(salida.cierre_automatico is not None):
+                respuesta.eventoResultado = EventoDTO(salida.cierre_automatico,None,self.sala,"Cerrar Puerta",[direccion])
 
-        if salida.llave is not None:
-            if not jugadorlog.tiene_llave(salida.llave):
-                return False, "No tiene la llave adecuada para abrir la puerta"
-
-        salida.cerrada = False
-        evento = None
-        if(salida.cierre_automatico is not None):
-            evento = EventoDTO(salida.cierre_automatico,None,self.sala,"Cerrar Puerta",[direccion])
-
-        return True, "La puerta ha sido abierta", evento
+        return respuesta
 
 
         

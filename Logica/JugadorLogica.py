@@ -1,6 +1,7 @@
 from DTO.ActorDTO import JugadorDTO,EnemigoDTO
 from DTO.SalaDTO import SalaDTO
 from DTO.Objeto import Objeto
+from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.ActorLogica import ActorLogica
 import random
 
@@ -9,12 +10,14 @@ class JugadorLogica(ActorLogica):
         self.jugador = jugador
 
     def mover_jugador(self, sala_actual: SalaDTO, direccion: str) -> None:
-        self._mover(self.jugador, sala_actual, direccion)
+        respuesta = self._mover(self.jugador, sala_actual, direccion)
+        if(respuesta.exito == True):
+            respuesta.mensaje = f"El jugador se ha movido a la sala {self.jugador.id_sala_actual}"
+        return respuesta
 
-    def atacarEnemigo(self, enemigo : EnemigoDTO):
-        azar = random.Random()
-        daño = max(1,self.jugador.ataque+azar.randint(0,4) - enemigo.defensa)
-        enemigo.vida_actual-=daño
+    def atacarEnemigo(self, enemigo : EnemigoDTO)-> ResultadoEventoDTO:
+        self._atacar(self.jugador,enemigo)
+        return ResultadoEventoDTO(True,f"El jugador ha atacado al enemigo causando daño")
 
     def recogerObjeto(self,objeto: Objeto):
         self.jugador.inventario.agregar_objeto(objeto)
