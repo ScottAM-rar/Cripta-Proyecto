@@ -22,8 +22,8 @@ class JugadorLogica(ActorLogica):
     def recogerObjeto(self,objeto: Objeto):
         self.jugador.inventario.agregar_objeto(objeto)
 
-    def soltarObjeto(self, objeto: Objeto):
-        self.jugador.inventario.soltar_objeto_actual(objeto)
+    def soltarObjeto(self):
+        self.jugador.inventario.soltar_objeto_actual()
         
     def tiene_llave(self, id_llave: int) -> bool:
         """Comprueba si el jugador posee en su inventario un objeto llave con el ID dado."""

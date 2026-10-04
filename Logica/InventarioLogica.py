@@ -1,4 +1,5 @@
 from Logica.NodoInventario import NodoInventario
+from Controlador.ordenamiento import ordenar_adaptativo
 from DTO.Objeto import Objeto
 
 CRITERIOS_VALIDOS = ("peso", "valor", "nombre")
@@ -36,7 +37,7 @@ class InventarioLogica:
         nodo_actual = self.cabeza
         while nodo_actual is not None: # Mientras el nodo actual no sea None busca el objeto indicado
             if nodo_actual.objeto == objeto: #Si lo encontro pasa a conectar-desconectar nodos
-                self._desenlanzar_nodos(nodo_actual)
+                self._desenlazar_nodos(nodo_actual)
                 self.actual = self.cabeza  # Se reincia el puntero actual al primer objeto del inventario.
                 return
             nodo_actual = nodo_actual.siguiente #Si no lo encontro en este, pasa al siguiente
@@ -60,7 +61,7 @@ class InventarioLogica:
         self.actual = self.actual.anterior
         return True  # Se movió al objeto anterior
     
-    def _desenlanzar_nodos(self, nodo: NodoInventario):
+    def _desenlazar_nodos(self, nodo: NodoInventario):
         """Saca el nodo de la lista arreglando los enlaces de sus vecinos, este metodo es privado"""
         if nodo.anterior is not None: #Si el nodo no es el primero en la lista
             nodo.anterior.siguiente = nodo.siguiente
@@ -81,7 +82,7 @@ class InventarioLogica:
             raise ValueError("El inventario esta vacio")
         
         objeto = self.actual.objeto
-        self._desenlanzar_nodos(self.actual)
+        self._desenlazar_nodos(self.actual)
         self.actual = self.cabeza  # Reinicia el puntero actual al primer objeto del inventario.
         return objeto  # Devuelve el objeto que fue eliminado
     
@@ -94,7 +95,7 @@ class InventarioLogica:
         if nodo_actual is self.cabeza:
             return nodo_actual.objeto  # Ya está equipado, no hacer nada
     
-        self._desenlanzar_nodos(nodo_actual)
+        self._desenlazar_nodos(nodo_actual)
         nodo_actual.siguiente = self.cabeza
         self.cabeza.anterior = nodo_actual
         self.cabeza = nodo_actual
@@ -111,5 +112,4 @@ class InventarioLogica:
         while nodo_actual is not None:
             objetos.append(nodo_actual.objeto)
             nodo_actual = nodo_actual.siguiente
-        
-        return sorted(objetos, key=lambda obj: getattr(obj, criterio)) #ESTO ES PROVISIONAAAAL, no podemos usar sorted.
+        return ordenar_adaptativo(objetos, key=lambda obj: getattr(obj, criterio))  # Ordena la lista de objetos segun el criterio dado
