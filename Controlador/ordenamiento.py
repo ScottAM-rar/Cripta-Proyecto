@@ -9,7 +9,7 @@ def insertion_sort(lista, key= lambda x:x):
             j-= 1
 
         lista[j+1] = clave
-        return lista
+    return lista
 
     
 
@@ -26,9 +26,9 @@ def merge_sort(lista, key = lambda x:x):
 def _mezclar(izquierda, derecha, key):
     resultado = []
     i = j = 0
-    while i < len(izquierda) and len(derecha):
+    while i < len(izquierda) and j < len(derecha):
         if key(izquierda[i])<= key(derecha[j]):
-            resultado.apennd(izquierda[i])
+            resultado.append(izquierda[i])
             i += 1
         else:
             resultado.append(derecha[j])
