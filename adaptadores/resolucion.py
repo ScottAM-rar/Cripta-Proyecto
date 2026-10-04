@@ -1,6 +1,7 @@
 from __future__ import annotations
 from DTO.CatalogoDTO import EnemigoCatalogoDTO
 from DTO.ActorDTO import EnemigoDTO
+from DTO.TrampaDTO import Trampa
 
 from DTO.Objeto import Objeto, Arma, Armadura, Pocion, Antidoto, Llave, Antorcha, PergaminoRetroceso
 
@@ -53,4 +54,16 @@ def resolver_enemigo(colocacion: dict, ficha: EnemigoCatalogoDTO, id_sala: int) 
         nombre=ficha.nombre,
         comportamiento=ficha.comportamiento,
         suelta=list(ficha.suelta),
+    )
+
+
+def resolver_trampa(colocacion: dict, ficha: dict) -> Trampa:
+    """Combina la ficha estática del catálogo (clase == 'trampa') con la
+    instancia colocada en una sala (de /contenido) para armar una Trampa
+    lista para usar."""
+    return Trampa(
+        id_instancia=colocacion["instancia"],
+        id_catalogo=ficha["id"],
+        daño=ficha["daño"],
+        rearme=ficha["rearme"],
     )
