@@ -1,4 +1,6 @@
 from __future__ import annotations
+from DTO.CatalogoDTO import EnemigoCatalogoDTO
+from DTO.ActorDTO import EnemigoDTO
 
 from DTO.Objeto import Objeto, Arma, Armadura, Pocion, Antidoto, Llave, Antorcha, PergaminoRetroceso
 
@@ -26,3 +28,29 @@ def resolver_objeto(ficha: dict) -> Objeto:
     datos.pop("clase")
 
     return Clase(**datos)
+
+def resolver_ficha_enemigo(ficha: dict) -> EnemigoCatalogoDTO:
+    """Convierte la ficha cruda de /catalogo (clase == 'enemigo') en
+    EnemigoCatalogoDTO."""
+    datos = dict(ficha)
+    datos.pop("clase")
+    return EnemigoCatalogoDTO(**datos)
+
+def resolver_enemigo(colocacion: dict, ficha: EnemigoCatalogoDTO, id_sala: int) -> EnemigoDTO:
+    """Combina la ficha estática del catálogo con la instancia colocada en
+    una sala (de /contenido) para armar un EnemigoDTO jugable."""
+    vida_actual = colocacion["vida"] if colocacion["vida"] is not None else ficha.vida_max
+
+    return EnemigoDTO(
+        vida_actual=vida_actual,
+        vida_max=ficha.vida_max,
+        ataque=ficha.ataque,
+        defensa=ficha.defensa,
+        velocidad=ficha.velocidad,
+        id_sala_actual=id_sala,
+        id_instancia=colocacion["instancia"],
+        tipo=colocacion["tipo"],
+        nombre=ficha.nombre,
+        comportamiento=ficha.comportamiento,
+        suelta=list(ficha.suelta),
+    )
