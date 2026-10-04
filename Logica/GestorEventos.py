@@ -1,6 +1,7 @@
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import *
 from DTO.SalaDTO import *
+from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from DTO.EstadoJuegoDTO import EstadoJuego
 from Logica.JugadorLogica import JugadorLogica
 from Logica.EnemigosLogica import EnemigoLogica
@@ -11,7 +12,7 @@ from Logica.SalasLogica import SalaLogica
 
 class GestorEventos:
 
-    def __init__(self, salas : list[SalaDTO],jugador_logica: JugadorLogica, salas_logica: SalaLogica,
+    def __init__(self, salas : list[SalaDTO],jugador_logica: JugadorLogica
     ):
         #EnemigosLogica: enemigos_logica: 
         
@@ -19,9 +20,9 @@ class GestorEventos:
         # Inyección de dependencias de la capa de lógica
         self.jugador_logica = jugador_logica
         #self.enemigos_logica = enemigos_logica
-        self.salas_logica = salas_logica
+        self.salas_logica = SalaLogica(salas)
 
-    def procesar_evento(self, evento: EventoDTO, estado_juego: EstadoJuego):
+    def procesar_evento(self, evento: EventoDTO, estado_juego: EstadoJuego | None = None) -> ResultadoEventoDTO:
         """ENRUTADOR, REVISA EL EVENTO Y LO MANDA A RESOLVER DONDE SEA CONVENIENTE"""
         
         match evento.tipo_accion:
@@ -38,11 +39,6 @@ class GestorEventos:
                 #Datos extra: [objeto]
                 objeto: Objeto = evento.datos_extra[0]
                 return self.jugador_logica.recogerObjeto(objeto)
-
-            case "TIENE_LLAVE":
-                #Datos extra: [id_llave]
-                id_llave = evento.datos_extra[0]
-                return self.jugador_logica.tiene_llave(id_llave)
 
             case "ATACAR":
                 # Datos extra: [objetivo]
@@ -62,14 +58,23 @@ class GestorEventos:
 
             
             case "ABRIR_PUERTA":
-                #Datos Adicionales [Jugador, Direccion]
+                #Datos Adicionales [Sala, Direccion]
 
-                jugador: JugadorDTO
+                sala: SalaDTO
                 direccion: str
-                jugador,direccion = evento.datos_extra
-                sala: SalaDTO = evento.actor
+                sala,direccion = evento.datos_extra
+                jugador: JugadorDTO = evento.actor
                 self.salas_logica.sala = sala
                 return self.salas_logica.intentarAbrirPuerta(jugador,direccion)
+            case "ACCION_ENEMIGO":
+                #Datos Adicionales [Jugador] (se necesitan también las salas pero estas se sacan del estado de juego para evitar desfases)
+                jugador = evento.datos_extra[0]
+                enemigoLogica = EnemigoLogica(evento.actor)
+                return enemigoLogica.decidirAccion(jugador,self.salas)
+
+                
+
+
                 
 
 

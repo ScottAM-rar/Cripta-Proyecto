@@ -12,8 +12,8 @@ class RelojVirtual:
             return a.tiempo_ejecucion < b.tiempo_ejecucion
         return a.id_secuencia < b.id_secuencia
 
-    def encolar(self, intervalo: int, actor: object , tipo_accion: str, datos_extra: list | None = None):
-        """Calcula el tiempo futuro y coloca el evento en la posición correcta del Heap."""
+    def encolar(self, intervalo: int, actor: object , tipo_accion: str, datos_extra: list | None = None) -> int:
+        """Calcula el tiempo futuro y coloca el evento en la posición correcta del Heap. Devuelve el tiempo calculado"""
         self.secuencia_actual += 1
         tiempo_futuro = self.tiempo_actual + intervalo
         
@@ -27,6 +27,7 @@ class RelojVirtual:
         
         self.heap.append(nuevo_evento)
         self._subir(len(self.heap) - 1)
+        return tiempo_futuro
 
     def _subir(self, i: int):
         padre = (i - 1) // 2
