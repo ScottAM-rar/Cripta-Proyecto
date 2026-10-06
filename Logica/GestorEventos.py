@@ -6,7 +6,7 @@ from DTO.EstadoJuegoDTO import EstadoJuego
 from Logica.JugadorLogica import JugadorLogica
 from Logica.EnemigosLogica import EnemigoLogica
 from Logica.SalasLogica import SalaLogica
-
+from Logica.TrampaLogica import TrampaLogica
 #Aquí van a ir TODOS los eventos que se pueden manejar, para hacer un acción se va a consultar aquí
 
 
@@ -75,6 +75,20 @@ class GestorEventos:
                 enemigoLogica = EnemigoLogica(evento.actor)
                 return enemigoLogica.decidirAccion(jugador,self.salas)
 
+            case "ARMAR_TRAMPA":
+                if not isinstance(evento.actor,Trampa):
+                    raise ValueError("Solo se pueden armar trampas")
+                trampa: Trampa = evento.actor
+                salaTrampa = self.salas[trampa.id_sala]
+                logica = TrampaLogica(trampa)
+                return logica.rearmar(salaTrampa)
+            case "ACTIVAR_TRAMPA":
+                if not isinstance(evento.actor,Trampa):
+                    raise ValueError("Solo se pueden activar trampas")
+                trampa: Trampa = evento.actor
+                salaTrampa = self.salas[trampa.id_sala]
+                logica = TrampaLogica(trampa)
+                return logica.activar(self.jugador_logica.jugador,salaTrampa)
         
 
                 
