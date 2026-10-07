@@ -1,40 +1,31 @@
 from adaptadores.cliente_http import ClienteCripta
-from adaptadores.resolucion import resolver_objeto
-from adaptadores.resolucion import resolver_ficha_enemigo, resolver_enemigo
+from adaptadores.resolucion import resolver_trampa
 
 BASE_URL = "https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1"
-
 cliente = ClienteCripta(BASE_URL)
+cripta_id = "cripta-01"
 
-criptas = cliente.obtener_criptas()
-print("Criptas disponibles:", criptas)
-
-cripta_id = criptas[0]["id"]
-print("Versión de la cripta:", cliente.obtener_version_cripta(cripta_id))
-print("Versión del catálogo:", cliente.obtener_version_catalogo())
-
-salas = cliente.obtener_salas(cripta_id)
-print(f"{len(salas)} salas recibidas")
-
-ids_salas = [sala["id"] for sala in salas[:3]]
+todas_salas = cliente.obtener_salas(cripta_id)
+ids_salas = [sala["id"] for sala in todas_salas]
 contenido = cliente.obtener_contenido(cripta_id, ids_salas)
-print("Contenido de las primeras 3 salas:", contenido)
 
-print("Solicitudes realizadas:", cliente.solicitudes_realizadas)
+tipos_enemigos = set()
+for entrada in contenido:
+    for enemigo in entrada["enemigos"]:
+        tipos_enemigos.add(enemigo["tipo"])
 
-ids_objetos = ["itm_antorcha", "itm_daga_oxidada", "itm_llave_bronce", "itm_coraza_cuero"]
-fichas = cliente.obtener_catalogo(ids_objetos)
+print("Tipos de enemigos encontrados:", tipos_enemigos)
 
+fichas = cliente.obtener_catalogo(list(tipos_enemigos))
 for ficha in fichas:
-    objeto = resolver_objeto(ficha)
-    print(objeto)
+    print(ficha["nombre"], "->", repr(ficha["comportamiento"]))
 
-fichas_enemigos = cliente.obtener_catalogo(["ent_rata_gigante"])
-ficha_rata = resolver_ficha_enemigo(fichas_enemigos[0])
-print(ficha_rata)
+
+fichas_trampas = cliente.obtener_catalogo(["trp_dardos"])
+ficha_trampa = fichas_trampas[0]
 
 contenido_sala_2 = cliente.obtener_contenido(cripta_id, [2])
 for entrada in contenido_sala_2:
-    for colocacion in entrada["enemigos"]:
-        enemigo = resolver_enemigo(colocacion, ficha_rata, id_sala=entrada["sala"])
-        print(enemigo)
+    for colocacion in entrada["trampas"]:
+        trampa = resolver_trampa(colocacion, ficha_trampa)
+        print(trampa)
