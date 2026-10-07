@@ -94,12 +94,11 @@ def prueba_partida_completa():
         reloj=RelojVirtual(),
         jugador=jugador,
         salas=salas,
-        enemigos_vivos=enemigos,
     )
     servicio = EstadoJuegoServicio(estado_juego)
 
     assert len(estado_juego.salas) == 5
-    assert len(estado_juego.enemigos_vivos) == 4
+    assert sum(len(sala.enemigos) for sala in estado_juego.salas) == 4
 
     respuestas_movimiento = []
     servicio.accionJugador(EventoDTO(TIEMPO_MOVER,None,jugador,"MOVER_JUGADOR",[estado_juego.salas[jugador.id_sala_actual],"este"]))
