@@ -9,10 +9,11 @@ class EstadoJuegoLogica:
         self.gestorEventos = GestorEventos(estadoJuego.salas,JugadorLogica(estadoJuego.jugador))
         self.jugadorLogica = JugadorLogica(estadoJuego.jugador)
         self.tiempoMovimientoJugador = 0
-        for enemigo in estadoJuego.enemigos_vivos:
-            self.cargarEvento(
-                EventoDTO(100, 0, enemigo, "ACCION_ENEMIGO", [estadoJuego.jugador])
-            )
+        for sala in estadoJuego.salas:
+            for enemigo in sala.enemigos:
+                self.cargarEvento(
+                    EventoDTO(100, 0, enemigo, "ACCION_ENEMIGO", [estadoJuego.jugador])
+                )
 
     def tieneLlave(self,id_llave : str):
         return self.jugadorLogica.tiene_llave(id_llave)
