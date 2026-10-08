@@ -117,6 +117,7 @@ def _buscar_ficha(fichas: list[dict], id_catalogo: str) -> dict:
 
 
 def resolver_sala(cliente, cache, cripta_id: str, numero_sala: int):
+    
     resultado = cliente.obtener_contenido(cripta_id, [numero_sala])
     if not resultado:
         raise ValueError(f"La API no devolvió contenido para la sala {numero_sala}")
