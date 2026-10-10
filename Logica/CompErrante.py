@@ -3,9 +3,12 @@ from Logica.ActorLogica import ActorLogica
 import random
 class ComportamientoErrante(ComportamientoEnemigo):
     @staticmethod
-    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO]) -> str:
+    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], semilla: int = None) -> str:
         salaActual = salas[enemigo.id_sala_actual]
-        azar = random.Random()
+        if semilla is None:
+            azar = random.Random()
+        else:
+            azar = random.Random(semilla)
         salidasDisponibles = [
             salida for salida in salaActual.salidas
             if salida is not None

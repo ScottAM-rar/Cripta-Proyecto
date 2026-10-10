@@ -3,16 +3,19 @@ from collections import deque
 from DTO.ActorDTO import EnemigoDTO, JugadorDTO
 from DTO.EstadoJuegoDTO import EstadoJuego
 from DTO.EventoDTO import EventoDTO
+from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from DTO.SalaDTO import SalaDTO, SalidaDTO
+from DTO.TrampaDTO import Trampa
 from Logica.RelojVirtual import RelojVirtual
 from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
 
 
 TIEMPO_MOVER = 100
 TIEMPO_ATACAR = 100
+SEMILLA_PRUEBA = 12345
 
 
-def prueba_partida_completa():
+def prueba_partida_completa(semilla: int = SEMILLA_PRUEBA):
     salas = [
         SalaDTO(id=indice, nombre=f"Sala {indice}", salidas=deque())
         for indice in range(5)
@@ -90,18 +93,49 @@ def prueba_partida_completa():
     for enemigo in enemigos:
         salas[enemigo.id_sala_actual].enemigos.append(enemigo)
 
+    trampas = [
+        Trampa(
+            id_instancia="trampa-1",
+            id_catalogo="trampa_puas",
+            id_sala=1,
+            daño=10,
+            rearme=25,
+        ),
+        Trampa(
+            id_instancia="trampa-2",
+            id_catalogo="trampa_fuego",
+            id_sala=3,
+            daño=15,
+            rearme=25,
+        ),
+    ]
+
+    for trampa in trampas:
+        salas[trampa.id_sala].trampas.append(trampa)
+
     estado_juego = EstadoJuego(
         reloj=RelojVirtual(),
         jugador=jugador,
         salas=salas,
     )
-    servicio = EstadoJuegoServicio(estado_juego)
+    servicio = EstadoJuegoServicio(estado_juego, semilla)
 
     assert len(estado_juego.salas) == 5
     assert sum(len(sala.enemigos) for sala in estado_juego.salas) == 4
+    assert sum(len(sala.trampas) for sala in estado_juego.salas) == 2
 
-    respuestas_movimiento = []
+    def activar_trampa_automatica(trampa: Trampa) -> ResultadoEventoDTO:
+        evento = EventoDTO(0, None, trampa, "ACTIVAR_TRAMPA")
+        gestor_eventos = servicio._estadoJuegoLogica.gestorEventos
+        return gestor_eventos.procesar_evento(evento)
+
     servicio.accionJugador(EventoDTO(TIEMPO_MOVER,None,jugador,"MOVER_JUGADOR",[estado_juego.salas[jugador.id_sala_actual],"este"]))
+    vida_antes_trampa = jugador.vida_actual
+    resultado_trampa = activar_trampa_automatica(trampas[0])
+    assert resultado_trampa.exito
+    assert jugador.vida_actual == vida_antes_trampa - trampas[0].daño
+    assert not trampas[0].armada
+
     if estado_juego.salas[jugador.id_sala_actual].enemigos:
         servicio.accionJugador(EventoDTO(TIEMPO_ATACAR,None,jugador,"ATACAR",[estado_juego.salas[jugador.id_sala_actual].enemigos[0]]))
     servicio.accionJugador(EventoDTO(TIEMPO_MOVER,None,jugador,"MOVER_JUGADOR",[estado_juego.salas[jugador.id_sala_actual],"este"]))
@@ -109,6 +143,12 @@ def prueba_partida_completa():
         servicio.accionJugador(EventoDTO(TIEMPO_ATACAR,None,jugador,"ATACAR",[estado_juego.salas[jugador.id_sala_actual].enemigos[0]]))
 
     servicio.accionJugador(EventoDTO(TIEMPO_MOVER,None,jugador,"MOVER_JUGADOR",[estado_juego.salas[jugador.id_sala_actual],"este"]))
+    vida_antes_trampa = jugador.vida_actual
+    resultado_trampa = activar_trampa_automatica(trampas[1])
+    assert resultado_trampa.exito
+    assert jugador.vida_actual == vida_antes_trampa - trampas[1].daño
+    assert not trampas[1].armada
+
     if estado_juego.salas[jugador.id_sala_actual].enemigos:
         servicio.accionJugador(EventoDTO(TIEMPO_ATACAR,None,jugador,"ATACAR",[estado_juego.salas[jugador.id_sala_actual].enemigos[0]]))
 
@@ -116,8 +156,24 @@ def prueba_partida_completa():
     if estado_juego.salas[jugador.id_sala_actual].enemigos:
         servicio.accionJugador(EventoDTO(TIEMPO_ATACAR,None,jugador,"ATACAR",[estado_juego.salas[jugador.id_sala_actual].enemigos[0]]))
 
+    estado_final = (
+        jugador.vida_actual,
+        jugador.id_sala_actual,
+        tuple(
+            (enemigo.id_instancia, enemigo.vida_actual, enemigo.id_sala_actual)
+            for enemigo in enemigos
+        ),
+    )
     print("Prueba única de partida completada correctamente")
+    return estado_final
+
+
+def prueba_semilla_repetible():
+    primera_partida = prueba_partida_completa(SEMILLA_PRUEBA)
+    segunda_partida = prueba_partida_completa(SEMILLA_PRUEBA)
+    assert primera_partida == segunda_partida
+    print("La semilla produce el mismo comportamiento en ambas partidas")
 
 
 if __name__ == "__main__":
-    prueba_partida_completa()
+    prueba_semilla_repetible()

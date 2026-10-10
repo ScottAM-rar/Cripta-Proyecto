@@ -4,9 +4,13 @@ from DTO.EventoDTO import EventoDTO
 from Logica.GestorEventos import GestorEventos
 from Logica.JugadorLogica import JugadorLogica
 class EstadoJuegoLogica:
-    def __init__(self, estadoJuego: EstadoJuego):
+    def __init__(self, estadoJuego: EstadoJuego, semilla: int = None):
         self.estadoJuego = estadoJuego
-        self.gestorEventos = GestorEventos(estadoJuego.salas,JugadorLogica(estadoJuego.jugador))
+        self.gestorEventos = GestorEventos(
+            estadoJuego.salas,
+            estadoJuego.jugador,
+            semilla
+        )
         self.jugadorLogica = JugadorLogica(estadoJuego.jugador)
         self.tiempoMovimientoJugador = 0
         for sala in estadoJuego.salas:
@@ -26,7 +30,11 @@ class EstadoJuegoLogica:
     # ejecuta ingresarEnSala(salainicial) y cargar algunas al rededor para el inicio
 
     def ingresarEnSala(self, sala: int)-> SalaDTO:
-        pass
+        if(sala < 0 or sala >= len(self.estadoJuego.salas)):
+            raise ValueError("No existe la sala que se desea consultar")
+        if(self.estadoJuego.salas[sala] is not None):
+            return self.estadoJuego.salas[sala]
+        return None #TODO falta que hace cuando la sala no ha sido cargada 
     #TODO va a revisar la seccion del vector de la memoria
     #si la sala está (no es None) la devuelve
     #si no, se comunica con el comunicador, recibe la sala y la inserta en el vector y la devuelve

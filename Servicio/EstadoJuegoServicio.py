@@ -2,8 +2,8 @@ from Logica.EstadoJuegoLogica import *
 
 
 class EstadoJuegoServicio:
-    def __init__(self, estadoJuego: EstadoJuego):
-        self._estadoJuegoLogica = EstadoJuegoLogica(estadoJuego)
+    def __init__(self, estadoJuego: EstadoJuego, semilla: int = None):
+        self._estadoJuegoLogica = EstadoJuegoLogica(estadoJuego, semilla)
 
     def accionJugador(self,evento:EventoDTO):
         return self._estadoJuegoLogica.accionJugador(evento)

@@ -3,7 +3,7 @@ from DTO.SalaDTO import *
 from Logica.ActorLogica import ActorLogica
 class ComportamientoRastreador(ComportamientoEnemigo):
     @staticmethod
-    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO]) -> str:
+    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], semilla: int= None) -> str:
         siguienteSala: SalidaDTO = None
         for t in salas[enemigo.id_sala_actual].salidas:
             if (
