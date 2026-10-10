@@ -1,6 +1,7 @@
 from __future__ import annotations
 from collections import deque
 
+from DTO.ActorDTO import JugadorDTO
 from DTO.SalaDTO import SalaDTO, SalidaDTO
 from adaptadores.resolucion import resolver_sala
 
@@ -34,6 +35,8 @@ class ServicioCripta:
         self._criptas: list[dict] | None = None      # lista de /criptas ya pedida
         self._esqueleto_id: str | None = None        # cripta a la que pertenece el esqueleto
         self._esqueleto: list[dict] = []             # salas crudas de /salas
+        self._datos_id: str | None = None
+        self._datos: dict = {}
 
     def _cargar_criptas(self) -> list[dict]:
         if self._criptas is None:
@@ -61,6 +64,30 @@ class ServicioCripta:
             if cripta["id"] == cripta_id:
                 return True
         return False
+
+    #------------------- JUGADOR - datos -----------------
+
+    def datos_cripta(self, cripta_id: str) -> dict:
+        if not self.existe_cripta(cripta_id):
+            raise ValueError(f"La cripta '{cripta_id}' no existe")
+        if self._datos_id != cripta_id:
+            self._datos = self.cliente.obtener_datos_generales(cripta_id)
+            self._datos_id = cripta_id
+        return self._datos
+
+    def crear_jugador(self, cripta_id: str) -> JugadorDTO:
+        
+        datos = self.datos_cripta(cripta_id)
+        stats = datos["jugador"]
+        return JugadorDTO(
+            vida_actual=stats["vida_max"],      # empieza con la vida completa
+            vida_max=stats["vida_max"],
+            ataque=stats["ataque"],
+            defensa=stats["defensa"],
+            velocidad=stats["velocidad"],
+            inventario_max=datos["inventario_max"],
+            id_sala_actual=datos["sala_inicial"],
+        )
 
     # ------------------ SALAS ------------------
 
