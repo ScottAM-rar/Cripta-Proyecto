@@ -27,7 +27,7 @@ class EstadoJuegoLogica:
         cantSalas = self.comunicacion.total_salas(cripta)
         salas = [None] * cantSalas
         relojvirtual = RelojVirtual()
-        jugador = JugadorDTO(100,100,40,50,100,0,10)
+        jugador =self.comunicacion.crear_jugador(cripta)
         self.estadoJuego = EstadoJuego(relojvirtual,jugador,[],[],salas)
         self.gestorEventos = GestorEventos(self.estadoJuego.salas,jugador,self.ingresarEnSala,self.semilla)
         self.jugadorLogica = JugadorLogica(jugador,self.semilla)

@@ -22,4 +22,7 @@ class EstadoJuegoServicio:
 
     def iniciarJuego(self, cripta: str):
         self._estadoJuegoLogica.iniciarJuego(cripta)
+
+    def getJudador(self):
+        return self._estadoJuegoLogica.obtenerJugador()
     
