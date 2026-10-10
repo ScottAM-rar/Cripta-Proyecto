@@ -58,11 +58,12 @@ def resolver_enemigo(colocacion: dict, ficha: EnemigoCatalogoDTO, id_sala: int) 
     )
  
  
-def resolver_trampa(colocacion: dict, ficha: dict) -> Trampa:
+def resolver_trampa(colocacion: dict, ficha: dict, id_sala: int) -> Trampa:
     """Combina la ficha estática del catálogo (clase == 'trampa') con la
     instancia colocada en una sala (de /contenido) para armar una Trampa
-    lista para usar."""
+    lista para usar. `id_sala` es la sala donde está colocada."""
     return Trampa(
+        id_sala=id_sala,
         id_instancia=colocacion["instancia"],
         id_catalogo=ficha["id"],
         daño=ficha["daño"],
@@ -130,7 +131,7 @@ def _armar_sala(contenido: dict, fichas: list[dict], numero_sala: int):
  
     trampas = []
     for colocacion in contenido["trampas"]:
-        trampas.append(resolver_trampa(colocacion, _buscar_ficha(fichas, colocacion["tipo"])))
+        trampas.append(resolver_trampa(colocacion, _buscar_ficha(fichas, colocacion["tipo"]), numero_sala))
  
     return enemigos, objetos, trampas
  

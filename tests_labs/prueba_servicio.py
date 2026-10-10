@@ -70,7 +70,6 @@ print()
 print(f"{resultados.count(True)} de {len(resultados)} comprobaciones OK")
 
 
-
 # print("1)", servicio.listar_criptas())
 # cid = servicio.obtener_id_cripta(1)
 
