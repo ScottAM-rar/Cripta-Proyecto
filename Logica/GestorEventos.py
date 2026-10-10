@@ -1,3 +1,4 @@
+from collections.abc import Callable
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import *
 from DTO.SalaDTO import *
@@ -14,11 +15,12 @@ from Logica.TrampaLogica import TrampaLogica
 
 class GestorEventos:
 
-    def __init__(self, salas : list[SalaDTO],jugador: JugadorDTO, semilla: int = None
+    def __init__(self, salas : list[SalaDTO],jugador: JugadorDTO, cargar_sala: Callable[[int],SalaDTO], semilla: int = None
     ):
         #EnemigosLogica: enemigos_logica: 
         
         self.salas = salas
+        self.cargar_sala = cargar_sala
         # Inyección de dependencias de la capa de lógica
         self.jugador_logica = JugadorLogica(jugador, semilla)
         #self.enemigos_logica = enemigos_logica
@@ -61,9 +63,12 @@ class GestorEventos:
                 direccion: str = evento.datos_extra[1]
                 self._validar_sala(sala_actual)
                 self._validar_direccion(direccion)
-                return self.jugador_logica.mover_jugador(
+                res = self.jugador_logica.mover_jugador(
                     sala_actual, direccion
                 )
+                if res.exito == True:
+                    self.cargar_sala(jugador.id_sala_actual)
+                return res 
             
             case "RECOGER_OBJETO":
                 #Datos extra: [objeto]
@@ -114,6 +119,7 @@ class GestorEventos:
                 #Datos Adicionales [Jugador] (se necesitan también las salas pero estas se sacan del estado de juego para evitar desfases)
                 if not isinstance(evento.actor, EnemigoDTO):
                     raise TypeError("El actor de ACCION_ENEMIGO debe ser un enemigo")
+                sala_enemigo = evento.actor.id_sala_actual
                 self._validar_cantidad_datos(evento, 1)
                 jugador = evento.datos_extra[0]
                 if not isinstance(jugador, JugadorDTO):
@@ -121,7 +127,10 @@ class GestorEventos:
                 if jugador is not self.jugador_logica.jugador:
                     raise ValueError("El jugador del evento no pertenece a esta partida")
                 self.enemigo_logica.setEnemigo(evento.actor)
-                return self.enemigo_logica.decidirAccion(jugador,self.salas)
+                res =  self.enemigo_logica.decidirAccion(jugador,self.salas)
+                if evento.actor.id_sala_actual != sala_enemigo:
+                    self.cargar_sala(evento.actor.id_sala_actual).enemigos.append(evento.actor)
+                return res
 
             case "ARMAR_TRAMPA":
                 self._validar_trampa(evento)

@@ -10,7 +10,7 @@ class JugadorLogica(ActorLogica):
         self.jugador = jugador
         self.semilla = semilla
 
-    def mover_jugador(self, sala_actual: SalaDTO, direccion: str) -> None:
+    def mover_jugador(self, sala_actual: SalaDTO, direccion: str) -> ResultadoEventoDTO:
         respuesta = self._mover(self.jugador, sala_actual, direccion)
         if(respuesta.exito == True):
             respuesta.mensaje = f"El jugador se ha movido a la sala {self.jugador.id_sala_actual}"

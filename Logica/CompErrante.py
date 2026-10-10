@@ -24,7 +24,7 @@ class ComportamientoErrante(ComportamientoEnemigo):
             return "NO SE MOVIÓ"
         if enemigo in salaActual.enemigos:
             salaActual.enemigos.remove(enemigo)
-        salas[siguienteSala.sala_destino].enemigos.append(enemigo)
+        #salas[siguienteSala.sala_destino].enemigos.append(enemigo)
         return f"SE MOVIO A {siguienteSala.direccion}"
 
     
