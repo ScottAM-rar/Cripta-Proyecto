@@ -12,7 +12,6 @@ class SalaLogica :
         return next((s for s in self.sala.salidas if s.direccion == direccion), None)
 
     
-    
     #La dirección se envía como un 
     def intentarAbrirPuerta(self, jugador: JugadorDTO, direccion: str) -> ResultadoEventoDTO:
         respuesta = ResultadoEventoDTO()
@@ -31,9 +30,24 @@ class SalaLogica :
             salida.cerrada = False
             respuesta.exito,respuesta.mensaje = True, "La puerta ha sido abierta"
             if(salida.cierre_automatico is not None):
-                respuesta.eventoResultado = EventoDTO(salida.cierre_automatico,None,self.sala,"Cerrar Puerta",[direccion])
+                respuesta.eventoResultado = EventoDTO(salida.cierre_automatico,None,self.sala,"CERRAR_PUERTA",[direccion])
 
         return respuesta
+
+    def cerrarPuerta(self,direccion: str):
+        respuesta = ResultadoEventoDTO()
+        salida: SalidaDTO = self._obtener_salida(Direccion(direccion))
+        if not salida:
+            respuesta.exito, respuesta.mensaje = False, "No existe la salida a cerrar"
+        else:
+            salida.cerrada = True
+            respuesta.exito, respuesta.mensaje = True, f"Se ha cerrado la puerta {salida.direccion} de la sala {self.sala.id}"
+        return respuesta
+    def actualizarTiempo(self,nuevoTiempo: int):
+        if nuevoTiempo<self.sala.ultimo_paso:
+            return
+        self.sala.ultimo_paso = nuevoTiempo
+
 
 
         

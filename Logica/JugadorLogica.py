@@ -6,21 +6,23 @@ from Logica.ActorLogica import ActorLogica
 import random
 
 class JugadorLogica(ActorLogica):
-    def __init__(self,jugador : JugadorDTO):
+    def __init__(self,jugador : JugadorDTO, semilla: int = None):
         self.jugador = jugador
+        self.semilla = semilla
 
-    def mover_jugador(self, sala_actual: SalaDTO, direccion: str) -> None:
+    def mover_jugador(self, sala_actual: SalaDTO, direccion: str) -> ResultadoEventoDTO:
         respuesta = self._mover(self.jugador, sala_actual, direccion)
         if(respuesta.exito == True):
             respuesta.mensaje = f"El jugador se ha movido a la sala {self.jugador.id_sala_actual}"
         return respuesta
 
     def atacarEnemigo(self, enemigo : EnemigoDTO)-> ResultadoEventoDTO:
-        self._atacar(self.jugador,enemigo)
+        self._atacar(self.jugador,enemigo,self.semilla)
         return ResultadoEventoDTO(True,f"El jugador ha atacado al enemigo causando daño")
 
     def recogerObjeto(self,objeto: Objeto):
         self.jugador.inventario.agregar_objeto(objeto)
+        return ResultadoEventoDTO(True, f"El objeto {objeto.nombre} ha sido recogido")
 
     def soltarObjeto(self, objeto: Objeto):
         self.jugador.inventario.soltar_objeto_actual(objeto)
