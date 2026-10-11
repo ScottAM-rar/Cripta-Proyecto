@@ -82,15 +82,6 @@ class GestorEventos:
                 if not isinstance(objeto, Objeto):
                     raise TypeError("El objeto a recoger debe ser una instancia de Objeto")
                 return self.jugador_logica.recogerObjeto(objeto)
-            
-            #case "RECOGER_OBJETO":
-            #    objeto: Objeto = evento.datos_extra[0]
-            #    respuesta = self.jugador_logica.recogerObjeto(objeto)
-            #    self.retroceso_logica.registrar_accion(
-            #        DeltaDTO("RECOGER_OBJETO", {"objeto": objeto})
-            #    )
-            #    return respuesta
-
             case "ATACAR":
                 # Datos extra: [objetivo]
                 self._validar_cantidad_datos(evento, 1)

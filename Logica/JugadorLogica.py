@@ -23,11 +23,18 @@ class JugadorLogica(ActorLogica):
         return ResultadoEventoDTO(True,f"El jugador ha atacado al enemigo causando daño")
 
     def recogerObjeto(self,objeto: Objeto):
-        self.jugador.inventario.agregar_objeto(objeto)
-        return ResultadoEventoDTO(True, f"El objeto {objeto.nombre} ha sido recogido")
+        try:
+            self.jugador.inventario.agregar_objeto(objeto)
+        except ValueError as e:
+            return ResultadoEventoDTO(False, str(e))
+        return ResultadoEventoDTO(True, f"El jugador ha recogido el objeto {objeto.nombre}")
 
     def soltarObjeto(self):
-        self.jugador.inventario.soltar_objeto_actual()
+        try:
+            self.jugador.inventario.soltar_objeto_actual()
+        except ValueError as e:
+            return ResultadoEventoDTO(False, str(e))
+        return ResultadoEventoDTO(True, f"El jugador ha soltado el objeto {self.jugador.inventario.actual.objeto.nombre}")
         
     def tiene_llave(self, id_llave: int) -> bool:
         """Comprueba si el jugador posee en su inventario un objeto llave con el ID dado."""
