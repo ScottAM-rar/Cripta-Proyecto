@@ -1,3 +1,6 @@
+from unittest import case
+
+from DTO.DeltaDTO import DeltaDTO
 from collections.abc import Callable
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import *
@@ -9,7 +12,8 @@ from DTO.TrampaDTO import Trampa
 from Logica.JugadorLogica import JugadorLogica
 from Logica.EnemigosLogica import EnemigoLogica
 from Logica.SalasLogica import SalaLogica
-from Logica.TrampaLogica import TrampaLogica
+from Logica.TrampaLogica import TrampaLogica# from Logica.RetrocesoLogica import RetrocesoLogica
+
 #Aquí van a ir TODOS los eventos que se pueden manejar, para hacer un acción se va a consultar aquí
 
 
@@ -78,6 +82,14 @@ class GestorEventos:
                 if not isinstance(objeto, Objeto):
                     raise TypeError("El objeto a recoger debe ser una instancia de Objeto")
                 return self.jugador_logica.recogerObjeto(objeto)
+            
+            #case "RECOGER_OBJETO":
+            #    objeto: Objeto = evento.datos_extra[0]
+            #    respuesta = self.jugador_logica.recogerObjeto(objeto)
+            #    self.retroceso_logica.registrar_accion(
+            #        DeltaDTO("RECOGER_OBJETO", {"objeto": objeto})
+            #    )
+            #    return respuesta
 
             case "ATACAR":
                 # Datos extra: [objetivo]
