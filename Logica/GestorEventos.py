@@ -115,6 +115,18 @@ class GestorEventos:
                 self.salas_logica.sala = sala
                 return self.salas_logica.intentarAbrirPuerta(jugador,direccion)
 
+            case "CERRAR_PUERTA":
+                self._validar_cantidad_datos(evento, 1)
+
+                if not isinstance(evento.actor, SalaDTO):
+                    raise TypeError("El actor de CERRAR_PUERTA debe ser una sala")
+
+                direccion: str = evento.datos_extra[0]
+                self._validar_direccion(direccion)
+
+                self.salas_logica.sala = evento.actor
+                return self.salas_logica.cerrarPuerta(direccion)
+
             case "ACCION_ENEMIGO":
                 #Datos Adicionales [Jugador] (se necesitan también las salas pero estas se sacan del estado de juego para evitar desfases)
                 if not isinstance(evento.actor, EnemigoDTO):
@@ -139,7 +151,7 @@ class GestorEventos:
                 salaTrampa = evento.datos_extra[0]
                 self._validar_sala_trampa(salaTrampa, trampa)
                 logica = TrampaLogica(trampa)
-                return logica.rearmar(salaTrampa)
+                return logica.rearmar(salaTrampa)   
 
             case "ACTIVAR_TRAMPA":
                 self._validar_trampa(evento)

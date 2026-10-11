@@ -22,6 +22,7 @@ class JugadorLogica(ActorLogica):
 
     def recogerObjeto(self,objeto: Objeto):
         self.jugador.inventario.agregar_objeto(objeto)
+        return ResultadoEventoDTO(True, f"El objeto {objeto.nombre} ha sido recogido")
 
     def soltarObjeto(self, objeto: Objeto):
         self.jugador.inventario.soltar_objeto_actual(objeto)
