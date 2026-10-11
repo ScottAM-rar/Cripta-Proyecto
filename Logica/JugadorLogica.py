@@ -32,7 +32,7 @@ class JugadorLogica(ActorLogica):
             self.jugador.inventario.soltar_objeto_actual()
         except ValueError as e:
             return ResultadoEventoDTO(False, str(e))
-        return ResultadoEventoDTO(True, f"El jugador ha soltado el objeto")
+        return ResultadoEventoDTO(True, f"El jugador ha soltado el objeto {self.jugador.inventario.actual.objeto.nombre}")
         
     def tiene_llave(self, id_llave: int) -> bool:
         """Comprueba si el jugador posee en su inventario un objeto llave con el ID dado."""

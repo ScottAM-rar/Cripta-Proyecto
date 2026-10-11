@@ -36,7 +36,7 @@ class InventarioLogica:
         
         nodo_actual = self.cabeza
         while nodo_actual is not None: # Mientras el nodo actual no sea None busca el objeto indicado
-            if nodo_actual.objeto == objeto: #Si lo encontro pasa a conectar-desconectar nodos
+            if nodo_actual.objeto is objeto: #Si lo encontro pasa a conectar-desconectar nodos
                 self._desenlazar_nodos(nodo_actual)
                 self.actual = self.cabeza  # Se reincia el puntero actual al primer objeto del inventario.
                 return
@@ -60,21 +60,6 @@ class InventarioLogica:
             return False  # No hay objeto anterior
         self.actual = self.actual.anterior
         return True  # Se movió al objeto anterior
-    
-    def _desenlazar_nodos(self, nodo: NodoInventario):
-        """Saca el nodo de la lista arreglando los enlaces de sus vecinos, este metodo es privado"""
-        if nodo.anterior is not None: #Si el nodo no es el primero en la lista
-            nodo.anterior.siguiente = nodo.siguiente
-        else: # Si el nodo sí es el primero en la lista
-            self.cabeza = nodo.siguiente
-        if nodo.siguiente is not None: #Si el nodo no es el ultimo de la lista
-            nodo.siguiente.anterior = nodo.anterior
-        else: # Si el nodo sí es el ultimo en la lista
-            self.cola = nodo.anterior
-            
-        nodo.anterior = None
-        nodo.siguiente = None
-        self.cantidad_actual -= 1 #Resta 1 a la cantidad actual en el inventario
     
     def soltar_objeto_actual(self):
         """Elimina el objeto actual del inventario"""
@@ -113,3 +98,47 @@ class InventarioLogica:
             objetos.append(nodo_actual.objeto)
             nodo_actual = nodo_actual.siguiente
         return ordenar_adaptativo(objetos, key=lambda obj: getattr(obj, criterio))  # Ordena la lista de objetos segun el criterio dado
+    
+    def _desenlazar_nodos(self, nodo: NodoInventario):
+        """Saca el nodo de la lista arreglando los enlaces de sus vecinos, este metodo es privado"""
+        if nodo.anterior is not None: #Si el nodo no es el primero en la lista
+            nodo.anterior.siguiente = nodo.siguiente
+        else: # Si el nodo sí es el primero en la lista
+            self.cabeza = nodo.siguiente
+        if nodo.siguiente is not None: #Si el nodo no es el ultimo de la lista
+            nodo.siguiente.anterior = nodo.anterior
+        else: # Si el nodo sí es el ultimo en la lista
+            self.cola = nodo.anterior
+            
+        nodo.anterior = None
+        nodo.siguiente = None
+        self.cantidad_actual -= 1 #Resta 1 a la cantidad actual en el inventario
+        
+    def buscar_objeto(self, objeto: Objeto) -> NodoInventario | None:
+        """Busca un nodo en la lista que contenga el objeto dado"""
+        nodo_actual = self.cabeza
+        while nodo_actual is not None:
+            if nodo_actual.objeto is objeto:
+                return nodo_actual
+            nodo_actual = nodo_actual.siguiente
+        return None  # No se encontro el objeto en la lista
+    
+    def _reenlazar_nodo(self, nodo, anterior, siguiente) -> None:
+        """Reenlaza un nodo en la lista, este metodo es privado"""
+        nodo.anterior, nodo.siguiente = anterior, siguiente
+        if anterior is not None:
+            anterior.siguiente = nodo
+        else:
+            self.cabeza = nodo
+        if siguiente is not None:
+            siguiente.anterior = nodo
+        else:
+            self.cola = nodo
+        if self.actual is None:
+            self.actual = nodo  
+        self.cantidad_actual += 1 
+        
+    def _mover_entre(self, nodo, anterior, siguiente) -> None:
+        """Mueve un nodo entre dos nodos dados, este metodo es privado"""
+        self._desenlazar_nodos(nodo)
+        self._reenlazar_nodo(nodo, anterior, siguiente)

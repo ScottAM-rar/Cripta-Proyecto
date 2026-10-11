@@ -1,5 +1,6 @@
 from DTO.ActorDTO import JugadorDTO
 from DTO.DeltaDTO import DeltaDTO
+from DTO.Objeto import PergaminoRetroceso
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.RetrocesoLogica import RetrocesoLogica
 
@@ -29,9 +30,13 @@ class PergaminoLogica:
             case "ATACAR":
                 delta.datos["objetivo"].vida_actual += delta.datos["danio"]
             case "RECOGER_OBJETO":
+                if isinstance(delta.datos["objeto"], PergaminoRetroceso):
+                    return 
                 try:
                     self.jugador.inventario.eliminar_objeto_utilizado(delta.datos["objeto"])
                 except ValueError:
                     pass  # El objeto ya no está en el inventario, no hacer nada
             case _:
                 raise ValueError(f"Tipo de accion no reconocido: {delta.tipo_accion}")
+    
+    
