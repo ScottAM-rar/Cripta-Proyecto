@@ -7,11 +7,11 @@ class ComportamientoFactory:
     @staticmethod
     def crearComportamiento(tipo : str)->ComportamientoEnemigo:
         match tipo:
-            case "GUARDIAN":
+            case "guardián":
                 return ComportamientoGuardian()
-            case "ERRANTE": 
+            case "errante": 
                 return ComportamientoErrante()
-            case "RASTREADOR":
+            case "rastreador":
                 return ComportamientoRastreador()
             case _:
                 raise ValueError(f"El comportamiento '{tipo}' no existe")
