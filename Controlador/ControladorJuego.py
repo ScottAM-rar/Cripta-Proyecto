@@ -1,22 +1,27 @@
-from DTO.EstadoJuegoDTO import EstadoJuego
 from DTO.EventoDTO import EventoDTO
-from Logica.EstadoJuegoLogica import EstadoJuegoLogica
+from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
 from Controlador.Vista import VistaConsola
 
 class ControladorJuego:
-    def __init__(self, estado_juego: EstadoJuego):
-        self.estado_juego = estado_juego
-        self.juego_logica = EstadoJuegoLogica(self.estado_juego)
+    def __init__(self, servicio: EstadoJuegoServicio):
+        self.servicio = servicio
         self.vista = VistaConsola()
 
     def iniciar(self):
-        print("¡Bienvenido a Cripta!")
+        print("\n¡Bienvenido a Cripta!")
         
         while True:
-            sala_actual = self.obtener_sala_actual_del_jugador()
+            # Obtenemos el jugador y su sala actual de forma dinámica a través del servicio
+            jugador = self.servicio.getJudador()
+            if not jugador:
+                print("Error: No se pudo obtener el estado del jugador.")
+                break
+                
+            sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
             
-            # 1. Mostramos la sala, objetos, enemigos y trampas reales
-            self.vista.mostrar_juego(self.estado_juego, sala_actual)
+            # Mostramos el estado visual actual usando la Vista
+            
+            self.vista.mostrar_juego(jugador, sala_actual)
 
             accion = input("\n¿Qué deseas hacer? (norte/sur/este/oeste, recoger [objeto], atacar, abrir, salir): ").strip().lower()
 
@@ -24,42 +29,67 @@ class ControladorJuego:
                 print("Cerrando el juego...")
                 break
 
-            # 2. Convertimos la entrada de texto directamente en un EventoDTO 
-            # que respeta los casos exactos del GestorEventos 
-            evento = self._mapear_entrada_a_evento(accion, sala_actual)
 
-            if evento:
-                # 3. Se lo pasamos a la lógica del estado (que usa el RelojVirtual y el GestorEventos)
-                resultado = self.juego_logica.accionJugador(evento)
-                
+            # Mapeamos la entrada del usuario a un EventoDTO oficial
+            evento = self._mapear_entrada_a_evento(accion, sala_actual, jugador)
 
-    def _mapear_entrada_a_evento(self, accion: str, sala_actual) -> EventoDTO | None:
-        jugador = self.estado_juego.jugador
-        
+            if evento == "IGNORAR":
+                continue  # Vuelve a empezar el turno limpiamente sin hacer nada
+            elif evento:
+                self.servicio.accionJugador(evento)
+            else:
+                print("Acción no reconocida o comando inválido.")
+
+    def _mapear_entrada_a_evento(self, accion: str, sala_actual, jugador) -> EventoDTO | None:
         # Movimiento de salas
         if accion in ["norte", "sur", "este", "oeste"]:
             return EventoDTO(
                 tiempo_ejecucion=10,
-                id_secuencia=0, # El reloj se encarga de esto
+                id_secuencia=0,
                 actor=jugador,
                 tipo_accion="MOVER_JUGADOR",
                 datos_extra=[sala_actual, accion]
             )
             
-        # Atacar al primer enemigo disponible en la sala
+        # Atacar a un enemigo seleccionado
         elif accion == "atacar":
-            if sala_actual.enemigos:
-                objetivo = sala_actual.enemigos[0]
-                return EventoDTO(
-                    tiempo_ejecucion=10,
-                    id_secuencia=0,
-                    actor=jugador,
-                    tipo_accion="ATACAR",
-                    datos_extra=[objetivo]
-                )
-            else:
+            if not sala_actual.enemigos:
                 print("No hay enemigos aquí para atacar.")
                 return None
+            
+            if len(sala_actual.enemigos) == 1:
+                objetivo = sala_actual.enemigos[0]
+            else:
+                print("\n¿A cuál enemigo deseas atacar?")
+                for i, enm in enumerate(sala_actual.enemigos):
+                    print(f"  [{i+1}] {enm.nombre} (Vida: {enm.vida_actual}/{enm.vida_max})")
+                
+                try:
+                    opcion = int(input("Selecciona el número del objetivo: ")) - 1
+                    if 0 <= opcion < len(sala_actual.enemigos):
+                        objetivo = sala_actual.enemigos[opcion]
+                    else:
+                        print("Número de enemigo inválido.")
+                        return None
+                except ValueError:
+                    print("Por favor ingresa un número válido.")
+                    return None
+                
+            print(f"[DEBUG] Atacando a {objetivo.nombre} con vida: {objetivo.vida_actual}")
+
+            # 1. PRIMERO validamos si está muerto ANTES de crear cualquier DTO de ataque
+            if objetivo.vida_actual <= 0:
+                print(f"¡{objetivo.nombre} ya está derrotado!")
+                return "IGNORAR"
+
+            # 2. SOLO SI ESTÁ VIVO, armamos y retornamos el EventoDTO
+            return EventoDTO(
+                tiempo_ejecucion=10,
+                id_secuencia=0,
+                actor=jugador,
+                tipo_accion="ATACAR",
+                datos_extra=[objetivo]
+            )
                 
         # Abrir puerta bloqueada
         elif accion == "abrir":
@@ -72,12 +102,11 @@ class ControladorJuego:
                 datos_extra=[sala_actual, direccion]
             )
             
-        # Recoger objeto del suelo
+        # Recoger objeto
         elif accion.startswith("recoger"):
             partes = accion.split(maxsplit=1)
             if len(partes) > 1 and sala_actual.objetos:
                 busqueda = partes[1].lower()
-                # Buscamos si coincide de manera parcial (ej: escribir 'antorcha' encuentra 'itm_antorcha')
                 obj_encontrado = next((obj for obj in sala_actual.objetos if busqueda in str(obj).lower()), None)
                 if obj_encontrado:
                     return EventoDTO(
@@ -87,19 +116,7 @@ class ControladorJuego:
                         tipo_accion="RECOGER_OBJETO",
                         datos_extra=[obj_encontrado]
                     )
-            print("Ese objeto no se encontró en la sala.")
+            print("Objeto no especificado o no disponible en la sala.")
             return None
 
         return None
-
-    def obtener_sala_actual_del_jugador(self):
-        # Obtenemos el ID de la sala en la que se encuentra el jugador actualmente
-        id_sala_jugador = self.estado_juego.jugador.id_sala_actual
-        
-        # Buscamos en la lista de salas del estado del juego
-        for sala in self.estado_juego.salas:
-            if sala.id == id_sala_jugador:
-                return sala
-                
-        # Por seguridad, si no la encuentra, devuelve la primera
-        return self.estado_juego.salas[0]

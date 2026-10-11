@@ -1,9 +1,11 @@
 
 class VistaConsola:
-    def mostrar_juego(self, estado_juego, sala_actual):
+   
+   def mostrar_juego(self, jugador, sala_actual):
+        
         print("\n" + "="*50)
         print(f"SALA: {sala_actual.nombre} (ID: {sala_actual.id})")
-        print(f"VIDA JUGADOR: {estado_juego.jugador.vida_actual}/{estado_juego.jugador.vida_max}")
+        print(f"VIDA JUGADOR: {jugador.vida_actual}/{jugador.vida_max}")
         
         print("\n--- SALIDAS ---")
         for salida in sala_actual.salidas:
@@ -13,9 +15,13 @@ class VistaConsola:
         print("\n--- OBJETOS EN LA SALA ---")
         if sala_actual.objetos:
             for obj in sala_actual.objetos:
-                # Limpiamos el prefijo 'itm_' y formateamos el texto bonito
-                nombre_limpio = str(obj).replace("itm_", "").replace("_", " ").capitalize()
-                print(f"  - {nombre_limpio} (ID: {obj})")
+                # Verificamos si el objeto es una instancia con atributos DTO
+                if hasattr(obj, 'nombre') and hasattr(obj, 'id_catalogo'):
+                    print(f"  - {obj.nombre.capitalize()} (ID: {obj.id_catalogo})")
+                else:
+                    # Por si acaso viene como texto plano
+                    nombre_limpio = str(obj).replace("itm_", "").replace("_", " ").capitalize()
+                    print(f"  - {nombre_limpio} (ID: {obj})")
         else:
             print("  (No hay objetos)")
             
@@ -29,9 +35,17 @@ class VistaConsola:
         print("\n--- TRAMPAS ---")
         if sala_actual.trampas:
             for trampa in sala_actual.trampas:
-                # Mostramos los atributos limpios de tu DTO Trampa
-                estado_t = "Armada" if trampa.armada else "Desarmada"
-                print(f"  - {trampa.id_catalogo.capitalize()} [Daño: {trampa.daño}] - Estado: {estado_t}")
+                # Verificamos si la trampa tiene un atributo de nombre o id_catalogo
+                nombre_trampa = getattr(trampa, 'nombre', None)
+                if not nombre_trampa and hasattr(trampa, 'id_catalogo'):
+                    # Limpiamos el id_catalogo (ej: 'trp_dardos' -> 'Dardos')
+                    nombre_trampa = str(trampa.id_catalogo).replace("trp_", "").replace("_", " ").capitalize()
+                elif not nombre_trampa:
+                    nombre_trampa = "Trampa desconocida"
+
+                estado_t = "Armada" if getattr(trampa, 'armada', True) else "Desarmada"
+                daño = getattr(trampa, 'daño', 0)
+                
+                print(f"  - {nombre_trampa} [Daño: {daño}] - Estado: {estado_t}")
         else:
             print("  (Sin trampas)")
-        print("="*50)
