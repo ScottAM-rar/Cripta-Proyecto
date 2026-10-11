@@ -29,9 +29,9 @@ class JugadorLogica(ActorLogica):
             return ResultadoEventoDTO(False, str(e))
         return ResultadoEventoDTO(True, f"El jugador ha recogido el objeto {objeto.nombre}")
 
-    def soltarObjeto(self):
+    def soltarObjeto(self, salaActual: SalaDTO):
         try:
-            self.jugador.inventario.soltar_objeto_actual()
+            salaActual.objetos.append(self.jugador.inventario.soltar_objeto_actual())
         except ValueError as e:
             return ResultadoEventoDTO(False, str(e))
         return ResultadoEventoDTO(True, f"El jugador ha soltado el objeto {self.jugador.inventario.actual.objeto.nombre}")

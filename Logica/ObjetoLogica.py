@@ -6,7 +6,7 @@ from Logica.RelojVirtual import RelojVirtual
 from Logica.PergaminoLogica import PergaminoLogica
 
 class ObjetoLogica:
-    def __init__(self, jugador: JugadorDTO, pergamino_logica: PergaminoLogica):
+    def __init__(self, jugador: JugadorDTO, pergamino_logica: PergaminoLogica | None = None):
         self.jugador = jugador 
         self.pergamino_logica = pergamino_logica
 
