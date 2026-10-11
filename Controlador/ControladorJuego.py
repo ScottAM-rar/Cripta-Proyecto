@@ -75,7 +75,7 @@ class ControladorJuego:
                     print("Por favor ingresa un número válido.")
                     return None
                 
-            print(f"[DEBUG] Atacando a {objetivo.nombre} con vida: {objetivo.vida_actual}")
+            
 
             # 1. PRIMERO validamos si está muerto ANTES de crear cualquier DTO de ataque
             if objetivo.vida_actual <= 0:
