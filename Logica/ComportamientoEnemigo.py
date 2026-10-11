@@ -6,5 +6,5 @@ from Logica.SalasLogica import SalaLogica
 class ComportamientoEnemigo(ABC):
     @staticmethod
     @abstractmethod
-    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO]) -> str:
+    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], semilla: int = None) -> str:
         pass

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from Logica.RelojVirtual import RelojVirtual
-from DTO.ActorDTO import JugadorDTO, EnemigoDTO
+from DTO.ActorDTO import JugadorDTO
 from DTO.CatalogoDTO import EnemigoCatalogoDTO
 from DTO.SalaDTO import SalaDTO
 
@@ -21,4 +21,3 @@ class EstadoJuego:
     
     # Estado dinámico de la partida
     salas: list[SalaDTO] = field(default_factory=list)
-    enemigos_vivos: list[EnemigoDTO] = field(default_factory=list)

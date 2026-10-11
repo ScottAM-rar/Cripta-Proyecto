@@ -28,7 +28,10 @@ class ActorLogica:
         
         return respuesta
     @staticmethod
-    def _atacar(actor: ActorDTO, enemigo : ActorDTO):
-        azar = random.Random()
+    def _atacar(actor: ActorDTO, enemigo : ActorDTO, semilla : int =  None):
+        if semilla is None:
+            azar = random.Random()
+        else:
+            azar = random.Random(semilla)
         daño = max(1,actor.ataque+azar.randint(0,4) - enemigo.defensa)
         enemigo.vida_actual-=daño   

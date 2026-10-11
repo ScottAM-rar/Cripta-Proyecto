@@ -15,7 +15,7 @@ class ActorDTO:
     velocidad: int
     id_sala_actual: int = field(default=0, kw_only=True)
 
-#TODO agregar un estado de veneno, no se sabe todavía si un booleano o interger 
+
 @dataclass
 class JugadorDTO(ActorDTO):
     """DTO con la información inicial y límites del jugador."""
@@ -24,7 +24,8 @@ class JugadorDTO(ActorDTO):
     id_sala_actual: int = 0
     armadura: Armadura | None = None
     arma: Arma | None = None
-    
+    veneno: bool = False
+
     def __post_init__(self,inventario_max: int):
         self.inventario = InventarioLogica(inventario_max)
 

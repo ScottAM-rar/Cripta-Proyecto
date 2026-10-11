@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from collections import deque
 from  DTO.ActorDTO import EnemigoDTO
+from DTO.TrampaDTO import Trampa
 
 class Direccion(str, Enum):
     NORTE = "norte"
@@ -21,12 +22,6 @@ class SalidaDTO:
     cierre_automatico: int | None = None # Tiempo virtual de re-cierre si aplica[cite: 1]
 
 
-@dataclass
-class TrampaDTO:
-    """DTO para una instancia concreta de trampa en la sala."""
-    id_instancia: str                  # Ej: "t-17"[cite: 1]
-    tipo: str                          # Ej: "trp_dardos"[cite: 1]
-
 
 @dataclass
 class SalaDTO:
@@ -37,5 +32,5 @@ class SalaDTO:
     salidas: deque[SalidaDTO] = field(default_factory=lambda: deque(maxlen=4))
     enemigos: list[EnemigoDTO] = field(default_factory=list) # Reutiliza el DTO de enemigos TODO revisar si es el mejor tipo de arreglo
     objetos: list[str] = field(default_factory=list)          # IDs de catálogo en el suelo (ej: "itm_antorcha")[cite: 1] TODO revisar si es el mejor tipo de arreglo
-    trampas: list[TrampaDTO] = field(default_factory=list) # TODO revisar si es el mejor tipo de arreglo
+    trampas: list[Trampa] = field(default_factory=list) # TODO revisar si es el mejor tipo de arreglo
     ultimo_paso: int  = 0     # Rastro del tiempo virtual de la última visita del jugador[cite: 1]

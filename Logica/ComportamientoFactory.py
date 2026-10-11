@@ -13,3 +13,5 @@ class ComportamientoFactory:
                 return ComportamientoErrante()
             case "RASTREADOR":
                 return ComportamientoRastreador()
+            case _:
+                raise ValueError(f"El comportamiento '{tipo}' no existe")

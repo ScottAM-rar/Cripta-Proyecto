@@ -9,6 +9,15 @@
             "cwd": "${workspaceFolder}",
             "python": "${workspaceFolder}/venv/bin/python",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Depurar laboratorio",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "tests_labs.laboratorio",
+            "cwd": "${workspaceFolder}",
+            "python": "${workspaceFolder}/venv/bin/python",
+            "console": "integratedTerminal"
         }
     ]
 }
