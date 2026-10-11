@@ -100,7 +100,7 @@ class InventarioLogica:
         return ordenar_adaptativo(objetos, key=lambda obj: getattr(obj, criterio))  # Ordena la lista de objetos segun el criterio dado
     
     def _desenlazar_nodos(self, nodo: NodoInventario):
-        """Saca el nodo de la lista arreglando los enlaces de sus vecinos, este metodo es privado"""
+        """Saca el nodo de la lista arreglando los enlaces de sus vecinos"""
         if nodo.anterior is not None: #Si el nodo no es el primero en la lista
             nodo.anterior.siguiente = nodo.siguiente
         else: # Si el nodo sí es el primero en la lista
@@ -124,7 +124,7 @@ class InventarioLogica:
         return None  # No se encontro el objeto en la lista
     
     def _reenlazar_nodo(self, nodo, anterior, siguiente) -> None:
-        """Reenlaza un nodo en la lista, este metodo es privado"""
+        """Reenlaza un nodo en la lista"""
         nodo.anterior, nodo.siguiente = anterior, siguiente
         if anterior is not None:
             anterior.siguiente = nodo
@@ -139,6 +139,6 @@ class InventarioLogica:
         self.cantidad_actual += 1 
         
     def _mover_entre(self, nodo, anterior, siguiente) -> None:
-        """Mueve un nodo entre dos nodos dados, este metodo es privado"""
+        """Mueve un nodo entre dos nodos dados"""
         self._desenlazar_nodos(nodo)
         self._reenlazar_nodo(nodo, anterior, siguiente)
