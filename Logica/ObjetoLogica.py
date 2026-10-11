@@ -38,7 +38,11 @@ class ObjetoLogica:
                 
     def _consumir(self, objeto: Objeto):
         """Consume el objeto del inventario del jugador y lo manda a eliminar."""
-        self.jugador.inventario.eliminar_objeto_utilizado(objeto)
+        objeto_buscado = self.jugador.inventario.buscar_objeto(objeto)
+        if objeto_buscado is None:
+            raise ValueError("El objeto no se encuentra en el inventario del jugador.")
+        self.jugador.inventario.eliminar_objeto_utilizado(objeto_buscado.objeto)
+        
     
     def _aplicar_pocion(self, pocion: Pocion, reloj: RelojVirtual):
         """Aplica los efectos de la pocion al jugador."""
@@ -82,7 +86,3 @@ class ObjetoLogica:
         elif isinstance(objeto, Armadura): #Lo hice con elif por la posibilidad de meter por ejemplo, un baston magico.
             self.jugador.armadura = objeto
             
-    #TODO: Ver si ObjetoLogica recibe el reloj al construirse o se pasa por parametro
-    #TODO: falta implementar .antorcha_encendida y envenenado en el jugador, y que se revierta el efecto de la pocion de velocidad.
-    #TODO: ver si se queda la antorcha encendida como booleano, bonus velocidad como un int en JugadorDTO en (ActorDTO) o otra implementacion 
-    #TODO: Ver si encolar esta realmente bien implementao porque esa vaina esta en blanco.
