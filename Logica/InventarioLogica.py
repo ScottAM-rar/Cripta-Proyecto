@@ -88,6 +88,11 @@ class InventarioLogica:
         if nodo_actual is self.cabeza:
             return nodo_actual.objeto  # Ya está equipado, no hacer nada
 
+        self._desenlazar_nodos(nodo_actual)
+        self._reenlazar_nodo(nodo_actual, None, self.cabeza)
+        self.actual = nodo_actual
+        return nodo_actual.objeto
+
     def equipar_objeto_por_retroceso(self, objeto: Objeto):
         """Mueve el objeto indicado al principio de la lista, indicando que esta equipado"""
         if self.cabeza is None:
