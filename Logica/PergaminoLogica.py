@@ -12,15 +12,28 @@ class PergaminoLogica:
 
     def hay_algo_para_deshacer(self) -> bool:
         """Verifica si hay acciones registradas en el historial de retroceso."""
+        return self.retroceso_logica.hay_algo_para_deshacer()
 
     def usar_pergamino(self) -> ResultadoEventoDTO:
         """Aplica los efectos del pergamino al jugador."""
+        if not self.hay_algo_para_deshacer():
+            return ResultadoEventoDTO(exito=False, mensaje="No hay nada que retroceder.")
+            #return ResultadoEventoDTO(exito=False, mensaje="No hay nada que retroceder.", cambios=[])
+        
+        self._revertir()
+        #cambios = self._revertir()
+        return ResultadoEventoDTO(exito=True, mensaje="Se han revertido los cambios hasta la última acción registrada.")
+        #return ResultadoEventoDTO(exito=True, mensaje="Se han revertido los cambios hasta la última acción registrada.", cambios=cambios)
     
-    def _revertir(self, cambio: CambioDTO) -> None:
+    def _revertir(self) -> list[CambioDTO]:
         """Revertir los efectos de un delta en el jugador."""
-        lista_cambios = self.retroceso_logica.obtener_cambios_retroceso()
-        for cambio in lista_cambios:
-            self._revertir_cambio(cambio)
+        lista_cambios = self.retroceso_logica.obtener_cambios_retroceso() # lista de cambios (cada una con 1 o 2 CambioDTO)
+        cambios_revertidos = []
+        for cambios in lista_cambios:
+            for cambio in reversed(cambios):
+                self._revertir_cambio(cambio)
+                cambios_revertidos.append(cambio)
+        return cambios_revertidos
 
     def _revertir_cambio(self, cambio: CambioDTO) -> None:
         """Revertir los efectos de un delta en el jugador."""
@@ -91,6 +104,3 @@ class PergaminoLogica:
                 
             case _:
                 raise ValueError(f"Tipo de acción desconocido: {cambio.tipo_accion}")
-        
-    
-    

@@ -32,6 +32,7 @@ class ObjetoLogica:
             case PergaminoRetroceso():
                 if not self.pergamino_logica.hay_algo_para_deshacer():
                     resultado.exito, resultado.mensaje = False, "No hay acciones para deshacer."
+                    return resultado
                 self._consumir(objeto)
                 return self.pergamino_logica.usar_pergamino()
             case Llave():

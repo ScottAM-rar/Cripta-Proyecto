@@ -30,6 +30,9 @@ class RetrocesoLogica:
         self.tiempo_inicio_accion = self.reloj.tiempo_actual() if self.reloj else None
         
     def registrar_cambio(self, cambio: list[CambioDTO]):
+        if not 1 <= len(cambio) <= 2:
+            raise ValueError("Un cambio debe contener al menos un cambio y como maximo dos cambios.")
+        
         inicia_accion = self.accion_pendiente
         
         if inicia_accion:
@@ -38,9 +41,12 @@ class RetrocesoLogica:
             self.cantidad_acciones += 1
             self.accion_pendiente = False
             
-            for c in cambio:
-                c.tiempo_ejecucion = self.reloj.tiempo_actual() if self.reloj else 0
-            self.tiempo_inicio_accion = cambio[0].tiempo_ejecucion
+        if self.cantidad_acciones == 0:
+            return 
+        
+        for c in cambio:
+            c.tiempo_ejecucion = self.reloj.tiempo_actual() if self.reloj else 0
+        self.tiempo_inicio_accion = cambio[0].tiempo_ejecucion
             
         if self.cantidad_acciones == 0:
             return
@@ -115,6 +121,8 @@ class RetrocesoLogica:
             cambios.append(self.pop())
             if nodo.es_accion:   
                 break
+        self.actual = self.cola
+        self.cantidad_acciones -= 1
         return cambios
 
     def pop(self):
@@ -128,8 +136,12 @@ class RetrocesoLogica:
         else:
             self.cabeza = None
         self.cantidad_actual -= 1
+        self.actual = self.cola
         return nodo.objeto
         
+    def hay_algo_para_deshacer(self) -> bool:
+        """Verifica si hay acciones registradas en el historial de retroceso."""
+        return self.cantidad_acciones > 0
 
     def reiniciar(self):
         self.cabeza = None
