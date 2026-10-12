@@ -1,46 +1,140 @@
-from collections import deque 
-from DTO.DeltaDTO import DeltaDTO
+from DTO.CambioDTO import CambioDTO
+from Logica.NodoCambio import NodoCambio
+from Logica.RelojVirtual import RelojVirtual
 
 class RetrocesoLogica:
     MAX_HISTORIAL = 5
+    _instancia = None
     
-    def __init__(self):
-        self._entradas = [None] * self.MAX_HISTORIAL  # Lista circular para almacenar las entradas
-        self._inicio = 0  
-        self._cantidad = 0
-        self._nueva_accion = False
-        
-    def nueva_accion(self) -> None:
-        """Marca que se ha realizado una nueva accion, lo que permite registrar un nuevo delta."""
-        self._nueva_accion = True
+    def __new__(cls):
+        if cls._instancia is None:
+            cls._instancia = super().__new__(cls)
+        return cls._instancia
     
-    def registrar_accion(self, delta: DeltaDTO):
-        if self._nueva_accion:
-            self._abrir_nueva_entrada()
-            self._nueva_accion
-        elif self._cantidad == 0:
+    def __init__(self, reloj: RelojVirtual | None = None):
+        if getattr(self, "_inicializado", False):
             return
-        self._entradas[self._ultima()].append(delta)
         
-    def _abrir_nueva_entrada(self):
-        if self._cantidad < self.MAX_HISTORIAL:
-            posicion = (self._inicio + self._cantidad) % self.MAX_HISTORIAL
-            self._cantidad += 1
-        else:
-            posicion = self._inicio
-            self._inicio = (self._inicio + 1) % self.MAX_HISTORIAL
-        self._entradas[posicion] = []
+        self.cabeza = None
+        self.cola = None
+        self.actual = None
+        self.reloj = reloj
+        self.cantidad_actual = 0
+        self.cantidad_acciones = 0
+        self._inicializado = True 
+        self.accion_pendiente = False  # Indica si se ha iniciado una nueva accion
         
-    def _ultima(self) -> int:
-        return (self._inicio + self._cantidad - 1) % self.MAX_HISTORIAL    
 
-    def hay_acciones_para_deshacer(self) -> bool:
-        return self._cantidad > 0 
+    def nueva_accion(self):
+        self.accion_pendiente = True
+        self.tiempo_inicio_accion = self.reloj.tiempo_actual() if self.reloj else None
         
-    def deshacer_accion(self) -> DeltaDTO | None:
-        if self._cantidad == 0:
+    def registrar_cambio(self, cambio: list[CambioDTO]):
+        inicia_accion = self.accion_pendiente
+        
+        if inicia_accion:
+            if self.cantidad_acciones >= self.MAX_HISTORIAL:
+                self._eliminar_accion_mas_antigua()
+            self.cantidad_acciones += 1
+            self.accion_pendiente = False
+            
+            for c in cambio:
+                c.tiempo_ejecucion = self.reloj.tiempo_actual() if self.reloj else 0
+            self.tiempo_inicio_accion = cambio[0].tiempo_ejecucion
+            
+        if self.cantidad_acciones == 0:
+            return
+        
+        nuevo = NodoCambio(cambio, inicia_accion)
+        self.agregar_al_final(nuevo)
+        self.cantidad_actual += 1
+        
+    def agregar_al_final(self, nodo: NodoCambio):
+        if self.cabeza is None:
+            self.cabeza = nodo
+            self.cola = nodo
+            self.actual = nodo
+        else:
+            nodo.anterior = self.cola
+            self.cola.siguiente = nodo
+            self.cola = nodo
+            
+
+    def _eliminar_accion_mas_antigua(self):
+        if self.cabeza is None:
+            return
+        
+        nodo = self.cabeza
+        while nodo is not None:
+            siguiente = nodo.siguiente
+            fin = siguiente is None or siguiente.es_accion
+            self.cabeza = siguiente
+            self.cantidad_actual -= 1
+            if siguiente is not None:
+                siguiente.anterior = None
+            if fin:
+                break
+            nodo = siguiente
+        if self.cabeza is None:
+            self.cola = None
+            self.actual = None
+        self.cantidad_acciones -= 1
+        
+    def deshacer_accion(self):
+        if self.cantidad_acciones == 0:
+            return []
+        
+        cambios = []
+        while self.cola is not None:
+            nodo = self.cola
+            cambios.append(nodo.objeto)
+            
+            self.cola = nodo.anterior
+            
+            if self.cola is not None:
+                self.cola.siguiente = None
+            else:
+                self.cabeza = None
+                
+            self.cantidad_actual -= 1
+            if nodo.es_accion:
+                break
+        self.actual = self.cola
+        self.cantidad_acciones -= 1
+        return cambios
+        
+    def obtener_cambios_retroceso(self):
+        """Devuelve una lista de cambios que se pueden revertir, hasta el inicio de la ultima accion registrada."""
+        if self.cantidad_acciones == 0:
+            return []
+        cambios = []
+        while True:
+            nodo = self.cola
+            if nodo is None:
+                break
+            cambios.append(self.pop())
+            if nodo.es_accion:   
+                break
+        return cambios
+
+    def pop(self):
+        """Comportamiento de pila, elimina el ultimo agregado"""
+        if self.cola is None:
             return None
-        posicion = self._ultima()
-        entrada, self._entradas[posicion] = self._entradas[posicion], None
-        self._cantidad -= 1
-        return entrada
+        nodo = self.cola
+        self.cola = nodo.anterior
+        if self.cola is not None:
+            self.cola.siguiente = None
+        else:
+            self.cabeza = None
+        self.cantidad_actual -= 1
+        return nodo.objeto
+        
+
+    def reiniciar(self):
+        self.cabeza = None
+        self.cola = None
+        self.actual = None
+        self.cantidad_actual = 0
+        self.cantidad_acciones = 0
+        self.accion_pendiente = False

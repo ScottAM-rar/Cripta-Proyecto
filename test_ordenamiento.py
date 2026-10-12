@@ -1,5 +1,10 @@
 from Controlador.ordenamiento import ordenar_adaptativo
+from DTO.ActorDTO import JugadorDTO, EnemigoDTO
+from DTO.CambioDTO import CambioDTO
+from DTO.SalaDTO import SalaDTO
 from Logica.InventarioLogica import InventarioLogica
+from Logica.PergaminoLogica import PergaminoLogica
+from Logica.RetrocesoLogica import RetrocesoLogica
 
 # Clase simulada de un objeto del juego para la prueba
 class ObjetoInventarioMock:
@@ -194,6 +199,61 @@ def probar_vista_ordenada_no_altera_el_orden_actual():
     except ValueError as e:
         print(f"Criterio invalido lanza error correctamente: {e}")
     
+def probar_retroceso_mover_enemigo():
+    print("\n=== PRUEBA DE RETROCESO PARA MOVIMIENTO DE ENEMIGO ===")
+    salida_anterior = SalaDTO(id=1, nombre="Sala anterior")
+    salida_nueva = SalaDTO(id=2, nombre="Sala nueva")
+    enemigo = EnemigoDTO(
+        vida_actual=30,
+        vida_max=30,
+        ataque=5,
+        defensa=2,
+        velocidad=3,
+        id_instancia="e1",
+        tipo="esqueleto",
+        nombre="Esqueleto",
+        comportamiento="errante",
+    )
+    enemigo.id_sala_actual = 2
+    salida_anterior.enemigos = []
+    salida_nueva.enemigos = [enemigo]
+
+    cambio = CambioDTO(
+        tipo_accion="MOVER",
+        objeto_afectado=enemigo,
+        valor_anterior=salida_anterior,
+        valor_nuevo=salida_nueva,
+    )
+
+    PergaminoLogica(RetrocesoLogica())._revertir_cambio(cambio)
+
+    assert enemigo.id_sala_actual == salida_anterior.id
+    assert enemigo in salida_anterior.enemigos
+    assert enemigo not in salida_nueva.enemigos
+    print("Retroceso de movimiento de enemigo finalizado.")
+
+
+def probar_retroceso_recojer_objeto():
+    print("\n=== PRUEBA DE RETROCESO PARA RECOGER OBJETO ===")
+    jugador = JugadorDTO(100, 100, 10, 5, 3, inventario_max=3)
+    sala = SalaDTO(id=4, nombre="Sala con item")
+    objeto = type("ObjetoPrueba", (), {"nombre": "Llave"})()
+    jugador.inventario.agregar_objeto(objeto)
+
+    cambio = CambioDTO(
+        tipo_accion="RECOGER_OBJETO",
+        objeto_afectado=jugador,
+        valor_anterior=sala,
+        elemento=objeto,
+    )
+
+    PergaminoLogica(RetrocesoLogica())._revertir_cambio(cambio)
+
+    assert jugador.inventario.buscar_objeto(objeto) is None
+    assert objeto in sala.objetos
+    print("Retroceso de recoger objeto finalizado.")
+
+
 def probar_todas_las_funciones():
     probar_ordenamiento()
     probar_inventario()
@@ -202,6 +262,8 @@ def probar_todas_las_funciones():
     probar_soltar_objeto()
     probar_equipar_objeto()
     probar_vista_ordenada_no_altera_el_orden_actual()
+    probar_retroceso_mover_enemigo()
+    probar_retroceso_recojer_objeto()
         
         
 if __name__ == "__main__":

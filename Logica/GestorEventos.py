@@ -1,6 +1,5 @@
 from unittest import case
 
-from DTO.DeltaDTO import DeltaDTO
 from collections.abc import Callable
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import *
