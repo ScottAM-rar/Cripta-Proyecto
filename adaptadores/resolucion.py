@@ -16,9 +16,12 @@ _CLASES_OBJETO = {
 }
  
  
-def resolver_objeto(ficha: dict) -> Objeto:
+def resolver_objeto(ficha: dict, id_sala: int | None = None) -> Objeto:
     """Convierte una entidad cruda del catálogo (de tipo objeto) en la
-    instancia de DTO correspondiente, según su campo 'clase'."""
+    instancia de DTO correspondiente, según su campo 'clase'.
+ 
+    `id_sala` es la sala donde está el objeto en el suelo. Es opcional: un
+    objeto que lleva el jugador en el inventario no está en ninguna sala."""
     clase = ficha["clase"]
     Clase = _CLASES_OBJETO.get(clase)
     if Clase is None:
@@ -27,6 +30,8 @@ def resolver_objeto(ficha: dict) -> Objeto:
     datos = dict(ficha)
     datos["id_catalogo"] = datos.pop("id")
     datos.pop("clase")
+    if id_sala is not None:
+        datos["id_sala"] = id_sala
  
     return Clase(**datos)
  
@@ -127,7 +132,7 @@ def _armar_sala(contenido: dict, fichas: list[dict], numero_sala: int):
  
     objetos = []
     for id_objeto in contenido["objetos"]:
-        objetos.append(resolver_objeto(_buscar_ficha(fichas, id_objeto)))
+        objetos.append(resolver_objeto(_buscar_ficha(fichas, id_objeto), numero_sala))
  
     trampas = []
     for colocacion in contenido["trampas"]:
