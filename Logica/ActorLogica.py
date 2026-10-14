@@ -34,4 +34,6 @@ class ActorLogica:
         else:
             azar = random.Random(semilla)
         daño = max(1,actor.ataque+azar.randint(0,4) - enemigo.defensa)
-        enemigo.vida_actual-=daño   
+        enemigo.vida_actual-=daño
+        if enemigo.vida_actual < 0:
+            enemigo.vida_actual = 0   
