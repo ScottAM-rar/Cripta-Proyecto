@@ -218,14 +218,15 @@ def probar_retroceso_mover_enemigo():
     salida_anterior.enemigos = []
     salida_nueva.enemigos = [enemigo]
 
+    salas = [None, salida_anterior, salida_nueva]
     cambio = CambioDTO(
         tipo_accion="MOVER",
         objeto_afectado=enemigo,
-        valor_anterior=salida_anterior,
-        valor_nuevo=salida_nueva,
+        valor_anterior=salida_anterior.id,
+        valor_nuevo=salida_nueva.id,
     )
 
-    PergaminoLogica(RetrocesoLogica())._revertir_cambio(cambio)
+    PergaminoLogica(RetrocesoLogica(), salas)._revertir_cambio(cambio)
 
     assert enemigo.id_sala_actual == salida_anterior.id
     assert enemigo in salida_anterior.enemigos
@@ -240,14 +241,15 @@ def probar_retroceso_recojer_objeto():
     objeto = type("ObjetoPrueba", (), {"nombre": "Llave"})()
     jugador.inventario.agregar_objeto(objeto)
 
+    salas = [None, None, None, None, sala]
     cambio = CambioDTO(
         tipo_accion="RECOGER_OBJETO",
         objeto_afectado=jugador,
-        valor_anterior=sala,
+        valor_anterior=sala.id,
         elemento=objeto,
     )
 
-    PergaminoLogica(RetrocesoLogica())._revertir_cambio(cambio)
+    PergaminoLogica(RetrocesoLogica(), salas)._revertir_cambio(cambio)
 
     assert jugador.inventario.buscar_objeto(objeto) is None
     assert objeto in sala.objetos

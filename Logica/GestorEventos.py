@@ -13,6 +13,7 @@ from Logica.EnemigosLogica import EnemigoLogica
 from Logica.SalasLogica import SalaLogica
 from Logica.TrampaLogica import TrampaLogica# from Logica.RetrocesoLogica import RetrocesoLogica
 from Logica.ObjetoLogica import ObjetoLogica
+from Logica.PergaminoLogica import PergaminoLogica
 #Aquí van a ir TODOS los eventos que se pueden manejar, para hacer un acción se va a consultar aquí
 
 
@@ -26,7 +27,11 @@ class GestorEventos:
         self.cargar_sala = cargar_sala
         # Inyección de dependencias de la capa de lógica
         self.jugador_logica = JugadorLogica(jugador, semilla)
-        self.objeto_logica = ObjetoLogica(jugador)
+        self.pergamino_logica = PergaminoLogica(
+            self.jugador_logica.retroceso,
+            salas,
+        )
+        self.objeto_logica = ObjetoLogica(jugador, self.pergamino_logica)
         self.salas_logica = SalaLogica(None)
         self.enemigo_logica = EnemigoLogica(None,semilla)
 
@@ -80,7 +85,8 @@ class GestorEventos:
                 objeto: Objeto = evento.datos_extra[0]
                 if not isinstance(objeto, Objeto):
                     raise TypeError("El objeto a recoger debe ser una instancia de Objeto")
-                return self.jugador_logica.recogerObjeto(objeto)
+                sala_actual = self.salas[jugador.id_sala_actual]
+                return self.jugador_logica.recogerObjeto(objeto, sala_actual)
 
             case "SOLTAR_OBJETO":
                 self._validar_actor_jugador(evento)

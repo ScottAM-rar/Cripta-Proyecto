@@ -7,8 +7,9 @@ from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.RetrocesoLogica import RetrocesoLogica
 
 class PergaminoLogica:
-    def __init__(self, retroceso_logica: RetrocesoLogica):
+    def __init__(self, retroceso_logica: RetrocesoLogica, salas: list[SalaDTO]):
         self.retroceso_logica = retroceso_logica
+        self.salas = salas
 
     def hay_algo_para_deshacer(self) -> bool:
         """Verifica si hay acciones registradas en el historial de retroceso."""
@@ -41,23 +42,24 @@ class PergaminoLogica:
             case "ACTUALIZAR_VIDA":
                 cambio.objeto_afectado.vida_actual = cambio.valor_anterior
             case "MOVER":
-                cambio.objeto_afectado.id_sala_actual = cambio.valor_anterior.id
+                sala_anterior = self.salas[cambio.valor_anterior]
+                
+                cambio.objeto_afectado.id_sala_actual = sala_anterior.id
                 if isinstance(cambio.objeto_afectado, EnemigoDTO):
-                    sala: SalaDTO = cambio.valor_anterior
-                    sala.enemigos.append(cambio.objeto_afectado)
-                    sala = cambio.valor_nuevo
-                    sala.enemigos.remove(cambio.objeto_afectado)
+                    sala_nueva = self.salas[cambio.valor_nuevo]
+                    sala_anterior.enemigos.append(cambio.objeto_afectado)
+                    sala_nueva.enemigos.remove(cambio.objeto_afectado)
             case "RECOGER_OBJETO": # Revertir la acción de recoger un objeto, lo deja en la sala donde se recogio y se suelta desde el inventario
                 jugador: JugadorDTO = cambio.objeto_afectado
                 objeto: Objeto = cambio.elemento
                 jugador.inventario.eliminar_objeto_por_retroceso(objeto)
-                sala = cambio.valor_anterior
+                sala = self.salas[cambio.valor_anterior]
                 sala.objetos.append(objeto)
                 
             case "SOLTAR_OBJETO": # Revertir la acción de soltar un objeto, lo quita de la sala y lo devuelve al inventario del jugador
                 jugador: JugadorDTO = cambio.objeto_afectado
                 objeto: Objeto = cambio.elemento
-                sala = cambio.valor_anterior
+                sala = self.salas[cambio.valor_anterior]
                 if objeto in sala.objetos and jugador is not None:
                     sala.objetos.remove(objeto)
                     jugador.inventario.agregar_objeto(objeto)
