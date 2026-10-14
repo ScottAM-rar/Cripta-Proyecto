@@ -25,6 +25,7 @@ class ActorLogica:
         else:
             actor.id_sala_actual = salida.sala_destino
             respuesta.exito = True #no se pone mensaje porque cada logica se lo agrega dependiendo de quien se mueva
+            respuesta.puntaje = 10
         
         return respuesta
     @staticmethod

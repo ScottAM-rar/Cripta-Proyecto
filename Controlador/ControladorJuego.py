@@ -16,7 +16,9 @@ class ControladorJuego:
             if not jugador:
                 print("Error: No se pudo obtener el estado del jugador.")
                 break
-                
+            if(jugador.vida_actual<=0):
+                self.servicio.guardarLog("pruebasLog.log")
+                break
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
             
             # Mostramos el estado visual actual usando la Vista

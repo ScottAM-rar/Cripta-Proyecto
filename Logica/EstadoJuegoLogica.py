@@ -2,9 +2,12 @@ from DTO.EstadoJuegoDTO import EstadoJuego
 from DTO.SalaDTO import *
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import JugadorDTO
+from DTO.FinPartidaDTO import FinPartidaDTO
 from Logica.GestorEventos import GestorEventos
 from Logica.JugadorLogica import JugadorLogica
+from Logica.LogEventos import LogEventos, ReferenciaEvento, RegistroEvento
 from Logica.RelojVirtual import RelojVirtual
+from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from adaptadores.cache import CacheLRU
 from adaptadores.cliente_http import ClienteCripta
 from adaptadores.servicioCripta import ServicioCripta
@@ -13,27 +16,161 @@ class EstadoJuegoLogica:
         self.tiempoMovimientoJugador = 0
         self.comunicacion = ServicioCripta(ClienteCripta("https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1"),
                                             CacheLRU(25))
-        self.semilla = semilla
+        
         self.iniciado = False
+        
         if(cripta is not None):
             self.iniciarJuego(cripta)
-        self.puntaje: int = 0
         
         
+    def repetirPartida(self, archivo: str) ->list[ResultadoEventoDTO]:
+        log_original = LogEventos()
+        log_original.cargar_log(archivo)
 
+        if log_original.id_cripta is None:
+            raise ValueError("El log no contiene el ID de la cripta")
+        if self.iniciado:
+            raise ValueError("No se puede repetir una partida durante otra partida")
 
-    def iniciarJuego(self, cripta: str):
+        self.iniciarJuego(log_original.id_cripta, log_original.semilla)
+        self.ingresarEnSala(self.estadoJuego.jugador.id_sala_actual)
+
+        resultados = []
+        for registro in log_original.obtener_registros_cronologicos():
+            evento = self._crear_evento_repeticion(registro)
+            resultados.append(self.accionJugador(evento))
+
+        return resultados
+
+    def _crear_evento_repeticion(self, registro: RegistroEvento) -> EventoDTO:
+        tipo = registro.tipo_accion
+        datos = registro.datos_extra
+        actor_registro = registro.actor
+        if not isinstance(tipo, str) or not isinstance(datos, list):
+            raise ValueError("El registro del log no contiene un evento válido")
+
+        jugador = self.estadoJuego.jugador
+        if tipo == "MOVER_JUGADOR":
+            sala, direccion = self._datos_sala_direccion(datos)
+            return EventoDTO(100, 0, jugador, tipo, [sala, direccion])
+
+        if tipo == "ABRIR_PUERTA":
+            sala, direccion = self._datos_sala_direccion(datos)
+            return EventoDTO(100, 0, jugador, tipo, [sala, direccion])
+
+        if tipo == "ATACAR":
+            enemigo = self._buscar_enemigo(self._id_referencia(datos, "enemigo"))
+            return EventoDTO(100, 0, jugador, tipo, [enemigo])
+
+        if tipo in {"RECOGER_OBJETO", "USAR_OBJETO"}:
+            objeto = self._buscar_objeto(
+                self._id_referencia(datos, "objeto"),
+                tipo == "USAR_OBJETO",
+            )
+            return EventoDTO(100, 0, jugador, tipo, [objeto])
+
+        if tipo == "SOLTAR_OBJETO" or tipo == "ESPERAR":
+            return EventoDTO(100, 0, jugador, tipo, [])
+
+        if tipo in {"ARMAR_TRAMPA", "ACTIVAR_TRAMPA"}:
+            id_trampa = self._id_actor(actor_registro, "trampa")
+            trampa = self._buscar_trampa(id_trampa)
+            sala, = self._datos_sala(datos)
+            return EventoDTO(100, 0, trampa, tipo, [sala])
+
+        if tipo == "CERRAR_PUERTA":
+            id_sala = self._id_actor(actor_registro, "sala")
+            sala = self.ingresarEnSala(id_sala)
+            direccion, = datos
+            return EventoDTO(100, 0, sala, tipo, [direccion])
+
+        raise ValueError(f"No se puede repetir el evento {tipo!r}")
+
+    def _datos_sala_direccion(self, datos: list) -> tuple[SalaDTO, str]:
+        if len(datos) != 2 or not isinstance(datos[1], str):
+            raise ValueError("El evento requiere una sala y una dirección")
+        sala, direccion = datos
+        if not isinstance(sala, ReferenciaEvento) or sala.tipo != "sala":
+            raise ValueError("El evento no contiene una referencia de sala válida")
+        return self.ingresarEnSala(sala.id), direccion
+
+    def _datos_sala(self, datos: list) -> tuple[SalaDTO]:
+        if len(datos) != 1:
+            raise ValueError("El evento requiere una sala")
+        sala = datos[0]
+        if not isinstance(sala, ReferenciaEvento) or sala.tipo != "sala":
+            raise ValueError("El evento no contiene una referencia de sala válida")
+        return (self.ingresarEnSala(sala.id),)
+
+    @staticmethod
+    def _id_referencia(datos: list, tipo: str) -> str | int:
+        if len(datos) != 1 or not isinstance(datos[0], ReferenciaEvento):
+            raise ValueError("El evento no contiene un objetivo válido")
+        referencia = datos[0]
+        if referencia.tipo != tipo or referencia.id is None:
+            raise ValueError(f"El evento no contiene un objetivo de tipo {tipo}")
+        return referencia.id
+
+    @staticmethod
+    def _id_actor(actor, tipo: str) -> str | int:
+        if not isinstance(actor, ReferenciaEvento) or actor.tipo != tipo:
+            raise ValueError(f"El evento no contiene un actor de tipo {tipo}")
+        if actor.id is None:
+            raise ValueError("El actor no contiene un identificador")
+        return actor.id
+
+    def _buscar_enemigo(self, id_enemigo: str | int):
+        for sala in self.estadoJuego.salas:
+            if sala is not None:
+                for enemigo in sala.enemigos:
+                    if enemigo.id_instancia == id_enemigo:
+                        return enemigo
+        raise ValueError(f"No se encontró el enemigo {id_enemigo!r}")
+
+    def _buscar_objeto(self, id_objeto: str | int, en_inventario: bool):
+        if en_inventario:
+            nodo = self.estadoJuego.jugador.inventario.cabeza
+            while nodo is not None:
+                if nodo.objeto.id_catalogo == id_objeto:
+                    return nodo.objeto
+                nodo = nodo.siguiente
+
+        for sala in self.estadoJuego.salas:
+            if sala is not None:
+                for objeto in sala.objetos:
+                    if objeto.id_catalogo == id_objeto:
+                        return objeto
+        raise ValueError(f"No se encontró el objeto {id_objeto!r}")
+
+    def _buscar_trampa(self, id_trampa: str | int):
+        for sala in self.estadoJuego.salas:
+            if sala is not None:
+                for trampa in sala.trampas:
+                    if trampa.id_instancia == id_trampa:
+                        return trampa
+        raise ValueError(f"No se encontró la trampa {id_trampa!r}")
+
+    def iniciarJuego(self,  cripta: str,semilla: int = None,):
+        if self.iniciado:
+            raise ValueError("No se puede iniciar un juego ya iniciado")
         if not self.comunicacion.existe_cripta(cripta):
             raise ValueError("No existe la cripta solicitada")
+        self.semilla = 0 if semilla is None else semilla
+        self.logEventos = LogEventos(self.semilla, cripta)
+        self.logEventosJuego = LogEventos(self.semilla, cripta)
+        
         cantSalas = self.comunicacion.total_salas(cripta)
+        #TODO obtener version de la cripta
         salas = [None] * cantSalas
         relojvirtual = RelojVirtual()
         jugador =self.comunicacion.crear_jugador(cripta)
         self.estadoJuego = EstadoJuego(relojvirtual,jugador,[],[],salas)
         self.gestorEventos = GestorEventos(self.estadoJuego.salas,jugador,self.ingresarEnSala,self.semilla)
         self.jugadorLogica = JugadorLogica(jugador,self.semilla)
+        self.logEventos.vaciar()
         self.idCripta = cripta
         self.iniciado = True
+        self.fin = False
 
     def listarCriptas(self) -> list[str]:
         return self.comunicacion.listar_criptas()
@@ -58,6 +195,7 @@ class EstadoJuegoLogica:
             return self.estadoJuego.salas[sala]
         self.estadoJuego.salas[sala] = self.comunicacion.construir_sala(self.idCripta,sala) 
         for enemigo in self.estadoJuego.salas[sala].enemigos:
+            self.estadoJuego.catalogo_enemigos.append(enemigo)
             self.cargarEvento(
                 EventoDTO(
                     100,
@@ -67,6 +205,8 @@ class EstadoJuegoLogica:
                     [self.estadoJuego.jugador]
                 )
             )
+        for objeto in self.estadoJuego.salas[sala].objetos:
+            self.estadoJuego.catalogo_objetos.append(objeto)
         return self.estadoJuego.salas[sala]
 
     #TODO va a revisar la seccion del vector de la memoria
@@ -88,8 +228,10 @@ class EstadoJuegoLogica:
     def _siguienteAccion(self):
         if not self.iniciado:
             raise ValueError("El juego no ha sido iniciado")
+        if self.fin:
+            raise ValueError("El juego ha finalizado, no se generan más acciones")
         respuesta = None
-        while True:
+        while self.fin is False:
             evento = self.estadoJuego.reloj.desencolar()
 
             if not evento:
@@ -100,16 +242,43 @@ class EstadoJuegoLogica:
                 f"Tiempo: {evento.tiempo_ejecucion}"
             )
             accion = self.gestorEventos.procesar_evento(evento)
+            self.logEventosJuego.registrar_evento(evento)
             respuesta = accion
             print(accion.mensaje)
+
+            #TODO Tambien tengo que implementar que termine si el jugador llegó al final
+            if self.jugadorLogica.esta_muerto():
+                self.fin = True
+                self.motivoFin = "El jugador se murió"
             if (
                 accion.eventoResultado is not None
             ):
                 self.cargarEvento(accion.eventoResultado)
-            if evento.actor == self.estadoJuego.jugador:
+            if evento.actor is self.estadoJuego.jugador:
+                self.estadoJuego.puntaje += accion.puntaje
                 break
 
         return respuesta
+
+    @staticmethod
+    def _obtener_id_afectado(evento: EventoDTO) -> str | int | None:
+        """Obtiene el identificador del objeto que recibió la acción."""
+        if evento.tipo_accion == "ATACAR" and evento.datos_extra:
+            afectado = evento.datos_extra[0]
+        elif evento.tipo_accion in {"RECOGER_OBJETO", "USAR_OBJETO"} and evento.datos_extra:
+            afectado = evento.datos_extra[0]
+        elif evento.tipo_accion == "MOVER_JUGADOR" and evento.datos_extra:
+            afectado = evento.datos_extra[0]
+        elif evento.tipo_accion == "ABRIR_PUERTA" and evento.datos_extra:
+            afectado = evento.datos_extra[0]
+        else:
+            afectado = evento.actor
+
+        for nombre in ("id_instancia", "id_catalogo", "id"):
+            identificador = getattr(afectado, nombre, None)
+            if identificador is not None:
+                return identificador
+        return None
 
         
     
@@ -122,6 +291,37 @@ class EstadoJuegoLogica:
         if not self.iniciado:
             raise ValueError("El juego no ha sido iniciado")
         self.tiempoMovimientoJugador = self.cargarEvento(evento)
-        return self._siguienteAccion()
-        
-    
+        respuesta = self._siguienteAccion()
+        self.logEventos.registrar_evento(evento)
+        return respuesta
+
+    def guardarLog(self, nombre_archivo: str) -> None:
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+        if not self.fin:
+            raise ValueError(
+                "No se puede guardar el log si la partida no ha terminado"
+            )
+        self.logEventos.guardar_log(nombre_archivo)
+        nombre_eventos = nombre_archivo[:-4] + "-eventos_del_juego.log"
+        self.logEventosJuego.guardar_log(nombre_eventos)
+
+    def obtenerPuntaje(self) -> int:
+        return self.estadoJuego.puntaje
+
+    def finPartida(self) -> FinPartidaDTO:
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+
+        if not self.fin:
+            raise ValueError(
+                "No se puede tener el resultado final de una partida si no ha terminado"
+            )
+
+        return FinPartidaDTO(
+            self.idCripta,
+            "1.0",
+            self.logEventos.como_string(),
+            self.jugadorLogica.enemigos_eliminados(),
+            self.estadoJuego.reloj.tiempo_actual,
+        )

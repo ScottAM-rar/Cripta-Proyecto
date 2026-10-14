@@ -23,6 +23,12 @@ class EstadoJuegoServicio:
     def iniciarJuego(self, cripta: str):
         self._estadoJuegoLogica.iniciarJuego(cripta)
 
+    def repetirPartida(self, archivo: str) -> list[ResultadoEventoDTO]:
+        return self._estadoJuegoLogica.repetirPartida(archivo)
+
+    def guardarLog(self, nombre_archivo: str) -> None:
+        self._estadoJuegoLogica.guardarLog(nombre_archivo)
+
     def getJudador(self):
         return self._estadoJuegoLogica.obtenerJugador()
     

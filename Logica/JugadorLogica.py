@@ -16,18 +16,22 @@ class JugadorLogica(ActorLogica):
             respuesta.mensaje = f"El jugador se ha movido a la sala {self.jugador.id_sala_actual}"
         return respuesta
 
+    def esta_muerto(self):
+        return self.jugador.vida_actual <= 0
     def atacarEnemigo(self, enemigo : EnemigoDTO)-> ResultadoEventoDTO:
         if enemigo.vida_actual <= 0:
             return ResultadoEventoDTO(False, f"El jugador {self.jugador.id_instancia} no atacó al enemigo ya que está muerto")
         self._atacar(self.jugador,enemigo,self.semilla)
-        return ResultadoEventoDTO(True,f"El jugador ha atacado al enemigo causando daño")
+        if(enemigo.vida_actual<=0):
+            self.jugador.enemigos_eliminados+=1
+        return ResultadoEventoDTO(True,f"El jugador ha atacado al enemigo causando daño",puntaje=50)
 
     def recogerObjeto(self,objeto: Objeto):
         try:
             self.jugador.inventario.agregar_objeto(objeto)
         except ValueError as e:
             return ResultadoEventoDTO(False, str(e))
-        return ResultadoEventoDTO(True, f"El jugador ha recogido el objeto {objeto.nombre}")
+        return ResultadoEventoDTO(True, f"El jugador ha recogido el objeto {objeto.nombre}",puntaje=15)
 
     def soltarObjeto(self, salaActual: SalaDTO):
         try:
@@ -45,5 +49,7 @@ class JugadorLogica(ActorLogica):
             nodo = nodo.siguiente
         return False
 
+    def enemigos_eliminados(self):
+        return self.jugador.enemigos_eliminados
 
     

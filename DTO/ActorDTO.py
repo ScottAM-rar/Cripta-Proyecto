@@ -28,7 +28,7 @@ class JugadorDTO(ActorDTO):
     modificador_velocidad: int = 0
     antorcha_encendida: bool = False
     antorcha_hasta: int = 0
-
+    enemigos_eliminados: int = 0
     def __post_init__(self,inventario_max: int):
         self.inventario = InventarioLogica(inventario_max)
 

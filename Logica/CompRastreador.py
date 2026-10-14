@@ -13,7 +13,7 @@ class ComportamientoRastreador(ComportamientoEnemigo):
             ):
                 ultimo_paso_siguiente = (
                     0
-                    if salas[t.sala_destino] is None
+                    if salas[t.sala_destino] is None or salas[t.sala_destino].ultimo_paso>400
                     else salas[t.sala_destino].ultimo_paso
                 )
                 ultimo_paso_seleccionado = (

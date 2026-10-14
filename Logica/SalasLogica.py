@@ -26,9 +26,10 @@ class SalaLogica :
             if salida.llave is not None:
                 if not jugadorlog.tiene_llave(salida.llave):
                     respuesta.exito,respuesta.mensaje =  False, "No tiene la llave adecuada para abrir la puerta"
-
+                    return respuesta
+            
             salida.cerrada = False
-            respuesta.exito,respuesta.mensaje = True, "La puerta ha sido abierta"
+            respuesta.exito,respuesta.mensaje, respuesta.puntaje = True, "La puerta ha sido abierta", 25
             if(salida.cierre_automatico is not None):
                 respuesta.eventoResultado = EventoDTO(salida.cierre_automatico,None,self.sala,"CERRAR_PUERTA",[direccion])
 

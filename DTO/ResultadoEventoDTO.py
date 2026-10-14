@@ -5,3 +5,4 @@ class ResultadoEventoDTO:
     exito: bool = None
     mensaje: str = None
     eventoResultado: EventoDTO | None = None
+    puntaje: int = 0
