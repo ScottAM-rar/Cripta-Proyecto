@@ -7,6 +7,7 @@ class Objeto:
     nombre : str
     peso : int
     valor : int
+    id_sala: int = None
 
 #Suma un bonus de ataque al ataque base si esta equipada
 @dataclass

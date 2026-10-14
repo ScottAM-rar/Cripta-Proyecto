@@ -11,6 +11,15 @@
             "console": "integratedTerminal"
         },
         {
+            "name": "Depurar main.py",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/main.py",
+            "cwd": "${workspaceFolder}",
+            "python": "${workspaceFolder}/venv/bin/python",
+            "console": "integratedTerminal"
+        },
+        {
             "name": "Depurar laboratorio",
             "type": "debugpy",
             "request": "launch",
