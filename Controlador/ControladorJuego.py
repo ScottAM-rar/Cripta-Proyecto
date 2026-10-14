@@ -20,15 +20,15 @@ class ControladorJuego:
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
             
             # Mostramos el estado visual actual usando la Vista
-            
             self.vista.mostrar_juego(jugador, sala_actual)
 
-            accion = input("\n¿Qué deseas hacer? (norte/sur/este/oeste, recoger [objeto], atacar, abrir, salir): ").strip().lower()
+            # Actualizamos las opciones visibles en el prompt
+            accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger [objeto], atacar, abrir [puerta], cerrar [puerta]," 
+            " \n armar [trampa], activar [trampa], salir): ").strip().lower()
 
             if accion == "salir":
                 print("Cerrando el juego...")
                 break
-
 
             # Mapeamos la entrada del usuario a un EventoDTO oficial
             evento = self._mapear_entrada_a_evento(accion, sala_actual, jugador)
@@ -44,7 +44,7 @@ class ControladorJuego:
         # Movimiento de salas
         if accion in ["norte", "sur", "este", "oeste"]:
             return EventoDTO(
-                tiempo_ejecucion=10,
+                tiempo_ejecucion=100,
                 id_secuencia=0,
                 actor=jugador,
                 tipo_accion="MOVER_JUGADOR",
@@ -74,17 +74,14 @@ class ControladorJuego:
                 except ValueError:
                     print("Por favor ingresa un número válido.")
                     return None
-                
-            
 
-            # 1. PRIMERO validamos si está muerto ANTES de crear cualquier DTO de ataque
+            # Validación de vida antes de crear el DTO de ataque
             if objetivo.vida_actual <= 0:
                 print(f"¡{objetivo.nombre} ya está derrotado!")
                 return "IGNORAR"
 
-            # 2. SOLO SI ESTÁ VIVO, armamos y retornamos el EventoDTO
             return EventoDTO(
-                tiempo_ejecucion=10,
+                tiempo_ejecucion=100,
                 id_secuencia=0,
                 actor=jugador,
                 tipo_accion="ATACAR",
@@ -101,16 +98,64 @@ class ControladorJuego:
                 tipo_accion="ABRIR_PUERTA",
                 datos_extra=[sala_actual, direccion]
             )
+
+        # Cerrar puerta (El backend exige que el actor sea la sala actual)
+        elif accion == "cerrar":
+            direccion = input("¿Qué dirección deseas cerrar? (norte/sur/este/oeste): ").strip().lower()
+            return EventoDTO(
+                tiempo_ejecucion=50,
+                id_secuencia=0,
+                actor=sala_actual,
+                tipo_accion="CERRAR_PUERTA",
+                datos_extra=[direccion]
+            )
+
+        # Armar trampa (El backend exige que el actor sea la trampa misma)
+        elif accion == "armar":
+            if not sala_actual.trampas:
+                print("No hay trampas en esta sala para armar.")
+                return None
+            trampa_obj = sala_actual.trampas[0]
+            return EventoDTO(
+                tiempo_ejecucion=50,
+                id_secuencia=0,
+                actor=trampa_obj,
+                tipo_accion="ARMAR_TRAMPA",
+                datos_extra=[sala_actual]
+            )
+
+        # Activar trampa (El backend exige que el actor sea la trampa misma)
+        elif accion == "activar":
+            if not sala_actual.trampas:
+                print("No hay trampas en esta sala para activar.")
+                return None
+            trampa_obj = sala_actual.trampas[0]
+            return EventoDTO(
+                tiempo_ejecucion=50,
+                id_secuencia=0,
+                actor=trampa_obj,
+                tipo_accion="ACTIVAR_TRAMPA",
+                datos_extra=[sala_actual]
+            )
             
         # Recoger objeto
         elif accion.startswith("recoger"):
             partes = accion.split(maxsplit=1)
             if len(partes) > 1 and sala_actual.objetos:
                 busqueda = partes[1].lower()
-                obj_encontrado = next((obj for obj in sala_actual.objetos if busqueda in str(obj).lower()), None)
+                
+                obj_encontrado = None
+                for obj in sala_actual.objetos:
+                    id_cat = getattr(obj, 'id_catalogo', str(obj)).lower()
+                    nombre_obj = getattr(obj, 'nombre', '').lower()
+                    
+                    if busqueda in id_cat or busqueda in nombre_obj:
+                        obj_encontrado = obj
+                        break
+
                 if obj_encontrado:
                     return EventoDTO(
-                        tiempo_ejecucion=10,
+                        tiempo_ejecucion=25,
                         id_secuencia=0,
                         actor=jugador,
                         tipo_accion="RECOGER_OBJETO",
