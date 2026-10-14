@@ -62,7 +62,10 @@ class PergaminoLogica:
                 sala = self.salas[cambio.valor_anterior]
                 if objeto in sala.objetos and jugador is not None:
                     sala.objetos.remove(objeto)
-                    jugador.inventario.agregar_objeto(objeto)
+                    jugador.inventario.insertar_en_indice_por_retroceso(
+                        cambio.indice,
+                        objeto,
+                    )
                     
             case "EQUIPAR_OBJETO" : # Revertir la acción de equipar un objeto, lo devuelve al inventario del jugador
                 jugador: JugadorDTO = cambio.objeto_afectado
@@ -76,7 +79,7 @@ class PergaminoLogica:
                 objeto: Objeto = cambio.elemento
                 jugador.arma = cambio.valor_anterior if isinstance(objeto, Arma) else jugador.arma
                 jugador.armadura = cambio.valor_anterior if isinstance(objeto, Armadura) else jugador.armadura
-                jugador.inventario.insertar_en_indice(cambio.indice, objeto)
+                jugador.inventario.insertar_en_indice_por_retroceso(cambio.indice, objeto)
                 jugador.inventario.equipar_objeto_por_retroceso(cambio.valor_anterior)
                 
             case "USAR_OBJETO" : # Revertir la acción de usar un objeto, lo devuelve al inventario del jugador
@@ -103,6 +106,14 @@ class PergaminoLogica:
             case "APLICAR_ANTIDOTO":
                 jugador: JugadorDTO = cambio.objeto_afectado
                 jugador.veneno = cambio.valor_anterior
-                
+
+            case "CAMBIAR_PUERTA":
+                salida = cambio.objeto_afectado
+                salida.cerrada = cambio.valor_anterior
+
+            case "CAMBIAR_TRAMPA":
+                trampa = cambio.objeto_afectado
+                trampa.armada = cambio.valor_anterior
+
             case _:
                 raise ValueError(f"Tipo de acción desconocido: {cambio.tipo_accion}")

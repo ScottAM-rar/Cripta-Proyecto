@@ -13,6 +13,8 @@ class RetrocesoLogica:
     
     def __init__(self, reloj: RelojVirtual | None = None):
         if getattr(self, "_inicializado", False):
+            if reloj is not None and self.reloj is None:
+                self.reloj = reloj
             return
         
         self.cabeza = None
@@ -27,7 +29,7 @@ class RetrocesoLogica:
 
     def nueva_accion(self):
         self.accion_pendiente = True
-        self.tiempo_inicio_accion = self.reloj.tiempo_actual() if self.reloj else None
+        self.tiempo_inicio_accion = self.reloj.tiempo_actual if self.reloj else None
         
     def registrar_cambio(self, cambio: list[CambioDTO]):
         if not 1 <= len(cambio) <= 2:

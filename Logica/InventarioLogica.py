@@ -156,9 +156,11 @@ class InventarioLogica:
         elif indice == 0:
             self._reenlazar_nodo(nuevo_nodo, None, self.cabeza)
             self.cabeza = nuevo_nodo
+            self.cantidad_actual += 1
         elif indice == self.cantidad_actual:
             self._reenlazar_nodo(nuevo_nodo, self.cola, None)
             self.cola = nuevo_nodo
+            self.cantidad_actual += 1
         else:
             nodo_destino = self.cabeza
             for _ in range(indice):
@@ -168,6 +170,7 @@ class InventarioLogica:
                 nodo_destino.anterior,
                 nodo_destino
             )
+            self.cantidad_actual += 1
         
     def indice_de_objeto(self, objeto: Objeto) -> int:
         """Devuelve el indice del objeto en la lista, o -1 si no se encuentra"""

@@ -14,6 +14,7 @@ from Logica.SalasLogica import SalaLogica
 from Logica.TrampaLogica import TrampaLogica# from Logica.RetrocesoLogica import RetrocesoLogica
 from Logica.ObjetoLogica import ObjetoLogica
 from Logica.PergaminoLogica import PergaminoLogica
+from DTO.CambioDTO import CambioDTO
 #Aquí van a ir TODOS los eventos que se pueden manejar, para hacer un acción se va a consultar aquí
 
 
@@ -132,7 +133,18 @@ class GestorEventos:
                 self._validar_sala(sala)
                 self._validar_direccion(direccion)
                 self.salas_logica.sala = sala
-                return self.salas_logica.intentarAbrirPuerta(jugador,direccion)
+                salida = self.salas_logica._obtener_salida(Direccion(direccion))
+                cerrada_anterior = salida.cerrada if salida is not None else None
+                resultado = self.salas_logica.intentarAbrirPuerta(jugador,direccion)
+                if resultado.exito:
+                    self.jugador_logica.retroceso.nueva_accion()
+                    self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
+                        tipo_accion="CAMBIAR_PUERTA",
+                        objeto_afectado=salida,
+                        valor_anterior=cerrada_anterior,
+                        valor_nuevo=salida.cerrada,
+                    )])
+                return resultado
 
             case "CERRAR_PUERTA":
                 self._validar_cantidad_datos(evento, 1)
@@ -144,7 +156,17 @@ class GestorEventos:
                 self._validar_direccion(direccion)
 
                 self.salas_logica.sala = evento.actor
-                return self.salas_logica.cerrarPuerta(direccion)
+                salida = self.salas_logica._obtener_salida(Direccion(direccion))
+                cerrada_anterior = salida.cerrada if salida is not None else None
+                resultado = self.salas_logica.cerrarPuerta(direccion)
+                if resultado.exito:
+                    self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
+                        tipo_accion="CAMBIAR_PUERTA",
+                        objeto_afectado=salida,
+                        valor_anterior=cerrada_anterior,
+                        valor_nuevo=salida.cerrada,
+                    )])
+                return resultado
 
             case "ACCION_ENEMIGO":
                 #Datos Adicionales [Jugador] (se necesitan también las salas pero estas se sacan del estado de juego para evitar desfases)
@@ -157,10 +179,37 @@ class GestorEventos:
                     raise TypeError("El objetivo de ACCION_ENEMIGO debe ser un jugador")
                 if jugador is not self.jugador_logica.jugador:
                     raise ValueError("El jugador del evento no pertenece a esta partida")
+                vida_jugador_anterior = jugador.vida_actual
+                vida_enemigo_anterior = evento.actor.vida_actual
+                sala_anterior = evento.actor.id_sala_actual
                 self.enemigo_logica.setEnemigo(evento.actor)
                 res =  self.enemigo_logica.decidirAccion(jugador,self.salas)
                 if evento.actor.id_sala_actual != sala_enemigo:
                     self.cargar_sala(evento.actor.id_sala_actual).enemigos.append(evento.actor)
+                cambios = []
+                if evento.actor.id_sala_actual != sala_anterior:
+                    cambios.append(CambioDTO(
+                        tipo_accion="MOVER",
+                        objeto_afectado=evento.actor,
+                        valor_anterior=sala_anterior,
+                        valor_nuevo=evento.actor.id_sala_actual,
+                    ))
+                if jugador.vida_actual != vida_jugador_anterior:
+                    cambios.append(CambioDTO(
+                        tipo_accion="ACTUALIZAR_VIDA",
+                        objeto_afectado=jugador,
+                        valor_anterior=vida_jugador_anterior,
+                        valor_nuevo=jugador.vida_actual,
+                    ))
+                if evento.actor.vida_actual != vida_enemigo_anterior:
+                    cambios.append(CambioDTO(
+                        tipo_accion="ACTUALIZAR_VIDA",
+                        objeto_afectado=evento.actor,
+                        valor_anterior=vida_enemigo_anterior,
+                        valor_nuevo=evento.actor.vida_actual,
+                    ))
+                if cambios:
+                    self.jugador_logica.retroceso.registrar_cambio(cambios[:2])
                 return res
 
             case "ARMAR_TRAMPA":
@@ -169,8 +218,17 @@ class GestorEventos:
                 trampa: Trampa = evento.actor
                 salaTrampa = evento.datos_extra[0]
                 self._validar_sala_trampa(salaTrampa, trampa)
+                armada_anterior = trampa.armada
                 logica = TrampaLogica(trampa)
-                return logica.rearmar(salaTrampa)   
+                resultado = logica.rearmar(salaTrampa)
+                if resultado.exito:
+                    self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
+                        tipo_accion="CAMBIAR_TRAMPA",
+                        objeto_afectado=trampa,
+                        valor_anterior=armada_anterior,
+                        valor_nuevo=trampa.armada,
+                    )])
+                return resultado
 
             case "ACTIVAR_TRAMPA":
                 self._validar_trampa(evento)
@@ -184,8 +242,32 @@ class GestorEventos:
                     raise ValueError(
                         "La acción ACTIVAR_TRAMPA acepta cero o un dato extra"
                     )
+                vidas_anteriores = [(jugador, jugador.vida_actual)]
+                vidas_anteriores.extend(
+                    (enemigo, enemigo.vida_actual) for enemigo in salaTrampa.enemigos
+                )
+                armada_anterior = trampa.armada
                 logica = TrampaLogica(trampa)
-                return logica.activar(self.jugador_logica.jugador,salaTrampa)
+                resultado = logica.activar(self.jugador_logica.jugador,salaTrampa)
+                cambios = []
+                for actor, vida_anterior in vidas_anteriores:
+                    if actor.vida_actual != vida_anterior:
+                        cambios.append(CambioDTO(
+                            tipo_accion="ACTUALIZAR_VIDA",
+                            objeto_afectado=actor,
+                            valor_anterior=vida_anterior,
+                            valor_nuevo=actor.vida_actual,
+                        ))
+                if trampa.armada != armada_anterior and len(cambios) < 2:
+                    cambios.append(CambioDTO(
+                        tipo_accion="CAMBIAR_TRAMPA",
+                        objeto_afectado=trampa,
+                        valor_anterior=armada_anterior,
+                        valor_nuevo=trampa.armada,
+                    ))
+                if cambios:
+                    self.jugador_logica.retroceso.registrar_cambio(cambios)
+                return resultado
             case "USAR_OBJETO":
                 self._validar_actor_jugador(evento)
                 self._validar_cantidad_datos(evento, 1)
@@ -198,12 +280,26 @@ class GestorEventos:
                 return self.objeto_logica.usar_objeto(objeto)
             case "REVERTIR_MODIFICADOR_VELOCIDAD":
                 self._validar_cantidad_datos(evento, 1)
+                velocidad_anterior = self.jugador_logica.jugador.modificador_velocidad
                 self.objeto_logica.revertir_modificador_velocidad(evento.datos_extra[0])
+                self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
+                    tipo_accion="REVERTIR_MODIFICADOR_VELOCIDAD",
+                    objeto_afectado=self.jugador_logica.jugador,
+                    valor_anterior=velocidad_anterior,
+                    valor_nuevo=self.jugador_logica.jugador.modificador_velocidad,
+                )])
                 return ResultadoEventoDTO(True, "El modificador de velocidad ha terminado.")
 
             case "APAGAR_ANTORCHA":
                 self._validar_cantidad_datos(evento, 0)
+                antorcha_anterior = self.jugador_logica.jugador.antorcha_encendida
                 self.objeto_logica.apagar_antorcha()
+                self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
+                    tipo_accion="APAGAR_ANTORCHA",
+                    objeto_afectado=self.jugador_logica.jugador,
+                    valor_anterior=antorcha_anterior,
+                    valor_nuevo=self.jugador_logica.jugador.antorcha_encendida,
+                )])
                 return ResultadoEventoDTO(True, "La antorcha se ha apagado.")
             case "ESPERAR":
                 return ResultadoEventoDTO(True, "El jugador ha esperado en su turno")

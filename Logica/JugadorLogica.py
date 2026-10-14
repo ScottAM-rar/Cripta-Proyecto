@@ -33,7 +33,15 @@ class JugadorLogica(ActorLogica):
     def atacarEnemigo(self, enemigo : EnemigoDTO)-> ResultadoEventoDTO:
         if enemigo.vida_actual <= 0:
             return ResultadoEventoDTO(False, f"El jugador {self.jugador.id_instancia} no atacó al enemigo ya que está muerto")
+        vida_anterior = enemigo.vida_actual
+        self.retroceso.nueva_accion()
         self._atacar(self.jugador,enemigo,self.semilla)
+        self.retroceso.registrar_cambio([CambioDTO(
+            tipo_accion="ACTUALIZAR_VIDA",
+            objeto_afectado=enemigo,
+            valor_anterior=vida_anterior,
+            valor_nuevo=enemigo.vida_actual,
+        )])
         if(enemigo.vida_actual<=0):
             self.jugador.enemigos_eliminados+=1
         return ResultadoEventoDTO(True,f"El jugador ha atacado al enemigo causando daño",puntaje=50)
@@ -57,10 +65,23 @@ class JugadorLogica(ActorLogica):
 
     def soltarObjeto(self, salaActual: SalaDTO):
         try:
-            salaActual.objetos.append(self.jugador.inventario.soltar_objeto_actual())
+            if self.jugador.inventario.actual is None:
+                raise ValueError("El inventario esta vacio")
+            objeto_actual = self.jugador.inventario.actual.objeto
+            indice_original = self.jugador.inventario.indice_de_objeto(objeto_actual)
+            objeto = self.jugador.inventario.soltar_objeto_actual()
         except ValueError as e:
             return ResultadoEventoDTO(False, str(e))
-        return ResultadoEventoDTO(True, f"El jugador ha soltado el objeto {self.jugador.inventario.actual.objeto.nombre}")
+        salaActual.objetos.append(objeto)
+        self.retroceso.nueva_accion()
+        self.retroceso.registrar_cambio([CambioDTO(
+            tipo_accion="SOLTAR_OBJETO",
+            objeto_afectado=self.jugador,
+            valor_anterior=salaActual.id,
+            elemento=objeto,
+            indice=indice_original,
+        )])
+        return ResultadoEventoDTO(True, f"El jugador ha soltado el objeto {objeto.nombre}")
         
     def tiene_llave(self, id_llave: int) -> bool:
         """Comprueba si el jugador posee en su inventario un objeto llave con el ID dado."""
