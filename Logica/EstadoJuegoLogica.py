@@ -17,6 +17,7 @@ class EstadoJuegoLogica:
         self.iniciado = False
         if(cripta is not None):
             self.iniciarJuego(cripta)
+        self.puntaje: int = 0
         
         
 
