@@ -1,3 +1,5 @@
+from unittest import case
+
 from collections.abc import Callable
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import *
@@ -9,7 +11,8 @@ from DTO.TrampaDTO import Trampa
 from Logica.JugadorLogica import JugadorLogica
 from Logica.EnemigosLogica import EnemigoLogica
 from Logica.SalasLogica import SalaLogica
-from Logica.TrampaLogica import TrampaLogica
+from Logica.TrampaLogica import TrampaLogica# from Logica.RetrocesoLogica import RetrocesoLogica
+from Logica.ObjetoLogica import ObjetoLogica
 #Aquí van a ir TODOS los eventos que se pueden manejar, para hacer un acción se va a consultar aquí
 
 
@@ -23,7 +26,7 @@ class GestorEventos:
         self.cargar_sala = cargar_sala
         # Inyección de dependencias de la capa de lógica
         self.jugador_logica = JugadorLogica(jugador, semilla)
-        #self.enemigos_logica = enemigos_logica
+        self.objeto_logica = ObjetoLogica(jugador)
         self.salas_logica = SalaLogica(None)
         self.enemigo_logica = EnemigoLogica(None,semilla)
 
@@ -79,6 +82,16 @@ class GestorEventos:
                     raise TypeError("El objeto a recoger debe ser una instancia de Objeto")
                 return self.jugador_logica.recogerObjeto(objeto)
 
+            case "SOLTAR_OBJETO":
+                self._validar_actor_jugador(evento)
+
+                jugador = self.jugador_logica.jugador
+                sala = self.salas[jugador.id_sala_actual]
+
+                if sala is None:
+                    raise ValueError("La sala actual del jugador no está cargada")
+
+                return self.jugador_logica.soltarObjeto(sala)
             case "ATACAR":
                 # Datos extra: [objetivo]
                 self._validar_cantidad_datos(evento, 1)
@@ -167,6 +180,27 @@ class GestorEventos:
                     )
                 logica = TrampaLogica(trampa)
                 return logica.activar(self.jugador_logica.jugador,salaTrampa)
+            case "USAR_OBJETO":
+                self._validar_actor_jugador(evento)
+                self._validar_cantidad_datos(evento, 1)
+
+                objeto = evento.datos_extra[0]
+
+                if not isinstance(objeto, Objeto):
+                    raise TypeError("El objeto a usar debe ser una instancia de Objeto")
+
+                return self.objeto_logica.usar_objeto(objeto)
+            case "REVERTIR_MODIFICADOR_VELOCIDAD":
+                self._validar_cantidad_datos(evento, 1)
+                self.objeto_logica.revertir_modificador_velocidad(evento.datos_extra[0])
+                return ResultadoEventoDTO(True, "El modificador de velocidad ha terminado.")
+
+            case "APAGAR_ANTORCHA":
+                self._validar_cantidad_datos(evento, 0)
+                self.objeto_logica.apagar_antorcha()
+                return ResultadoEventoDTO(True, "La antorcha se ha apagado.")
+            case "ESPERAR":
+                return ResultadoEventoDTO(True, "El jugador ha esperado en su turno")
 
             case _:
                 raise ValueError(f"Tipo de acción no soportado: {evento.tipo_accion}")
