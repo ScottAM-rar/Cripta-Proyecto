@@ -21,7 +21,28 @@ class EstadoJuegoLogica:
         
         if(cripta is not None):
             self.iniciarJuego(cripta)
+
+    def iniciarJuego(self,  cripta: str,semilla: int = None,):
+        if self.iniciado:
+            raise ValueError("No se puede iniciar un juego ya iniciado")
+        if not self.comunicacion.existe_cripta(cripta):
+            raise ValueError("No existe la cripta solicitada")
+        self.semilla = 0 if semilla is None else semilla
+        self.logEventos = LogEventos(self.semilla, cripta)
+        self.logEventosJuego = LogEventos(self.semilla, cripta)
         
+        cantSalas = self.comunicacion.total_salas(cripta)
+        #TODO obtener version de la cripta
+        salas = [None] * cantSalas
+        relojvirtual = RelojVirtual()
+        jugador =self.comunicacion.crear_jugador(cripta)
+        self.estadoJuego = EstadoJuego(relojvirtual,jugador,[],[],salas)
+        self.gestorEventos = GestorEventos(self.estadoJuego.salas,jugador,self.ingresarEnSala,self.semilla)
+        self.jugadorLogica = JugadorLogica(jugador,self.semilla)
+        self.logEventos.vaciar()
+        self.idCripta = cripta
+        self.iniciado = True
+        self.fin = False
         
     def repetirPartida(self, archivo: str) ->list[ResultadoEventoDTO]:
         log_original = LogEventos()
@@ -150,27 +171,7 @@ class EstadoJuegoLogica:
                         return trampa
         raise ValueError(f"No se encontró la trampa {id_trampa!r}")
 
-    def iniciarJuego(self,  cripta: str,semilla: int = None,):
-        if self.iniciado:
-            raise ValueError("No se puede iniciar un juego ya iniciado")
-        if not self.comunicacion.existe_cripta(cripta):
-            raise ValueError("No existe la cripta solicitada")
-        self.semilla = 0 if semilla is None else semilla
-        self.logEventos = LogEventos(self.semilla, cripta)
-        self.logEventosJuego = LogEventos(self.semilla, cripta)
-        
-        cantSalas = self.comunicacion.total_salas(cripta)
-        #TODO obtener version de la cripta
-        salas = [None] * cantSalas
-        relojvirtual = RelojVirtual()
-        jugador =self.comunicacion.crear_jugador(cripta)
-        self.estadoJuego = EstadoJuego(relojvirtual,jugador,[],[],salas)
-        self.gestorEventos = GestorEventos(self.estadoJuego.salas,jugador,self.ingresarEnSala,self.semilla)
-        self.jugadorLogica = JugadorLogica(jugador,self.semilla)
-        self.logEventos.vaciar()
-        self.idCripta = cripta
-        self.iniciado = True
-        self.fin = False
+    
 
     def listarCriptas(self) -> list[str]:
         return self.comunicacion.listar_criptas()

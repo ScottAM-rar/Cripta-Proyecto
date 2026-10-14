@@ -20,8 +20,8 @@ class EstadoJuegoServicio:
     def obtenerSala(self, id_sala: int) -> SalaDTO:
         return self._estadoJuegoLogica.ingresarEnSala(id_sala)
 
-    def iniciarJuego(self, cripta: str):
-        self._estadoJuegoLogica.iniciarJuego(cripta)
+    def iniciarJuego(self, cripta: str, semilla):
+        self._estadoJuegoLogica.iniciarJuego(cripta,semilla)
 
     def repetirPartida(self, archivo: str) -> list[ResultadoEventoDTO]:
         return self._estadoJuegoLogica.repetirPartida(archivo)

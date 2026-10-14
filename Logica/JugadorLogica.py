@@ -3,16 +3,28 @@ from DTO.SalaDTO import SalaDTO
 from DTO.Objeto import Objeto
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.ActorLogica import ActorLogica
+from Logica.RetrocesoLogica import RetrocesoLogica
+from DTO.CambioDTO import CambioDTO
 import random
 
 class JugadorLogica(ActorLogica):
     def __init__(self,jugador : JugadorDTO, semilla: int = None):
         self.jugador = jugador
         self.semilla = semilla
+        self.retroceso = RetrocesoLogica()
 
     def mover_jugador(self, sala_actual: SalaDTO, direccion: str) -> ResultadoEventoDTO:
         respuesta = self._mover(self.jugador, sala_actual, direccion)
         if(respuesta.exito == True):
+            self.retroceso.nueva_accion()
+            self.retroceso.registrar_cambio([
+                CambioDTO(
+                    tipo_accion="MOVER",
+                    objeto_afectado=self.jugador,
+                    valor_anterior=sala_actual.id,
+                    valor_nuevo=self.jugador.id_sala_actual,
+                )
+            ])
             respuesta.mensaje = f"El jugador se ha movido a la sala {self.jugador.id_sala_actual}"
         return respuesta
 
@@ -26,9 +38,19 @@ class JugadorLogica(ActorLogica):
             self.jugador.enemigos_eliminados+=1
         return ResultadoEventoDTO(True,f"El jugador ha atacado al enemigo causando daño",puntaje=50)
 
-    def recogerObjeto(self,objeto: Objeto):
+    def recogerObjeto(self, objeto: Objeto, sala_actual: SalaDTO):
         try:
             self.jugador.inventario.agregar_objeto(objeto)
+            self.retroceso.nueva_accion()
+            self.retroceso.registrar_cambio([
+                CambioDTO(
+                    tipo_accion="RECOGER_OBJETO",
+                    objeto_afectado=self.jugador,
+                    valor_anterior=sala_actual.id,
+                    elemento=objeto,
+                )
+            ])
+
         except ValueError as e:
             return ResultadoEventoDTO(False, str(e))
         return ResultadoEventoDTO(True, f"El jugador ha recogido el objeto {objeto.nombre}",puntaje=15)
