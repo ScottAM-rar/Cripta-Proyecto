@@ -10,15 +10,44 @@ class ControladorJuego:
     def iniciar(self):
         print("\n¡Bienvenido a Cripta!")
         
+        # 1. Obtenemos las criptas disponibles desde el servicio
+        criptas = self.servicio.listarCriptas()
+        if not criptas:
+            print("No se encontraron criptas disponibles.")
+            return
+
+        # 2. Mostramos el menú de selección al usuario
+        print("\nSelecciona la cripta que deseas jugar:")
+        for i, cripta in enumerate(criptas):
+            print(f"  [{i + 1}] {cripta}")
+
+        # 3. Validamos la entrada del jugador
         while True:
-            # Obtenemos el jugador y su sala actual de forma dinámica a través del servicio
+            try:
+                opcion = int(input("\nIngresa el número de la cripta: ")) - 1
+                if 0 <= opcion < len(criptas):
+                    # Nota: ajusta el parámetro según lo que espere tu método obtenerIdCripta (si usa índice 1, etc.)
+                    id_cripta = self.servicio.obtenerIdCripta(opcion + 1)
+                    break
+                else:
+                    print("Número inválido. Intenta de nuevo.")
+            except ValueError:
+                print("Por favor, ingresa un número válido.")
+
+        # 4. Inicializamos el juego con la cripta elegida por el usuario
+        self.servicio.iniciarJuego(id_cripta)
+
+        # 5. Entramos al bucle principal del juego
+        while True:
             jugador = self.servicio.getJudador()
             if not jugador:
                 print("Error: No se pudo obtener el estado del jugador.")
                 break
-            if(jugador.vida_actual<=0):
+                
+            if jugador.vida_actual <= 0:
                 self.servicio.guardarLog("pruebasLog.log")
                 break
+                
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
             
             # Mostramos el estado visual actual usando la Vista
@@ -32,11 +61,10 @@ class ControladorJuego:
                 print("Cerrando el juego...")
                 break
 
-            # Mapeamos la entrada del usuario a un EventoDTO oficial
             evento = self._mapear_entrada_a_evento(accion, sala_actual, jugador)
 
             if evento == "IGNORAR":
-                continue  # Vuelve a empezar el turno limpiamente sin hacer nada
+                continue  
             elif evento:
                 self.servicio.accionJugador(evento)
             else:
