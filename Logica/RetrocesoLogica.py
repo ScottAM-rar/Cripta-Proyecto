@@ -1,5 +1,5 @@
+from contextlib import contextmanager
 from DTO.CambioDTO import CambioDTO
-from DTO.EventoDTO import EventoDTO
 from Logica.NodoCambio import NodoCambio
 from Logica.RelojVirtual import RelojVirtual
 
@@ -24,45 +24,83 @@ class RetrocesoLogica:
         self.reloj = reloj
         self.cantidad_actual = 0
         self.cantidad_acciones = 0
+        self.tiempo_evento = 0
+        self.suspensiones = 0
         self._inicializado = True 
-        self.accion_pendiente = False  # Indica si se ha iniciado una nueva accion
-        self.eventos_retroceso = []
-        
 
-    def nueva_accion(self, tiempo_ejecucion: int | None = None):
-        if self.accion_pendiente and tiempo_ejecucion is None:
-            return
-        self.accion_pendiente = True
-        self.tiempo_inicio_accion = (
-            tiempo_ejecucion
-            if tiempo_ejecucion is not None
-            else self.reloj.tiempo_actual if self.reloj else 0
+    def iniciar_accion(self, tiempo_ejecucion: int | None = None) -> NodoCambio:
+        if self.cantidad_acciones >= self.MAX_HISTORIAL:
+            self._eliminar_accion_mas_antigua()
+        if tiempo_ejecucion is None:
+            tiempo_ejecucion = self.reloj.tiempo_actual if self.reloj else 0
+        self.tiempo_evento = tiempo_ejecucion
+        marcador = CambioDTO(
+            tipo_accion="INICIO_ACCION",
+            objeto_afectado=self.reloj,
+            valor_anterior=self.reloj.tiempo_actual if self.reloj else tiempo_ejecucion,
+            cantidad=self.reloj.secuencia_actual if self.reloj else 0,
+            tiempo_ejecucion=tiempo_ejecucion,
         )
+        nodo = NodoCambio([marcador], True)
+        self.agregar_al_final(nodo)
+        self.cantidad_actual += 1
+        self.cantidad_acciones += 1
+        return nodo
+
+    def fijar_tiempo_evento(self, tiempo_ejecucion: int):
+        self.tiempo_evento = tiempo_ejecucion
+
+    def descartar_accion(self, marcador: NodoCambio):
+        nodo = self.cola
+        while nodo is not None and nodo is not marcador:
+            nodo = nodo.anterior
+        if nodo is None:
+            return []
+        cambios = []
+        while True:
+            ultimo = self.cola
+            cambios.append(self.pop())
+            if ultimo is marcador:
+                break
+        self.cantidad_acciones -= 1
+        return cambios
+
+    @contextmanager
+    def sin_registro(self):
+        self.suspensiones += 1
+        try:
+            yield
+        finally:
+            self.suspensiones -= 1
         
-    def registrar_cambio(self, cambio: list[CambioDTO]):
+    def registrar_cambio(self, cambio: list[CambioDTO], tiempo_ejecucion: int | None = None):
         if len(cambio) < 1:
             raise ValueError("Un cambio debe contener al menos un cambio.")
         
-        inicia_accion = self.accion_pendiente
-        
-        if inicia_accion:
-            if self.cantidad_acciones >= self.MAX_HISTORIAL:
-                self._eliminar_accion_mas_antigua()
-            self.cantidad_acciones += 1
-            self.accion_pendiente = False
-            
         if self.cantidad_acciones == 0:
             return 
         
+        tiempo = self.tiempo_evento if tiempo_ejecucion is None else tiempo_ejecucion
         for c in cambio:
-            c.tiempo_ejecucion = self.tiempo_inicio_accion
-            
-        if self.cantidad_acciones == 0:
-            return
+            c.tiempo_ejecucion = tiempo
         
-        nuevo = NodoCambio(cambio, inicia_accion)
+        nuevo = NodoCambio(cambio, False)
         self.agregar_al_final(nuevo)
         self.cantidad_actual += 1
+
+    def registrar_encolado(self, evento):
+        self._registrar_agenda("EVENTO_ENCOLADO", evento)
+
+    def registrar_desencolado(self, evento):
+        self._registrar_agenda("EVENTO_DESENCOLADO", evento)
+
+    def _registrar_agenda(self, tipo_accion: str, evento):
+        if self.suspensiones > 0 or self.cantidad_acciones == 0 or self.reloj is None:
+            return
+        self.registrar_cambio(
+            [CambioDTO(tipo_accion=tipo_accion, objeto_afectado=self.reloj, elemento=evento)],
+            self.reloj.tiempo_actual,
+        )
         
     def agregar_al_final(self, nodo: NodoCambio):
         if self.cabeza is None:
@@ -73,14 +111,6 @@ class RetrocesoLogica:
             nodo.anterior = self.cola
             self.cola.siguiente = nodo
             self.cola = nodo
-
-    def registrar_evento_automatico(self, evento: EventoDTO):
-        """Asocia a la ultima accion un evento automatico que puede restaurarse."""
-        if evento.tipo_accion not in {"ACCION_ENEMIGO", "ACTIVAR_TRAMPA", "ARMAR_TRAMPA"}:
-            return
-        if self.cola is not None:
-            self.cola.evento_automatico = evento
-            
 
     def _eliminar_accion_mas_antigua(self):
         if self.cabeza is None:
@@ -130,22 +160,15 @@ class RetrocesoLogica:
         if self.cantidad_acciones == 0:
             return []
         cambios = []
-        eventos = []
-        actores_eventos = set()
         while True:
             nodo = self.cola
             if nodo is None:
                 break
-            evento = nodo.evento_automatico
-            if evento is not None and id(evento.actor) not in actores_eventos:
-                eventos.append(evento)
-                actores_eventos.add(id(evento.actor))
             cambios.append(self.pop())
             if nodo.es_accion:   
                 break
         self.actual = self.cola
         self.cantidad_acciones -= 1
-        self.eventos_retroceso = eventos
         return cambios
 
     def pop(self):
@@ -170,7 +193,8 @@ class RetrocesoLogica:
         self.cabeza = None
         self.cola = None
         self.actual = None
+        self.reloj = None
         self.cantidad_actual = 0
         self.cantidad_acciones = 0
-        self.accion_pendiente = False
-        self.eventos_retroceso = []
+        self.tiempo_evento = 0
+        self.suspensiones = 0

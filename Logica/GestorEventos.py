@@ -6,7 +6,7 @@ from DTO.ActorDTO import *
 from DTO.SalaDTO import *
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from DTO.EstadoJuegoDTO import EstadoJuego
-from DTO.Objeto import Objeto
+from DTO.Objeto import Objeto, PergaminoRetroceso
 from DTO.TrampaDTO import Trampa
 from Logica.JugadorLogica import JugadorLogica
 from Logica.EnemigosLogica import EnemigoLogica
@@ -20,7 +20,7 @@ from DTO.CambioDTO import CambioDTO
 
 class GestorEventos:
 
-    def __init__(self, salas : list[SalaDTO],jugador: JugadorDTO, cargar_sala: Callable[[int],SalaDTO], semilla: int = None, reencolar_evento=None
+    def __init__(self, salas : list[SalaDTO],jugador: JugadorDTO, cargar_sala: Callable[[int],SalaDTO], semilla: int = None
     ):
         #EnemigosLogica: enemigos_logica: 
         
@@ -31,13 +31,41 @@ class GestorEventos:
         self.pergamino_logica = PergaminoLogica(
             self.jugador_logica.retroceso,
             salas,
-            reencolar_evento,
         )
         self.objeto_logica = ObjetoLogica(jugador, self.pergamino_logica)
         self.salas_logica = SalaLogica(None)
         self.enemigo_logica = EnemigoLogica(None,semilla)
 
+    @staticmethod
+    def es_uso_de_pergamino(evento: EventoDTO) -> bool:
+        return (
+            evento.tipo_accion == "USAR_OBJETO"
+            and len(evento.datos_extra) == 1
+            and isinstance(evento.datos_extra[0], PergaminoRetroceso)
+        )
+
+    def _abre_accion_del_jugador(self, evento: EventoDTO) -> bool:
+        return (
+            evento.actor is self.jugador_logica.jugador
+            and not self.es_uso_de_pergamino(evento)
+        )
+
     def procesar_evento(self, evento: EventoDTO, estado_juego: EstadoJuego | None = None) -> ResultadoEventoDTO:
+        retroceso = self.jugador_logica.retroceso
+        marcador = None
+        if isinstance(evento, EventoDTO) and isinstance(evento.tiempo_ejecucion, int) and isinstance(evento.datos_extra, list):
+            if self._abre_accion_del_jugador(evento):
+                marcador = retroceso.iniciar_accion(evento.tiempo_ejecucion)
+            else:
+                retroceso.fijar_tiempo_evento(evento.tiempo_ejecucion)
+        try:
+            return self._despachar_evento(evento, estado_juego)
+        except Exception:
+            if marcador is not None:
+                self.pergamino_logica.aplicar_cambios(retroceso.descartar_accion(marcador))
+            raise
+
+    def _despachar_evento(self, evento: EventoDTO, estado_juego: EstadoJuego | None = None) -> ResultadoEventoDTO:
         """ENRUTADOR, REVISA EL EVENTO Y LO MANDA A RESOLVER DONDE SEA CONVENIENTE"""
 
         if not isinstance(evento, EventoDTO):
@@ -48,8 +76,6 @@ class GestorEventos:
             raise ValueError("El tiempo de ejecución debe ser un entero no negativo")
         if not isinstance(evento.datos_extra, list):
             raise TypeError("Los datos extra del evento deben estar en una lista")
-
-        self.jugador_logica.retroceso.nueva_accion(evento.tiempo_ejecucion)
 
         jugador = self.jugador_logica.jugador
         if jugador is None:
@@ -62,8 +88,17 @@ class GestorEventos:
                 raise ValueError("La sala actual del jugador no existe")
             if self.salas[jugador.id_sala_actual] is None:
                 raise ValueError("La sala actual del jugador no está cargada")
-            self.salas_logica.sala = self.salas[jugador.id_sala_actual]
+            sala_del_jugador = self.salas[jugador.id_sala_actual]
+            self.salas_logica.sala = sala_del_jugador
+            ultimo_paso_anterior = sala_del_jugador.ultimo_paso
             self.salas_logica.actualizarTiempo(evento.tiempo_ejecucion)
+            if sala_del_jugador.ultimo_paso != ultimo_paso_anterior:
+                self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
+                    tipo_accion="ULTIMO_PASO",
+                    objeto_afectado=sala_del_jugador,
+                    valor_anterior=ultimo_paso_anterior,
+                    valor_nuevo=sala_del_jugador.ultimo_paso,
+                )])
 
         match evento.tipo_accion:
             
@@ -140,7 +175,6 @@ class GestorEventos:
                 cerrada_anterior = salida.cerrada if salida is not None else None
                 resultado = self.salas_logica.intentarAbrirPuerta(jugador,direccion)
                 if resultado.exito:
-                    self.jugador_logica.retroceso.nueva_accion()
                     self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
                         tipo_accion="CAMBIAR_PUERTA",
                         objeto_afectado=salida,

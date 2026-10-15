@@ -1,4 +1,5 @@
 from Logica.EstadoJuegoLogica import *
+from DTO.FinPartidaDTO import FinPartidaDTO
 
 
 class EstadoJuegoServicio:
@@ -29,6 +30,15 @@ class EstadoJuegoServicio:
     def guardarLog(self, nombre_archivo: str) -> None:
         self._estadoJuegoLogica.guardarLog(nombre_archivo)
 
+    def guardarPartida(self, nombre_archivo: str) -> None:
+        self._estadoJuegoLogica.guardarPartida(nombre_archivo)
+
+    def cargarPartida(self, nombre_archivo: str) -> None:
+        self._estadoJuegoLogica.cargarPartida(nombre_archivo)
+
     def getJudador(self):
         return self._estadoJuegoLogica.obtenerJugador()
+
+    def finPartida(self) -> FinPartidaDTO:
+        return self._estadoJuegoLogica.finPartida()
     

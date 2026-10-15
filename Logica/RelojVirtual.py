@@ -5,6 +5,7 @@ class RelojVirtual:
         self.tiempo_actual: int = 0
         self.heap: list[EventoDTO] = []
         self.secuencia_actual: int = 0
+        self.retroceso = None
 
     def _es_menor(self, a: EventoDTO, b: EventoDTO) -> bool:
         """Determina cuál evento debe ejecutarse primero."""
@@ -27,20 +28,28 @@ class RelojVirtual:
         
         self.heap.append(nuevo_evento)
         self._subir(len(self.heap) - 1)
+        if self.retroceso is not None:
+            self.retroceso.registrar_encolado(nuevo_evento)
         return tiempo_futuro
 
-    def encolar_unico(self, evento: EventoDTO) -> int:
-        """Encola un evento automatico solo si el actor no tiene uno igual pendiente."""
-        for evento_pendiente in self.heap:
-            if (evento_pendiente.actor is evento.actor
-                    and evento_pendiente.tipo_accion == evento.tipo_accion):
-                return evento_pendiente.tiempo_ejecucion
-        return self.encolar(
-            evento.tiempo_ejecucion,
-            evento.actor,
-            evento.tipo_accion,
-            evento.datos_extra,
-        )
+    def insertar_evento(self, evento: EventoDTO) -> None:
+        self.heap.append(evento)
+        self._subir(len(self.heap) - 1)
+
+    def quitar_evento(self, evento: EventoDTO) -> bool:
+        posicion = None
+        for i in range(len(self.heap)):
+            if self.heap[i] is evento:
+                posicion = i
+                break
+        if posicion is None:
+            return False
+        ultimo = self.heap.pop()
+        if posicion < len(self.heap):
+            self.heap[posicion] = ultimo
+            self._subir(posicion)
+            self._bajar(posicion)
+        return True
 
     def _subir(self, i: int):
         padre = (i - 1) // 2
@@ -64,6 +73,8 @@ class RelojVirtual:
 
         # Avanzar el tiempo virtual del sistema directamente
         self.tiempo_actual = evento_siguiente.tiempo_ejecucion
+        if self.retroceso is not None:
+            self.retroceso.registrar_desencolado(evento_siguiente)
         return evento_siguiente
 
     def _bajar(self, i: int):
