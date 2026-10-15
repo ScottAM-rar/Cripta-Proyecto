@@ -30,6 +30,9 @@ class JugadorLogica(ActorLogica):
 
     def esta_muerto(self):
         return self.jugador.vida_actual <= 0
+
+    def estaEnSalaFinal(self, salaFinal: int):
+        return self.jugador.id_sala_actual == salaFinal
     def atacarEnemigo(self, enemigo : EnemigoDTO)-> ResultadoEventoDTO:
         if enemigo.vida_actual <= 0:
             return ResultadoEventoDTO(False, f"El jugador {self.jugador.id_instancia} no atacó al enemigo ya que está muerto")
@@ -48,7 +51,17 @@ class JugadorLogica(ActorLogica):
 
     def recogerObjeto(self, objeto: Objeto, sala_actual: SalaDTO):
         try:
+            if objeto not in sala_actual.objetos:
+                raise ValueError("El objeto no se encuentra en la sala actual")
+            if (
+                self.jugador.inventario.cantidad_actual
+                >= self.jugador.inventario.capacidad_maxima
+            ):
+                raise ValueError(
+                    "No se puede agregar el objeto, el inventario está al máximo"
+                )
             self.jugador.inventario.agregar_objeto(objeto)
+            sala_actual.objetos.remove(objeto)
             self.retroceso.nueva_accion()
             self.retroceso.registrar_cambio([
                 CambioDTO(
