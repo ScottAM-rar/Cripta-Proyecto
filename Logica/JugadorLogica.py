@@ -16,7 +16,6 @@ class JugadorLogica(ActorLogica):
     def mover_jugador(self, sala_actual: SalaDTO, direccion: str) -> ResultadoEventoDTO:
         respuesta = self._mover(self.jugador, sala_actual, direccion)
         if(respuesta.exito == True):
-            self.retroceso.nueva_accion()
             self.retroceso.registrar_cambio([
                 CambioDTO(
                     tipo_accion="MOVER",
@@ -35,18 +34,26 @@ class JugadorLogica(ActorLogica):
         return self.jugador.id_sala_actual == salaFinal
     def atacarEnemigo(self, enemigo : EnemigoDTO)-> ResultadoEventoDTO:
         if enemigo.vida_actual <= 0:
-            return ResultadoEventoDTO(False, f"El jugador {self.jugador} no atacó al enemigo {enemigo.id_instancia} ya que está muerto")
+            return ResultadoEventoDTO(False, f"El jugador no atacó al enemigo {enemigo.id_instancia} ya que está muerto")
         vida_anterior = enemigo.vida_actual
-        self.retroceso.nueva_accion()
+        eliminados_anteriores = self.jugador.enemigos_eliminados
         self._atacar(self.jugador,enemigo,self.semilla)
-        self.retroceso.registrar_cambio([CambioDTO(
+        if(enemigo.vida_actual<=0):
+            self.jugador.enemigos_eliminados+=1
+        cambios = [CambioDTO(
             tipo_accion="ACTUALIZAR_VIDA",
             objeto_afectado=enemigo,
             valor_anterior=vida_anterior,
             valor_nuevo=enemigo.vida_actual,
-        )])
-        if(enemigo.vida_actual<=0):
-            self.jugador.enemigos_eliminados+=1
+        )]
+        if self.jugador.enemigos_eliminados != eliminados_anteriores:
+            cambios.append(CambioDTO(
+                tipo_accion="ENEMIGOS_ELIMINADOS",
+                objeto_afectado=self.jugador,
+                valor_anterior=eliminados_anteriores,
+                valor_nuevo=self.jugador.enemigos_eliminados,
+            ))
+        self.retroceso.registrar_cambio(cambios)
         return ResultadoEventoDTO(True,f"El jugador ha atacado al enemigo causando daño",puntaje=50)
 
     def recogerObjeto(self, objeto: Objeto, sala_actual: SalaDTO):
@@ -62,7 +69,6 @@ class JugadorLogica(ActorLogica):
                 )
             self.jugador.inventario.agregar_objeto(objeto)
             sala_actual.objetos.remove(objeto)
-            self.retroceso.nueva_accion()
             self.retroceso.registrar_cambio([
                 CambioDTO(
                     tipo_accion="RECOGER_OBJETO",
@@ -86,7 +92,6 @@ class JugadorLogica(ActorLogica):
         except ValueError as e:
             return ResultadoEventoDTO(False, str(e))
         salaActual.objetos.append(objeto)
-        self.retroceso.nueva_accion()
         self.retroceso.registrar_cambio([CambioDTO(
             tipo_accion="SOLTAR_OBJETO",
             objeto_afectado=self.jugador,

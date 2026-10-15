@@ -39,7 +39,7 @@ class ServicioCripta:
         self._esqueleto_id: str | None = None        # cripta a la que pertenece el esqueleto
         self._esqueleto: list[dict] = []             # salas crudas de /salas
         self._datos_id: str | None = None            # cripta a la que pertenecen los datos generales
-        self._datos: dict = {}                       # respuesta cruda de /criptas/{id}
+        self._datos: dict | None = None              # respuesta cruda de /criptas/{id}
  
     # ------------------------------------------------------------------
     # Criptas
@@ -100,6 +100,15 @@ class ServicioCripta:
         Sale de los datos generales, que ya se piden una sola vez por cripta."""
         return self.datos_cripta(cripta_id)["sala_salida"]
 
+    def presupuesto_solicitudes(self, cripta_id: str) -> int:
+        """Cuántas solicitudes permite la API para jugar esta cripta."""
+        return self.datos_cripta(cripta_id)["presupuesto_solicitudes"]
+
+    @property
+    def solicitudes_realizadas(self) -> int:
+        """Solicitudes de red hechas hasta ahora (0 en modo offline)."""
+        return self.cliente.solicitudes_realizadas
+
     # ------------------------------------------------------------------
     # Salas
     # ------------------------------------------------------------------
@@ -136,6 +145,16 @@ class ServicioCripta:
         numeros = [sala["id"] for sala in self._cargar_esqueleto(cripta_id)]
         return self.construir_salas(cripta_id, numeros)
  
+    def precargar(self, cripta_id: str, numeros: list[int] | None = None) -> int:
+        """Trae de una vez, en lotes, el contenido y las fichas de las salas
+        (todas si no se indican). Así luego construir_sala() sale del disco
+        sin gastar solicitudes. Devuelve cuántas salas se precargaron."""
+        if numeros is None:
+            salas = self.construir_todas(cripta_id)
+        else:
+            salas = self.construir_salas(cripta_id, numeros)
+        return len(salas)
+
     # ------------------------------------------------------------------
     # Auxiliares
     # ------------------------------------------------------------------
@@ -148,19 +167,21 @@ class ServicioCripta:
     def _ensamblar(self, esqueleto: dict, contenido) -> SalaDTO:
         enemigos, objetos, trampas = contenido
         sala = SalaDTO(id=esqueleto["id"], nombre=esqueleto["nombre"])
-        sala.salidas = self._armar_salidas(esqueleto.get("salidas", {}))
+        sala.salidas = self._armar_salidas(esqueleto.get("salidas"))
         sala.enemigos = enemigos
         sala.objetos = objetos      # objetos ya resueltos (Arma, Llave, ...)
         sala.trampas = trampas      # Trampa ya resueltas
         return sala
  
     @staticmethod
-    def _armar_salidas(salidas_api: dict) -> deque[SalidaDTO]:
+    def _armar_salidas(salidas_api: dict | None) -> deque[SalidaDTO]:
         """Convierte el objeto 'salidas' de la API en un deque de SalidaDTO.
  
         Solo se agregan las salidas que existen, en el orden N, S, E, O.
         """
         salidas: deque[SalidaDTO] = deque(maxlen=4)
+        if salidas_api is None:          # sala sin salidas
+            return salidas
         for letra in _LETRAS_EN_ORDEN:
             if letra in salidas_api:
                 datos = salidas_api[letra]

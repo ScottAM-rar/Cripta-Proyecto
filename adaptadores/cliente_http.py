@@ -2,32 +2,61 @@ import requests
 import uuid
 import time
 
+from adaptadores.Interfaz import ClienteInterfaz
+
+# Veces que se reintenta una solicitud rechazada con 429 antes de rendirse.
+MAX_REINTENTOS_429 = 10
+
+
+class ErrorSinConexion(RuntimeError):
+    """No se pudo llegar al servidor (sin internet, caído o tardó demasiado).
+    Quien lo capture puede sugerir jugar con --offline."""
+
+
 """ Este es el adaptador que habla con el servicio HTTP de Cripta 
     
     Entonces el modelo y el motor de eventos no van a hacer requests, todo va a ser
     por metodos de esta clase para poder sustituirla por un cliente offline sin que nadie mas se entere del cambio
 """
-class ClienteCripta:
+class ClienteCripta(ClienteInterfaz):
 
     def __init__(self, base_url: str, timeout: int = 10) -> None:
         self.base_url = base_url.strip("/")
         self.timeout = timeout
         self.client_id = str(uuid.uuid4())
         self.headers = {"X-Cripta-Client-Id": self.client_id}
-        self.solicitudes_realizadas = 0
+        self._solicitudes = 0
+
+    @property
+    def solicitudes_realizadas(self) -> int:
+        """Solicitudes que llegaron al servidor (incluye los 429)."""
+        return self._solicitudes
 
     def _solicitar(self, ruta: str) -> dict:
 
         url = f"{self.base_url}{ruta}"
 
+        reintentos = 0
+
         while True:
-            respuesta = requests.get(url, headers=self.headers, timeout=self.timeout)
-            self.solicitudes_realizadas += 1
+            try:
+                respuesta = requests.get(url, headers=self.headers, timeout=self.timeout)
+            except requests.exceptions.RequestException as error:
+                raise ErrorSinConexion(
+                    f"No se pudo conectar con el servidor ({error.__class__.__name__}). "
+                    "Revisa tu conexión o juega con --offline."
+                ) from error
+            self._solicitudes += 1
 
             if respuesta.status_code == 200:
                 return respuesta.json()
-            
+
             if respuesta.status_code == 429:
+                reintentos += 1
+                if reintentos > MAX_REINTENTOS_429:
+                    raise RuntimeError(
+                        f"El servidor sigue rechazando {url} (429) tras {MAX_REINTENTOS_429} reintentos"
+                    )
                 segundos_espera = respuesta.json()["reintentar_en"]
                 time.sleep(segundos_espera)
                 continue

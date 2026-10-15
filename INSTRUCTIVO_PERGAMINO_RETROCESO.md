@@ -12,34 +12,17 @@ No deben guardarse copias completas del estado. Solo se deben registrar los dato
 
 ## 2. Registrar una acción
 
-Antes del primer cambio producido por una decisión del jugador:
+El historial se divide en grupos. Un grupo empieza con un nodo marcador (`es_accion=True`) creado cuando `GestorEventos` procesa un evento del jugador, y contiene todo lo que ocurre después hasta el siguiente marcador: cambios del jugador, efectos de enemigos, trampas, puertas, pociones y antorchas.
 
-```python
-retroceso.nueva_accion()
-```
+`GestorEventos.procesar_evento` abre el grupo automáticamente con `retroceso.iniciar_accion(...)`; el marcador guarda `tiempo_actual` y `secuencia_actual` del reloj. Las acciones fallidas o sin efecto del jugador (incluido esperar) también abren grupo. Usar un pergamino no abre grupo.
 
-Después se registra uno o más cambios:
+Las operaciones sobre la agenda del `RelojVirtual` (`encolar`, `desencolar`) se registran solas como `EVENTO_ENCOLADO` / `EVENTO_DESENCOLADO`, por lo que al retroceder se reconstruye la agenda: los enemigos, trampas, puertas, pociones y antorchas vuelven a tener sus eventos pendientes.
 
-```python
-retroceso.registrar_cambio([cambio])
-```
+Los eventos creados al cargar una sala se encolan dentro de `retroceso.sin_registro()` para que no se deshagan.
 
-Una acción puede contener hasta dos `CambioDTO`:
+Cada uso del pergamino deshace un grupo completo (máximo `MAX_HISTORIAL` = 5) y no se consume si no hay historial.
 
-```python
-retroceso.registrar_cambio([
-    cambio_vida,
-    cambio_inventario
-])
-```
-
-Los efectos posteriores producidos por enemigos, trampas o eventos no deben llamar nuevamente a `nueva_accion()`. Deben registrarse dentro de la acción del jugador que los provocó:
-
-```python
-retroceso.registrar_cambio([cambio_enemigo])
-```
-
----
+También se revierten reloj, puntaje, enemigos eliminados, último paso y bitácora (`ACTUALIZAR_PUNTAJE`, `ENEMIGOS_ELIMINADOS`, `ULTIMO_PASO`, `BITACORA_AGREGADA`).
 
 ## 3. Estructura de `CambioDTO`
 
@@ -317,71 +300,6 @@ El uso del pergamino no debe avanzar el reloj ni registrarse como una acción de
 
 ---
 
-## 6. Requisitos de 2.11 y 4.6 todavía pendientes
+## 6. Estado
 
-### Registro automático
-
-Conectar `nueva_accion()` y `registrar_cambio()` al flujo real de `GestorEventos` y `EstadoJuegoLogica`.
-
-Actualmente el historial se llena manualmente.
-
-### Eventos posteriores
-
-Registrar también los cambios producidos entre decisiones del jugador:
-
-- ataques enemigos;
-- veneno;
-- trampas;
-- puertas;
-- efectos temporales;
-- movimientos automáticos;
-- cambios de vida.
-
-### Reloj y agenda de eventos
-
-Registrar información suficiente para restaurar:
-
-- `RelojVirtual.tiempo_actual`;
-- eventos retirados del heap;
-- eventos nuevos;
-- eventos cancelados;
-- `secuencia_actual`.
-
-### Rastro y bitácora
-
-Conectar `BitacoraLogica` al historial reversible para restaurar los mensajes o pasos registrados durante el intervalo revertido.
-
-### Puertas y trampas
-
-Crear cambios reversibles para:
-
-- puertas abiertas o cerradas;
-- trampas armadas o desarmadas;
-- trampas activadas;
-- efectos producidos por trampas.
-
-### Exclusión de pergaminos
-
-La reversión no debe modificar la cantidad de pergaminos de retroceso:
-
-- no se revierte el consumo del pergamino usado;
-- no se revierte recoger un pergamino;
-- no se revierte soltar un pergamino;
-- no se registra el uso del pergamino en el historial.
-
-La cantidad final debe ser la cantidad existente al invocar el retroceso menos la unidad consumida.
-
-### Límite de acciones
-
-El historial debe mantener como máximo cinco acciones del jugador. Al superar ese límite, se debe eliminar la acción más antigua junto con todos sus cambios y eventos asociados.
-
-### DTO de resultado
-
-Actualmente `ResultadoEventoDTO` no tiene el campo `cambios`. Mientras ese cambio no se realice, `PergaminoLogica` debe devolver únicamente:
-
-```python
-ResultadoEventoDTO(
-    exito=True,
-    mensaje="..."
-)
-```
+Los puntos antes pendientes (registro automático, eventos posteriores, reloj y agenda, rastro y bitácora, puertas y trampas, exclusión de pergaminos, límite de acciones) quedaron implementados. Ver `test_retroceso_flujo.py`.

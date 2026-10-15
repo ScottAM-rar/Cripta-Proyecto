@@ -8,20 +8,56 @@ from Logica.JugadorLogica import JugadorLogica
 from Logica.LogEventos import LogEventos, ReferenciaEvento, RegistroEvento
 from Logica.BitacoraLogica import BitacoraLogica
 from Logica.RelojVirtual import RelojVirtual
+from Logica.RetrocesoLogica import RetrocesoLogica
+from DTO.CambioDTO import CambioDTO
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from adaptadores.cache import CacheLRU
 from adaptadores.cliente_http import ClienteCripta
 from adaptadores.servicioCripta import ServicioCripta
+from adaptadores.PersistenciaPartida import PersistenciaPartida
 class EstadoJuegoLogica:
     def __init__(self,semilla: int = None, cripta: str = None):
         self.tiempoMovimientoJugador = 0
-        self.comunicacion = ServicioCripta(ClienteCripta("https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1"),
-                                            CacheLRU(25))
+        self.comunicacion = self._crearComunicacion()
         
         self.iniciado = False
         
         if(cripta is not None):
             self.iniciarJuego(cripta)
+
+    @staticmethod
+    def _crearComunicacion() -> ServicioCripta:
+        return ServicioCripta(ClienteCripta("https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1"),
+                              CacheLRU(25))
+
+    def __getstate__(self):
+        estado = self.__dict__.copy()
+        estado.pop("comunicacion", None)
+        return estado
+
+    def __setstate__(self, estado):
+        self.__dict__.update(estado)
+        self.comunicacion = self._crearComunicacion()
+
+    def _enlazarCallbacks(self):
+        self.gestorEventos.cargar_sala = self.ingresarEnSala
+
+    def guardarPartida(self, nombre_archivo: str) -> None:
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+        if self.fin:
+            raise ValueError("No se puede guardar una partida que ya terminó")
+        PersistenciaPartida.guardar(nombre_archivo, self)
+
+    def cargarPartida(self, nombre_archivo: str) -> None:
+        cargado = PersistenciaPartida.cargar(nombre_archivo)
+        if not isinstance(cargado, EstadoJuegoLogica) or not cargado.iniciado:
+            raise ValueError("El archivo no contiene una partida válida")
+        estado = cargado.__dict__.copy()
+        estado["comunicacion"] = self.comunicacion
+        self.__dict__.clear()
+        self.__dict__.update(estado)
+        self._enlazarCallbacks()
 
     def iniciarJuego(self,  cripta: str,semilla: int = None,):
         if self.iniciado:
@@ -36,6 +72,10 @@ class EstadoJuegoLogica:
         #TODO obtener version de la cripta
         salas = [None] * cantSalas
         relojvirtual = RelojVirtual()
+        retroceso = RetrocesoLogica()
+        retroceso.reiniciar()
+        retroceso.reloj = relojvirtual
+        relojvirtual.retroceso = retroceso
         jugador =self.comunicacion.crear_jugador(cripta)
         self.estadoJuego = EstadoJuego(relojvirtual,jugador,[],[],salas)
         self.gestorEventos = GestorEventos(
@@ -43,7 +83,6 @@ class EstadoJuegoLogica:
             jugador,
             self.ingresarEnSala,
             self.semilla,
-            self.reencolarEventoAutomatico,
         )
         self.jugadorLogica = JugadorLogica(jugador,self.semilla)
         self.logEventos.vaciar()
@@ -212,20 +251,24 @@ class EstadoJuegoLogica:
         if(self.estadoJuego.salas[sala] is not None):
             return self.estadoJuego.salas[sala]
         self.estadoJuego.salas[sala] = self.comunicacion.construir_sala(self.idCripta,sala) 
-        for enemigo in self.estadoJuego.salas[sala].enemigos:
-            self.estadoJuego.catalogo_enemigos.append(enemigo)
-            self.cargarEvento(
-                EventoDTO(
-                    100,
-                    0,
-                    enemigo,
-                    "ACCION_ENEMIGO",
-                    [self.estadoJuego.jugador]
+        sala_cargada = self.estadoJuego.salas[sala]
+        with self.jugadorLogica.retroceso.sin_registro():
+            for enemigo in sala_cargada.enemigos:
+                self.estadoJuego.catalogo_enemigos.append(enemigo)
+                self.cargarEvento(
+                    EventoDTO(
+                        100,
+                        0,
+                        enemigo,
+                        "ACCION_ENEMIGO",
+                        [self.estadoJuego.jugador]
+                    )
                 )
-            )
-        for objeto in self.estadoJuego.salas[sala].objetos:
+            for trampa in sala_cargada.trampas:
+                self.cargarEvento(EventoDTO(50, 0, trampa, "ACTIVAR_TRAMPA", [sala_cargada]))
+        for objeto in sala_cargada.objetos:
             self.estadoJuego.catalogo_objetos.append(objeto)
-        return self.estadoJuego.salas[sala]
+        return sala_cargada
 
     #TODO va a revisar la seccion del vector de la memoria
     #si la sala está (no es None) la devuelve
@@ -260,7 +303,7 @@ class EstadoJuegoLogica:
                 f"Tiempo: {evento.tiempo_ejecucion}"
             )
             accion = self.gestorEventos.procesar_evento(evento)
-            self.logEventosJuego.agregar_evento(accion)
+            self._registrarEnBitacora(accion)
             respuesta = accion
             print(accion.mensaje)
 
@@ -268,15 +311,33 @@ class EstadoJuegoLogica:
             if not self.fin and (
                 accion.eventoResultado is not None
             ):
-                self.gestorEventos.pergamino_logica.retroceso_logica.registrar_evento_automatico(
-                    accion.eventoResultado
-                )
                 self.cargarEvento(accion.eventoResultado)
             if evento.actor is self.estadoJuego.jugador:
-                self.estadoJuego.puntaje += accion.puntaje
+                self._sumarPuntaje(accion.puntaje)
                 break
 
         return respuesta
+
+    def _registrarEnBitacora(self, accion: ResultadoEventoDTO):
+        descartado = self.logEventosJuego.agregar_evento(accion)
+        self.jugadorLogica.retroceso.registrar_cambio([CambioDTO(
+            tipo_accion="BITACORA_AGREGADA",
+            objeto_afectado=self.logEventosJuego,
+            valor_anterior=descartado,
+            elemento=accion,
+        )])
+
+    def _sumarPuntaje(self, puntaje: int):
+        if not puntaje:
+            return
+        anterior = self.estadoJuego.puntaje
+        self.estadoJuego.puntaje += puntaje
+        self.jugadorLogica.retroceso.registrar_cambio([CambioDTO(
+            tipo_accion="ACTUALIZAR_PUNTAJE",
+            objeto_afectado=self.estadoJuego,
+            valor_anterior=anterior,
+            valor_nuevo=self.estadoJuego.puntaje,
+        )])
 
     @staticmethod
     def _obtener_id_afectado(evento: EventoDTO) -> str | int | None:
@@ -304,11 +365,6 @@ class EstadoJuegoLogica:
         if not self.iniciado:
             raise ValueError("El juego no ha sido iniciado")
         return self.estadoJuego.reloj.encolar(evento.tiempo_ejecucion,evento.actor,evento.tipo_accion,evento.datos_extra)
-
-    def reencolarEventoAutomatico(self, evento: EventoDTO) -> int:
-        if not self.iniciado:
-            raise ValueError("El juego no ha sido iniciado")
-        return self.estadoJuego.reloj.encolar_unico(evento)
 
     def accionJugador(self, evento: EventoDTO):
         if not self.iniciado:
