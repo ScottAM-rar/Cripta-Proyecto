@@ -118,6 +118,37 @@ class TestPergaminoLogica(unittest.TestCase):
         self.assertIs(self.jugador.arma, arma_nueva)
         self.assertIs(self.jugador.inventario.cabeza.objeto, arma_nueva)
 
+    def test_usar_equipa_un_arma_que_no_es_el_cursor_actual(self):
+        objeto_inicial = self.objeto("Antorcha")
+        arma = Arma("daga", "Daga", 1, 1, 3)
+        self.jugador.id_sala_actual = 1
+        self.jugador.inventario.agregar_objeto(objeto_inicial)
+        self.jugador.inventario.agregar_objeto(arma)
+
+        resultado = self.gestor.procesar_evento(
+            EventoDTO(50, 1, self.jugador, "USAR_OBJETO", [arma])
+        )
+
+        self.assertTrue(resultado.exito)
+        self.assertIs(self.jugador.arma, arma)
+        self.assertIs(self.jugador.inventario.cabeza.objeto, arma)
+
+    def test_soltar_objeto_elegido_que_no_es_el_cursor_actual(self):
+        objeto_inicial = self.objeto("Antorcha")
+        objeto_elegido = self.objeto("Llave")
+        self.jugador.id_sala_actual = 1
+        self.jugador.inventario.agregar_objeto(objeto_inicial)
+        self.jugador.inventario.agregar_objeto(objeto_elegido)
+
+        resultado = self.gestor.procesar_evento(
+            EventoDTO(25, 1, self.jugador, "SOLTAR_OBJETO", [objeto_elegido])
+        )
+
+        self.assertTrue(resultado.exito)
+        self.assertIsNone(self.jugador.inventario.buscar_objeto(objeto_elegido))
+        self.assertIn(objeto_elegido, self.sala_anterior.objetos)
+        self.assertIs(self.jugador.inventario.cabeza.objeto, objeto_inicial)
+
     def test_revertir_objeto_usado_y_estados(self):
         objeto = self.objeto("Pocion")
         self.logica._revertir_cambio(

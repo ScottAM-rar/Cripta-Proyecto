@@ -128,7 +128,6 @@ class InventarioLogica:
         self.actual = nodo_actual
         return nodo_actual.objeto
 
-
     def _insertar_nodo_en_indice(self, nodo, indice):
         nodo_destino = self.cabeza
         for _ in range(indice):
@@ -199,9 +198,7 @@ class InventarioLogica:
         nodo.anterior = None
         nodo.siguiente = None
         self.cantidad_actual -= 1 #Resta 1 a la cantidad actual en el inventario
-        
-        
-        
+           
     # Metodos para el pergamino de retroceso.
         
     def mover_objeto_equipado_a_su_indice_anterior(self, indice: int, objeto: Objeto):
