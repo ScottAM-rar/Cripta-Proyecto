@@ -56,6 +56,9 @@ class ControladorJuego:
                 break
                 
             if jugador.vida_actual <= 0:
+                print("\n" + "=" * 50)
+                print("¡HAS MUERTO! Tu aventura en la cripta ha llegado a su fin.")
+                print("=" * 50)
                 self.servicio.guardarLog("pruebasLog.log")
                 break
                 
@@ -64,7 +67,8 @@ class ControladorJuego:
             self.vista.mostrar_juego(jugador, sala_actual)
 
             accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
-            "\n usar[objeto], soltar[objeto], atacar, abrir[puerta], cerrar[puerta], salir: ").strip().lower()
+            "\n usar[objeto actual],siguiente[objeto],anterior[objeto]," \
+            "\n soltar, atacar, abrir[puerta], cerrar[puerta], salir: ").strip().lower()
 
             if accion == "salir":
                 print("Cerrando el juego...")
@@ -127,28 +131,56 @@ class ControladorJuego:
                 datos_extra=[objetivo]
             )
                 
-        # Abrir puerta bloqueada
+     # Abrir puerta o salida bloqueada
         elif accion == "abrir":
-            direccion = input("¿Qué dirección deseas abrir? (norte/sur/este/oeste): ").strip().lower()
+            if not hasattr(sala_actual, "salidas") or not sala_actual.salidas:
+                print("No hay salidas en esta sala.")
+                return "IGNORAR"
+            
+            # 1. Mostramos las salidas de la sala para que el jugador elija
+            print("\n¿Qué puerta deseas abrir?")
+            for salida in sala_actual.salidas:
+                estado_puerta = "CERRADA" if salida.cerrada else "ABIERTA"
+                print(f"  - {salida.direccion} [{estado_puerta}]")
+            
+            direccion = input("Ingresa la dirección de la puerta que deseas abrir: ").strip().lower()
+            if not direccion:
+                print("Dirección no válida.")
+                return "IGNORAR"
+            
+            # 2. Buscamos la salida correspondiente
+            salida_encontrada = None
+            for salida in sala_actual.salidas:
+                if getattr(salida, "direccion", "").lower() == direccion:
+                    salida_encontrada = salida
+                    break
+            
+            if not salida_encontrada:
+                print(f"No hay ninguna salida hacia el '{direccion}'.")
+                return "IGNORAR"
+            
+            # 3. Verificamos si la salida ya está abierta
+            if not salida_encontrada.cerrada:
+                print(f"La puerta hacia el '{direccion}' ya está abierta.")
+                return "IGNORAR"
+            
+            # 4. Validación de llave mediante el servicio
+            id_llave_necesaria = salida_encontrada.llave
+            
+            if id_llave_necesaria:
+                tiene_la_llave = self.servicio.tieneLlave(id_llave_necesaria)
+                if not tiene_la_llave:
+                    print(f"La puerta está cerrada. Necesitas la llave: '{id_llave_necesaria}' para poder abrirla.")
+                    return "IGNORAR"
+            
+            # 5. GestorEventos espera [sala_actual, direccion].
             return EventoDTO(
-                tiempo_ejecucion=10,
+                tiempo_ejecucion=50,
                 id_secuencia=0,
                 actor=jugador,
                 tipo_accion="ABRIR_PUERTA",
                 datos_extra=[sala_actual, direccion]
             )
-
-        # Cerrar puerta (El backend exige que el actor sea la sala actual)
-        elif accion == "cerrar":
-            direccion = input("¿Qué dirección deseas cerrar? (norte/sur/este/oeste): ").strip().lower()
-            return EventoDTO(
-                tiempo_ejecucion=50,
-                id_secuencia=0,
-                actor=sala_actual,
-                tipo_accion="CERRAR_PUERTA",
-                datos_extra=[direccion]
-            )
-
             
         # 1. RECOGER OBJETO (Menú interactivo por número basado en la sala)
         elif accion == "recoger":
@@ -179,34 +211,41 @@ class ControladorJuego:
                 datos_extra=[obj_encontrado]
             )
 
-        # 2. USAR OBJETO (Recorre la lista enlazada del compañero para mostrar el menú)
+        # 1. MOVERSE AL SIGUIENTE OBJETO DEL INVENTARIO
+        elif accion in ("siguiente", "sig"):
+            try:
+                movido = jugador.inventario.siguiente_objeto()
+                if movido:
+                    print("-> Te has movido al siguiente objeto del inventario.")
+                else:
+                    print("-> Ya estás en el último objeto del inventario.")
+            except ValueError as e:
+                print(f"-> {e}")
+            return "IGNORAR"
+
+        # 2. MOVERSE AL OBJETO ANTERIOR DEL INVENTARIO
+        elif accion in ("anterior", "ant"):
+            try:
+                movido = jugador.inventario.anterior_objeto()
+                if movido:
+                    print("-> Te has movido al objeto anterior del inventario.")
+                else:
+                    print("-> Ya estás en el primer objeto del inventario.")
+            except ValueError as e:
+                print(f"-> {e}")
+            return "IGNORAR"
+
+        # 3. USAR EL OBJETO ACTUAL
         elif accion == "usar":
-            if not hasattr(jugador, "inventario") or not jugador.inventario or jugador.inventario.cabeza is None:
+            if not hasattr(jugador, "inventario") or not jugador.inventario or jugador.inventario.actual is None:
                 print("Tu inventario está vacío.")
                 return "IGNORAR"
-
-            # Recorremos la lista enlazada oficial usando los punteros de tu compañero
-            lista_temporal = []
-            nodo_actual = jugador.inventario.cabeza
-            
-            print("\n¿Qué objeto deseas usar?")
-            i = 1
-            while nodo_actual is not None:
-                obj = nodo_actual.objeto
-                lista_temporal.append(obj)
-                print(f"  [{i}] {obj.nombre} (ID: {getattr(obj, 'id', 'N/A')})")
-                nodo_actual = nodo_actual.siguiente
-                i += 1
             
             try:
-                opcion = int(input("Selecciona el número del objeto: ")) - 1
-                if 0 <= opcion < len(lista_temporal):
-                    obj_encontrado = lista_temporal[opcion]
-                else:
-                    print("Número de objeto inválido.")
-                    return "IGNORAR"
-            except ValueError:
-                print("Por favor ingresa un número válido.")
+                # Obtenemos directamente el objeto actual usando el método de tu compañero
+                obj_actual = jugador.inventario.mostrar_objeto_actual()
+            except ValueError as e:
+                print(f"-> {e}")
                 return "IGNORAR"
 
             return EventoDTO(
@@ -214,37 +253,20 @@ class ControladorJuego:
                 id_secuencia=0,
                 actor=jugador,
                 tipo_accion="USAR_OBJETO",
-                datos_extra=[obj_encontrado]
+                datos_extra=[obj_actual]
             )
 
-        # 3. SOLTAR OBJETO (Recorre la lista enlazada del compañero para mostrar el menú)
+        # 4. SOLTAR EL OBJETO ACTUAL
         elif accion == "soltar":
-            if not hasattr(jugador, "inventario") or not jugador.inventario or jugador.inventario.cabeza is None:
+            if not hasattr(jugador, "inventario") or not jugador.inventario or jugador.inventario.actual is None:
                 print("Tu inventario está vacío.")
                 return "IGNORAR"
-
-            # Recorremos la lista enlazada oficial usando los punteros de tu compañero
-            lista_temporal = []
-            nodo_actual = jugador.inventario.cabeza
-            
-            print("\n¿Qué objeto deseas soltar?")
-            i = 1
-            while nodo_actual is not None:
-                obj = nodo_actual.objeto
-                lista_temporal.append(obj)
-                print(f"  [{i}] {obj.nombre} (ID: {getattr(obj, 'id', 'N/A')})")
-                nodo_actual = nodo_actual.siguiente
-                i += 1
             
             try:
-                opcion = int(input("Selecciona el número del objeto: ")) - 1
-                if 0 <= opcion < len(lista_temporal):
-                    obj_encontrado = lista_temporal[opcion]
-                else:
-                    print("Número de objeto inválido.")
-                    return "IGNORAR"
-            except ValueError:
-                print("Por favor ingresa un número válido.")
+                # Obtenemos el objeto actual que va a ser soltado
+                obj_actual = jugador.inventario.mostrar_objeto_actual()
+            except ValueError as e:
+                print(f"-> {e}")
                 return "IGNORAR"
 
             return EventoDTO(
@@ -252,7 +274,7 @@ class ControladorJuego:
                 id_secuencia=0,
                 actor=jugador,
                 tipo_accion="SOLTAR_OBJETO",
-                datos_extra=[obj_encontrado]
+                datos_extra=[obj_actual]
             )
         
         print("Objeto no especificado o no disponible en tu inventario.")
