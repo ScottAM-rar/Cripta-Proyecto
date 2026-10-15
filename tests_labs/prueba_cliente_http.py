@@ -9,14 +9,15 @@ todas_salas = cliente.obtener_salas(cripta_id)
 ids_salas = [sala["id"] for sala in todas_salas]
 contenido = cliente.obtener_contenido(cripta_id, ids_salas)
 
-tipos_enemigos = set()
+tipos_enemigos = []
 for entrada in contenido:
     for enemigo in entrada["enemigos"]:
-        tipos_enemigos.add(enemigo["tipo"])
+        if enemigo["tipo"] not in tipos_enemigos:
+            tipos_enemigos.append(enemigo["tipo"])
 
 print("Tipos de enemigos encontrados:", tipos_enemigos)
 
-fichas = cliente.obtener_catalogo(list(tipos_enemigos))
+fichas = cliente.obtener_catalogo(tipos_enemigos)
 for ficha in fichas:
     print(ficha["nombre"], "->", repr(ficha["comportamiento"]))
 
@@ -27,5 +28,5 @@ ficha_trampa = fichas_trampas[0]
 contenido_sala_2 = cliente.obtener_contenido(cripta_id, [2])
 for entrada in contenido_sala_2:
     for colocacion in entrada["trampas"]:
-        trampa = resolver_trampa(colocacion, ficha_trampa)
+        trampa = resolver_trampa(colocacion, ficha_trampa, 2)   # 2 = sala de la que sale la colocación
         print(trampa)
