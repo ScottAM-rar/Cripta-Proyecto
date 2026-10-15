@@ -29,6 +29,19 @@ class RelojVirtual:
         self._subir(len(self.heap) - 1)
         return tiempo_futuro
 
+    def encolar_unico(self, evento: EventoDTO) -> int:
+        """Encola un evento automatico solo si el actor no tiene uno igual pendiente."""
+        for evento_pendiente in self.heap:
+            if (evento_pendiente.actor is evento.actor
+                    and evento_pendiente.tipo_accion == evento.tipo_accion):
+                return evento_pendiente.tiempo_ejecucion
+        return self.encolar(
+            evento.tiempo_ejecucion,
+            evento.actor,
+            evento.tipo_accion,
+            evento.datos_extra,
+        )
+
     def _subir(self, i: int):
         padre = (i - 1) // 2
         while i > 0 and self._es_menor(self.heap[i], self.heap[padre]):

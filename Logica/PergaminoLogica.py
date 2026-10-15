@@ -7,9 +7,10 @@ from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.RetrocesoLogica import RetrocesoLogica
 
 class PergaminoLogica:
-    def __init__(self, retroceso_logica: RetrocesoLogica, salas: list[SalaDTO]):
+    def __init__(self, retroceso_logica: RetrocesoLogica, salas: list[SalaDTO], reencolar_evento=None):
         self.retroceso_logica = retroceso_logica
         self.salas = salas
+        self.reencolar_evento = reencolar_evento
 
     def hay_algo_para_deshacer(self) -> bool:
         """Verifica si hay acciones registradas en el historial de retroceso."""
@@ -19,12 +20,12 @@ class PergaminoLogica:
         """Aplica los efectos del pergamino al jugador."""
         if not self.hay_algo_para_deshacer():
             return ResultadoEventoDTO(exito=False, mensaje="No hay nada que retroceder.")
-            #return ResultadoEventoDTO(exito=False, mensaje="No hay nada que retroceder.", cambios=[])
         
         self._revertir()
-        #cambios = self._revertir()
+        if self.reencolar_evento is not None:
+            for evento in self.retroceso_logica.eventos_retroceso:
+                self.reencolar_evento(evento)
         return ResultadoEventoDTO(exito=True, mensaje="Se han revertido los cambios hasta la última acción registrada.")
-        #return ResultadoEventoDTO(exito=True, mensaje="Se han revertido los cambios hasta la última acción registrada.", cambios=cambios)
     
     def _revertir(self) -> list[CambioDTO]:
         """Revertir los efectos de un delta en el jugador."""

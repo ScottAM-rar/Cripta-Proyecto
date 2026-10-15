@@ -20,7 +20,7 @@ from DTO.CambioDTO import CambioDTO
 
 class GestorEventos:
 
-    def __init__(self, salas : list[SalaDTO],jugador: JugadorDTO, cargar_sala: Callable[[int],SalaDTO], semilla: int = None
+    def __init__(self, salas : list[SalaDTO],jugador: JugadorDTO, cargar_sala: Callable[[int],SalaDTO], semilla: int = None, reencolar_evento=None
     ):
         #EnemigosLogica: enemigos_logica: 
         
@@ -31,6 +31,7 @@ class GestorEventos:
         self.pergamino_logica = PergaminoLogica(
             self.jugador_logica.retroceso,
             salas,
+            reencolar_evento,
         )
         self.objeto_logica = ObjetoLogica(jugador, self.pergamino_logica)
         self.salas_logica = SalaLogica(None)
@@ -47,6 +48,8 @@ class GestorEventos:
             raise ValueError("El tiempo de ejecución debe ser un entero no negativo")
         if not isinstance(evento.datos_extra, list):
             raise TypeError("Los datos extra del evento deben estar en una lista")
+
+        self.jugador_logica.retroceso.nueva_accion(evento.tiempo_ejecucion)
 
         jugador = self.jugador_logica.jugador
         if jugador is None:
@@ -209,7 +212,7 @@ class GestorEventos:
                         valor_nuevo=evento.actor.vida_actual,
                     ))
                 if cambios:
-                    self.jugador_logica.retroceso.registrar_cambio(cambios[:2])
+                    self.jugador_logica.retroceso.registrar_cambio(cambios)
                 return res
 
             case "ARMAR_TRAMPA":
@@ -258,7 +261,7 @@ class GestorEventos:
                             valor_anterior=vida_anterior,
                             valor_nuevo=actor.vida_actual,
                         ))
-                if trampa.armada != armada_anterior and len(cambios) < 2:
+                if trampa.armada != armada_anterior:
                     cambios.append(CambioDTO(
                         tipo_accion="CAMBIAR_TRAMPA",
                         objeto_afectado=trampa,
