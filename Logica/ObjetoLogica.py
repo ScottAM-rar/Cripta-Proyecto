@@ -98,7 +98,6 @@ class ObjetoLogica:
             case _:
                 resultado.exito, resultado.mensaje = False, "El objeto no tiene un uso definido."
         if cambios:
-            self.pergamino_logica.retroceso_logica.nueva_accion()
             self.pergamino_logica.retroceso_logica.registrar_cambio(cambios)
         return resultado 
                 
