@@ -7,9 +7,10 @@ from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.RetrocesoLogica import RetrocesoLogica
 
 class PergaminoLogica:
-    def __init__(self, retroceso_logica: RetrocesoLogica, salas: list[SalaDTO]):
+    def __init__(self, retroceso_logica: RetrocesoLogica, salas: list[SalaDTO], reencolar_evento=None):
         self.retroceso_logica = retroceso_logica
         self.salas = salas
+        self.reencolar_evento = reencolar_evento
 
     def hay_algo_para_deshacer(self) -> bool:
         """Verifica si hay acciones registradas en el historial de retroceso."""
@@ -19,12 +20,12 @@ class PergaminoLogica:
         """Aplica los efectos del pergamino al jugador."""
         if not self.hay_algo_para_deshacer():
             return ResultadoEventoDTO(exito=False, mensaje="No hay nada que retroceder.")
-            #return ResultadoEventoDTO(exito=False, mensaje="No hay nada que retroceder.", cambios=[])
         
         self._revertir()
-        #cambios = self._revertir()
+        if self.reencolar_evento is not None:
+            for evento in self.retroceso_logica.eventos_retroceso:
+                self.reencolar_evento(evento)
         return ResultadoEventoDTO(exito=True, mensaje="Se han revertido los cambios hasta la última acción registrada.")
-        #return ResultadoEventoDTO(exito=True, mensaje="Se han revertido los cambios hasta la última acción registrada.", cambios=cambios)
     
     def _revertir(self) -> list[CambioDTO]:
         """Revertir los efectos de un delta en el jugador."""
@@ -62,7 +63,10 @@ class PergaminoLogica:
                 sala = self.salas[cambio.valor_anterior]
                 if objeto in sala.objetos and jugador is not None:
                     sala.objetos.remove(objeto)
-                    jugador.inventario.agregar_objeto(objeto)
+                    jugador.inventario.insertar_en_indice_por_retroceso(
+                        cambio.indice,
+                        objeto,
+                    )
                     
             case "EQUIPAR_OBJETO" : # Revertir la acción de equipar un objeto, lo devuelve al inventario del jugador
                 jugador: JugadorDTO = cambio.objeto_afectado
@@ -76,7 +80,7 @@ class PergaminoLogica:
                 objeto: Objeto = cambio.elemento
                 jugador.arma = cambio.valor_anterior if isinstance(objeto, Arma) else jugador.arma
                 jugador.armadura = cambio.valor_anterior if isinstance(objeto, Armadura) else jugador.armadura
-                jugador.inventario.insertar_en_indice(cambio.indice, objeto)
+                jugador.inventario.insertar_en_indice_por_retroceso(cambio.indice, objeto)
                 jugador.inventario.equipar_objeto_por_retroceso(cambio.valor_anterior)
                 
             case "USAR_OBJETO" : # Revertir la acción de usar un objeto, lo devuelve al inventario del jugador
@@ -103,6 +107,14 @@ class PergaminoLogica:
             case "APLICAR_ANTIDOTO":
                 jugador: JugadorDTO = cambio.objeto_afectado
                 jugador.veneno = cambio.valor_anterior
-                
+
+            case "CAMBIAR_PUERTA":
+                salida = cambio.objeto_afectado
+                salida.cerrada = cambio.valor_anterior
+
+            case "CAMBIAR_TRAMPA":
+                trampa = cambio.objeto_afectado
+                trampa.armada = cambio.valor_anterior
+
             case _:
                 raise ValueError(f"Tipo de acción desconocido: {cambio.tipo_accion}")

@@ -37,7 +37,13 @@ class EstadoJuegoLogica:
         relojvirtual = RelojVirtual()
         jugador =self.comunicacion.crear_jugador(cripta)
         self.estadoJuego = EstadoJuego(relojvirtual,jugador,[],[],salas)
-        self.gestorEventos = GestorEventos(self.estadoJuego.salas,jugador,self.ingresarEnSala,self.semilla)
+        self.gestorEventos = GestorEventos(
+            self.estadoJuego.salas,
+            jugador,
+            self.ingresarEnSala,
+            self.semilla,
+            self.reencolarEventoAutomatico,
+        )
         self.jugadorLogica = JugadorLogica(jugador,self.semilla)
         self.logEventos.vaciar()
         self.idCripta = cripta
@@ -254,6 +260,9 @@ class EstadoJuegoLogica:
             if (
                 accion.eventoResultado is not None
             ):
+                self.gestorEventos.pergamino_logica.retroceso_logica.registrar_evento_automatico(
+                    accion.eventoResultado
+                )
                 self.cargarEvento(accion.eventoResultado)
             if evento.actor is self.estadoJuego.jugador:
                 self.estadoJuego.puntaje += accion.puntaje
@@ -287,6 +296,11 @@ class EstadoJuegoLogica:
         if not self.iniciado:
             raise ValueError("El juego no ha sido iniciado")
         return self.estadoJuego.reloj.encolar(evento.tiempo_ejecucion,evento.actor,evento.tipo_accion,evento.datos_extra)
+
+    def reencolarEventoAutomatico(self, evento: EventoDTO) -> int:
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+        return self.estadoJuego.reloj.encolar_unico(evento)
 
     def accionJugador(self, evento: EventoDTO):
         if not self.iniciado:

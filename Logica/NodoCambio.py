@@ -3,11 +3,11 @@ from DTO.CambioDTO import CambioDTO
 
 class NodoCambio:
     def __init__(self, cambios: list[CambioDTO], es_accion: bool = False):
-        if len(cambios) > 2 or len(cambios) <= 0:
-            raise ValueError("Un NodoCambio debe contener al menos un cambio y como maximo dos cambios.") 
-        #Todos almacenan un cambio, pero en el caso de objetos como la 
-        #pocion, se puede tener un cambio de vida y un cambio de inventario, por eso se permite hasta dos cambios.
+        if len(cambios) <= 0:
+            raise ValueError("Un NodoCambio debe contener al menos un cambio.") 
+        #Una accion puede afectar a varios actores y estados al mismo tiempo.
         self.objeto = cambios 
         self.es_accion = es_accion
+        self.evento_automatico = None
         self.anterior: NodoCambio | None = None
         self.siguiente: NodoCambio | None = None   
