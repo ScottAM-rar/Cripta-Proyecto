@@ -14,10 +14,10 @@ class TrampaLogica:
             return ResultadoEventoDTO(False,f"La trampa {self.trampa.id_instancia} no se pudo armar ya que no está activada",evento)
 
         if jugador.id_sala_actual == sala.id:
-            jugador.vida_actual -= self.trampa.daño
+            jugador.vida_actual = max(0, jugador.vida_actual - self.trampa.daño)
 
         for x in sala.enemigos:
-            x.vida_actual-=self.trampa.daño
+            x.vida_actual = max(0, x.vida_actual - self.trampa.daño)
         self.trampa.armada = False
         return ResultadoEventoDTO(True, f"La trampa {self.trampa.id_instancia} afectó a los actores de la sala {sala.id}", evento)
 
