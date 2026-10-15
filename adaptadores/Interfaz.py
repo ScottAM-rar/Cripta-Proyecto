@@ -31,3 +31,10 @@ class ClienteInterfaz(ABC):
     @abstractmethod
     def obtener_version_catalogo(self) -> str:
         ...
+
+    @property
+    @abstractmethod
+    def solicitudes_realizadas(self) -> int:
+        """Solicitudes HTTP reales hechas hasta ahora (0 si el cliente no usa la red).
+        ServicioCripta la usa para el reporte contra el presupuesto de la cripta."""
+        ...
