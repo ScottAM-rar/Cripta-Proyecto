@@ -21,6 +21,8 @@ class EstadoJuegoLogica:
         self.comunicacion = self._crearComunicacion()
         
         self.iniciado = False
+        self.fin = False
+        self.motivoFin = None
         
         if(cripta is not None):
             self.iniciarJuego(cripta)
@@ -89,8 +91,9 @@ class EstadoJuegoLogica:
         self.idCripta = cripta
         self.iniciado = True
         self.fin = False
+        self.motivoFin = None
 
-    def comprobarFinal(self):
+    def _comprobarFinal(self):
         if self.jugadorLogica.esta_muerto():
             self.fin = True
             self.motivoFin = "El jugador ha muerto"
@@ -99,6 +102,11 @@ class EstadoJuegoLogica:
         ):
             self.fin = True
             self.motivoFin = "El jugador ha llegado a la sala final"
+
+    def terminado(self):
+        return self.fin, (
+            self.motivoFin if self.motivoFin is not None else "No ha terminado"
+        )
         
     def repetirPartida(self, archivo: str) ->list[ResultadoEventoDTO]:
         log_original = LogEventos()
