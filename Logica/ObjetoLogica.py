@@ -2,12 +2,11 @@ from DTO.ActorDTO import JugadorDTO
 from DTO.EventoDTO import EventoDTO
 from DTO.Objeto import *
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
-from Logica.RelojVirtual import RelojVirtual
 from Logica.PergaminoLogica import PergaminoLogica
 from DTO.CambioDTO import CambioDTO
 
 class ObjetoLogica:
-    def __init__(self, jugador: JugadorDTO, pergamino_logica: PergaminoLogica | None = None):
+    def __init__(self, jugador: JugadorDTO, pergamino_logica: PergaminoLogica):
         self.jugador = jugador 
         self.pergamino_logica = pergamino_logica
 
@@ -59,7 +58,7 @@ class ObjetoLogica:
                         valor_nuevo=self.jugador.veneno,
                     ),
                 ]
-                resultado.exito, resultado.mensaje = True, f"Se ha usado el antidoto {objeto.nombre}."
+                resultado.exito, resultado.mensaje = True, f"Se ha usado el antidoto."
             case Antorcha():
                 antorcha_anterior = self.jugador.antorcha_encendida
                 self._consumir(objeto)
@@ -78,13 +77,12 @@ class ObjetoLogica:
                 equipo_anterior = self.jugador.arma if isinstance(objeto, Arma) else self.jugador.armadura
                 self._equipar(objeto)
                 cambios = [CambioDTO(
-                    tipo_accion="EQUIPAR_OBJETO",
-                    objeto_afectado=self.jugador,
-                    valor_anterior=equipo_anterior,
-                    valor_nuevo=objeto,
-                    elemento=objeto,
-                    indice=indice_original,
-                )]
+                    tipo_accion="EQUIPAR_OBJETO", 
+                    objeto_afectado=self.jugador, 
+                    valor_anterior=equipo_anterior, 
+                    valor_nuevo=objeto, elemento=objeto, 
+                    indice=indice_original
+                    )]
                 if isinstance(objeto, Arma):
                     resultado.exito, resultado.mensaje = True, f"Se ha equipado {objeto.nombre} y suma {objeto.ataque_bonus} al ataque."
                 else:
@@ -107,8 +105,7 @@ class ObjetoLogica:
                 
     def _consumir(self, objeto: Objeto):
         """Consume el objeto del inventario del jugador y lo manda a eliminar."""
-        self.jugador.inventario.eliminar_objeto_utilizado(objeto)
-        
+        self.jugador.inventario.eliminar_objeto_utilizado(objeto)  
     
     def _aplicar_pocion(self, pocion: Pocion) -> EventoDTO:
         """Aplica los efectos de la pocion al jugador."""
@@ -118,7 +115,7 @@ class ObjetoLogica:
             self.jugador.modificador_velocidad += pocion.modificador_velocidad
             return EventoDTO(pocion.duracion, None, None, "REVERTIR_MODIFICADOR_VELOCIDAD", datos_extra=[pocion.modificador_velocidad])  # Se encola un evento futuro para revertir el modificador de velocidad
     
-    def revertir_modificador_velocidad(self, modificador: int):
+    def _revertir_modificador_velocidad(self, modificador: int):
         """Revierte el modificador de velocidad del jugador."""
         self.jugador.modificador_velocidad -= modificador
     
@@ -132,10 +129,10 @@ class ObjetoLogica:
         self.jugador.antorcha_encendida = True
         return EventoDTO(antorcha.duracion, None, None, "APAGAR_ANTORCHA")  # Se encola un evento futuro para apagar la antorcha
         
-    def apagar_antorcha(self):
+    def _apagar_antorcha(self):
         """Apaga la antorcha del jugador."""
         self.jugador.antorcha_encendida = False
-    
+        
     def _equipar(self, objeto: Arma | Armadura):
         """Equipa el objeto al jugador."""
         inv = self.jugador.inventario
@@ -146,4 +143,3 @@ class ObjetoLogica:
             self.jugador.arma = objeto
         elif isinstance(objeto, Armadura): #Lo hice con elif por la posibilidad de meter por ejemplo, un baston magico.
             self.jugador.armadura = objeto
-            

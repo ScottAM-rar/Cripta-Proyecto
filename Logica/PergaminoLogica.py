@@ -73,7 +73,7 @@ class PergaminoLogica:
                 objeto: Objeto = cambio.elemento
                 jugador.arma = cambio.valor_anterior if isinstance(objeto, Arma) else jugador.arma
                 jugador.armadura = cambio.valor_anterior if isinstance(objeto, Armadura) else jugador.armadura
-                jugador.inventario.insertar_en_indice(cambio.indice, objeto)
+                jugador.inventario.mover_objeto_equipado_a_su_indice_anterior(cambio.indice, objeto)
                 
             case "DESEQUIPAR_OBJETO" : # Revertir la acción de desequipar un objeto, lo devuelve al inventario del jugador
                 jugador: JugadorDTO = cambio.objeto_afectado

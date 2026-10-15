@@ -1,6 +1,6 @@
 from Logica.NodoInventario import NodoInventario
 from Controlador.ordenamiento import ordenar_adaptativo
-from DTO.Objeto import Objeto
+from DTO.Objeto import Arma, Armadura, Objeto
 
 CRITERIOS_VALIDOS = ("peso", "valor", "nombre")
 
@@ -70,14 +70,30 @@ class InventarioLogica:
         self._desenlazar_nodos(self.actual)
         self.actual = self.cabeza  # Reinicia el puntero actual al primer objeto del inventario.
         return objeto  # Devuelve el objeto que fue eliminado
-    
-    def eliminar_objeto_por_retroceso(self, objeto: Objeto):
-        if objeto is None:
+
+    def mostrar_objeto_actual(self):
+        """Devuelve el objeto actual del inventario"""
+        if self.actual is None:
             raise ValueError("El inventario esta vacio")
-        nodo = self.buscar_objeto(objeto)
-        if nodo is None:
-            raise ValueError("El objeto no se encuentra en el inventario")
-        self._desenlazar_nodos(nodo)
+        return self.actual.objeto
+    
+    def mostrar_equipado_1(self):
+        """Devuelve el primer objeto del inventario si es un arma o armadura"""
+        if self.cabeza is None:
+            raise ValueError("El inventario esta vacio")
+        if isinstance(self.cabeza.objeto, (Arma, Armadura)):
+            return self.cabeza.objeto
+        else:
+            raise ValueError("El primer objeto del inventario no es un arma o armadura")
+    
+    def mostrar_equipado_2(self):
+        """Devuelve el segundo objeto del inventario si es un arma o armadura"""
+        if self.cabeza is None or self.cabeza.siguiente is None:
+            raise ValueError("El inventario no tiene un segundo objeto")
+        if isinstance(self.cabeza.siguiente.objeto, (Arma, Armadura)):
+            return self.cabeza.siguiente.objeto
+        else:
+            raise ValueError("El segundo objeto del inventario no es un arma o armadura")
 
     def equipar_objeto_actual(self):
         """Mueve el objeto actual al principio de la lista, indicando que esta equipado"""
@@ -88,100 +104,42 @@ class InventarioLogica:
         if nodo_actual is self.cabeza:
             return nodo_actual.objeto  # Ya está equipado, no hacer nada
 
-        self._desenlazar_nodos(nodo_actual)
-        self._reenlazar_nodo(nodo_actual, None, self.cabeza)
+        indice_actual = self.indice_de_objeto(nodo_actual.objeto)
+        tipo_objeto = Arma if isinstance(nodo_actual.objeto, Arma) else Armadura
+        nodo_equipo = self.cabeza
+        indice_equipo = None
+        for indice in range(2):
+            if nodo_equipo is None:
+                break
+            if isinstance(nodo_equipo.objeto, tipo_objeto) and nodo_equipo is not nodo_actual:
+                indice_equipo = indice
+                break
+            nodo_equipo = nodo_equipo.siguiente
+
+        if indice_equipo is not None:
+            nodo_anterior = nodo_equipo
+            self._desenlazar_nodos(nodo_actual)
+            self._desenlazar_nodos(nodo_anterior)
+            self._insertar_nodo_en_indice(nodo_actual, 0)
+            self._insertar_nodo_en_indice(nodo_anterior, indice_actual)
+        else:
+            self._desenlazar_nodos(nodo_actual)
+            self._insertar_nodo_en_indice(nodo_actual, 0)
         self.actual = nodo_actual
         return nodo_actual.objeto
 
-    def equipar_objeto_por_retroceso(self, objeto: Objeto):
-        """Mueve el objeto indicado al principio de la lista, indicando que esta equipado"""
-        if self.cabeza is None:
-            raise ValueError("El inventario esta vacio")
-        
-        nodo_a_mover = self.buscar_objeto(objeto)
-        if nodo_a_mover is None:
-            raise ValueError("No hay objeto para mover")
-        
-        if nodo_a_mover is self.cabeza:
-            return  # Ya está equipado, no hacer nada
-        
-        self._desenlazar_nodos(nodo_a_mover)
-        self._reenlazar_nodo(nodo_a_mover, None, self.cabeza)  # Mueve el nodo al principio de la lista
 
-    def insertar_en_indice(self, indice: int, objeto: Objeto):
-        """Mueve el objeto equipado (cabeza o cabeza.siguiente) al indice indicado"""
-        if self.cabeza is None:
-            raise ValueError("El inventario esta vacio")
-        if indice < 0 or indice >= self.cantidad_actual:
-            raise ValueError("Indice fuera de rango")
-        
-        nodo_a_mover = self.buscar_objeto(objeto)
-        if nodo_a_mover is None:
-            raise ValueError("No hay objeto para mover")
-
-        nodo_equivalente = self.cabeza.siguiente if self.cabeza is not None else None
-        if nodo_a_mover is not self.cabeza and nodo_a_mover is not nodo_equivalente:
-            raise ValueError("El objeto no esta equipado")
-
-        if self.cantidad_actual == 1:
-            return
-
-        # Se elimina primero para no mezclar la lista original con la nueva posición
-        self._desenlazar_nodos(nodo_a_mover)
-
-        # Se busca la posición destino sobre la lista ya modificada
+    def _insertar_nodo_en_indice(self, nodo, indice):
         nodo_destino = self.cabeza
         for _ in range(indice):
             if nodo_destino is None:
-                raise ValueError("Indice fuera de rango")
+                break
             nodo_destino = nodo_destino.siguiente
 
         if nodo_destino is None:
-            self._reenlazar_nodo(nodo_a_mover, self.cola, None)
+            self._reenlazar_nodo(nodo, self.cola, None)
         else:
-            self._reenlazar_nodo(nodo_a_mover, nodo_destino.anterior, nodo_destino)
-        
-    def insertar_en_indice_por_retroceso(self, indice: int, objeto: Objeto):
-        """Restaura objetos eliminados en el inventario en la posición indicada"""
-        if indice < 0 or indice > self.cantidad_actual:
-            raise ValueError("Indice fuera de rango")
-
-        nuevo_nodo = NodoInventario(objeto)
-
-        if self.cabeza is None:
-            self.cabeza = nuevo_nodo
-            self.cola = nuevo_nodo
-            self.actual = nuevo_nodo
-            self.cantidad_actual += 1
-        elif indice == 0:
-            self._reenlazar_nodo(nuevo_nodo, None, self.cabeza)
-            self.cabeza = nuevo_nodo
-            self.cantidad_actual += 1
-        elif indice == self.cantidad_actual:
-            self._reenlazar_nodo(nuevo_nodo, self.cola, None)
-            self.cola = nuevo_nodo
-            self.cantidad_actual += 1
-        else:
-            nodo_destino = self.cabeza
-            for _ in range(indice):
-                nodo_destino = nodo_destino.siguiente
-            self._reenlazar_nodo(
-                nuevo_nodo,
-                nodo_destino.anterior,
-                nodo_destino
-            )
-            self.cantidad_actual += 1
-        
-    def indice_de_objeto(self, objeto: Objeto) -> int:
-        """Devuelve el indice del objeto en la lista, o -1 si no se encuentra"""
-        nodo_actual = self.cabeza
-        indice = 0
-        while nodo_actual is not None:
-            if nodo_actual.objeto is objeto:
-                return indice
-            nodo_actual = nodo_actual.siguiente
-            indice += 1
-        return -1  # No se encontro el objeto en la lista
+            self._reenlazar_nodo(nodo, nodo_destino.anterior, nodo_destino)
 
     def obtener_vista_ordenada(self, criterio: str):
         """Devuelve una lista de objetos ordenados segun el criterio dado"""
@@ -194,21 +152,6 @@ class InventarioLogica:
             objetos.append(nodo_actual.objeto)
             nodo_actual = nodo_actual.siguiente
         return ordenar_adaptativo(objetos, key=lambda obj: getattr(obj, criterio))  # Ordena la lista de objetos segun el criterio dado
-    
-    def _desenlazar_nodos(self, nodo: NodoInventario):
-        """Saca el nodo de la lista arreglando los enlaces de sus vecinos"""
-        if nodo.anterior is not None: #Si el nodo no es el primero en la lista
-            nodo.anterior.siguiente = nodo.siguiente
-        else: # Si el nodo sí es el primero en la lista
-            self.cabeza = nodo.siguiente
-        if nodo.siguiente is not None: #Si el nodo no es el ultimo de la lista
-            nodo.siguiente.anterior = nodo.anterior
-        else: # Si el nodo sí es el ultimo en la lista
-            self.cola = nodo.anterior
-            
-        nodo.anterior = None
-        nodo.siguiente = None
-        self.cantidad_actual -= 1 #Resta 1 a la cantidad actual en el inventario
         
     def el_inventario_esta_lleno(self):
         return self.cantidad_actual >= self.capacidad_maxima
@@ -241,3 +184,122 @@ class InventarioLogica:
         """Mueve un nodo entre dos nodos dados"""
         self._desenlazar_nodos(nodo)
         self._reenlazar_nodo(nodo, anterior, siguiente)
+        
+    def _desenlazar_nodos(self, nodo: NodoInventario):
+        """Saca el nodo de la lista arreglando los enlaces de sus vecinos"""
+        if nodo.anterior is not None: #Si el nodo no es el primero en la lista
+            nodo.anterior.siguiente = nodo.siguiente
+        else: # Si el nodo sí es el primero en la lista
+            self.cabeza = nodo.siguiente
+        if nodo.siguiente is not None: #Si el nodo no es el ultimo de la lista
+            nodo.siguiente.anterior = nodo.anterior
+        else: # Si el nodo sí es el ultimo en la lista
+            self.cola = nodo.anterior
+            
+        nodo.anterior = None
+        nodo.siguiente = None
+        self.cantidad_actual -= 1 #Resta 1 a la cantidad actual en el inventario
+        
+        
+        
+    # Metodos para el pergamino de retroceso.
+        
+    def mover_objeto_equipado_a_su_indice_anterior(self, indice: int, objeto: Objeto):
+            """Mueve el objeto equipado (cabeza o cabeza.siguiente) al indice indicado"""
+            if self.cabeza is None:
+                raise ValueError("El inventario esta vacio")
+            if indice < 0 or indice >= self.cantidad_actual:
+                raise ValueError("Indice fuera de rango")
+            
+            nodo_a_mover = self.buscar_objeto(objeto)
+            if nodo_a_mover is None:
+                raise ValueError("No hay objeto para mover")
+    
+            nodo_equivalente = self.cabeza.siguiente if self.cabeza is not None else None
+            if nodo_a_mover is not self.cabeza and nodo_a_mover is not nodo_equivalente:
+                raise ValueError("El objeto no esta equipado")
+    
+            if self.cantidad_actual == 1:
+                return
+    
+            # Se elimina primero para no mezclar la lista original con la nueva posición
+            self._desenlazar_nodos(nodo_a_mover)
+    
+            # Se busca la posición destino sobre la lista ya modificada
+            nodo_destino = self.cabeza
+            for _ in range(indice):
+                if nodo_destino is None:
+                    raise ValueError("Indice fuera de rango")
+                nodo_destino = nodo_destino.siguiente
+    
+            if nodo_destino is None:
+                self._reenlazar_nodo(nodo_a_mover, self.cola, None)
+            else:
+                self._reenlazar_nodo(nodo_a_mover, nodo_destino.anterior, nodo_destino)
+        
+    def eliminar_objeto_por_retroceso(self, objeto: Objeto):
+        """Elimina un objeto del inventario sin importar si es el actual, usado para deshacer acciones"""
+        if objeto is None:
+            raise ValueError("El inventario esta vacio")
+        nodo = self.buscar_objeto(objeto)
+        if nodo is None:
+            raise ValueError("El objeto no se encuentra en el inventario")
+        self._desenlazar_nodos(nodo)
+        self.actual = self.cabeza  # Reinicia el puntero actual al primer objeto del inventario.
+        
+    def insertar_en_indice_por_retroceso(self, indice: int, objeto: Objeto):
+        """Restaura objetos eliminados en el inventario en la posición indicada"""
+        if indice < 0 or indice > self.cantidad_actual:
+            raise ValueError("Indice fuera de rango")
+
+        if self.cantidad_actual >= self.capacidad_maxima:
+            raise ValueError("Indice fuera de la capacidad máxima del inventario")
+
+        nuevo_nodo = NodoInventario(objeto)
+
+        if self.cabeza is None:
+            self.cabeza = nuevo_nodo
+            self.cola = nuevo_nodo
+            self.actual = nuevo_nodo
+            self.cantidad_actual += 1
+        elif indice == 0:
+            self._reenlazar_nodo(nuevo_nodo, None, self.cabeza)
+            self.cabeza = nuevo_nodo
+        elif indice == self.cantidad_actual:
+            self._reenlazar_nodo(nuevo_nodo, self.cola, None)
+            self.cola = nuevo_nodo
+        else:
+            nodo_destino = self.cabeza
+            for _ in range(indice):
+                nodo_destino = nodo_destino.siguiente
+            self._reenlazar_nodo(
+                nuevo_nodo,
+                nodo_destino.anterior,
+                nodo_destino
+            )
+        
+    def indice_de_objeto(self, objeto: Objeto) -> int:
+        """Devuelve el indice del objeto en la lista, o -1 si no se encuentra"""
+        nodo_actual = self.cabeza
+        indice = 0
+        while nodo_actual is not None:
+            if nodo_actual.objeto is objeto:
+                return indice
+            nodo_actual = nodo_actual.siguiente
+            indice += 1
+        return -1  # No se encontro el objeto en la lista
+    
+    def equipar_objeto_por_retroceso(self, objeto: Objeto):
+        """Mueve el objeto indicado al principio de la lista, indicando que esta equipado"""
+        if self.cabeza is None:
+            raise ValueError("El inventario esta vacio")
+        
+        nodo_a_mover = self.buscar_objeto(objeto)
+        if nodo_a_mover is None:
+            raise ValueError("No hay objeto para mover")
+        
+        if nodo_a_mover is self.cabeza:
+            return  # Ya está equipado, no hacer nada
+        
+        self._desenlazar_nodos(nodo_a_mover)
+        self._reenlazar_nodo(nodo_a_mover, None, self.cabeza)  # Mueve el nodo al principio de la lista

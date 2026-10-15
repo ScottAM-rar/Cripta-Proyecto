@@ -102,28 +102,6 @@ class RetrocesoLogica:
             self.actual = None
         self.cantidad_acciones -= 1
         
-    def deshacer_accion(self):
-        if self.cantidad_acciones == 0:
-            return []
-        
-        cambios = []
-        while self.cola is not None:
-            nodo = self.cola
-            cambios.append(nodo.objeto)
-            
-            self.cola = nodo.anterior
-            
-            if self.cola is not None:
-                self.cola.siguiente = None
-            else:
-                self.cabeza = None
-                
-            self.cantidad_actual -= 1
-            if nodo.es_accion:
-                break
-        self.actual = self.cola
-        self.cantidad_acciones -= 1
-        return cambios
         
     def obtener_cambios_retroceso(self):
         """Devuelve una lista de cambios que se pueden revertir, hasta el inicio de la ultima accion registrada."""

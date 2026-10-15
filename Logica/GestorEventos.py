@@ -6,7 +6,7 @@ from DTO.ActorDTO import *
 from DTO.SalaDTO import *
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from DTO.EstadoJuegoDTO import EstadoJuego
-from DTO.Objeto import Objeto
+from DTO.Objeto import Arma, Armadura, Objeto
 from DTO.TrampaDTO import Trampa
 from Logica.JugadorLogica import JugadorLogica
 from Logica.EnemigosLogica import EnemigoLogica
@@ -284,7 +284,7 @@ class GestorEventos:
             case "REVERTIR_MODIFICADOR_VELOCIDAD":
                 self._validar_cantidad_datos(evento, 1)
                 velocidad_anterior = self.jugador_logica.jugador.modificador_velocidad
-                self.objeto_logica.revertir_modificador_velocidad(evento.datos_extra[0])
+                self.objeto_logica._revertir_modificador_velocidad(evento.datos_extra[0])
                 self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
                     tipo_accion="REVERTIR_MODIFICADOR_VELOCIDAD",
                     objeto_afectado=self.jugador_logica.jugador,
@@ -296,7 +296,7 @@ class GestorEventos:
             case "APAGAR_ANTORCHA":
                 self._validar_cantidad_datos(evento, 0)
                 antorcha_anterior = self.jugador_logica.jugador.antorcha_encendida
-                self.objeto_logica.apagar_antorcha()
+                self.objeto_logica._apagar_antorcha()
                 self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
                     tipo_accion="APAGAR_ANTORCHA",
                     objeto_afectado=self.jugador_logica.jugador,
