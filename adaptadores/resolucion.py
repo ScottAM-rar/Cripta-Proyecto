@@ -5,15 +5,25 @@ from DTO.TrampaDTO import Trampa
  
 from DTO.Objeto import Objeto, Arma, Armadura, Pocion, Antidoto, Llave, Antorcha, PergaminoRetroceso
  
-_CLASES_OBJETO = {
-    "arma": Arma,
-    "armadura": Armadura,
-    "pocion": Pocion,
-    "antidoto": Antidoto,
-    "llave": Llave,
-    "antorcha": Antorcha,
-    "pergamino_retroceso": PergaminoRetroceso,
-}
+def _clase_de_objeto(clase: str):
+    """Devuelve la clase de DTO que corresponde al campo 'clase' de la ficha."""
+    match clase:
+        case "arma":
+            return Arma
+        case "armadura":
+            return Armadura
+        case "pocion":
+            return Pocion
+        case "antidoto":
+            return Antidoto
+        case "llave":
+            return Llave
+        case "antorcha":
+            return Antorcha
+        case "pergamino_retroceso":
+            return PergaminoRetroceso
+        case _:
+            return None
  
  
 def resolver_objeto(ficha: dict, id_sala: int | None = None) -> Objeto:
@@ -23,7 +33,7 @@ def resolver_objeto(ficha: dict, id_sala: int | None = None) -> Objeto:
     `id_sala` es la sala donde está el objeto en el suelo. Es opcional: un
     objeto que lleva el jugador en el inventario no está en ninguna sala."""
     clase = ficha["clase"]
-    Clase = _CLASES_OBJETO.get(clase)
+    Clase = _clase_de_objeto(clase)
     if Clase is None:
         raise ValueError(f"'{clase}' no es una clase de objeto conocida")
  
