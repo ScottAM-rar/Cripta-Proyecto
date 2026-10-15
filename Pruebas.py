@@ -4,8 +4,8 @@ from DTO.EventoDTO import EventoDTO
 
 if __name__ == "__main__":
     servicio = EstadoJuegoServicio()
-    resultados = servicio.repetirPartida("pruebasLog.log")
-    servicio.guardarLog("repeticion.log")
+    resultados = servicio.repetirPartida("pruebasLog")
+    servicio.guardarLog("repeticion")
 
     for x in resultados:
         print(x.mensaje)

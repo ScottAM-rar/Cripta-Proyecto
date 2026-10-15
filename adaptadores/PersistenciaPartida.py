@@ -2,6 +2,8 @@ import os
 import pickle
 import sys
 
+from adaptadores.extension import ruta_archivo, EXTENSION_PARTIDA, CARPETA_PARTIDAS
+
 
 class PersistenciaPartida:
     FORMATO = "CRIPTA_PARTIDA"
@@ -10,8 +12,7 @@ class PersistenciaPartida:
 
     @staticmethod
     def guardar(nombre_archivo: str, estado_juego_logica) -> None:
-        if not isinstance(nombre_archivo, str) or not nombre_archivo.strip():
-            raise ValueError("El nombre del archivo no es válido")
+        nombre_archivo = ruta_archivo(nombre_archivo, EXTENSION_PARTIDA, CARPETA_PARTIDAS, crear_carpeta=True)
 
         paquete = {
             "formato": PersistenciaPartida.FORMATO,
@@ -36,8 +37,7 @@ class PersistenciaPartida:
 
     @staticmethod
     def cargar(nombre_archivo: str):
-        if not isinstance(nombre_archivo, str) or not nombre_archivo.strip():
-            raise ValueError("El nombre del archivo no es válido")
+        nombre_archivo = ruta_archivo(nombre_archivo, EXTENSION_PARTIDA, CARPETA_PARTIDAS)
         if not os.path.isfile(nombre_archivo):
             raise ValueError(f"No existe el archivo de partida {nombre_archivo!r}")
 
