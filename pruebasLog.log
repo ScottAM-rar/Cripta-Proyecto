@@ -1,12 +1,15 @@
 cripta: cripta-01
-semilla: 63704
+semilla: 76377
 {"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_antorcha"}]}
 {"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 1}, "norte"]}
 {"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_daga_oxidada"}]}
+{"tipo_accion": "ATACAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-201"}]}
 {"tipo_accion": "USAR_OBJETO", "tiempo_ejecucion": 50, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_daga_oxidada"}]}
-{"tipo_accion": "USAR_OBJETO", "tiempo_ejecucion": 50, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_daga_oxidada"}]}
 {"tipo_accion": "ATACAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-201"}]}
-{"tipo_accion": "ATACAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-201"}]}
-{"tipo_accion": "ATACAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-201"}]}
-{"tipo_accion": "ATACAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-202"}]}
-{"tipo_accion": "ATACAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-202"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 2}, "norte"]}
+{"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_llave_bronce"}]}
+{"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_coraza_cuero"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 3}, "norte"]}
+{"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_llave_negra"}]}
+{"tipo_accion": "ABRIR_PUERTA", "tiempo_ejecucion": 50, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 4}, "este"]}
+{"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_pocion_menor"}]}
