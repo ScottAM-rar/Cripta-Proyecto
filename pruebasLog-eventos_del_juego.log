@@ -1,15 +1,25 @@
-cripta: cripta-01
+cripta: cripta-03
 semilla: 0
 {"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 1}, "norte"]}
-{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 200, "actor": {"tipo": "enemigo", "id": "e-201"}, "datos_extra": [{"tipo": "jugador"}]}
-{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 200, "actor": {"tipo": "enemigo", "id": "e-202"}, "datos_extra": [{"tipo": "jugador"}]}
-{"tipo_accion": "ATACAR", "tiempo_ejecucion": 200, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-201"}]}
-{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 300, "actor": {"tipo": "enemigo", "id": "e-201"}, "datos_extra": [{"tipo": "jugador"}]}
-{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 300, "actor": {"tipo": "enemigo", "id": "e-202"}, "datos_extra": [{"tipo": "jugador"}]}
-{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 300, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 2}, "norte"]}
-{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 400, "actor": {"tipo": "enemigo", "id": "e-201"}, "datos_extra": [{"tipo": "jugador"}]}
-{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 400, "actor": {"tipo": "enemigo", "id": "e-202"}, "datos_extra": [{"tipo": "jugador"}]}
-{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 400, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 3}, "norte"]}
-{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 500, "actor": {"tipo": "enemigo", "id": "e-201"}, "datos_extra": [{"tipo": "jugador"}]}
-{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 500, "actor": {"tipo": "enemigo", "id": "e-202"}, "datos_extra": [{"tipo": "jugador"}]}
-{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 500, "actor": {"tipo": "enemigo", "id": "e-401"}, "datos_extra": [{"tipo": "jugador"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 200, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 2}, "norte"]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 300, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 3}, "norte"]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 400, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 4}, "norte"]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 500, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 5}, "norte"]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 600, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 6}, "norte"]}
+{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 700, "actor": {"tipo": "enemigo", "id": "e-rata-cripta-03-1"}, "datos_extra": [{"tipo": "jugador"}]}
+{"tipo_accion": "ATACAR", "tiempo_ejecucion": 700, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-rata-cripta-03-1"}]}
+{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 800, "actor": {"tipo": "enemigo", "id": "e-rata-cripta-03-1"}, "datos_extra": [{"tipo": "jugador"}]}
+{"tipo_accion": "ATACAR", "tiempo_ejecucion": 800, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-rata-cripta-03-1"}]}
+{"tipo_accion": "ABRIR_PUERTA", "tiempo_ejecucion": 810, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 7}, "este"]}
+{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 900, "actor": {"tipo": "enemigo", "id": "e-rata-cripta-03-1"}, "datos_extra": [{"tipo": "jugador"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 910, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 7}, "norte"]}
+{"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 935, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_pergamino_retroceso"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 1035, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 8}, "norte"]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 1135, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 9}, "norte"]}
+{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 1235, "actor": {"tipo": "enemigo", "id": "e-rata-cripta-03-2"}, "datos_extra": [{"tipo": "jugador"}]}
+{"tipo_accion": "ATACAR", "tiempo_ejecucion": 1235, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-rata-cripta-03-2"}]}
+{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 1335, "actor": {"tipo": "enemigo", "id": "e-rata-cripta-03-2"}, "datos_extra": [{"tipo": "jugador"}]}
+{"tipo_accion": "ATACAR", "tiempo_ejecucion": 1335, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-rata-cripta-03-2"}]}
+{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 1435, "actor": {"tipo": "enemigo", "id": "e-rata-cripta-03-2"}, "datos_extra": [{"tipo": "jugador"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 1435, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 10}, "norte"]}
+{"tipo_accion": "ACCION_ENEMIGO", "tiempo_ejecucion": 1535, "actor": {"tipo": "enemigo", "id": "e-rata-cripta-03-4"}, "datos_extra": [{"tipo": "jugador"}]}

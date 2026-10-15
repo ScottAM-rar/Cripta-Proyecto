@@ -16,12 +16,16 @@ class ComportamientoRastreador(ComportamientoEnemigo):
                     if salas[t.sala_destino] is None or salas[t.sala_destino].ultimo_paso>400
                     else salas[t.sala_destino].ultimo_paso
                 )
-                ultimo_paso_seleccionado = (
-                    -1
-                    if siguienteSala is None or salas[siguienteSala.sala_destino] is None
-                    else salas[siguienteSala.sala_destino].ultimo_paso
-                )
-                if ultimo_paso_seleccionado < ultimo_paso_siguiente:
+                if (
+                    siguienteSala is None
+                    or ultimo_paso_siguiente
+                    > salas[siguienteSala.sala_destino].ultimo_paso
+                    or (
+                        ultimo_paso_siguiente
+                        == salas[siguienteSala.sala_destino].ultimo_paso
+                        and t.sala_destino < siguienteSala.sala_destino
+                    )
+                ):
                     siguienteSala = t
         if siguienteSala is None:
             return "NO SE MOVIÓ"

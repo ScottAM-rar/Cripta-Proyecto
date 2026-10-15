@@ -1,6 +1,7 @@
 from DTO.EventoDTO import EventoDTO
 from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
 from Controlador.Vista import VistaConsola
+import random
 
 class ControladorJuego:
     def __init__(self, servicio: EstadoJuegoServicio):
@@ -10,33 +11,69 @@ class ControladorJuego:
     def iniciar(self):
         print("\n¡Bienvenido a Cripta!")
         
+        # 1. Obtenemos las criptas disponibles desde el servicio
+        criptas = self.servicio.listarCriptas()
+        if not criptas:
+            print("No se encontraron criptas disponibles.")
+            return
+
+        # 2. Mostramos el menú de selección al usuario
+        print("\nSelecciona la cripta que deseas jugar:")
+        for i, cripta in enumerate(criptas):
+            print(f"  [{i + 1}] {cripta}")
+
+        # 3. Validamos la entrada de la cripta
         while True:
-            # Obtenemos el jugador y su sala actual de forma dinámica a través del servicio
+            try:
+                opcion = int(input("\nIngresa el número de la cripta: "))
+                if 1 <= opcion <= len(criptas):
+                    id_cripta = self.servicio.obtenerIdCripta(opcion)
+                    break
+                else:
+                    print(f"Número inválido. Debe ser entre 1 y {len(criptas)}.")
+            except ValueError:
+                print("Por favor, ingresa un número válido.")
+
+       # 4. Pedimos la semilla (opcional)
+        entrada_semilla = input("Ingresa la semilla (deja en blanco para generar una aleatoria): ").strip()
+        
+        if entrada_semilla.isdigit():
+            semilla = int(entrada_semilla)
+            print(f"-> Usando semilla ingresada por el usuario: {semilla}")
+        else:
+            # Generamos una semilla aleatoria (por ejemplo, entre 1 y 99999)
+            semilla = random.randint(1, 99999)
+            print(f"-> No se ingresó semilla. Se generó automáticamente la semilla: {semilla}")
+
+        # 5. Inicializamos el juego pasando la cripta y la semilla
+        self.servicio.iniciarJuego(id_cripta, semilla)
+
+        # 6. Entramos al bucle principal del juego...
+        while True:
             jugador = self.servicio.getJudador()
             if not jugador:
                 print("Error: No se pudo obtener el estado del jugador.")
                 break
-            if(jugador.vida_actual<=0):
+                
+            if jugador.vida_actual <= 0:
                 self.servicio.guardarLog("pruebasLog.log")
                 break
+                
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
             
-            # Mostramos el estado visual actual usando la Vista
             self.vista.mostrar_juego(jugador, sala_actual)
 
-            # Actualizamos las opciones visibles en el prompt
-            accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger [objeto], atacar, abrir [puerta], cerrar [puerta]," 
-            " \n armar [trampa], activar [trampa], salir): ").strip().lower()
+            accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
+            "\n usar[objeto], soltar[objeto], atacar, abrir[puerta], cerrar[puerta], salir: ").strip().lower()
 
             if accion == "salir":
                 print("Cerrando el juego...")
                 break
 
-            # Mapeamos la entrada del usuario a un EventoDTO oficial
             evento = self._mapear_entrada_a_evento(accion, sala_actual, jugador)
 
             if evento == "IGNORAR":
-                continue  # Vuelve a empezar el turno limpiamente sin hacer nada
+                continue  
             elif evento:
                 self.servicio.accionJugador(evento)
             else:
@@ -112,58 +149,111 @@ class ControladorJuego:
                 datos_extra=[direccion]
             )
 
-        # Armar trampa (El backend exige que el actor sea la trampa misma)
-        elif accion == "armar":
-            if not sala_actual.trampas:
-                print("No hay trampas en esta sala para armar.")
-                return None
-            trampa_obj = sala_actual.trampas[0]
-            return EventoDTO(
-                tiempo_ejecucion=50,
-                id_secuencia=0,
-                actor=trampa_obj,
-                tipo_accion="ARMAR_TRAMPA",
-                datos_extra=[sala_actual]
-            )
-
-        # Activar trampa (El backend exige que el actor sea la trampa misma)
-        elif accion == "activar":
-            if not sala_actual.trampas:
-                print("No hay trampas en esta sala para activar.")
-                return None
-            trampa_obj = sala_actual.trampas[0]
-            return EventoDTO(
-                tiempo_ejecucion=50,
-                id_secuencia=0,
-                actor=trampa_obj,
-                tipo_accion="ACTIVAR_TRAMPA",
-                datos_extra=[sala_actual]
-            )
             
-        # Recoger objeto
-        elif accion.startswith("recoger"):
-            partes = accion.split(maxsplit=1)
-            if len(partes) > 1 and sala_actual.objetos:
-                busqueda = partes[1].lower()
-                
-                obj_encontrado = None
-                for obj in sala_actual.objetos:
-                    id_cat = getattr(obj, 'id_catalogo', str(obj)).lower()
-                    nombre_obj = getattr(obj, 'nombre', '').lower()
-                    
-                    if busqueda in id_cat or busqueda in nombre_obj:
-                        obj_encontrado = obj
-                        break
+        # 1. RECOGER OBJETO (Menú interactivo por número basado en la sala)
+        elif accion == "recoger":
+            if not sala_actual.objetos:
+                print("No hay objetos aquí para recoger.")
+                return "IGNORAR"
+            
+            print("\n¿Qué objeto deseas recoger?")
+            for i, obj in enumerate(sala_actual.objetos):
+                print(f"  [{i+1}] {obj.nombre} (ID: {getattr(obj, 'id', 'N/A')})")
+            
+            try:
+                opcion = int(input("Selecciona el número del objeto: ")) - 1
+                if 0 <= opcion < len(sala_actual.objetos):
+                    obj_encontrado = sala_actual.objetos[opcion]
+                else:
+                    print("Número de objeto inválido.")
+                    return "IGNORAR"
+            except ValueError:
+                print("Por favor ingresa un número válido.")
+                return "IGNORAR"
 
-                if obj_encontrado:
-                    return EventoDTO(
-                        tiempo_ejecucion=25,
-                        id_secuencia=0,
-                        actor=jugador,
-                        tipo_accion="RECOGER_OBJETO",
-                        datos_extra=[obj_encontrado]
-                    )
-            print("Objeto no especificado o no disponible en la sala.")
-            return None
+            return EventoDTO(
+                tiempo_ejecucion=25,
+                id_secuencia=0,
+                actor=jugador,
+                tipo_accion="RECOGER_OBJETO",
+                datos_extra=[obj_encontrado]
+            )
 
+        # 2. USAR OBJETO (Recorre la lista enlazada del compañero para mostrar el menú)
+        elif accion == "usar":
+            if not hasattr(jugador, "inventario") or not jugador.inventario or jugador.inventario.cabeza is None:
+                print("Tu inventario está vacío.")
+                return "IGNORAR"
+
+            # Recorremos la lista enlazada oficial usando los punteros de tu compañero
+            lista_temporal = []
+            nodo_actual = jugador.inventario.cabeza
+            
+            print("\n¿Qué objeto deseas usar?")
+            i = 1
+            while nodo_actual is not None:
+                obj = nodo_actual.objeto
+                lista_temporal.append(obj)
+                print(f"  [{i}] {obj.nombre} (ID: {getattr(obj, 'id', 'N/A')})")
+                nodo_actual = nodo_actual.siguiente
+                i += 1
+            
+            try:
+                opcion = int(input("Selecciona el número del objeto: ")) - 1
+                if 0 <= opcion < len(lista_temporal):
+                    obj_encontrado = lista_temporal[opcion]
+                else:
+                    print("Número de objeto inválido.")
+                    return "IGNORAR"
+            except ValueError:
+                print("Por favor ingresa un número válido.")
+                return "IGNORAR"
+
+            return EventoDTO(
+                tiempo_ejecucion=50,
+                id_secuencia=0,
+                actor=jugador,
+                tipo_accion="USAR_OBJETO",
+                datos_extra=[obj_encontrado]
+            )
+
+        # 3. SOLTAR OBJETO (Recorre la lista enlazada del compañero para mostrar el menú)
+        elif accion == "soltar":
+            if not hasattr(jugador, "inventario") or not jugador.inventario or jugador.inventario.cabeza is None:
+                print("Tu inventario está vacío.")
+                return "IGNORAR"
+
+            # Recorremos la lista enlazada oficial usando los punteros de tu compañero
+            lista_temporal = []
+            nodo_actual = jugador.inventario.cabeza
+            
+            print("\n¿Qué objeto deseas soltar?")
+            i = 1
+            while nodo_actual is not None:
+                obj = nodo_actual.objeto
+                lista_temporal.append(obj)
+                print(f"  [{i}] {obj.nombre} (ID: {getattr(obj, 'id', 'N/A')})")
+                nodo_actual = nodo_actual.siguiente
+                i += 1
+            
+            try:
+                opcion = int(input("Selecciona el número del objeto: ")) - 1
+                if 0 <= opcion < len(lista_temporal):
+                    obj_encontrado = lista_temporal[opcion]
+                else:
+                    print("Número de objeto inválido.")
+                    return "IGNORAR"
+            except ValueError:
+                print("Por favor ingresa un número válido.")
+                return "IGNORAR"
+
+            return EventoDTO(
+                tiempo_ejecucion=25,
+                id_secuencia=0,
+                actor=jugador,
+                tipo_accion="SOLTAR_OBJETO",
+                datos_extra=[obj_encontrado]
+            )
+        
+        print("Objeto no especificado o no disponible en tu inventario.")
         return None

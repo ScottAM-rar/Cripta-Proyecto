@@ -6,6 +6,7 @@ from DTO.FinPartidaDTO import FinPartidaDTO
 from Logica.GestorEventos import GestorEventos
 from Logica.JugadorLogica import JugadorLogica
 from Logica.LogEventos import LogEventos, ReferenciaEvento, RegistroEvento
+from Logica.BitacoraLogica import BitacoraLogica
 from Logica.RelojVirtual import RelojVirtual
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from adaptadores.cache import CacheLRU
@@ -29,7 +30,7 @@ class EstadoJuegoLogica:
             raise ValueError("No existe la cripta solicitada")
         self.semilla = 0 if semilla is None else semilla
         self.logEventos = LogEventos(self.semilla, cripta)
-        self.logEventosJuego = LogEventos(self.semilla, cripta)
+        self.logEventosJuego = BitacoraLogica()
         
         cantSalas = self.comunicacion.total_salas(cripta)
         #TODO obtener version de la cripta
@@ -49,6 +50,16 @@ class EstadoJuegoLogica:
         self.idCripta = cripta
         self.iniciado = True
         self.fin = False
+
+    def comprobarFinal(self):
+        if self.jugadorLogica.esta_muerto():
+            self.fin = True
+            self.motivoFin = "El jugador ha muerto"
+        elif self.jugadorLogica.estaEnSalaFinal(
+            self.comunicacion.obtener_sala_salida(self.idCripta)
+        ):
+            self.fin = True
+            self.motivoFin = "El jugador ha llegado a la sala final"
         
     def repetirPartida(self, archivo: str) ->list[ResultadoEventoDTO]:
         log_original = LogEventos()
@@ -249,15 +260,12 @@ class EstadoJuegoLogica:
                 f"Tiempo: {evento.tiempo_ejecucion}"
             )
             accion = self.gestorEventos.procesar_evento(evento)
-            self.logEventosJuego.registrar_evento(evento)
+            self.logEventosJuego.agregar_evento(accion)
             respuesta = accion
             print(accion.mensaje)
 
-            #TODO Tambien tengo que implementar que termine si el jugador llegó al final
-            if self.jugadorLogica.esta_muerto():
-                self.fin = True
-                self.motivoFin = "El jugador se murió"
-            if (
+            self.comprobarFinal()
+            if not self.fin and (
                 accion.eventoResultado is not None
             ):
                 self.gestorEventos.pergamino_logica.retroceso_logica.registrar_evento_automatico(
@@ -318,8 +326,6 @@ class EstadoJuegoLogica:
                 "No se puede guardar el log si la partida no ha terminado"
             )
         self.logEventos.guardar_log(nombre_archivo)
-        nombre_eventos = nombre_archivo[:-4] + "-eventos_del_juego.log"
-        self.logEventosJuego.guardar_log(nombre_eventos)
 
     def obtenerPuntaje(self) -> int:
         return self.estadoJuego.puntaje
@@ -336,7 +342,7 @@ class EstadoJuegoLogica:
         return FinPartidaDTO(
             self.idCripta,
             "1.0",
-            self.logEventos.como_string(),
+            self.logEventosJuego.imprimir_mensajes(),
             self.jugadorLogica.enemigos_eliminados(),
             self.estadoJuego.reloj.tiempo_actual,
         )
