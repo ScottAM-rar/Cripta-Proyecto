@@ -10,12 +10,26 @@ class ControladorJuego:
 
     def iniciar(self):
         print("\n¡Bienvenido a Cripta!")
-        
-        # 1. Obtenemos las criptas disponibles desde el servicio
-        criptas = self.servicio.listarCriptas()
-        if not criptas:
-            print("No se encontraron criptas disponibles.")
-            return
+
+        # 1. PREGUNTAR SI DESEA CARGAR PARTIDA ANTES DE EMPEZAR
+        cargar = input("¿Deseas cargar una partida guardada anterior? (s/n): ").strip().lower()
+        partida_cargada = False
+        if cargar == 's':
+            nombre_archivo = input("Ingresa el nombre del archivo de la partida: ").strip()
+            try:
+                self.servicio.cargarPartida(nombre_archivo)
+                print("¡Partida cargada exitosamente!")
+                partida_cargada = True
+            except Exception as e:
+                print(f"Error al cargar la partida: {e}. Se iniciará una nueva.")
+
+        # Si NO se cargó una partida, procedemos a seleccionar la cripta y la semilla con normalidad
+        if not partida_cargada:
+            # 1. Obtenemos las criptas disponibles desde el servicio
+            criptas = self.servicio.listarCriptas()
+            if not criptas:
+                print("No se encontraron criptas disponibles.")
+                return
 
         # 2. Mostramos el menú de selección al usuario
         print("\nSelecciona la cripta que deseas jugar:")
@@ -59,7 +73,40 @@ class ControladorJuego:
                 print("\n" + "=" * 50)
                 print("¡HAS MUERTO! Tu aventura en la cripta ha llegado a su fin.")
                 print("=" * 50)
-                self.servicio.guardarLog("pruebasLog.log")
+                # 1. Guardamos el log de pasos
+                nombre_log = input("Ingresa el nombre del archivo para guardar el log de pasos: ").strip()
+                if not nombre_log:
+                    nombre_log = "pruebasLog.log"
+                
+                try:
+                    self.servicio.guardarLog(nombre_log)
+                    print(f"Log guardado exitosamente.")
+                except Exception as e:
+                    print(f"Error al guardar el log: {e}")
+                
+                # 2. MOSTRAR EL HISTORIAL CRONOLÓGICO AQUÍ (Al morir)
+                print("\n-------- HISTORIAL CRONOLÓGICO DE TU JUEGO --------")
+                try:
+                    # Si tienes un método para obtener o repetir los eventos del log:
+                    resultados = self.servicio.repetirPartida(nombre_log)
+                    if resultados:
+                        for res in resultados:
+                            print(res)
+                except Exception as e:
+                    print(f"No se pudo mostrar el historial: {e}")
+
+                # 3. Mostrar el resumen con FinPartidaDTO
+                try:
+                    fin_dto = self.servicio.finPartida()
+                    print("\n--- RESUMEN DE PARTIDA FINALIZADA ---")
+                    print(f"  > ID Cripta: {fin_dto.id_Cripta}")
+                    print(f"  > Versión Cripta: {fin_dto.vers_Cripta}")
+                    print(f"  > Acciones del jugador: {fin_dto.acciones_jugador}")
+                    print(f"  > Enemigos derrotados: {fin_dto.cantEnemigosDerrotados}")
+                    print(f"  > Tiempo total: {fin_dto.tiempoReloj}")
+                    print("=" * 50)
+                except Exception as e:
+                    print(f"Error al obtener el resumen: {e}")
                 break
                 
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
@@ -71,7 +118,15 @@ class ControladorJuego:
             "\n soltar, atacar, abrir[puerta], cerrar[puerta], salir: ").strip().lower()
 
             if accion == "salir":
-                print("Cerrando el juego...")
+                guardar = input("¿Deseas guardar la partida antes de salir? (s/n): ").strip().lower()
+                if guardar == 's':
+                    nombre_archivo = input("Ingresa el nombre para guardar el archivo: ").strip()
+                    try:
+                        self.servicio.guardarPartida(nombre_archivo)
+                        print("¡Partida guardada con éxito!")
+                    except Exception as e:
+                        print(f"Error al guardar la partida: {e}")
+                print("Saliendo del juego...")
                 break
 
             evento = self._mapear_entrada_a_evento(accion, sala_actual, jugador)
@@ -79,6 +134,7 @@ class ControladorJuego:
             if evento == "IGNORAR":
                 continue  
             elif evento:
+                print("\n --------HISTORIAL CRONOLÓGICO DE TU JUEGO--------\n")
                 self.servicio.accionJugador(evento)
             else:
                 print("Acción no reconocida o comando inválido.")
