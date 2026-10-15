@@ -315,7 +315,7 @@ class EstadoJuegoLogica:
             respuesta = accion
             print(accion.mensaje)
 
-            self.comprobarFinal()
+            self._comprobarFinal()
             if not self.fin and (
                 accion.eventoResultado is not None
             ):

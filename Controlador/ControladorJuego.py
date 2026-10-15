@@ -31,36 +31,36 @@ class ControladorJuego:
                 print("No se encontraron criptas disponibles.")
                 return
 
-        # 2. Mostramos el menú de selección al usuario
-        print("\nSelecciona la cripta que deseas jugar:")
-        for i, cripta in enumerate(criptas):
-            print(f"  [{i + 1}] {cripta}")
+            # 2. Mostramos el menú de selección al usuario
+            print("\nSelecciona la cripta que deseas jugar:")
+            for i, cripta in enumerate(criptas):
+                print(f"  [{i + 1}] {cripta}")
 
-        # 3. Validamos la entrada de la cripta
-        while True:
-            try:
-                opcion = int(input("\nIngresa el número de la cripta: "))
-                if 1 <= opcion <= len(criptas):
-                    id_cripta = self.servicio.obtenerIdCripta(opcion)
-                    break
-                else:
-                    print(f"Número inválido. Debe ser entre 1 y {len(criptas)}.")
-            except ValueError:
-                print("Por favor, ingresa un número válido.")
+            # 3. Validamos la entrada de la cripta
+            while True:
+                try:
+                    opcion = int(input("\nIngresa el número de la cripta: "))
+                    if 1 <= opcion <= len(criptas):
+                        id_cripta = self.servicio.obtenerIdCripta(opcion)
+                        break
+                    else:
+                        print(f"Número inválido. Debe ser entre 1 y {len(criptas)}.")
+                except ValueError:
+                    print("Por favor, ingresa un número válido.")
 
-       # 4. Pedimos la semilla (opcional)
-        entrada_semilla = input("Ingresa la semilla (deja en blanco para generar una aleatoria): ").strip()
-        
-        if entrada_semilla.isdigit():
-            semilla = int(entrada_semilla)
-            print(f"-> Usando semilla ingresada por el usuario: {semilla}")
-        else:
-            # Generamos una semilla aleatoria (por ejemplo, entre 1 y 99999)
-            semilla = random.randint(1, 99999)
-            print(f"-> No se ingresó semilla. Se generó automáticamente la semilla: {semilla}")
+            # 4. Pedimos la semilla (opcional)
+                entrada_semilla = input("Ingresa la semilla (deja en blanco para generar una aleatoria): ").strip()
+            
+            if entrada_semilla.isdigit():
+                semilla = int(entrada_semilla)
+                print(f"-> Usando semilla ingresada por el usuario: {semilla}")
+            else:
+                # Generamos una semilla aleatoria (por ejemplo, entre 1 y 99999)
+                semilla = random.randint(1, 99999)
+                print(f"-> No se ingresó semilla. Se generó automáticamente la semilla: {semilla}")
 
-        # 5. Inicializamos el juego pasando la cripta y la semilla
-        self.servicio.iniciarJuego(id_cripta, semilla)
+            # 5. Inicializamos el juego pasando la cripta y la semilla
+            self.servicio.iniciarJuego(id_cripta, semilla)
 
         # 6. Entramos al bucle principal del juego...
         while True:
