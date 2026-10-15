@@ -11,3 +11,6 @@ env/
 # Caché de pruebas y linter (opcional)
 .pytest_cache/
 .mypy_cache/
+
+# Datos guardados en disco por el juego (caché y modo offline)
+datos_cripta/
