@@ -210,6 +210,9 @@ class InventarioLogica:
         nodo.siguiente = None
         self.cantidad_actual -= 1 #Resta 1 a la cantidad actual en el inventario
         
+    def el_inventario_esta_lleno(self):
+        return self.cantidad_actual >= self.capacidad_maxima
+
     def buscar_objeto(self, objeto: Objeto) -> NodoInventario | None:
         """Busca un nodo en la lista que contenga el objeto dado"""
         nodo_actual = self.cabeza
