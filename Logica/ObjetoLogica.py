@@ -73,7 +73,7 @@ class ObjetoLogica:
                         valor_nuevo=self.jugador.antorcha_encendida,
                     ),
                 ]
-                resultado.exito, resultado.mensaje, resultado.eventoResultado = True, f"Se ha usado la antorcha {objeto.nombre}.", evento
+                resultado.exito, resultado.mensaje, resultado.eventoResultado = True, f"Se ha usado la antorcha.", evento
             case Arma() | Armadura():
                 equipo_anterior = self.jugador.arma if isinstance(objeto, Arma) else self.jugador.armadura
                 self._equipar(objeto)
@@ -85,7 +85,10 @@ class ObjetoLogica:
                     elemento=objeto,
                     indice=indice_original,
                 )]
-                resultado.exito, resultado.mensaje = True, f"Se ha equipado {objeto.nombre}."
+                if isinstance(objeto, Arma):
+                    resultado.exito, resultado.mensaje = True, f"Se ha equipado {objeto.nombre} y suma {objeto.ataque_bonus} al ataque."
+                else:
+                    resultado.exito, resultado.mensaje = True, f"Se ha equipado {objeto.nombre} y suma {objeto.defensa_bonus} a la defensa."
             case PergaminoRetroceso():
                 if not self.pergamino_logica.hay_algo_para_deshacer():
                     resultado.exito, resultado.mensaje = False, "No hay acciones para deshacer."
