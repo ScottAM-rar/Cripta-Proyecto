@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 
+from adaptadores.extension import ruta_archivo, EXTENSION_LOG, CARPETA_LOGS
+
 
 class RegistroEvento:
     """Datos de un evento cargado desde un archivo de repetición."""
@@ -242,8 +244,7 @@ class LogEventos:
 
     def guardar_log(self, nombre_archivo: str) -> None:
         """Guarda las acciones en un archivo .log, una acción por línea."""
-        if not isinstance(nombre_archivo, str) or not nombre_archivo.endswith(".log"):
-            raise ValueError("El nombre del archivo debe terminar en .log")
+        nombre_archivo = ruta_archivo(nombre_archivo, EXTENSION_LOG, CARPETA_LOGS, crear_carpeta=True)
 
         with open(nombre_archivo, "w", encoding="utf-8") as archivo:
             archivo.write(f"cripta: {self.id_cripta or 'ninguna'}\n")
@@ -255,8 +256,7 @@ class LogEventos:
 
     def cargar_log(self, nombre_archivo: str) -> None:
         """Carga las acciones de un archivo .log y reemplaza las actuales."""
-        if not isinstance(nombre_archivo, str) or not nombre_archivo.endswith(".log"):
-            raise ValueError("El nombre del archivo debe terminar en .log")
+        nombre_archivo = ruta_archivo(nombre_archivo, EXTENSION_LOG, CARPETA_LOGS)
 
         with open(nombre_archivo, "r", encoding="utf-8") as archivo:
             lineas = [linea.rstrip("\n") for linea in archivo]
