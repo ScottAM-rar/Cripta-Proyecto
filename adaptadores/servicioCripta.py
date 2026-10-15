@@ -95,6 +95,11 @@ class ServicioCripta:
             id_sala_actual=datos["sala_inicial"],
         )
  
+    def obtener_sala_salida(self, cripta_id: str) -> int:
+        """Id de la sala donde se gana la partida (la que tiene la salida).
+        Sale de los datos generales, que ya se piden una sola vez por cripta."""
+        return self.datos_cripta(cripta_id)["sala_salida"]
+
     # ------------------------------------------------------------------
     # Salas
     # ------------------------------------------------------------------

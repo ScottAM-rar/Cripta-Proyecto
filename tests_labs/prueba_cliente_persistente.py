@@ -11,7 +11,7 @@ import tempfile
  
 from adaptadores.AlmacenDisco import AlmacenDisco
 from adaptadores.cache import CacheLRU
-from adaptadores.Cliente_persistente import ClientePersistente
+from adaptadores.cliente_persistente import ClientePersistente
 from adaptadores.servicioCripta import ServicioCripta
  
 resultados = []
