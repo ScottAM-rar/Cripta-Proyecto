@@ -59,7 +59,7 @@ class ControladorJuego:
                 print("\n" + "=" * 50)
                 print("¡HAS MUERTO! Tu aventura en la cripta ha llegado a su fin.")
                 print("=" * 50)
-                self.servicio.guardarLog("pruebasLog.log")
+                self.servicio.guardarLog("pruebasLog")
                 break
                 
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)

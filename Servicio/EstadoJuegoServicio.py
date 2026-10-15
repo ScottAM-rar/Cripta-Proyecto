@@ -41,4 +41,7 @@ class EstadoJuegoServicio:
 
     def finPartida(self) -> FinPartidaDTO:
         return self._estadoJuegoLogica.finPartida()
+
+    def terminado(self) -> tuple[bool, str]:
+        return self._estadoJuegoLogica.terminado()
     
