@@ -9,6 +9,8 @@ class ClientePersistente(ClienteInterfaz):
         self.cliente = cliente          # el cliente de red (ClienteCripta)
         self.almacen = almacen          # AlmacenDisco
         self._catalogo_validado = False
+        self._version_catalogo: str | None = None
+        self._criptas_de_la_sesion: list[dict] | None = None
         self._datos_de_la_sesion: list[tuple[str, dict]] = []   # (cripta_id, datos)
  
     @property
@@ -20,9 +22,13 @@ class ClientePersistente(ClienteInterfaz):
     # Criptas
     # ------------------------------------------------------------------
     def obtener_criptas(self) -> list[dict]:
-        criptas = self.cliente.obtener_criptas()
-        self.almacen.guardar_criptas(criptas)
-        return criptas
+        """Se refresca desde la red al empezar la sesión (así una cripta nueva aparece)
+        y no se vuelve a pedir mientras la sesión siga: es una solicitud menos."""
+        if self._criptas_de_la_sesion is None:
+            criptas = self.cliente.obtener_criptas()
+            self.almacen.guardar_criptas(criptas)
+            self._criptas_de_la_sesion = criptas
+        return self._criptas_de_la_sesion
  
     def obtener_datos_generales(self, cripta_id: str) -> dict:
         """Siempre va a la red (una vez por sesión): trae la versión actual."""
@@ -94,12 +100,15 @@ class ClientePersistente(ClienteInterfaz):
     # Catálogo
     # ------------------------------------------------------------------
     def obtener_version_catalogo(self) -> str:
-        return self.cliente.obtener_version_catalogo()
+        """La misma consulta que valida lo guardado: no se repite en la sesión."""
+        self._asegurar_catalogo()
+        return self._version_catalogo
  
     def _asegurar_catalogo(self) -> None:
         if not self._catalogo_validado:
             version = self.cliente.obtener_version_catalogo()
             self.almacen.validar_catalogo(version)
+            self._version_catalogo = version
             self._catalogo_validado = True
  
     def obtener_catalogo(self, ids: list[str]) -> list[dict]:

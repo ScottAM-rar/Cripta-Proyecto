@@ -63,6 +63,8 @@ class ServicioCripta:
         self._esqueleto: list[dict] = []             # salas crudas de /salas
         self._datos_id: str | None = None            # cripta a la que pertenecen los datos generales
         self._datos: dict | None = None              # respuesta cruda de /criptas/{id}
+        self._listas_id: str | None = None           # cripta a la que pertenecen las salas ya precargadas
+        self._listas: list[int] = []                 # salas ya traídas (y guardadas) en esta sesión
  
     # ------------------------------------------------------------------
     # Criptas
@@ -171,12 +173,32 @@ class ServicioCripta:
     def precargar(self, cripta_id: str, numeros: list[int] | None = None) -> int:
         """Trae de una vez, en lotes, el contenido y las fichas de las salas
         (todas si no se indican). Así luego construir_sala() sale del disco
-        sin gastar solicitudes. Devuelve cuántas salas se precargaron."""
+        sin gastar solicitudes. Devuelve cuántas salas se precargaron.
+
+        Sin `numeros` trae TODA la cripta: solo para pruebas y laboratorios; en el
+        juego se usa precargar_vecinas()."""
         if numeros is None:
             salas = self.construir_todas(cripta_id)
         else:
             salas = self.construir_salas(cripta_id, numeros)
+        self._marcar_listas(cripta_id, [sala.id for sala in salas])
         return len(salas)
+
+    def _marcar_listas(self, cripta_id: str, numeros: list[int]) -> None:
+        if self._listas_id != cripta_id:
+            self._listas_id = cripta_id
+            self._listas = []
+        for numero in numeros:
+            if numero not in self._listas:
+                self._listas.append(numero)
+
+    def _estan_listas(self, cripta_id: str, numeros: list[int]) -> bool:
+        if self._listas_id != cripta_id:
+            return False
+        for numero in numeros:
+            if numero not in self._listas:
+                return False
+        return True
 
     def salas_vecinas(self, cripta_id: str, numero_sala: int, profundidad: int = 1) -> list[int]:
         """Ids de las salas a las que se llega desde numero_sala por sus salidas
@@ -200,12 +222,69 @@ class ServicioCripta:
                         pendientes.append((destino, nivel + 1))
         return alcanzadas[1:]
 
-    def precargar_vecinas(self, cripta_id: str, sala_actual: int, profundidad: int = 1) -> int:
-        """Precarga la sala actual y sus vecinas en lotes (precarga por vecindad).
-        Lo que ya está en disco no se vuelve a pedir. Devuelve cuántas salas
-        se procesaron."""
-        numeros = [sala_actual] + self.salas_vecinas(cripta_id, sala_actual, profundidad)
-        return self.precargar(cripta_id, numeros)
+    def precargar_vecinas(self, cripta_id: str, sala_actual: int, profundidad: int | None = None,
+                          max_salas: int = 10) -> int:
+        """Precarga por vecindad, pensada para gastar pocas solicitudes.
+
+        Garantía (§4.2): al terminar, la sala actual y todas las que se alcanzan en
+        UN movimiento ya están traídas, así que entrar a cualquiera no espera a la red.
+
+        Ahorro: si esa garantía ya se cumple devuelve 0 sin hacer nada. Solo cuando
+        falta alguna, trae un lote que se llena con las salas faltantes más cercanas
+        (hasta `max_salas`; 10 es lo que cabe en una solicitud de contenido). Así una
+        tanda de solicitudes cubre varios pasos del jugador en vez de una por sala.
+        Nunca trae toda la cripta de una vez. `profundidad` limita hasta cuántos pasos
+        se mira al llenar el lote; con None (lo normal) no hay otro límite que max_salas.
+
+        Devuelve cuántas salas se trajeron en esta llamada."""
+        if max_salas < 1:
+            raise ValueError("max_salas debe ser al menos 1")
+        if profundidad is not None and profundidad < 1:
+            raise ValueError("La profundidad debe ser al menos 1")
+        self._buscar_esqueleto(cripta_id, sala_actual)            # valida que exista
+        alcance = profundidad if profundidad is not None else len(self._cargar_esqueleto(cripta_id))
+
+        inmediatas = [sala_actual] + self.salas_vecinas(cripta_id, sala_actual, 1)
+        if self._estan_listas(cripta_id, inmediatas):
+            return 0
+
+        indispensables: list[int] = []
+        for numero in inmediatas:
+            if not self._estan_listas(cripta_id, [numero]):
+                indispensables.append(numero)
+
+        lote = list(indispensables)
+        limite = max(max_salas, len(indispensables))
+        for numero in self.salas_vecinas(cripta_id, sala_actual, alcance):       # de la más cercana a la más lejana
+            if len(lote) >= limite:
+                break
+            if numero not in lote and not self._estan_listas(cripta_id, [numero]):
+                lote.append(numero)
+        return self.precargar(cripta_id, lote)
+
+    def version_cripta(self, cripta_id: str) -> str:
+        """Versión de la cripta (para el encabezado del log y la tabla de puntajes).
+        Sale de los datos generales ya pedidos: no cuesta solicitudes extra."""
+        version = self.datos_cripta(cripta_id).get("version")
+        if version is None:
+            version = self.cliente.obtener_version_cripta(cripta_id)
+        return version
+
+    def version_catalogo(self) -> str:
+        """Versión del catálogo (para el encabezado del log). Si ya se validó en esta
+        sesión no cuesta solicitudes extra."""
+        return self.cliente.obtener_version_catalogo()
+
+    def retener_fichas(self, ids_catalogo: list[str]) -> None:
+        """Marca fichas como EN USO (§4.4): la caché no las libera mientras alguien
+        las use. Llamar una vez por cada instancia activa que las referencia."""
+        for id_catalogo in ids_catalogo:
+            self.cache.marcar_en_uso(id_catalogo)
+
+    def liberar_fichas(self, ids_catalogo: list[str]) -> None:
+        """Quita una referencia de uso (el enemigo murió, se recogió, se salió de la sala...)."""
+        for id_catalogo in ids_catalogo:
+            self.cache.marcar_libre(id_catalogo)
 
     def reporte(self, cripta_id: str) -> ReporteSolicitudes:
         """Solicitudes hechas contra el presupuesto de la cripta, y aciertos y
