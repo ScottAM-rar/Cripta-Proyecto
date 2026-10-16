@@ -46,7 +46,7 @@ Las capas, de arriba hacia abajo:
 | Cliente de red | `cliente_http.py` | Hablar con la API |
 | Contrato | `Interfaz.py` | Lo que todo cliente debe saber hacer (`ClienteInterfaz`) |
 
-Todos los clientes cumplen el mismo contrato (`ClienteInterfaz`, 7 métodos). Por eso `ServicioCripta`
+Todos los clientes cumplen el mismo contrato (`ClienteInterfaz`: 7 métodos y la propiedad `solicitudes_realizadas`). Por eso `ServicioCripta`
 no sabe si le llegan datos de internet o del disco, y cambiar de modo no afecta a nadie más.
 
 ---
@@ -430,5 +430,64 @@ los dos tipos de prueba.
 | 10 | Confirmar con la API real: `datos["version"]` = endpoint de versión; solicitudes de `precargar` | Persona 3 |
 | 11 | Verificar la normalización de `comportamiento` (sección 12) | Quien lleve enemigos |
 
-Supuestos que conviene confirmar con el enunciado: que el modo offline se active con `--offline`, y el
-significado exacto de "en uso" en §4.4.
+Confirmado con el enunciado: el modo offline se activa con `--offline` (§3.4) y "en uso" (§4.4) significa
+una ficha referenciada por un enemigo vivo, un objeto del inventario o del suelo de la sala actual, o una
+trampa de la sala actual. Sigue abierto: el formato del "paquete de respuestas previamente descargadas" que
+publicará el curso para `--offline` (nuestro `ClienteOffline` lee el formato propio de `AlmacenDisco`).
+
+## 14. Precarga perezosa, sesión compartida y mediciones
+
+### 14.1 Qué se agregó a `ServicioCripta`
+
+| Método | Devuelve | Para qué |
+|---|---|---|
+| `salas_vecinas(cripta_id, sala, profundidad=1)` | `list[int]` | Ids alcanzables por las salidas (de la más cercana a la más lejana). No usa la red |
+| `precargar_vecinas(cripta_id, sala_actual, profundidad=None, max_salas=10)` | `int` (salas traídas) | Precarga **perezosa** por vecindad (ver 14.2) |
+| `reporte(cripta_id)` | `ReporteSolicitudes` | Solicitudes, presupuesto, aciertos y fallos de caché; `.texto()` para imprimir al final (§5.1) |
+| `version_cripta(cripta_id)` / `version_catalogo()` | `str` | Para el encabezado del log y la tabla de puntajes. No cuestan solicitudes extra |
+| `retener_fichas(ids)` / `liberar_fichas(ids)` | `None` | Marcan fichas "en uso" (§4.4): una llamada por cada instancia activa que las referencia |
+
+### 14.2 Cómo funciona `precargar_vecinas` y por qué
+
+- **Garantía (§4.2):** al terminar, la sala actual y todas las que se alcanzan en UN movimiento ya están traídas.
+- **Perezosa:** si esa garantía ya se cumple devuelve 0 y no hace nada. Solo cuando falta una sala trae un lote.
+- **El lote se llena:** con las salas faltantes más cercanas, hasta `max_salas` (10 = lo que cabe en una solicitud de
+  contenido). Como una solicitud cuesta lo mismo con 1 que con 10 salas, una tanda cubre varios pasos del jugador.
+- **Nunca la cripta completa:** el tope de 10 salas por tanda lo impide en criptas grandes. `precargar(cripta_id)` sin
+  lista sí trae todo y queda solo para pruebas.
+- **Llamada recomendada:** `servicio.precargar_vecinas(cripta_id, sala)` sin más argumentos, cada vez que el jugador
+  entra a una sala. Pasar `profundidad` pequeña (2 o 3) reduce lo que se trae por tanda y gasta más solicitudes.
+
+### 14.3 Sesión compartida (una solicitud menos por cada servicio extra)
+
+`crear_servicio` reutiliza durante toda la ejecución el mismo cliente de red (un UUID, §3.1) y el mismo
+`ClientePersistente`. La lista de criptas, los datos generales y la versión del catálogo se piden una vez por
+ejecución aunque se creen varios servicios (por ejemplo, uno para listar criptas y otro al iniciar la partida).
+
+### 14.4 Mediciones (`py -m adaptadores.bench_red`)
+
+Datos sintéticos y sin internet; la solicitud real se supone de ~400 ms (§3.4).
+
+**Solicitudes para recorrer un pasillo de 60 salas**
+
+| Estrategia | Solicitudes |
+|---|---|
+| Sala por sala, sin precarga | 63 |
+| Actual y vecinas en cada paso (profundidad 2) | 61 |
+| Perezosa, profundidad 2 | 33 |
+| **Perezosa, por defecto (lote de 10)** | **9** |
+
+**Búsqueda en la caché** (µs por operación, peor caso de la búsqueda lineal)
+
+| Fichas | `deque` lineal (acierto) | Tabla hash propia (descartada) |
+|---|---|---|
+| 25 (valor por defecto) | 1.3 | 0.3 |
+| 1000 | 35 | 0.3 |
+| 5000 | 195 | 0.4 |
+
+Con el tamaño por defecto la diferencia es irrelevante frente a los 20 ms de §5.2. La búsqueda lineal deja de ser
+apropiada hacia varios miles de fichas (cientos de µs por consulta); entonces conviene una tabla hash propia con listas.
+
+**Recuperar una ficha liberada desde disco:** 0.03 ms con 25 fichas, 0.09 ms con 200 y 0.37 ms con 1000, contra
+~400 ms de una solicitud de red. **Guardar 10 fichas** (reescribe el archivo completo): 1.7 a 2.9 ms.
+**Planear la vecindad** en una cripta de 1000 salas: 25 µs (1 paso) a 59 µs (2 pasos); si no falta nada, 38 µs.

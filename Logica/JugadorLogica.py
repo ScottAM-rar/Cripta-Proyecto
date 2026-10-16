@@ -34,7 +34,10 @@ class JugadorLogica(ActorLogica):
 
     def estaEnSalaFinal(self, salaFinal: int):
         return self.jugador.id_sala_actual == salaFinal
-    def atacarEnemigo(self, enemigo : EnemigoDTO)-> ResultadoEventoDTO:
+    def atacarEnemigo(self, enemigo : EnemigoDTO, sala_actual: SalaDTO | None = None,
+                      obtener_botin=None) -> ResultadoEventoDTO:
+        """`obtener_botin(enemigo)` entrega lo que suelta el enemigo (§2.6); si se pasa junto con la sala, al
+        morir el enemigo eso queda en el suelo de la sala dentro de la misma acción (un pergamino lo deshace)."""
         if enemigo.vida_actual <= 0:
             return ResultadoEventoDTO(False, f"El jugador no atacó al enemigo {enemigo.id_instancia} ya que está muerto")
         if enemigo.id_sala_actual != self.jugador.id_sala_actual:
@@ -57,8 +60,23 @@ class JugadorLogica(ActorLogica):
                 valor_anterior=eliminados_anteriores,
                 valor_nuevo=self.jugador.enemigos_eliminados,
             ))
+        mensaje = "El jugador ha atacado al enemigo causando daño"
+        if enemigo.vida_actual <= 0 and vida_anterior > 0 and obtener_botin is not None and sala_actual is not None:
+            mensaje += "." + self._soltar_botin(enemigo, sala_actual, obtener_botin, cambios)
         self.retroceso.registrar_cambio(cambios)
-        return ResultadoEventoDTO(True,f"El jugador ha atacado al enemigo causando daño",puntaje=50)
+        return ResultadoEventoDTO(True, mensaje, puntaje=50)
+
+    def _soltar_botin(self, enemigo: EnemigoDTO, sala_actual: SalaDTO, obtener_botin, cambios: list) -> str:
+        """El enemigo murió: lo que suelta queda en el suelo de la sala. Devuelve el texto para el mensaje."""
+        try:
+            botin = obtener_botin(enemigo)
+        except Exception as error:      # sin red ni disco el combate no se rompe: solo no hay botín
+            return f" No se pudo obtener lo que suelta {enemigo.nombre}: {error}"
+        if not botin:
+            return ""
+        sala_actual.objetos.extend(botin)
+        cambios.append(CambioDTO(tipo_accion="BOTIN_ENEMIGO", objeto_afectado=sala_actual, elemento=botin))
+        return f" {enemigo.nombre} suelta: {', '.join(objeto.nombre for objeto in botin)}."
 
     def recogerObjeto(self, objeto: Objeto, sala_actual: SalaDTO):
         try:

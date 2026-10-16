@@ -49,7 +49,7 @@ class ControladorJuego:
                     print("Por favor, ingresa un número válido.")
 
             # 4. Pedimos la semilla (opcional)
-                entrada_semilla = input("Ingresa la semilla (deja en blanco para generar una aleatoria): ").strip()
+            entrada_semilla = input("Ingresa la semilla (deja en blanco para generar una aleatoria): ").strip()
             
             if entrada_semilla.isdigit():
                 semilla = int(entrada_semilla)
