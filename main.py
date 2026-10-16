@@ -65,11 +65,11 @@ def ajustar_recolector_de_basura() -> None:
 
 def main(argv=None) -> int:
     args = leer_argumentos(argv)
+    ajustar_recolector_de_basura()           # vale para el juego, --replay y --bench
     if args.bench is not None:               # --bench no usa la red ni crea la vista interactiva
         from bench import ejecutar as ejecutar_bench
         bloques = None if args.bench == "todo" else [b.strip() for b in args.bench.split(",") if b.strip()]
         return ejecutar_bench(bloques, args.bench_csv)
-    ajustar_recolector_de_basura()           # ← agregar: vale para el juego, --replay y --bench    
     servicio = None
     try:
         # El servicio de cripta se arma UNA vez aquí (un solo cliente de red y un solo UUID por ejecución)
