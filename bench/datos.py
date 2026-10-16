@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import io
-import os
 import random
 
 SEMILLA = 2026

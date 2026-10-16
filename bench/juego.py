@@ -1,7 +1,6 @@
 """Partidas sintéticas para medir el modelo real (guardado y ciclo de eventos) sin red ni la cripta real."""
 from __future__ import annotations
 
-import os
 import tempfile
 
 from adaptadores.AlmacenDisco import AlmacenDisco
