@@ -24,6 +24,7 @@ class EstadoJuegoLogica:
         self.iniciado = False
         self.fin = False
         self.motivoFin = None
+        self.precargaInicialHecha = False
         
         if(cripta is not None):
             self.iniciarJuego(cripta)
@@ -261,6 +262,16 @@ class EstadoJuegoLogica:
             raise ValueError("No existe la sala que se desea consultar")
         if(self.estadoJuego.salas[sala] is not None):
             return self.estadoJuego.salas[sala]
+        # El jugador acaba de entrar (o empieza aquí): se trae el contenido por adelantado y en lotes antes de armar la sala.
+        # Una sola vez, al inicio, se precarga profundo (3); después el entorno cercano (profundidad 2),
+        # y precargar_vecinas únicamente pide las salas que todavía no estaban guardadas. Si la sala la carga un enemigo
+        # al desplazarse (no es la del jugador) no se precarga nada para no gastar presupuesto.
+        if sala == self.estadoJuego.jugador.id_sala_actual:
+            if self.__dict__.get("precargaInicialHecha", False):
+                self.comunicacion.precargar_vecinas(self.idCripta, sala, 2)
+            else:
+                self.comunicacion.precargar_vecinas(self.idCripta, sala, 3)
+                self.precargaInicialHecha = True
         self.estadoJuego.salas[sala] = self.comunicacion.construir_sala(self.idCripta,sala) 
         sala_cargada = self.estadoJuego.salas[sala]
         with self.jugadorLogica.retroceso.sin_registro():
