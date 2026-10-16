@@ -104,6 +104,16 @@ class ServicioCripta:
             self._datos_id = cripta_id
         return self._datos
  
+    def version_cripta(self, cripta_id: str) -> str | None:
+        return self.datos_cripta(cripta_id).get("version")
+
+    def version_catalogo(self) -> str | None:
+        """Versión del catálogo en uso; None si no se puede conocer (p. ej. offline sin catálogo)."""
+        try:
+            return self.cliente.obtener_version_catalogo()
+        except Exception:
+            return None
+
     def crear_jugador(self, cripta_id: str) -> JugadorDTO:
         """Arma el jugador con las estadísticas que define la cripta."""
         datos = self.datos_cripta(cripta_id)

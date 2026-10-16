@@ -9,6 +9,7 @@ from DTO.EventoDTO import EventoDTO
 from DTO.Objeto import Antorcha, PergaminoRetroceso, Pocion
 from Logica.EstadoJuegoLogica import EstadoJuegoLogica
 from Logica.RetrocesoLogica import RetrocesoLogica
+from adaptadores.AlmacenPartidaBinario import AlmacenPartidaBinario
 from adaptadores.cache import CacheLRU
 from adaptadores.servicioCripta import ServicioCripta
 from tests_labs.api_falsa import HttpFalso
@@ -475,18 +476,17 @@ class TestPergaminosYPersistencia(PruebaRetroceso):
         self.mover(logica, "norte")
         self.esperar(logica, 3)
         carpeta = tempfile.mkdtemp()
-        archivo = os.path.join(carpeta, "partida.sav")
-        logica.guardarPartida(archivo)
+        archivo = os.path.join(carpeta, "partida.bin")
+        AlmacenPartidaBinario(archivo).guardar(logica.exportar_estado())
 
-        self.usar_pergamino(logica)
+        # el historial del pergamino no se guarda: tras cargar solo se deshacen acciones posteriores a la carga
         self.esperar(logica, 2)
         self.usar_pergamino(logica)
         referencia = self.foto(logica)
 
         cargada = EstadoJuegoLogica()
         cargada.comunicacion = ServicioCripta(ApiPrueba(), CacheLRU(25))
-        cargada.cargarPartida(archivo)
-        self.usar_pergamino(cargada)
+        cargada.restaurar_estado(AlmacenPartidaBinario(archivo).cargar())
         self.esperar(cargada, 2)
         self.usar_pergamino(cargada)
         self.assertEqual(self.foto(cargada), referencia)
