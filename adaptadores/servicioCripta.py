@@ -4,6 +4,7 @@ from dataclasses import dataclass
  
 from DTO.ActorDTO import JugadorDTO
 from DTO.SalaDTO import SalaDTO, SalidaDTO
+from adaptadores.cliente_offline import ErrorOffline
 from adaptadores.resolucion import resolver_sala, resolver_salas
  
  
@@ -262,18 +263,26 @@ class ServicioCripta:
                 lote.append(numero)
         return self.precargar(cripta_id, lote)
 
-    def version_cripta(self, cripta_id: str) -> str:
-        """Versión de la cripta (para el encabezado del log y la tabla de puntajes).
-        Sale de los datos generales ya pedidos: no cuesta solicitudes extra."""
+    def version_cripta(self, cripta_id: str) -> str | None:
+        """Versión de la cripta (para el encabezado del log, el guardado y la tabla de puntajes).
+        Sale de los datos generales ya pedidos: no cuesta solicitudes extra. Devuelve None
+        si la fuente no la conoce (p. ej. offline sin versión guardada)."""
         version = self.datos_cripta(cripta_id).get("version")
         if version is None:
-            version = self.cliente.obtener_version_cripta(cripta_id)
+            try:
+                version = self.cliente.obtener_version_cripta(cripta_id)
+            except ErrorOffline:
+                version = None
         return version
 
-    def version_catalogo(self) -> str:
-        """Versión del catálogo (para el encabezado del log). Si ya se validó en esta
-        sesión no cuesta solicitudes extra."""
-        return self.cliente.obtener_version_catalogo()
+    def version_catalogo(self) -> str | None:
+        """Versión del catálogo (para el encabezado del log y el guardado). Si ya se validó
+        en esta sesión no cuesta solicitudes extra. Devuelve None si la fuente no la conoce
+        (p. ej. offline sin catálogo guardado)."""
+        try:
+            return self.cliente.obtener_version_catalogo()
+        except ErrorOffline:
+            return None
 
     def retener_fichas(self, ids_catalogo: list[str]) -> None:
         """Marca fichas como EN USO (§4.4): la caché no las libera mientras alguien

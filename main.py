@@ -1,13 +1,66 @@
+import argparse
+import os
+import sys
+
 from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
 from Controlador.ControladorJuego import ControladorJuego
+from adaptadores.extension import CARPETA_LOGS
+from adaptadores.fabrica import crear_servicio, TAMANO_CACHE
 
-def main():
-    print("Inicializando Cripta...")
-    servicio = EstadoJuegoServicio()
-    
-    # El controlador se encarga de todo el flujo y la interacción inicial
-    controlador = ControladorJuego(servicio)
-    controlador.iniciar()
+
+def _tamano_de_cache(texto: str) -> int:
+    try:
+        valor = int(texto)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{texto!r} no es un número entero")
+    if valor < 1:
+        raise argparse.ArgumentTypeError("el tamaño de la caché debe ser al menos 1")
+    return valor
+
+
+def leer_argumentos(argv=None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(prog="main.py", description="Cripta: juego de mazmorra dirigido por eventos.")
+    parser.add_argument("--offline", action="store_true",
+                        help="juega solo con los datos guardados en disco, sin conectarse a la red")
+    parser.add_argument("--cache-size", type=_tamano_de_cache, default=TAMANO_CACHE, metavar="N",
+                        help=f"cantidad de fichas del catálogo que se mantienen en memoria (por defecto {TAMANO_CACHE})")
+    parser.add_argument("--replay", metavar="PARTIDA.log",
+                        help=f"reproduce una partida grabada, sin pedir nada al usuario (el log debe estar en {CARPETA_LOGS}/)")
+    return parser.parse_args(argv)
+
+
+def reproducir(servicio: EstadoJuegoServicio, archivo: str) -> int:
+    """--replay: reproduce el log completo sin vista ni interacción."""
+    carpeta, nombre = os.path.split(archivo)
+    if carpeta and os.path.abspath(carpeta) != os.path.abspath(CARPETA_LOGS):
+        print(f"El log debe estar en la carpeta {CARPETA_LOGS}/ (se indicó {archivo!r}).", file=sys.stderr)
+        return 1
+    resultados = servicio.repetirPartida(nombre)
+    print(f"\nReproducción terminada: {len(resultados)} acciones del jugador.")
+    terminado, motivo = servicio.terminado()
+    print(f"Estado final: {motivo}" if terminado else "La partida no había terminado al acabarse el log.")
+    return 0
+
+
+def main(argv=None) -> int:
+    args = leer_argumentos(argv)
+    try:
+        # El servicio de cripta se arma UNA vez aquí (un solo cliente de red y un solo UUID por ejecución)
+        # y se entrega al juego; --offline y --cache-size se aplican en este punto.
+        comunicacion = crear_servicio(offline=args.offline, cache_size=args.cache_size)
+        servicio = EstadoJuegoServicio(comunicacion=comunicacion, offline=args.offline)
+        if args.replay:
+            return reproducir(servicio, args.replay)     # no se crea la vista
+        print("Inicializando Cripta...")
+        ControladorJuego(servicio).iniciar()
+        return 0
+    except KeyboardInterrupt:
+        print("\nInterrumpido.")
+        return 130
+    except (ValueError, OSError, RuntimeError) as error:
+        print(f"Error: {error}", file=sys.stderr)
+        return 1
+
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
