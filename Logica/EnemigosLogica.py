@@ -37,6 +37,8 @@ class EnemigoLogica(ActorLogica):
     def atacarJugador(self,jugador: ActorDTO):
         if jugador.vida_actual <= 0:
             return ResultadoEventoDTO(False, f"El enemigo {self.enemigo.id_instancia} no atacó al jugador ya que está muerto")
+        if self.enemigo.id_sala_actual != jugador.id_sala_actual:
+            return ResultadoEventoDTO(False, f"El enemigo {self.enemigo.id_instancia} no puede atacar: el jugador no está en su sala")
         self._atacar(self.enemigo, jugador, self.azar)
         return ResultadoEventoDTO(True,f"El enemigo {self.enemigo.id_instancia} ha atacado al jugador causando daño")
 

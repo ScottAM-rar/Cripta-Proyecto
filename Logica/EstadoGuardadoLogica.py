@@ -183,7 +183,7 @@ def exportar(logica) -> EstadoGuardadoDTO:
     enemigos = [
         EnemigoGuardadoDTO(
             e.id_instancia, e.tipo, e.nombre, e.comportamiento, e.vida_actual, e.vida_max, e.ataque,
-            e.defensa, e.velocidad, e.id_sala_actual, list(e.suelta),
+            e.defensa, e.velocidad, e.id_sala_actual, list(e.suelta), e.activo,
         )
         for e in tablas.enemigos
     ]
@@ -260,7 +260,7 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
         EnemigoDTO(
             vida_actual=g.vida_actual, vida_max=g.vida_max, ataque=g.ataque, defensa=g.defensa,
             velocidad=g.velocidad, id_sala_actual=g.id_sala_actual, id_instancia=g.id_instancia, tipo=g.tipo,
-            nombre=g.nombre, comportamiento=g.comportamiento, suelta=list(g.suelta),
+            nombre=g.nombre, comportamiento=g.comportamiento, suelta=list(g.suelta), activo=g.activo,
         )
         for g in estado.enemigos
     ]
@@ -325,6 +325,7 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     estado_juego.puntaje = estado.puntaje
 
     gestor = GestorEventos(salas, jugador, logica.ingresarEnSala, estado.semilla)
+    gestor.reloj = reloj
     gestor.azar.setstate((estado.estado_azar[0], tuple(estado.estado_azar[1]), estado.estado_azar[2]))
 
     bitacora = BitacoraLogica()

@@ -32,6 +32,7 @@ class EnemigoGuardadoDTO:
     velocidad: int
     id_sala_actual: int
     suelta: list = field(default_factory=list)
+    activo: bool = False
 
 
 @dataclass

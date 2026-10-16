@@ -137,6 +137,9 @@ class PergaminoLogica:
             case "ENEMIGOS_ELIMINADOS":
                 cambio.objeto_afectado.enemigos_eliminados = cambio.valor_anterior
 
+            case "ACTIVAR_ENEMIGO":
+                cambio.objeto_afectado.activo = cambio.valor_anterior
+
             case "ULTIMO_PASO":
                 cambio.objeto_afectado.ultimo_paso = cambio.valor_anterior
 

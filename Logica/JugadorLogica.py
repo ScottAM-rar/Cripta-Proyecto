@@ -37,6 +37,8 @@ class JugadorLogica(ActorLogica):
     def atacarEnemigo(self, enemigo : EnemigoDTO)-> ResultadoEventoDTO:
         if enemigo.vida_actual <= 0:
             return ResultadoEventoDTO(False, f"El jugador no atacó al enemigo {enemigo.id_instancia} ya que está muerto")
+        if enemigo.id_sala_actual != self.jugador.id_sala_actual:
+            return ResultadoEventoDTO(False, f"El jugador no puede atacar al enemigo {enemigo.id_instancia}: no está en su misma sala")
         vida_anterior = enemigo.vida_actual
         eliminados_anteriores = self.jugador.enemigos_eliminados
         self._atacar(self.jugador,enemigo,self.azar)

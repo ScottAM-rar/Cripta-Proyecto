@@ -42,3 +42,4 @@ class EnemigoDTO(ActorDTO):
     comportamiento: str
     vida_actual: int
     suelta: list[str] = field(default_factory=list)
+    activo: bool = False    # dormido hasta que el jugador entra a su sala (§2.4); un enemigo activo no vuelve a dormirse
