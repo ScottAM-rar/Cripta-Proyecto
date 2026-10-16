@@ -17,6 +17,8 @@ class CacheLRU:
             raise ValueError("La capacidad de la caché debe ser al menos 1")
         self._capacidad = capacidad
         self._entradas: deque[list] = deque()
+        self._aciertos = 0
+        self._fallos = 0
 
     def __len__(self) -> int:
         return len(self._entradas)
@@ -24,6 +26,16 @@ class CacheLRU:
     @property
     def capacidad(self) -> int:
         return self._capacidad
+
+    @property
+    def aciertos(self) -> int:
+        """Veces que obtener() encontró la clave en la caché."""
+        return self._aciertos
+
+    @property
+    def fallos(self) -> int:
+        """Veces que obtener() NO encontró la clave (hubo que ir al cliente)."""
+        return self._fallos
 
     def claves(self) -> list[str]:
         """Las claves guardadas, de la más reciente a la menos reciente."""
@@ -41,7 +53,9 @@ class CacheLRU:
     def obtener(self, clave: str) -> object | None:
         entrada = self._buscar(clave)
         if entrada is None:
+            self._fallos += 1
             return None
+        self._aciertos += 1
         self._entradas.remove(entrada)
         self._entradas.appendleft(entrada)
         return entrada[1]
