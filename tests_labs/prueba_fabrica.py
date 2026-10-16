@@ -42,8 +42,8 @@ with tempfile.TemporaryDirectory() as raiz:
     servicio, cid = arrancar(carpeta, http1)
     cargadas = servicio.precargar(cid)
     comprobar("se precargan las 3 salas", cargadas == 3)
-    comprobar("6 solicitudes en total", http1.solicitudes_realizadas == 6, f"(fueron {http1.solicitudes_realizadas})")
-    comprobar("el servicio las cuenta igual", servicio.solicitudes_realizadas == 6)
+    comprobar("7 solicitudes en total (la 7ª trae lo que sueltan los enemigos)", http1.solicitudes_realizadas == 7, f"(fueron {http1.solicitudes_realizadas})")
+    comprobar("el servicio las cuenta igual", servicio.solicitudes_realizadas == 7)
     antes = http1.solicitudes_realizadas
     salas = [servicio.construir_sala(cid, n) for n in (1, 2, 3)]
     comprobar("construir_sala después de precargar NO gasta solicitudes",

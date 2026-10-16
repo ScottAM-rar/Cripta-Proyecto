@@ -113,12 +113,12 @@ with tempfile.TemporaryDirectory() as raiz:
     s5.crear_jugador(c5)
     s5.precargar(c5)
     informe = s5.reporte(c5)
-    comprobar("solicitudes = las del cliente", informe.solicitudes == http5.solicitudes_realizadas == 6)
+    comprobar("solicitudes = las del cliente", informe.solicitudes == http5.solicitudes_realizadas == 7)
     comprobar("presupuesto = 9", informe.presupuesto == 9)
-    comprobar("dentro del presupuesto y restante 3", informe.dentro_del_presupuesto and informe.restante == 3)
+    comprobar("dentro del presupuesto y restante 2", informe.dentro_del_presupuesto and informe.restante == 2)
     comprobar("la caché registró fallos al buscar fichas", informe.fallos_cache > 0)
     comprobar("el texto resume solicitudes y caché",
-              "6 de 9" in informe.texto() and "aciertos" in informe.texto(), f"\n{informe.texto()}")
+              "7 de 9" in informe.texto() and "aciertos" in informe.texto(), f"\n{informe.texto()}")
     excedido = ReporteSolicitudes(solicitudes=10, presupuesto=9, aciertos_cache=0, fallos_cache=0)
     comprobar("10 de 9 se marca como EXCEDIDO",
               not excedido.dentro_del_presupuesto and excedido.restante == -1 and "EXCEDIDO" in excedido.texto())

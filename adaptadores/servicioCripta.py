@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from DTO.ActorDTO import JugadorDTO
 from DTO.SalaDTO import SalaDTO, SalidaDTO
 from adaptadores.cliente_offline import ErrorOffline
-from adaptadores.resolucion import resolver_sala, resolver_salas
+from adaptadores.resolucion import resolver_botin, resolver_sala, resolver_salas
  
  
 def _nombre_direccion(letra: str) -> str:
@@ -171,6 +171,13 @@ class ServicioCripta:
         numeros = [sala["id"] for sala in self._cargar_esqueleto(cripta_id)]
         return self.construir_salas(cripta_id, numeros)
  
+    def objetos_que_suelta(self, enemigo) -> list:
+        """Lo que suelta `enemigo` al morir (§2.6): una instancia NUEVA de cada objeto de su campo `suelta`,
+        con la sala del enemigo, lista para ponerla en el suelo. Un id repetido da instancias separadas y sin
+        `suelta` devuelve []. Las fichas ya se trajeron junto con la sala del enemigo, así que normalmente sale
+        de la caché o del disco sin gastar solicitudes; si alguna faltara se piden juntas, en un solo lote."""
+        return resolver_botin(self.cliente, self.cache, enemigo.suelta, enemigo.id_sala_actual)
+
     def precargar(self, cripta_id: str, numeros: list[int] | None = None) -> int:
         """Trae de una vez, en lotes, el contenido y las fichas de las salas
         (todas si no se indican). Así luego construir_sala() sale del disco

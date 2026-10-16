@@ -324,7 +324,8 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     )
     estado_juego.puntaje = estado.puntaje
 
-    gestor = GestorEventos(salas, jugador, logica.ingresarEnSala, estado.semilla)
+    gestor = GestorEventos(salas, jugador, logica.ingresarEnSala, estado.semilla,
+                           obtener_botin=logica.comunicacion.objetos_que_suelta)
     gestor.azar.setstate((estado.estado_azar[0], tuple(estado.estado_azar[1]), estado.estado_azar[2]))
 
     bitacora = BitacoraLogica()
