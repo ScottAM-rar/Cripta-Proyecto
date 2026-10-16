@@ -98,4 +98,8 @@ class EstadoJuegoServicio:
 
     def terminado(self) -> tuple[bool, str]:
         return self._estadoJuegoLogica.terminado()
+
+    def reporteSolicitudes(self):
+        """Solicitudes de red, presupuesto y caché de la cripta en juego (§5.1), o None si aún no hay cripta."""
+        return self._estadoJuegoLogica.reporteSolicitudes()
     
