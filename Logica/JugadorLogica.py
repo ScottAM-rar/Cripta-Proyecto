@@ -5,6 +5,7 @@ from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.ActorLogica import ActorLogica
 from Logica.RetrocesoLogica import RetrocesoLogica
 from DTO.CambioDTO import CambioDTO
+import random
 
 class JugadorLogica(ActorLogica):
     def __init__(self,jugador : JugadorDTO, semilla: int = None, azar: random.Random | None = None):
