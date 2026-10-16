@@ -3,7 +3,7 @@ from Logica.ActorLogica import ActorLogica
 import random
 class ComportamientoErrante(ComportamientoEnemigo):
     @staticmethod
-    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None) -> str:
+    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None, tiempo_actual: int | None = None) -> str:
         salaActual = salas[enemigo.id_sala_actual]
         if azar is None:
             azar = random.Random()   # solo si alguien la llama suelta; el juego siempre pasa el azar del modelo

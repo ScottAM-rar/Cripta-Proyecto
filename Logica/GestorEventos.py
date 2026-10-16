@@ -232,7 +232,7 @@ class GestorEventos:
                 vida_enemigo_anterior = evento.actor.vida_actual
                 sala_anterior = evento.actor.id_sala_actual
                 self.enemigo_logica.setEnemigo(evento.actor)
-                res =  self.enemigo_logica.decidirAccion(jugador,self.salas)
+                res =  self.enemigo_logica.decidirAccion(jugador,self.salas,evento.tiempo_ejecucion)
                 if evento.actor.id_sala_actual != sala_enemigo:
                     self.cargar_sala(evento.actor.id_sala_actual).enemigos.append(evento.actor)
                 cambios = []

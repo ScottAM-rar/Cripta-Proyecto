@@ -40,7 +40,7 @@ class EnemigoLogica(ActorLogica):
         self._atacar(self.enemigo, jugador, self.azar)
         return ResultadoEventoDTO(True,f"El enemigo {self.enemigo.id_instancia} ha atacado al jugador causando daño")
 
-    def decidirAccion(self,jugador: ActorDTO, salas: list[SalaDTO])-> ResultadoEventoDTO:
+    def decidirAccion(self,jugador: ActorDTO, salas: list[SalaDTO], tiempo_actual: int | None = None)-> ResultadoEventoDTO:
         if self.enemigo is None:
             raise ValueError("No se puede decidir acciones sobre un enemigo que no existe")
         if self.enemigo.vida_actual <= 0:
@@ -48,7 +48,7 @@ class EnemigoLogica(ActorLogica):
         if jugador.id_sala_actual == self.enemigo.id_sala_actual:
             accion = self.atacarJugador(jugador)
         else:
-            mensaje = f"El enemigo {self.enemigo.id_instancia} " + self._comportamiento.acción(self.enemigo,salas,self.azar)
+            mensaje = f"El enemigo {self.enemigo.id_instancia} " + self._comportamiento.acción(self.enemigo,salas,self.azar,tiempo_actual)
             accion = ResultadoEventoDTO(True, mensaje)
         eventoNuevo = EventoDTO(100,0,self.enemigo,"ACCION_ENEMIGO",[jugador])
 

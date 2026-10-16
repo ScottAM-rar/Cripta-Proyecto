@@ -202,7 +202,7 @@ def exportar(logica) -> EstadoGuardadoDTO:
         puntaje=estado.puntaje,
         fin=logica.fin,
         motivo_fin=logica.motivoFin,
-        offline=logica.offline,
+        offline=False,      # de dónde salen los datos lo sabe quien arma el servicio; él completa este campo
         precarga_inicial_hecha=getattr(logica, "precargaInicialHecha", False),
         tiempo_movimiento_jugador=logica.tiempoMovimientoJugador,
         total_salas=len(estado.salas),
@@ -339,7 +339,6 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     # --- todo armado: ahora sí se reemplaza el estado de la lógica
     logica.idCripta = estado.id_cripta
     logica.semilla = estado.semilla
-    logica.offline = estado.offline
     logica.estadoJuego = estado_juego
     logica.gestorEventos = gestor
     logica.jugadorLogica = JugadorLogica(jugador, estado.semilla, gestor.azar)
