@@ -14,12 +14,13 @@ from DTO.CambioDTO import CambioDTO
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from adaptadores.fabrica import crear_servicio
 from adaptadores.servicioCripta import ServicioCripta
-from adaptadores.PersistenciaPartida import PersistenciaPartida
+from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
+from Logica import EstadoGuardadoLogica
 class EstadoJuegoLogica:
-    def __init__(self,semilla: int = None, cripta: str = None):
+    def __init__(self,semilla: int = None, cripta: str = None, comunicacion: ServicioCripta | None = None, offline: bool = False):
         self.tiempoMovimientoJugador = 0
-        self.comunicacion = None
-        self.offline = False
+        self.comunicacion = comunicacion      # si viene armado desde main (--offline, --cache-size) se usa tal cual
+        self.offline = offline
         
         self.iniciado = False
         self.fin = False
@@ -29,48 +30,34 @@ class EstadoJuegoLogica:
         if(cripta is not None):
             self.iniciarJuego(cripta)
 
-    def __getstate__(self):
-        estado = self.__dict__.copy()
-        estado.pop("comunicacion", None)
-        return estado
+    def exportar_estado(self) -> EstadoGuardadoDTO:
+        """Instantánea de la partida en datos simples; no toca archivos ni red."""
+        return EstadoGuardadoLogica.exportar(self)
 
-    def __setstate__(self, estado):
-        self.__dict__.update(estado)
-        self.comunicacion = crear_servicio(offline=self.__dict__.get("offline", False))
+    def restaurar_estado(self, estado: EstadoGuardadoDTO) -> None:
+        """Deja la partida como estaba cuando se exportó `estado`. El historial del pergamino empieza vacío."""
+        if self.comunicacion is None:
+            self.comunicacion = crear_servicio(offline=estado.offline)
+        EstadoGuardadoLogica.restaurar(self, estado)
 
-    def _enlazarCallbacks(self):
-        self.gestorEventos.cargar_sala = self.ingresarEnSala
-
-    def guardarPartida(self, nombre_archivo: str) -> None:
-        if not self.iniciado:
-            raise ValueError("El juego no ha sido iniciado")
-        if self.fin:
-            raise ValueError("No se puede guardar una partida que ya terminó")
-        PersistenciaPartida.guardar(nombre_archivo, self)
-
-    def cargarPartida(self, nombre_archivo: str) -> None:
-        cargado = PersistenciaPartida.cargar(nombre_archivo)
-        if not isinstance(cargado, EstadoJuegoLogica) or not cargado.iniciado:
-            raise ValueError("El archivo no contiene una partida válida")
-        estado = cargado.__dict__.copy()
-        estado["comunicacion"] = self.comunicacion if self.comunicacion is not None else cargado.comunicacion
-        self.__dict__.clear()
-        self.__dict__.update(estado)
-        self._enlazarCallbacks()
-
-    def iniciarJuego(self,  cripta: str,semilla: int = None, offline: bool = False):
+    def iniciarJuego(self,  cripta: str,semilla: int = None, offline: bool | None = None):
+        """offline=None conserva lo configurado al crear la lógica; True/False lo cambia."""
         if self.iniciado:
             raise ValueError("No se puede iniciar un juego ya iniciado")
-        self.comunicacion = crear_servicio(offline=offline)
-        self.offline = offline
+        if offline is not None and offline != self.offline:
+            self.comunicacion = None
+            self.offline = offline
+        if self.comunicacion is None:
+            self.comunicacion = crear_servicio(offline=self.offline)
         if not self.comunicacion.existe_cripta(cripta):
             raise ValueError("No existe la cripta solicitada")
         self.semilla = 0 if semilla is None else semilla
         self.logEventos = LogEventos(self.semilla, cripta)
+        self.logEventos.version_cripta = self.comunicacion.version_cripta(cripta)
+        self.logEventos.version_catalogo = self.comunicacion.version_catalogo()
         self.logEventosJuego = BitacoraLogica()
         
         cantSalas = self.comunicacion.total_salas(cripta)
-        #TODO obtener version de la cripta
         salas = [None] * (cantSalas+1)
         relojvirtual = RelojVirtual()
         retroceso = RetrocesoLogica()
@@ -117,6 +104,11 @@ class EstadoJuegoLogica:
             raise ValueError("No se puede repetir una partida durante otra partida")
 
         self.iniciarJuego(log_original.id_cripta, log_original.semilla)
+        try:
+            self._verificarVersionesReplay(log_original)
+        except ValueError:
+            self.iniciado = False
+            raise
         self.ingresarEnSala(self.estadoJuego.jugador.id_sala_actual)
 
         resultados = []
@@ -125,6 +117,24 @@ class EstadoJuegoLogica:
             resultados.append(self.accionJugador(evento))
 
         return resultados
+
+    def _verificarVersionesReplay(self, log: LogEventos) -> None:
+        """Solo se reproduce si cripta y catálogo son exactamente los del log (§4.11)."""
+        actuales = (
+            ("cripta", log.version_cripta, self.logEventos.version_cripta),
+            ("catálogo", log.version_catalogo, self.logEventos.version_catalogo),
+        )
+        for nombre, guardada, actual in actuales:
+            if guardada is None or actual is None:
+                raise ValueError(
+                    f"No se puede garantizar una reproducción fiel: falta la versión de {nombre} "
+                    f"(en el log: {guardada or 'desconocida'}, disponible: {actual or 'desconocida'})"
+                )
+            if guardada != actual:
+                raise ValueError(
+                    f"No se puede garantizar una reproducción fiel: la versión de {nombre} cambió "
+                    f"({guardada} en el log, {actual} disponible)"
+                )
 
     def _crear_evento_repeticion(self, registro: RegistroEvento) -> EventoDTO:
         tipo = registro.tipo_accion
@@ -241,7 +251,7 @@ class EstadoJuegoLogica:
 
     def listarCriptas(self) -> list[str]:
         if self.comunicacion is None:
-            self.comunicacion = crear_servicio()
+            self.comunicacion = crear_servicio(offline=self.offline)
         return self.comunicacion.listar_criptas()
 
     def obtenerIdCripta(self, posicion: int) -> str:
@@ -267,7 +277,7 @@ class EstadoJuegoLogica:
         # y precargar_vecinas únicamente pide las salas que todavía no estaban guardadas. Si la sala la carga un enemigo
         # al desplazarse (no es la del jugador) no se precarga nada para no gastar presupuesto.
         if sala == self.estadoJuego.jugador.id_sala_actual:
-            if self.__dict__.get("precargaInicialHecha", False):
+            if getattr(self, "precargaInicialHecha", False):
                 self.comunicacion.precargar_vecinas(self.idCripta, sala, 2)
             else:
                 self.comunicacion.precargar_vecinas(self.idCripta, sala, 3)
