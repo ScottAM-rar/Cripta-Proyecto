@@ -12,7 +12,7 @@ from adaptadores.AlmacenDisco import AlmacenDisco
 from adaptadores.cache import CacheLRU
 from adaptadores.cliente_offline import ClienteOffline, ErrorOffline
 from adaptadores.servicioCripta import ServicioCripta
-from tests_labs.api_falsa import HttpFalso, cargar_todo, nueva_ejecucion
+from tests_labs.api_falsa import cargar_todo, nueva_ejecucion
  
 resultados = []
  
