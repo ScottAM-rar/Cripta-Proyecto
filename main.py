@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import gc
 
 from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
 from Controlador.ControladorJuego import ControladorJuego
@@ -57,14 +58,21 @@ def mostrar_reporte(servicio: EstadoJuegoServicio) -> None:
     if reporte is not None:                      # None = nunca se llegó a elegir una cripta
         print("\n--- Reporte de solicitudes ---")
         print(reporte.texto())
+UMBRAL_GC = (50_000, 20, 100)
 
+def ajustar_recolector_de_basura() -> None:
+    gc.set_threshold(*UMBRAL_GC)
 
 def main(argv=None) -> int:
     args = leer_argumentos(argv)
+
+    ajustar_recolector_de_basura()           # vale para el juego, --replay y --bench
     if args.bench is not None:               # --bench no usa la red ni crea la vista interactiva
         from bench import ejecutar as ejecutar_bench
         bloques = None if args.bench == "todo" else [b.strip() for b in args.bench.split(",") if b.strip()]
         return ejecutar_bench(bloques, args.bench_csv)
+  
+
     servicio = None
     try:
         # El servicio de cripta se arma UNA vez aquí (un solo cliente de red y un solo UUID por ejecución)
