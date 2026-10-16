@@ -19,6 +19,7 @@ from Logica import EstadoGuardadoLogica
 class EstadoJuegoLogica:
     def __init__(self,semilla: int = None, cripta: str = None, comunicacion: ServicioCripta | None = None):
         self.tiempoMovimientoJugador = 0
+        self.accionesJugador = 0       # acciones del jugador que consumieron tiempo virtual (§2.12)
         # Quien arma el juego entrega el servicio de criptas ya listo; al modelo no le importa de dónde saca los datos.
         self.comunicacion = comunicacion
         
@@ -477,6 +478,7 @@ class EstadoJuegoLogica:
                 mensajes = "\n".join(r.mensaje for r in resultados_trampas)
                 respuesta = ResultadoEventoDTO(accion.exito, f"{accion.mensaje}\n{mensajes}", accion.eventoResultado, accion.puntaje)
 
+        self.accionesJugador += 1
         self._sumarPuntaje(accion.puntaje)
         self._comprobarFinal()
         if not self.fin:
@@ -512,8 +514,9 @@ class EstadoJuegoLogica:
 
         return FinPartidaDTO(
             self.idCripta,
-            "1.0",
-            self.logEventosJuego.imprimir_mensajes(),
+            self.comunicacion.version_cripta(self.idCripta) if self.comunicacion is not None else None,
+            self.accionesJugador,
             self.jugadorLogica.enemigos_eliminados(),
             self.estadoJuego.reloj.tiempo_actual,
+            not self.jugadorLogica.esta_muerto(),
         )

@@ -200,6 +200,7 @@ def exportar(logica) -> EstadoGuardadoDTO:
         semilla=logica.semilla,
         estado_azar=[azar[0], list(azar[1]), azar[2]],
         puntaje=estado.puntaje,
+        acciones_jugador=logica.accionesJugador,
         fin=logica.fin,
         motivo_fin=logica.motivoFin,
         offline=False,      # de dónde salen los datos lo sabe quien arma el servicio; él completa este campo
@@ -324,13 +325,9 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     )
     estado_juego.puntaje = estado.puntaje
 
-<<<<<<< HEAD
-    gestor = GestorEventos(salas, jugador, logica.ingresarEnSala, estado.semilla)
-    gestor.reloj = reloj
-=======
     gestor = GestorEventos(salas, jugador, logica.ingresarEnSala, estado.semilla,
                            obtener_botin=logica.comunicacion.objetos_que_suelta)
->>>>>>> Scott-Persona3
+    gestor.reloj = reloj
     gestor.azar.setstate((estado.estado_azar[0], tuple(estado.estado_azar[1]), estado.estado_azar[2]))
 
     bitacora = BitacoraLogica()
@@ -354,4 +351,5 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     logica.motivoFin = estado.motivo_fin
     logica.precargaInicialHecha = estado.precarga_inicial_hecha
     logica.tiempoMovimientoJugador = estado.tiempo_movimiento_jugador
+    logica.accionesJugador = estado.acciones_jugador
     logica.iniciado = True

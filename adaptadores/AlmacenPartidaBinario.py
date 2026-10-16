@@ -24,7 +24,7 @@ from adaptadores.codec_partida import (
 )
 
 MAGIA = b"CRPP"
-VERSION_FORMATO = 3     # 3: los enemigos guardan si están activos
+VERSION_FORMATO = 4     # 4: se guarda el contador de acciones del jugador; 3: los enemigos guardan si están activos
 MARCA_FIN = b"FIN!"
 
 _ENCABEZADO = struct.Struct(">4sH")

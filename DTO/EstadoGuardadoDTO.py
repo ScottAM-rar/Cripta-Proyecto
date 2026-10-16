@@ -128,6 +128,7 @@ class EstadoGuardadoDTO:
     semilla: int = 0
     estado_azar: list = field(default_factory=list)    # random.Random.getstate() aplanado: [versión, [ints...], gauss]
     puntaje: int = 0
+    acciones_jugador: int = 0             # acciones que consumieron tiempo virtual (tabla de puntajes)
     fin: bool = False
     motivo_fin: str | None = None
     offline: bool = False                 # lo completa quien conozca el origen de los datos (el modelo no lo sabe)

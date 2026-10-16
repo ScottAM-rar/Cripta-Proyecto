@@ -28,6 +28,7 @@ class GestorEventos:
         
         self.salas = salas
         self.cargar_sala = cargar_sala
+        self.obtener_botin = obtener_botin      # lo que suelta un enemigo al morir (§2.6); lo entrega quien arma el juego
         self.reloj = None     # lo asigna quien arma la partida: de aquí sale "el instante actual" de cada acción
         # Inyección de dependencias de la capa de lógica
         # Un único generador por partida, compartido por jugador y enemigos: así la secuencia de tiradas es reproducible
