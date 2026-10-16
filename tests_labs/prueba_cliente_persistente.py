@@ -102,6 +102,8 @@ class HttpFalso:
              "suelta": ["itm_pocion_menor"]},
             {"id": "ent_guardian_oseo", "clase": "enemigo", "nombre": "Guardián óseo", "vida_max": 20,
              "ataque": 7, "defensa": 3, "velocidad": 80, "comportamiento": "guardián", "suelta": []},
+            {"id": "itm_pocion_menor", "clase": "pocion", "nombre": "Poción menor", "peso": 1, "valor": 10,
+             "cura": 8, "modificador_velocidad": 0, "duracion": 0},
         ]
         devueltas = []
         for ficha in fichas:
@@ -134,8 +136,8 @@ with tempfile.TemporaryDirectory() as raiz:
     salas1 = cargar_todo(servicio1)
     comprobar("se construyen las 3 salas", len(salas1) == 3)
     comprobar("la sala 2 tiene 2 enemigos", len(salas1[1].enemigos) == 2)
-    comprobar("solicitudes: 1 lista + 1 datos + 1 salas + 1 contenido + 1 versión catálogo + 1 catálogo = 6",
-              http1.solicitudes_realizadas == 6, f"(fueron {http1.solicitudes_realizadas}: {http1.nombres()})")
+    comprobar("solicitudes: 1 lista + 1 datos + 1 salas + 1 contenido + 1 versión catálogo + 1 catálogo + 1 catálogo del botín = 7",
+              http1.solicitudes_realizadas == 7, f"(fueron {http1.solicitudes_realizadas}: {http1.nombres()})")
     comprobar("se crearon los archivos en disco",
               os.path.exists(os.path.join(carpeta, "criptas.bin"))
               and os.path.exists(os.path.join(carpeta, "catalogo.bin"))
@@ -162,11 +164,11 @@ with tempfile.TemporaryDirectory() as raiz:
     print("== 4) El catálogo cambió de versión: se rehace el catálogo, la cripta sigue ==")
     http4, _, servicio4 = nueva_ejecucion(carpeta, version_cripta="c2", version_catalogo="k2")
     cargar_todo(servicio4)
-    comprobar("se volvió a pedir el catálogo", http4.veces("catalogo") == 1)
+    comprobar("se volvió a pedir el catálogo (fichas y botín: 2 solicitudes)", http4.veces("catalogo") == 2)
     comprobar("salas y contenido NO se volvieron a pedir",
               http4.veces("salas") == 0 and http4.veces("contenido") == 0)
-    comprobar("total = lista + datos + versión cat. + catálogo = 4",
-              http4.solicitudes_realizadas == 4, f"(fueron {http4.solicitudes_realizadas})")
+    comprobar("total = lista + datos + versión cat. + catálogo x2 = 5",
+              http4.solicitudes_realizadas == 5, f"(fueron {http4.solicitudes_realizadas})")
  
 with tempfile.TemporaryDirectory() as raiz:
     carpeta = os.path.join(raiz, "datos_cripta")

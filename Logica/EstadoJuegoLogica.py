@@ -71,6 +71,7 @@ class EstadoJuegoLogica:
             jugador,
             self.ingresarEnSala,
             self.semilla,
+            obtener_botin=self.comunicacion.objetos_que_suelta,
         )
         self.jugadorLogica = JugadorLogica(jugador,self.semilla,self.gestorEventos.azar)
         self.logEventos.vaciar()
