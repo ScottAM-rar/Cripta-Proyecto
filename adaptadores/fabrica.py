@@ -22,6 +22,28 @@ CARPETA_DATOS = "datos_cripta"
 TAMANO_CACHE = 25
 
 
+# El enunciado pide UN solo UUID por ejecución. Cada ClienteCripta genera el
+# suyo, así que aquí se guarda el primero que se crea y se reutiliza: aunque
+# alguien llame crear_servicio() varias veces, la API ve siempre el mismo
+# cliente y el contador de solicitudes es el de toda la ejecución.
+_cliente_compartido = None
+
+
+def _cliente_http_de_ejecucion(url: str):
+    global _cliente_compartido
+    from adaptadores.cliente_http import ClienteCripta   # solo si hay red
+    if _cliente_compartido is None or _cliente_compartido.base_url != url.strip("/"):
+        _cliente_compartido = ClienteCripta(url)
+    return _cliente_compartido
+
+
+def reiniciar_cliente_compartido() -> None:
+    """Olvida el cliente de red compartido (nuevo UUID y contador en 0).
+    Solo para pruebas; el juego no debería necesitarlo."""
+    global _cliente_compartido
+    _cliente_compartido = None
+
+
 def crear_servicio(offline: bool = False,
                    cache_size: int = TAMANO_CACHE,
                    carpeta: str = CARPETA_DATOS,
@@ -33,6 +55,10 @@ def crear_servicio(offline: bool = False,
     cache_size   capacidad de la caché de fichas en memoria (--cache-size).
     carpeta      dónde se guardan los datos en disco.
     cliente_http solo para pruebas: un cliente de red falso en lugar del real.
+
+    Llamarla varias veces en la misma ejecución reutiliza el mismo cliente de
+    red (mismo UUID, mismo contador), pero cada llamada arma un servicio y una
+    caché nuevos. Lo ideal es crearla UNA vez en main y pasar el servicio.
     """
     if cache_size < 1:
         raise ValueError("El tamaño de la caché debe ser al menos 1")
@@ -43,8 +69,7 @@ def crear_servicio(offline: bool = False,
         cliente = ClienteOffline(almacen)
     else:
         if cliente_http is None:
-            from adaptadores.cliente_http import ClienteCripta   # solo si hay red
-            cliente_http = ClienteCripta(url)
+            cliente_http = _cliente_http_de_ejecucion(url)
         cliente = ClientePersistente(cliente_http, almacen)
 
     return ServicioCripta(cliente, CacheLRU(cache_size))
