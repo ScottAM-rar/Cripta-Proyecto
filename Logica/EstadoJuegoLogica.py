@@ -25,6 +25,7 @@ class EstadoJuegoLogica:
         self.iniciado = False
         self.fin = False
         self.motivoFin = None
+        self.idCripta = None           # se fija al iniciar o restaurar una partida; None = todavía no hay cripta elegida
         self.precargaInicialHecha = False
         self.registrador_log = None    # opcional: algo con agregar(linea); el modelo solo le avisa cada acción
         
@@ -70,6 +71,7 @@ class EstadoJuegoLogica:
             jugador,
             self.ingresarEnSala,
             self.semilla,
+            obtener_botin=self.comunicacion.objetos_que_suelta,
         )
         self.gestorEventos.reloj = relojvirtual
         self.jugadorLogica = JugadorLogica(jugador,self.semilla,self.gestorEventos.azar)
@@ -94,6 +96,14 @@ class EstadoJuegoLogica:
         return self.fin, (
             self.motivoFin if self.motivoFin is not None else "No ha terminado"
         )
+
+    def reporteSolicitudes(self):
+        """Reporte de red de la cripta que se está jugando (§5.1): solicitudes realizadas, presupuesto,
+        aciertos y fallos de caché. Solo lee contadores, así que consultarlo no cuesta ninguna solicitud.
+        Devuelve None mientras todavía no se haya elegido una cripta."""
+        if self.comunicacion is None or self.idCripta is None:
+            return None
+        return self.comunicacion.reporte(self.idCripta)
         
     def exportar_log(self) -> LogPartidaDTO:
         """Log de reproducción de la partida en datos simples; no toca archivos."""

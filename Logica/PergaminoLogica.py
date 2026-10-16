@@ -111,6 +111,14 @@ class PergaminoLogica:
                 jugador: JugadorDTO = cambio.objeto_afectado
                 jugador.veneno = cambio.valor_anterior
 
+            case "BOTIN_ENEMIGO":       # el enemigo revive (ACTUALIZAR_VIDA): lo que soltó deja de estar en el suelo
+                sala = cambio.objeto_afectado
+                for objeto in cambio.elemento:
+                    for posicion in range(len(sala.objetos)):
+                        if sala.objetos[posicion] is objeto:
+                            del sala.objetos[posicion]
+                            break
+
             case "CAMBIAR_PUERTA":
                 salida = cambio.objeto_afectado
                 salida.cerrada = cambio.valor_anterior

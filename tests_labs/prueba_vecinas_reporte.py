@@ -83,13 +83,13 @@ with tempfile.TemporaryDirectory() as raiz:
     http3 = HttpFalso()
     s3, c3 = servicio_nuevo(os.path.join(raiz, "c"), http3)
     s3.crear_jugador(c3)
-    comprobar("procesa la actual y su vecina (2 salas)", s3.precargar_vecinas(c3, 1) == 2)
+    comprobar("procesa la actual y su vecina (2 salas)", s3.precargar_vecinas(c3, 1, 1) == 2)
     antes = http3.solicitudes_realizadas
     s3.construir_sala(c3, 1)
     s3.construir_sala(c3, 2)
     comprobar("construir las salas 1 y 2 NO gasta solicitudes", http3.solicitudes_realizadas == antes)
     comprobar("la sala 3 todavía no estaba precargada", http3.veces("contenido") == 1)
-    s3.precargar_vecinas(c3, 2)
+    s3.precargar_vecinas(c3, 2, 1)
     comprobar("al avanzar a la 2 solo se pide lo que faltaba (sala 3 y su ficha)",
               http3.llamadas[antes:] == [("contenido", [3]), ("catalogo", ["ent_guardian_oseo"])],
               f"(llamadas: {http3.llamadas[antes:]})")
@@ -113,12 +113,12 @@ with tempfile.TemporaryDirectory() as raiz:
     s5.crear_jugador(c5)
     s5.precargar(c5)
     informe = s5.reporte(c5)
-    comprobar("solicitudes = las del cliente", informe.solicitudes == http5.solicitudes_realizadas == 6)
+    comprobar("solicitudes = las del cliente", informe.solicitudes == http5.solicitudes_realizadas == 7)
     comprobar("presupuesto = 9", informe.presupuesto == 9)
-    comprobar("dentro del presupuesto y restante 3", informe.dentro_del_presupuesto and informe.restante == 3)
+    comprobar("dentro del presupuesto y restante 2", informe.dentro_del_presupuesto and informe.restante == 2)
     comprobar("la caché registró fallos al buscar fichas", informe.fallos_cache > 0)
     comprobar("el texto resume solicitudes y caché",
-              "6 de 9" in informe.texto() and "aciertos" in informe.texto(), f"\n{informe.texto()}")
+              "7 de 9" in informe.texto() and "aciertos" in informe.texto(), f"\n{informe.texto()}")
     excedido = ReporteSolicitudes(solicitudes=10, presupuesto=9, aciertos_cache=0, fallos_cache=0)
     comprobar("10 de 9 se marca como EXCEDIDO",
               not excedido.dentro_del_presupuesto and excedido.restante == -1 and "EXCEDIDO" in excedido.texto())

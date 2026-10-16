@@ -21,7 +21,8 @@ from DTO.CambioDTO import CambioDTO
 
 class GestorEventos:
 
-    def __init__(self, salas : list[SalaDTO],jugador: JugadorDTO, cargar_sala: Callable[[int],SalaDTO], semilla: int = None
+    def __init__(self, salas : list[SalaDTO],jugador: JugadorDTO, cargar_sala: Callable[[int],SalaDTO], semilla: int = None,
+                 obtener_botin: Callable | None = None
     ):
         #EnemigosLogica: enemigos_logica: 
         
@@ -176,7 +177,7 @@ class GestorEventos:
                         raise ValueError("El atacante jugador no pertenece a esta partida")
                     if not isinstance(objetivo, EnemigoDTO):
                         raise TypeError("El objetivo del jugador debe ser un enemigo")
-                    return self.jugador_logica.atacarEnemigo(objetivo)
+                    return self.jugador_logica.atacarEnemigo(objetivo, self.salas[jugador.id_sala_actual], self.obtener_botin)
 
                 # Si el atacante es un enemigo
                 elif isinstance(atacante, EnemigoDTO):
