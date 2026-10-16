@@ -24,6 +24,10 @@ def leer_argumentos(argv=None) -> argparse.Namespace:
                         help="juega solo con los datos guardados en disco, sin conectarse a la red")
     parser.add_argument("--cache-size", type=_tamano_de_cache, default=TAMANO_CACHE, metavar="N",
                         help=f"cantidad de fichas del catálogo que se mantienen en memoria (por defecto {TAMANO_CACHE})")
+    parser.add_argument("--bench", nargs="?", const="todo", metavar="BLOQUES",
+                        help="mide el rendimiento con cargas sintéticas, sin red ni vista (todos los bloques, o una lista "
+                             "separada por comas: agenda, cache, inventario, retroceso, ordenamiento, guardado, bitacora, ciclo)")
+    parser.add_argument("--bench-csv", metavar="ARCHIVO.csv", help="con --bench, guarda además los resultados en un CSV")
     parser.add_argument("--replay", metavar="PARTIDA.log",
                         help=f"reproduce una partida grabada, sin pedir nada al usuario (el log debe estar en {CARPETA_LOGS}/)")
     return parser.parse_args(argv)
@@ -57,6 +61,10 @@ def mostrar_reporte(servicio: EstadoJuegoServicio) -> None:
 
 def main(argv=None) -> int:
     args = leer_argumentos(argv)
+    if args.bench is not None:               # --bench no usa la red ni crea la vista interactiva
+        from bench import ejecutar as ejecutar_bench
+        bloques = None if args.bench == "todo" else [b.strip() for b in args.bench.split(",") if b.strip()]
+        return ejecutar_bench(bloques, args.bench_csv)
     servicio = None
     try:
         # El servicio de cripta se arma UNA vez aquí (un solo cliente de red y un solo UUID por ejecución)

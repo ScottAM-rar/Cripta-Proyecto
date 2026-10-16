@@ -34,7 +34,7 @@ def _mezclar(izquierda, derecha, key):
             resultado.append(derecha[j])
             j += 1
 
-    resultado.extend(izquierda[:i])
+    resultado.extend(izquierda[i:])
     resultado.extend(derecha[j:])
     return resultado
 
