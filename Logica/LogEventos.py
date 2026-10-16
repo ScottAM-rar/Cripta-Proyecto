@@ -54,6 +54,8 @@ class LogEventos:
             raise ValueError("El ID de la cripta debe ser texto no vacío")
         self.semilla = semilla
         self.id_cripta = id_cripta
+        self.version_cripta: str | None = None
+        self.version_catalogo: str | None = None
         self._cursor_cronologico: NodoEvento | None = None
 
     def registrar_accion(
@@ -249,6 +251,8 @@ class LogEventos:
         with open(nombre_archivo, "w", encoding="utf-8") as archivo:
             archivo.write(f"cripta: {self.id_cripta or 'ninguna'}\n")
             archivo.write(f"semilla: {self.semilla}\n")
+            archivo.write(f"version_cripta: {self.version_cripta or 'desconocida'}\n")
+            archivo.write(f"version_catalogo: {self.version_catalogo or 'desconocida'}\n")
             actual = self.cabeza
             while actual is not None:
                 archivo.write(actual.accion + "\n")
@@ -275,10 +279,20 @@ class LogEventos:
         except ValueError as error:
             raise ValueError("La semilla del archivo .log debe ser un entero") from error
 
+        # Versiones (opcionales: los logs antiguos no las traen)
+        posicion = 2
+        versiones = [None, None]
+        for indice, clave in enumerate(("version_cripta: ", "version_catalogo: ")):
+            if posicion < len(lineas) and lineas[posicion].startswith(clave):
+                valor = lineas[posicion][len(clave):].strip()
+                versiones[indice] = None if valor in ("", "desconocida") else valor
+                posicion += 1
+
         self.vaciar()
         self.id_cripta = id_cripta
         self.semilla = semilla
-        for accion in lineas[2:]:
+        self.version_cripta, self.version_catalogo = versiones
+        for accion in lineas[posicion:]:
             if accion.strip():
                 self.agregar(accion)
 

@@ -9,6 +9,7 @@ class ClientePersistente(ClienteInterfaz):
         self.cliente = cliente          # el cliente de red (ClienteCripta)
         self.almacen = almacen          # AlmacenDisco
         self._catalogo_validado = False
+        self._version_catalogo: str | None = None   # se pide una sola vez por sesión
         self._datos_de_la_sesion: list[tuple[str, dict]] = []   # (cripta_id, datos)
  
     @property
@@ -94,11 +95,13 @@ class ClientePersistente(ClienteInterfaz):
     # Catálogo
     # ------------------------------------------------------------------
     def obtener_version_catalogo(self) -> str:
-        return self.cliente.obtener_version_catalogo()
+        if self._version_catalogo is None:
+            self._version_catalogo = self.cliente.obtener_version_catalogo()
+        return self._version_catalogo
  
     def _asegurar_catalogo(self) -> None:
         if not self._catalogo_validado:
-            version = self.cliente.obtener_version_catalogo()
+            version = self.obtener_version_catalogo()
             self.almacen.validar_catalogo(version)
             self._catalogo_validado = True
  
