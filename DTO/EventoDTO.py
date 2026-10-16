@@ -7,3 +7,4 @@ class EventoDTO:
     actor: object | None        # Instancia de JugadorDTO, EnemigoDTO o None si es del entorno
     tipo_accion: str           # "MOVER", "ATACAR", "CERRAR_PUERTA", etc.
     datos_extra: list = field(default_factory=list)
+    posicion: int = field(default=-1, compare=False, repr=False)   # índice en el heap del reloj (-1 = fuera)

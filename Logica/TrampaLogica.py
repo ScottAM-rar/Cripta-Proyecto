@@ -16,10 +16,8 @@ class TrampaLogica:
         if jugador.id_sala_actual == sala.id:
             jugador.vida_actual = max(0, jugador.vida_actual - self.trampa.daño)
 
-        for x in sala.enemigos:
-            x.vida_actual = max(0, x.vida_actual - self.trampa.daño)
         self.trampa.armada = False
-        return ResultadoEventoDTO(True, f"La trampa {self.trampa.id_instancia} afectó a los actores de la sala {sala.id}", evento)
+        return ResultadoEventoDTO(True, f"La trampa {self.trampa.id_instancia} se activó e hirió al jugador (daño {self.trampa.daño}); se rearmará en {self.trampa.rearme} unidades", evento)
 
     def rearmar(self, sala: SalaDTO) -> ResultadoEventoDTO:
         mensaje = ""
@@ -29,5 +27,5 @@ class TrampaLogica:
             mensaje = f"Se ha rearmado la trampa"
         else:
            mensaje = f"Se intentó rearmar la trampa {self.trampa.id_instancia} pero ya está armada"
-        return ResultadoEventoDTO(exito,mensaje,EventoDTO(50,None,self.trampa,"ACTIVAR_TRAMPA",[sala]))
+        return ResultadoEventoDTO(exito, mensaje)   # rearmada: solo vuelve a activarse cuando el jugador entre a la sala (§2.10)
         
