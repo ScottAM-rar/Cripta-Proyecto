@@ -1,0 +1,11 @@
+cripta: cripta-01
+semilla: 50120
+version_cripta: fd58f7743b9e
+version_catalogo: be68d322d2f5
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 1}, "norte"]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 2}, "norte"]}
+{"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_llave_bronce"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 3}, "norte"]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 4}, "sur"]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 3}, "norte"]}
+{"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_llave_negra"}]}
