@@ -1,3 +1,4 @@
+import random
 from abc import ABC, abstractmethod
 from DTO.ActorDTO import EnemigoDTO
 from DTO.EventoDTO import EventoDTO
@@ -6,5 +7,5 @@ from Logica.SalasLogica import SalaLogica
 class ComportamientoEnemigo(ABC):
     @staticmethod
     @abstractmethod
-    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], semilla: int = None) -> str:
+    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None, tiempo_actual: int | None = None) -> str:
         pass

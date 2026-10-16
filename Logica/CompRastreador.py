@@ -1,32 +1,39 @@
+import random
 from Logica.ComportamientoEnemigo import *
 from DTO.SalaDTO import *
 from Logica.ActorLogica import ActorLogica
 class ComportamientoRastreador(ComportamientoEnemigo):
+    VIGENCIA_RASTRO = 400   # un rastro más viejo que esto (en tiempo virtual) ya no cuenta
+
     @staticmethod
-    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], semilla: int= None) -> str:
+    def _ultimo_paso(salas: list[SalaDTO], indice: int, tiempo_actual: int | None) -> int:
+        """Rastro de la sala: el tiempo de la última visita del jugador, o 0 si nunca la pisó o el rastro ya se enfrió
+        (hace VIGENCIA_RASTRO o más que pasó). Sin reloj conocido no se descarta ningún rastro."""
+        sala = salas[indice]
+        if sala is None or sala.ultimo_paso <= 0:
+            return 0
+        if tiempo_actual is not None and tiempo_actual - sala.ultimo_paso >= ComportamientoRastreador.VIGENCIA_RASTRO:
+            return 0
+        return sala.ultimo_paso
+
+    @staticmethod
+    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None, tiempo_actual: int | None = None) -> str:
         siguienteSala: SalidaDTO = None
+        pasoSiguiente = 0
         for t in salas[enemigo.id_sala_actual].salidas:
             if (
                 t.sala_destino is not None
                 and not t.cerrada
                 and 0 <= t.sala_destino < len(salas)
             ):
-                ultimo_paso_siguiente = (
-                    0
-                    if salas[t.sala_destino] is None or salas[t.sala_destino].ultimo_paso>400
-                    else salas[t.sala_destino].ultimo_paso
-                )
+                paso = ComportamientoRastreador._ultimo_paso(salas, t.sala_destino, tiempo_actual)
                 if (
                     siguienteSala is None
-                    or ultimo_paso_siguiente
-                    > salas[siguienteSala.sala_destino].ultimo_paso
-                    or (
-                        ultimo_paso_siguiente
-                        == salas[siguienteSala.sala_destino].ultimo_paso
-                        and t.sala_destino < siguienteSala.sala_destino
-                    )
+                    or paso > pasoSiguiente
+                    or (paso == pasoSiguiente and t.sala_destino < siguienteSala.sala_destino)
                 ):
                     siguienteSala = t
+                    pasoSiguiente = paso
         if siguienteSala is None:
             return "NO SE MOVIÓ"
         salaActual = salas[enemigo.id_sala_actual]
@@ -37,5 +44,3 @@ class ComportamientoRastreador(ComportamientoEnemigo):
             salaActual.enemigos.remove(enemigo)
         #salas[siguienteSala.sala_destino].enemigos.append(enemigo)
         return f"SE MOVIO A {siguienteSala.direccion}"
-        
-                

@@ -1,5 +1,6 @@
 
 from DTO.ActorDTO import EnemigoDTO
+import random
 from Logica.ActorLogica import ActorLogica
 from DTO.ActorDTO import ActorDTO
 from DTO.SalaDTO import SalaDTO
@@ -10,9 +11,11 @@ from DTO.EventoDTO import EventoDTO
 class EnemigoLogica(ActorLogica):
 
 
-    def __init__(self, enemigo : EnemigoDTO | None, semilla: int = None):
+    def __init__(self, enemigo : EnemigoDTO | None, semilla: int = None, azar: random.Random | None = None):
         self.setEnemigo(enemigo)
         self.semilla = semilla
+        # Misma fuente de azar que usa el jugador (la crea GestorEventos)
+        self.azar = azar if azar is not None else random.Random(semilla)
 
     def setEnemigo(self,enemigo: EnemigoDTO | None):
         self.enemigo: EnemigoDTO | None = enemigo
@@ -34,10 +37,10 @@ class EnemigoLogica(ActorLogica):
     def atacarJugador(self,jugador: ActorDTO):
         if jugador.vida_actual <= 0:
             return ResultadoEventoDTO(False, f"El enemigo {self.enemigo.id_instancia} no atacó al jugador ya que está muerto")
-        self._atacar(self.enemigo, jugador, self.semilla)
+        self._atacar(self.enemigo, jugador, self.azar)
         return ResultadoEventoDTO(True,f"El enemigo {self.enemigo.id_instancia} ha atacado al jugador causando daño")
 
-    def decidirAccion(self,jugador: ActorDTO, salas: list[SalaDTO])-> ResultadoEventoDTO:
+    def decidirAccion(self,jugador: ActorDTO, salas: list[SalaDTO], tiempo_actual: int | None = None)-> ResultadoEventoDTO:
         if self.enemigo is None:
             raise ValueError("No se puede decidir acciones sobre un enemigo que no existe")
         if self.enemigo.vida_actual <= 0:
@@ -45,7 +48,7 @@ class EnemigoLogica(ActorLogica):
         if jugador.id_sala_actual == self.enemigo.id_sala_actual:
             accion = self.atacarJugador(jugador)
         else:
-            mensaje = f"El enemigo {self.enemigo.id_instancia} " + self._comportamiento.acción(self.enemigo,salas,self.semilla)
+            mensaje = f"El enemigo {self.enemigo.id_instancia} " + self._comportamiento.acción(self.enemigo,salas,self.azar,tiempo_actual)
             accion = ResultadoEventoDTO(True, mensaje)
         eventoNuevo = EventoDTO(100,0,self.enemigo,"ACCION_ENEMIGO",[jugador])
 

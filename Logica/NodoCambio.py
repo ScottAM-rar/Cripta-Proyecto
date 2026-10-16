@@ -8,6 +8,5 @@ class NodoCambio:
         #Una accion puede afectar a varios actores y estados al mismo tiempo.
         self.objeto = cambios 
         self.es_accion = es_accion
-        self.evento_automatico = None
         self.anterior: NodoCambio | None = None
         self.siguiente: NodoCambio | None = None   

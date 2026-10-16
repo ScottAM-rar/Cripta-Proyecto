@@ -49,3 +49,14 @@ class VistaConsola:
                 print(f"  - {nombre_trampa} [Daño: {daño}] - Estado: {estado_t}")
         else:
             print("  (Sin trampas)")
+
+        print("\n--- INVENTARIO ---")
+        if hasattr(jugador, "inventario") and jugador.inventario and jugador.inventario.actual:
+            try:
+            
+                obj_actual = jugador.inventario.mostrar_objeto_actual()
+                print(f"  > Objeto Actual: {obj_actual.nombre} (ID: {getattr(obj_actual, 'id', 'N/A')})")
+            except ValueError:
+                print("  > Objeto Actual: [Inventario vacío]")
+        else:
+            print("  > Objeto Actual: [Inventario vacío]")

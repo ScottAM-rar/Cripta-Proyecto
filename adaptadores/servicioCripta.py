@@ -1,5 +1,6 @@
 from __future__ import annotations
 from collections import deque
+from dataclasses import dataclass
  
 from DTO.ActorDTO import JugadorDTO
 from DTO.SalaDTO import SalaDTO, SalidaDTO
@@ -25,6 +26,28 @@ def _nombre_direccion(letra: str) -> str:
 _LETRAS_EN_ORDEN = ("N", "S", "E", "O")
  
  
+@dataclass
+class ReporteSolicitudes:
+    """Resumen para mostrar al terminar la partida."""
+    solicitudes: int
+    presupuesto: int
+    aciertos_cache: int
+    fallos_cache: int
+
+    @property
+    def restante(self) -> int:
+        return self.presupuesto - self.solicitudes
+
+    @property
+    def dentro_del_presupuesto(self) -> bool:
+        return self.solicitudes <= self.presupuesto
+
+    def texto(self) -> str:
+        estado = "dentro del presupuesto" if self.dentro_del_presupuesto else "EXCEDIDO"
+        return (f"Solicitudes a la API: {self.solicitudes} de {self.presupuesto} ({estado})\n"
+                f"Caché de fichas: {self.aciertos_cache} aciertos, {self.fallos_cache} fallos")
+
+
 class ServicioCripta:
     """Punto único por el que el resto del juego obtiene criptas y salas.
  
@@ -39,7 +62,7 @@ class ServicioCripta:
         self._esqueleto_id: str | None = None        # cripta a la que pertenece el esqueleto
         self._esqueleto: list[dict] = []             # salas crudas de /salas
         self._datos_id: str | None = None            # cripta a la que pertenecen los datos generales
-        self._datos: dict = {}                       # respuesta cruda de /criptas/{id}
+        self._datos: dict | None = None              # respuesta cruda de /criptas/{id}
  
     # ------------------------------------------------------------------
     # Criptas
@@ -81,6 +104,16 @@ class ServicioCripta:
             self._datos_id = cripta_id
         return self._datos
  
+    def version_cripta(self, cripta_id: str) -> str | None:
+        return self.datos_cripta(cripta_id).get("version")
+
+    def version_catalogo(self) -> str | None:
+        """Versión del catálogo en uso; None si no se puede conocer (p. ej. offline sin catálogo)."""
+        try:
+            return self.cliente.obtener_version_catalogo()
+        except Exception:
+            return None
+
     def crear_jugador(self, cripta_id: str) -> JugadorDTO:
         """Arma el jugador con las estadísticas que define la cripta."""
         datos = self.datos_cripta(cripta_id)
@@ -99,6 +132,15 @@ class ServicioCripta:
         """Id de la sala donde se gana la partida (la que tiene la salida).
         Sale de los datos generales, que ya se piden una sola vez por cripta."""
         return self.datos_cripta(cripta_id)["sala_salida"]
+
+    def presupuesto_solicitudes(self, cripta_id: str) -> int:
+        """Cuántas solicitudes permite la API para jugar esta cripta."""
+        return self.datos_cripta(cripta_id)["presupuesto_solicitudes"]
+
+    @property
+    def solicitudes_realizadas(self) -> int:
+        """Solicitudes de red hechas hasta ahora (0 en modo offline)."""
+        return self.cliente.solicitudes_realizadas
 
     # ------------------------------------------------------------------
     # Salas
@@ -136,6 +178,55 @@ class ServicioCripta:
         numeros = [sala["id"] for sala in self._cargar_esqueleto(cripta_id)]
         return self.construir_salas(cripta_id, numeros)
  
+    def precargar(self, cripta_id: str, numeros: list[int] | None = None) -> int:
+        """Trae de una vez, en lotes, el contenido y las fichas de las salas
+        (todas si no se indican). Así luego construir_sala() sale del disco
+        sin gastar solicitudes. Devuelve cuántas salas se precargaron."""
+        if numeros is None:
+            salas = self.construir_todas(cripta_id)
+        else:
+            salas = self.construir_salas(cripta_id, numeros)
+        return len(salas)
+
+    def salas_vecinas(self, cripta_id: str, numero_sala: int, profundidad: int = 1) -> list[int]:
+        """Ids de las salas a las que se llega desde numero_sala por sus salidas
+        (aunque la puerta esté cerrada), sin repetir y sin incluir la propia.
+        profundidad=1: las contiguas; 2: también las contiguas de esas; etc."""
+        if profundidad < 0:
+            raise ValueError("La profundidad no puede ser negativa")
+        self._buscar_esqueleto(cripta_id, numero_sala)       # valida que exista
+        alcanzadas: list[int] = [numero_sala]
+        pendientes: deque = deque([(numero_sala, 0)])         # (sala, nivel)
+        while pendientes:
+            actual, nivel = pendientes.popleft()
+            if nivel >= profundidad:
+                continue
+            salidas = self._buscar_esqueleto(cripta_id, actual).get("salidas") or {}
+            for letra in _LETRAS_EN_ORDEN:
+                if letra in salidas:
+                    destino = salidas[letra]["sala"]
+                    if destino not in alcanzadas:
+                        alcanzadas.append(destino)
+                        pendientes.append((destino, nivel + 1))
+        return alcanzadas[1:]
+
+    def precargar_vecinas(self, cripta_id: str, sala_actual: int, profundidad: int = 1) -> int:
+        """Precarga la sala actual y sus vecinas en lotes (precarga por vecindad).
+        Lo que ya está en disco no se vuelve a pedir. Devuelve cuántas salas
+        se procesaron."""
+        numeros = [sala_actual] + self.salas_vecinas(cripta_id, sala_actual, profundidad)
+        return self.precargar(cripta_id, numeros)
+
+    def reporte(self, cripta_id: str) -> ReporteSolicitudes:
+        """Solicitudes hechas contra el presupuesto de la cripta, y aciertos y
+        fallos de la caché. Para mostrar al final de la partida."""
+        return ReporteSolicitudes(
+            solicitudes=self.solicitudes_realizadas,
+            presupuesto=self.presupuesto_solicitudes(cripta_id),
+            aciertos_cache=self.cache.aciertos,
+            fallos_cache=self.cache.fallos,
+        )
+
     # ------------------------------------------------------------------
     # Auxiliares
     # ------------------------------------------------------------------
@@ -148,19 +239,21 @@ class ServicioCripta:
     def _ensamblar(self, esqueleto: dict, contenido) -> SalaDTO:
         enemigos, objetos, trampas = contenido
         sala = SalaDTO(id=esqueleto["id"], nombre=esqueleto["nombre"])
-        sala.salidas = self._armar_salidas(esqueleto.get("salidas", {}))
+        sala.salidas = self._armar_salidas(esqueleto.get("salidas"))
         sala.enemigos = enemigos
         sala.objetos = objetos      # objetos ya resueltos (Arma, Llave, ...)
         sala.trampas = trampas      # Trampa ya resueltas
         return sala
  
     @staticmethod
-    def _armar_salidas(salidas_api: dict) -> deque[SalidaDTO]:
+    def _armar_salidas(salidas_api: dict | None) -> deque[SalidaDTO]:
         """Convierte el objeto 'salidas' de la API en un deque de SalidaDTO.
  
         Solo se agregan las salidas que existen, en el orden N, S, E, O.
         """
         salidas: deque[SalidaDTO] = deque(maxlen=4)
+        if salidas_api is None:          # sala sin salidas
+            return salidas
         for letra in _LETRAS_EN_ORDEN:
             if letra in salidas_api:
                 datos = salidas_api[letra]
