@@ -134,8 +134,30 @@ class ControladorJuego:
                 print("Acción no reconocida o comando inválido.")
 
     def _mapear_entrada_a_evento(self, accion: str, sala_actual, jugador) -> EventoDTO | None:
-        # Movimiento de salas
+       # Movimiento de salas
         if accion in ["norte", "sur", "este", "oeste"]:
+            salida = next(
+                (
+                    salida for salida in sala_actual.salidas
+                    if salida.direccion.lower() == accion
+                ),
+                None
+            )
+
+            if salida is None:
+                print(f"No existe una salida hacia el '{accion}'.")
+                return "IGNORAR"
+
+            if salida.cerrada:
+                if salida.llave:
+                    print(
+                        f"La salida hacia el '{accion}' está cerrada. "
+                        f"Necesitas la llave: '{salida.llave}'."
+                    )
+                else:
+                    print(f"La salida hacia el '{accion}' está cerrada.")
+                return "IGNORAR"
+
             return EventoDTO(
                 tiempo_ejecucion=100,
                 id_secuencia=0,
@@ -181,49 +203,65 @@ class ControladorJuego:
                 datos_extra=[objetivo]
             )
                 
-     # Abrir puerta o salida bloqueada
+        # Abrir puerta o salida bloqueada
         elif accion == "abrir":
             if not hasattr(sala_actual, "salidas") or not sala_actual.salidas:
                 print("No hay salidas en esta sala.")
                 return "IGNORAR"
-            
-            # 1. Mostramos las salidas de la sala para que el jugador elija
+
+            # Mostramos únicamente las puertas cerradas
+            puertas_cerradas = [
+                salida for salida in sala_actual.salidas
+                if salida.cerrada
+            ]
+
+            if not puertas_cerradas:
+                print("No hay puertas cerradas en esta sala.")
+                return "IGNORAR"
+
             print("\n¿Qué puerta deseas abrir?")
-            for salida in sala_actual.salidas:
-                estado_puerta = "CERRADA" if salida.cerrada else "ABIERTA"
-                print(f"  - {salida.direccion} [{estado_puerta}]")
-            
-            direccion = input("Ingresa la dirección de la puerta que deseas abrir: ").strip().lower()
+            for salida in puertas_cerradas:
+                if salida.llave:
+                    print(
+                        f"  - {salida.direccion} "
+                        f"[CERRADA - Requiere: {salida.llave}]"
+                    )
+                else:
+                    print(f"  - {salida.direccion} [CERRADA]")
+
+            direccion = input(
+                "Ingresa la dirección de la puerta que deseas abrir: "
+            ).strip().lower()
+
             if not direccion:
                 print("Dirección no válida.")
                 return "IGNORAR"
-            
-            # 2. Buscamos la salida correspondiente
+
+            # Buscamos solamente entre las puertas cerradas mostradas
             salida_encontrada = None
-            for salida in sala_actual.salidas:
+            for salida in puertas_cerradas:
                 if getattr(salida, "direccion", "").lower() == direccion:
                     salida_encontrada = salida
                     break
-            
+
             if not salida_encontrada:
-                print(f"No hay ninguna salida hacia el '{direccion}'.")
+                print(f"No hay ninguna puerta cerrada hacia el '{direccion}'.")
                 return "IGNORAR"
-            
-            # 3. Verificamos si la salida ya está abierta
-            if not salida_encontrada.cerrada:
-                print(f"La puerta hacia el '{direccion}' ya está abierta.")
-                return "IGNORAR"
-            
-            # 4. Validación de llave mediante el servicio
+
+            # Validación de llave mediante el servicio
             id_llave_necesaria = salida_encontrada.llave
-            
+
             if id_llave_necesaria:
                 tiene_la_llave = self.servicio.tieneLlave(id_llave_necesaria)
+
                 if not tiene_la_llave:
-                    print(f"La puerta está cerrada. Necesitas la llave: '{id_llave_necesaria}' para poder abrirla.")
+                    print(
+                        f"La puerta está cerrada. Necesitas la llave: "
+                        f"'{id_llave_necesaria}' para poder abrirla."
+                    )
                     return "IGNORAR"
-            
-            # 5. GestorEventos espera [sala_actual, direccion].
+
+            # GestorEventos espera [sala_actual, direccion]
             return EventoDTO(
                 tiempo_ejecucion=50,
                 id_secuencia=0,
