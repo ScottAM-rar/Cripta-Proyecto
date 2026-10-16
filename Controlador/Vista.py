@@ -9,9 +9,18 @@ class VistaConsola:
         
         print("\n--- SALIDAS ---")
         for salida in sala_actual.salidas:
-            estado_puerta = "CERRADA (Requiere llave)" if salida.cerrada else "Abierta"
-            print(f"  > {salida.direccion.capitalize()} -> Sala {salida.sala_destino} [{estado_puerta}]")
-            
+            if salida.cerrada:
+                if salida.llave:
+                    estado_puerta = f"CERRADA (Requiere: {salida.llave})"
+                else:
+                    estado_puerta = "CERRADA"
+            else:
+                estado_puerta = "Abierta"
+
+            print(
+                f"  > {salida.direccion.capitalize()} -> "
+                f"Sala {salida.sala_destino} [{estado_puerta}]"
+            )
         print("\n--- OBJETOS EN LA SALA ---")
         if sala_actual.objetos:
             for obj in sala_actual.objetos:
@@ -55,7 +64,9 @@ class VistaConsola:
             try:
             
                 obj_actual = jugador.inventario.mostrar_objeto_actual()
-                print(f"  > Objeto Actual: {obj_actual.nombre} (ID: {getattr(obj_actual, 'id', 'N/A')})")
+                print(f"  > Objeto Actual: {obj_actual.nombre} "
+                f"(ID: {getattr(obj_actual, 'id_catalogo', 'N/A')})"
+                )
             except ValueError:
                 print("  > Objeto Actual: [Inventario vacío]")
         else:
