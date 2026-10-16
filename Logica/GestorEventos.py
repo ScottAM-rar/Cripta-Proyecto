@@ -1,5 +1,3 @@
-from unittest import case
-
 import random
 from collections.abc import Callable
 from DTO.EventoDTO import EventoDTO

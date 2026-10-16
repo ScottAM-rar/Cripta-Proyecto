@@ -1,6 +1,5 @@
 from __future__ import annotations
 from dataclasses import dataclass, field, InitVar
-from collections import deque
 from DTO.Objeto import *
 from Logica.InventarioLogica import InventarioLogica
 

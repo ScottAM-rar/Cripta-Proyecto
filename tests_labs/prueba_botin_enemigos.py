@@ -7,9 +7,6 @@ import tempfile
 from types import SimpleNamespace
 
 from adaptadores import fabrica
-from adaptadores.AlmacenDisco import AlmacenDisco
-from adaptadores.cache import CacheLRU
-from adaptadores.cliente_persistente import ClientePersistente
 from adaptadores.servicioCripta import ServicioCripta
 from DTO.EventoDTO import EventoDTO
 from DTO.Objeto import Arma, Pocion, PergaminoRetroceso
