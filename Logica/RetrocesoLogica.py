@@ -28,8 +28,11 @@ class RetrocesoLogica:
         self.suspensiones = 0
         self._inicializado = True 
 
-    def iniciar_accion(self, tiempo_ejecucion: int | None = None) -> NodoCambio:
-        if self.cantidad_acciones >= self.MAX_HISTORIAL:
+    def iniciar_accion(self, tiempo_ejecucion: int | None = None, diferir_recorte: bool = False) -> NodoCambio:
+        """Abre una acción del jugador en el historial. Con diferir_recorte=True no se descarta todavía la acción más
+        antigua: quien llama debe invocar recortar_historial() cuando la acción sea aceptada (una rechazada se descarta
+        con descartar_accion y no debe costarle su lugar a una acción anterior)."""
+        if not diferir_recorte and self.cantidad_acciones >= self.MAX_HISTORIAL:
             self._eliminar_accion_mas_antigua()
         if tiempo_ejecucion is None:
             tiempo_ejecucion = self.reloj.tiempo_actual if self.reloj else 0
@@ -46,6 +49,11 @@ class RetrocesoLogica:
         self.cantidad_actual += 1
         self.cantidad_acciones += 1
         return nodo
+
+    def recortar_historial(self) -> None:
+        """Deja el historial en MAX_HISTORIAL acciones como máximo, descartando las más antiguas."""
+        while self.cantidad_acciones > self.MAX_HISTORIAL:
+            self._eliminar_accion_mas_antigua()
 
     def fijar_tiempo_evento(self, tiempo_ejecucion: int):
         self.tiempo_evento = tiempo_ejecucion

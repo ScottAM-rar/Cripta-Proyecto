@@ -27,6 +27,7 @@ class GestorEventos:
         
         self.salas = salas
         self.cargar_sala = cargar_sala
+        self.reloj = None     # lo asigna quien arma la partida: de aquí sale "el instante actual" de cada acción
         # Inyección de dependencias de la capa de lógica
         # Un único generador por partida, compartido por jugador y enemigos: así la secuencia de tiradas es reproducible
         self.azar = random.Random(semilla)
@@ -62,20 +63,34 @@ class GestorEventos:
             and not self.es_uso_de_pergamino(evento)
         )
 
+    def _ahora(self, evento: EventoDTO) -> int:
+        """Instante del reloj virtual en que ocurre el evento. En una acción del jugador `tiempo_ejecucion` trae el COSTO,
+        así que la hora sale del reloj; los eventos que salen del heap coinciden con él."""
+        if self.reloj is not None:
+            return self.reloj.tiempo_actual
+        return evento.tiempo_ejecucion
+
     def procesar_evento(self, evento: EventoDTO, estado_juego: EstadoJuego | None = None) -> ResultadoEventoDTO:
         retroceso = self.jugador_logica.retroceso
         marcador = None
         if isinstance(evento, EventoDTO) and isinstance(evento.tiempo_ejecucion, int) and isinstance(evento.datos_extra, list):
             if self._abre_accion_del_jugador(evento):
-                marcador = retroceso.iniciar_accion(evento.tiempo_ejecucion)
+                marcador = retroceso.iniciar_accion(self._ahora(evento), diferir_recorte=True)
             else:
-                retroceso.fijar_tiempo_evento(evento.tiempo_ejecucion)
+                retroceso.fijar_tiempo_evento(self._ahora(evento))
         try:
-            return self._despachar_evento(evento, estado_juego)
+            resultado = self._despachar_evento(evento, estado_juego)
         except Exception:
             if marcador is not None:
                 self.pergamino_logica.aplicar_cambios(retroceso.descartar_accion(marcador))
             raise
+        if marcador is not None:
+            if resultado.exito is False:
+                # Acción rechazada (Apéndice B): no cambia nada, no consume tiempo y no queda en el historial
+                self.pergamino_logica.aplicar_cambios(retroceso.descartar_accion(marcador))
+            else:
+                retroceso.recortar_historial()
+        return resultado
 
     def _despachar_evento(self, evento: EventoDTO, estado_juego: EstadoJuego | None = None) -> ResultadoEventoDTO:
         """ENRUTADOR, REVISA EL EVENTO Y LO MANDA A RESOLVER DONDE SEA CONVENIENTE"""
@@ -103,7 +118,7 @@ class GestorEventos:
             sala_del_jugador = self.salas[jugador.id_sala_actual]
             self.salas_logica.sala = sala_del_jugador
             ultimo_paso_anterior = sala_del_jugador.ultimo_paso
-            self.salas_logica.actualizarTiempo(evento.tiempo_ejecucion)
+            self.salas_logica.actualizarTiempo(self._ahora(evento))
             if sala_del_jugador.ultimo_paso != ultimo_paso_anterior:
                 self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
                     tipo_accion="ULTIMO_PASO",
