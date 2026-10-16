@@ -101,7 +101,7 @@ class InventarioLogica:
             raise ValueError("El inventario esta vacio")
         
         nodo_actual = self.actual
-        if nodo_actual is self.cabeza:
+        if nodo_actual is self.cabeza or nodo_actual is self.cabeza.siguiente:
             return nodo_actual.objeto  # Ya está equipado, no hacer nada
 
         indice_actual = self.indice_de_objeto(nodo_actual.objeto)

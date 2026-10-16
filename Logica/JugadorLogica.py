@@ -5,7 +5,6 @@ from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.ActorLogica import ActorLogica
 from Logica.RetrocesoLogica import RetrocesoLogica
 from DTO.CambioDTO import CambioDTO
-import random
 
 class JugadorLogica(ActorLogica):
     def __init__(self,jugador : JugadorDTO, semilla: int = None):
@@ -95,7 +94,6 @@ class JugadorLogica(ActorLogica):
             indice=indice_original,
         )])
         return ResultadoEventoDTO(True, f"El jugador ha soltado el objeto {objeto.nombre}")
-        
     def tiene_llave(self, id_llave: int) -> bool:
         """Comprueba si el jugador posee en su inventario un objeto llave con el ID dado."""
         nodo = self.jugador.inventario.cabeza
