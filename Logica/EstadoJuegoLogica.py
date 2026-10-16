@@ -6,26 +6,27 @@ from DTO.FinPartidaDTO import FinPartidaDTO
 from Logica.GestorEventos import GestorEventos
 from Logica.ActorLogica import ActorLogica
 from Logica.JugadorLogica import JugadorLogica
+from DTO.LogPartidaDTO import LogPartidaDTO
 from Logica.LogEventos import LogEventos, ReferenciaEvento, RegistroEvento
 from Logica.BitacoraLogica import BitacoraLogica
 from Logica.RelojVirtual import RelojVirtual
 from Logica.RetrocesoLogica import RetrocesoLogica
 from DTO.CambioDTO import CambioDTO
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
-from adaptadores.fabrica import crear_servicio
 from adaptadores.servicioCripta import ServicioCripta
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
 from Logica import EstadoGuardadoLogica
 class EstadoJuegoLogica:
-    def __init__(self,semilla: int = None, cripta: str = None, comunicacion: ServicioCripta | None = None, offline: bool = False):
+    def __init__(self,semilla: int = None, cripta: str = None, comunicacion: ServicioCripta | None = None):
         self.tiempoMovimientoJugador = 0
-        self.comunicacion = comunicacion      # si viene armado desde main (--offline, --cache-size) se usa tal cual
-        self.offline = offline
+        # Quien arma el juego entrega el servicio de criptas ya listo; al modelo no le importa de dónde saca los datos.
+        self.comunicacion = comunicacion
         
         self.iniciado = False
         self.fin = False
         self.motivoFin = None
         self.precargaInicialHecha = False
+        self.registrador_log = None    # opcional: algo con agregar(linea); el modelo solo le avisa cada acción
         
         if(cripta is not None):
             self.iniciarJuego(cripta)
@@ -36,19 +37,17 @@ class EstadoJuegoLogica:
 
     def restaurar_estado(self, estado: EstadoGuardadoDTO) -> None:
         """Deja la partida como estaba cuando se exportó `estado`. El historial del pergamino empieza vacío."""
-        if self.comunicacion is None:
-            self.comunicacion = crear_servicio(offline=estado.offline)
+        self._exigirServicio()
         EstadoGuardadoLogica.restaurar(self, estado)
 
-    def iniciarJuego(self,  cripta: str,semilla: int = None, offline: bool | None = None):
-        """offline=None conserva lo configurado al crear la lógica; True/False lo cambia."""
+    def _exigirServicio(self) -> None:
+        if self.comunicacion is None:
+            raise ValueError("El juego no tiene un servicio de criptas")
+
+    def iniciarJuego(self,  cripta: str,semilla: int = None):
         if self.iniciado:
             raise ValueError("No se puede iniciar un juego ya iniciado")
-        if offline is not None and offline != self.offline:
-            self.comunicacion = None
-            self.offline = offline
-        if self.comunicacion is None:
-            self.comunicacion = crear_servicio(offline=self.offline)
+        self._exigirServicio()
         if not self.comunicacion.existe_cripta(cripta):
             raise ValueError("No existe la cripta solicitada")
         self.semilla = 0 if semilla is None else semilla
@@ -76,6 +75,7 @@ class EstadoJuegoLogica:
         self.logEventos.vaciar()
         self.idCripta = cripta
         self.iniciado = True
+        self.registrador_log = None
         self.fin = False
         self.motivoFin = None
 
@@ -94,9 +94,14 @@ class EstadoJuegoLogica:
             self.motivoFin if self.motivoFin is not None else "No ha terminado"
         )
         
-    def repetirPartida(self, archivo: str) ->list[ResultadoEventoDTO]:
-        log_original = LogEventos()
-        log_original.cargar_log(archivo)
+    def exportar_log(self) -> LogPartidaDTO:
+        """Log de reproducción de la partida en datos simples; no toca archivos."""
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+        return self.logEventos.a_dto()
+
+    def repetirPartida(self, log: LogPartidaDTO) -> list[ResultadoEventoDTO]:
+        log_original = LogEventos.desde_dto(log)
 
         if log_original.id_cripta is None:
             raise ValueError("El log no contiene el ID de la cripta")
@@ -250,11 +255,11 @@ class EstadoJuegoLogica:
     
 
     def listarCriptas(self) -> list[str]:
-        if self.comunicacion is None:
-            self.comunicacion = crear_servicio(offline=self.offline)
+        self._exigirServicio()
         return self.comunicacion.listar_criptas()
 
     def obtenerIdCripta(self, posicion: int) -> str:
+        self._exigirServicio()
         return self.comunicacion.obtener_id_cripta(posicion)
         
     #TODO Este va a recibir: el numero de cripta y partir de eso se comunica con comunicador para saber
@@ -437,16 +442,9 @@ class EstadoJuegoLogica:
         self.tiempoMovimientoJugador = self.cargarEvento(evento)
         respuesta = self._siguienteAccion()
         self.logEventos.registrar_evento(evento)
+        if self.registrador_log is not None:
+            self.registrador_log.agregar(self.logEventos.cola.accion)
         return respuesta
-
-    def guardarLog(self, nombre_archivo: str) -> None:
-        if not self.iniciado:
-            raise ValueError("El juego no ha sido iniciado")
-        if not self.fin:
-            raise ValueError(
-                "No se puede guardar el log si la partida no ha terminado"
-            )
-        self.logEventos.guardar_log(nombre_archivo)
 
     def obtenerPuntaje(self) -> int:
         return self.estadoJuego.puntaje

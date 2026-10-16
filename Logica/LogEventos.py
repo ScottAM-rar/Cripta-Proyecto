@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from adaptadores.extension import ruta_archivo, EXTENSION_LOG, CARPETA_LOGS
+from DTO.LogPartidaDTO import LogPartidaDTO
 
 
 class RegistroEvento:
@@ -244,57 +244,21 @@ class LogEventos:
         acciones = self.obtener_acciones()
         return separador.join(acciones)
 
-    def guardar_log(self, nombre_archivo: str) -> None:
-        """Guarda las acciones en un archivo .log, una acción por línea."""
-        nombre_archivo = ruta_archivo(nombre_archivo, EXTENSION_LOG, CARPETA_LOGS, crear_carpeta=True)
+    def a_dto(self) -> LogPartidaDTO:
+        """Contenido del log como datos simples (lo escribe a disco un adaptador)."""
+        return LogPartidaDTO(
+            self.id_cripta, self.semilla, self.version_cripta, self.version_catalogo,
+            self.obtener_acciones_cronologicas(),
+        )
 
-        with open(nombre_archivo, "w", encoding="utf-8") as archivo:
-            archivo.write(f"cripta: {self.id_cripta or 'ninguna'}\n")
-            archivo.write(f"semilla: {self.semilla}\n")
-            archivo.write(f"version_cripta: {self.version_cripta or 'desconocida'}\n")
-            archivo.write(f"version_catalogo: {self.version_catalogo or 'desconocida'}\n")
-            actual = self.cabeza
-            while actual is not None:
-                archivo.write(actual.accion + "\n")
-                actual = actual.siguiente
-
-    def cargar_log(self, nombre_archivo: str) -> None:
-        """Carga las acciones de un archivo .log y reemplaza las actuales."""
-        nombre_archivo = ruta_archivo(nombre_archivo, EXTENSION_LOG, CARPETA_LOGS)
-
-        with open(nombre_archivo, "r", encoding="utf-8") as archivo:
-            lineas = [linea.rstrip("\n") for linea in archivo]
-
-        if len(lineas) < 2 or not lineas[0].startswith("cripta: "):
-            raise ValueError("El archivo .log no contiene una cripta válida")
-        id_cripta = lineas[0][len("cripta: "):]
-        if id_cripta == "ninguna":
-            id_cripta = None
-        elif not id_cripta.strip():
-            raise ValueError("El ID de la cripta del archivo .log no es válido")
-        if not lineas[1].startswith("semilla: "):
-            raise ValueError("El archivo .log no contiene una semilla válida")
-        try:
-            semilla = int(lineas[1][len("semilla: "):])
-        except ValueError as error:
-            raise ValueError("La semilla del archivo .log debe ser un entero") from error
-
-        # Versiones (opcionales: los logs antiguos no las traen)
-        posicion = 2
-        versiones = [None, None]
-        for indice, clave in enumerate(("version_cripta: ", "version_catalogo: ")):
-            if posicion < len(lineas) and lineas[posicion].startswith(clave):
-                valor = lineas[posicion][len(clave):].strip()
-                versiones[indice] = None if valor in ("", "desconocida") else valor
-                posicion += 1
-
-        self.vaciar()
-        self.id_cripta = id_cripta
-        self.semilla = semilla
-        self.version_cripta, self.version_catalogo = versiones
-        for accion in lineas[posicion:]:
-            if accion.strip():
-                self.agregar(accion)
+    @staticmethod
+    def desde_dto(dto: LogPartidaDTO) -> "LogEventos":
+        log = LogEventos(dto.semilla, dto.id_cripta)
+        log.version_cripta = dto.version_cripta
+        log.version_catalogo = dto.version_catalogo
+        for accion in dto.acciones:
+            log.agregar(accion)
+        return log
 
     def vaciar(self) -> None:
         self.cabeza = None

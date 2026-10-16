@@ -129,7 +129,7 @@ class EstadoGuardadoDTO:
     puntaje: int = 0
     fin: bool = False
     motivo_fin: str | None = None
-    offline: bool = False
+    offline: bool = False                 # lo completa quien conozca el origen de los datos (el modelo no lo sabe)
     precarga_inicial_hecha: bool = False
     tiempo_movimiento_jugador: int = 0
     # --- mundo ---

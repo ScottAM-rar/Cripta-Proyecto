@@ -73,16 +73,10 @@ class ControladorJuego:
                 print("\n" + "=" * 50)
                 print("¡HAS MUERTO! Tu aventura en la cripta ha llegado a su fin.")
                 print("=" * 50)
-                # 1. Guardamos el log de pasos
-                nombre_log = input("Ingresa el nombre del archivo para guardar el log de pasos: ").strip()
-                if not nombre_log:
-                    nombre_log = "pruebasLog.log"
-                
-                try:
-                    self.servicio.guardarLog(nombre_log)
-                    print(f"Log guardado exitosamente.")
-                except Exception as e:
-                    print(f"Error al guardar el log: {e}")
+                # 1. El log se fue grabando solo durante la partida
+                nombre_log = self.servicio.nombreLog()
+                if nombre_log:
+                    print(f"Log de la partida guardado en logs/{nombre_log} (para reproducirlo: python main.py --replay {nombre_log})")
                 
                 # 2. MOSTRAR EL HISTORIAL CRONOLÓGICO AQUÍ (Al morir)
                 print("\n-------- HISTORIAL CRONOLÓGICO DE TU JUEGO --------")

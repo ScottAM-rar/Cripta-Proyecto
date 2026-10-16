@@ -7,5 +7,5 @@ from Logica.SalasLogica import SalaLogica
 class ComportamientoEnemigo(ABC):
     @staticmethod
     @abstractmethod
-    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None) -> str:
+    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None, tiempo_actual: int | None = None) -> str:
         pass
