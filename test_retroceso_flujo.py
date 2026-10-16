@@ -388,56 +388,66 @@ class TestEventosDelEntorno(PruebaRetroceso):
 
 
 class TestTrampas(PruebaRetroceso):
-    def test_la_sala_con_trampa_programa_su_primera_activacion(self):
-        logica = self.nueva(con_trampa=True)
-        self.assertEqual(len(self.pendientes(logica, "ACTIVAR_TRAMPA", "t-1")), 1)
+    """§2.10: una trampa armada se activa cuando el jugador entra a la sala; no se sondea con el reloj."""
 
-    def test_la_cadena_de_la_trampa_continua_sin_deshacer(self):
-        logica = self.nueva(con_trampa=True)
-        vida_inicial = logica.estadoJuego.jugador.vida_actual
-        self.esperar(logica, 12)
-        self.assertLessEqual(logica.estadoJuego.jugador.vida_actual, vida_inicial - 30)
+    def entrar_a_la_sala_de_la_trampa(self, logica):
+        self.mover(logica, "norte")          # sale de la sala 1 (donde está la trampa)
+        return self.mover(logica, "sur")     # y vuelve a entrar
 
-    def test_deshacer_un_disparo_deja_la_trampa_armada_y_programada(self):
+    def test_la_sala_con_trampa_no_programa_eventos_al_cargarse(self):
+        logica = self.nueva(con_trampa=True)
+        self.assertEqual(self.pendientes(logica, "ACTIVAR_TRAMPA", "t-1"), [])
+        self.assertEqual(self.pendientes(logica, "ARMAR_TRAMPA", "t-1"), [])
+        self.esperar(logica, 6)
+        self.assertTrue(logica.estadoJuego.salas[1].trampas[0].armada)
+
+    def test_entrar_activa_la_trampa_la_desarma_y_programa_su_rearme(self):
+        logica = self.nueva(con_trampa=True)
+        trampa = logica.estadoJuego.salas[1].trampas[0]
+        resultado = self.entrar_a_la_sala_de_la_trampa(logica)
+        self.assertFalse(trampa.armada)
+        self.assertIn("t-1", resultado.mensaje)
+        rearmes = self.pendientes(logica, "ARMAR_TRAMPA", "t-1")
+        self.assertEqual(len(rearmes), 1)
+        self.assertLessEqual(rearmes[0].tiempo_ejecucion - logica.estadoJuego.reloj.tiempo_actual, trampa.rearme)
+
+    def test_entrar_con_la_trampa_desarmada_no_hace_nada(self):
+        logica = self.nueva(con_trampa=True)
+        self.entrar_a_la_sala_de_la_trampa(logica)
+        jugador = logica.estadoJuego.jugador
+        self.mover(logica, "norte")
+        resultado = self.mover(logica, "sur")
+        self.assertNotIn("t-1", resultado.mensaje)
+
+    def test_deshacer_la_entrada_deja_la_trampa_armada_y_sin_rearme(self):
         logica = self.nueva(con_trampa=True)
         jugador = logica.estadoJuego.jugador
         trampa = logica.estadoJuego.salas[1].trampas[0]
-        self.esperar(logica)
-        golpes = 0
-        vida_previa = jugador.vida_actual
-        for _ in range(12):
-            vida_previa = jugador.vida_actual
-            self.esperar(logica)
-            if jugador.vida_actual < vida_previa:
-                golpes += 1
-                break
-        self.assertEqual(golpes, 1)
-
-        for _ in range(4):
-            if jugador.vida_actual == vida_previa:
-                break
-            self.usar_pergamino(logica)
-        self.assertEqual(jugador.vida_actual, vida_previa)
+        self.mover(logica, "norte")
+        self.mover(logica, "sur")
+        self.assertFalse(trampa.armada)
+        vida_tras_entrar = jugador.vida_actual
+        self.usar_pergamino(logica)
         self.assertTrue(trampa.armada)
-        self.assertEqual(len(self.pendientes(logica, "ACTIVAR_TRAMPA", "t-1")), 1)
+        # solo se devuelve lo que hizo la trampa; los golpes de enemigos previos a la acción no pertenecen a ella
+        self.assertEqual(jugador.vida_actual, vida_tras_entrar + trampa.daño)
+        self.assertEqual(jugador.id_sala_actual, 2)
         self.assertEqual(self.pendientes(logica, "ARMAR_TRAMPA", "t-1"), [])
+        self.assertEqual(self.pendientes(logica, "ACTIVAR_TRAMPA", "t-1"), [])
 
-        vida = jugador.vida_actual
-        self.esperar(logica, 8)
-        self.assertLess(jugador.vida_actual, vida)
-
-    def test_deshacer_un_rearme_deja_la_trampa_desarmada_y_programada(self):
+    def test_el_rearme_no_programa_otra_activacion_y_deshacerlo_lo_reprograma(self):
         logica = self.nueva(con_trampa=True)
         trampa = logica.estadoJuego.salas[1].trampas[0]
+        self.entrar_a_la_sala_de_la_trampa(logica)
         armada_previa = trampa.armada
-        rearmada = False
-        for _ in range(12):
+        for _ in range(10):
             armada_previa = trampa.armada
             self.esperar(logica)
             if trampa.armada and not armada_previa:
-                rearmada = True
                 break
-        self.assertTrue(rearmada)
+        self.assertTrue(trampa.armada)
+        self.assertEqual(self.pendientes(logica, "ACTIVAR_TRAMPA", "t-1"), [])
+        self.assertEqual(self.pendientes(logica, "ARMAR_TRAMPA", "t-1"), [])
 
         for _ in range(4):
             if not trampa.armada:
@@ -445,7 +455,6 @@ class TestTrampas(PruebaRetroceso):
             self.usar_pergamino(logica)
         self.assertFalse(trampa.armada)
         self.assertEqual(len(self.pendientes(logica, "ARMAR_TRAMPA", "t-1")), 1)
-        self.assertEqual(self.pendientes(logica, "ACTIVAR_TRAMPA", "t-1"), [])
 
 
 class TestPergaminosYPersistencia(PruebaRetroceso):

@@ -1,3 +1,4 @@
+import random
 from Logica.ComportamientoEnemigo import *
 from DTO.SalaDTO import *
 from Logica.ActorLogica import ActorLogica
@@ -10,7 +11,7 @@ class ComportamientoRastreador(ComportamientoEnemigo):
         return sala.ultimo_paso
 
     @staticmethod
-    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], semilla: int= None) -> str:
+    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None) -> str:
         siguienteSala: SalidaDTO = None
         pasoSiguiente = 0
         for t in salas[enemigo.id_sala_actual].salidas:

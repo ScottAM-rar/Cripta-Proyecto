@@ -21,8 +21,8 @@ class EstadoJuegoServicio:
     def obtenerSala(self, id_sala: int) -> SalaDTO:
         return self._estadoJuegoLogica.ingresarEnSala(id_sala)
 
-    def iniciarJuego(self, cripta: str, semilla):
-        self._estadoJuegoLogica.iniciarJuego(cripta,semilla)
+    def iniciarJuego(self, cripta: str, semilla=None, offline: bool = False):
+        self._estadoJuegoLogica.iniciarJuego(cripta,semilla,offline)
 
     def repetirPartida(self, archivo: str) -> list[ResultadoEventoDTO]:
         return self._estadoJuegoLogica.repetirPartida(archivo)

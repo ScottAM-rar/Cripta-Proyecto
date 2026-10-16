@@ -1,5 +1,6 @@
 from unittest import case
 
+import random
 from collections.abc import Callable
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import *
@@ -27,14 +28,16 @@ class GestorEventos:
         self.salas = salas
         self.cargar_sala = cargar_sala
         # Inyección de dependencias de la capa de lógica
-        self.jugador_logica = JugadorLogica(jugador, semilla)
+        # Un único generador por partida, compartido por jugador y enemigos: así la secuencia de tiradas es reproducible
+        self.azar = random.Random(semilla)
+        self.jugador_logica = JugadorLogica(jugador, semilla, self.azar)
         self.pergamino_logica = PergaminoLogica(
             self.jugador_logica.retroceso,
             salas,
         )
         self.objeto_logica = ObjetoLogica(jugador, self.pergamino_logica)
         self.salas_logica = SalaLogica(None)
-        self.enemigo_logica = EnemigoLogica(None,semilla)
+        self.enemigo_logica = EnemigoLogica(None,semilla,self.azar)
 
     @staticmethod
     def es_uso_de_pergamino(evento: EventoDTO) -> bool:
@@ -43,6 +46,15 @@ class GestorEventos:
             and len(evento.datos_extra) == 1
             and isinstance(evento.datos_extra[0], PergaminoRetroceso)
         )
+
+    def activar_trampas(self, sala: SalaDTO) -> list[ResultadoEventoDTO]:
+        """El jugador acaba de entrar a `sala` (§2.10): cada trampa armada se activa de inmediato.
+        Los cambios quedan dentro de la acción del jugador que está abierta, así que el pergamino los deshace con ella."""
+        resultados = []
+        for trampa in sala.trampas:
+            if trampa.armada:
+                resultados.append(self._despachar_evento(EventoDTO(0, 0, trampa, "ACTIVAR_TRAMPA", [sala])))
+        return resultados
 
     def _abre_accion_del_jugador(self, evento: EventoDTO) -> bool:
         return (

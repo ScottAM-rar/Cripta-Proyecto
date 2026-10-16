@@ -8,9 +8,11 @@ from DTO.CambioDTO import CambioDTO
 import random
 
 class JugadorLogica(ActorLogica):
-    def __init__(self,jugador : JugadorDTO, semilla: int = None):
+    def __init__(self,jugador : JugadorDTO, semilla: int = None, azar: random.Random | None = None):
         self.jugador = jugador
         self.semilla = semilla
+        # Fuente de azar del modelo (una sola por partida). Si no se la pasan, se crea con la semilla.
+        self.azar = azar if azar is not None else random.Random(semilla)
         self.retroceso = RetrocesoLogica()
 
     def mover_jugador(self, sala_actual: SalaDTO, direccion: str) -> ResultadoEventoDTO:
@@ -37,7 +39,7 @@ class JugadorLogica(ActorLogica):
             return ResultadoEventoDTO(False, f"El jugador no atacó al enemigo {enemigo.id_instancia} ya que está muerto")
         vida_anterior = enemigo.vida_actual
         eliminados_anteriores = self.jugador.enemigos_eliminados
-        self._atacar(self.jugador,enemigo,self.semilla)
+        self._atacar(self.jugador,enemigo,self.azar)
         if(enemigo.vida_actual<=0):
             self.jugador.enemigos_eliminados+=1
         cambios = [CambioDTO(
