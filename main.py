@@ -42,8 +42,22 @@ def reproducir(servicio: EstadoJuegoServicio, archivo: str) -> int:
     return 0
 
 
+def mostrar_reporte(servicio: EstadoJuegoServicio) -> None:
+    """§5.1: al terminar se informan solicitudes, presupuesto y aciertos/fallos de caché.
+    Solo lee contadores (no hace solicitudes) y nunca debe tapar cómo terminó la partida."""
+    try:
+        reporte = servicio.reporteSolicitudes()
+    except Exception as error:
+        print(f"No se pudo generar el reporte de solicitudes: {error}", file=sys.stderr)
+        return
+    if reporte is not None:                      # None = nunca se llegó a elegir una cripta
+        print("\n--- Reporte de solicitudes ---")
+        print(reporte.texto())
+
+
 def main(argv=None) -> int:
     args = leer_argumentos(argv)
+    servicio = None
     try:
         # El servicio de cripta se arma UNA vez aquí (un solo cliente de red y un solo UUID por ejecución)
         # y se entrega al juego; --offline y --cache-size se aplican en este punto.
@@ -60,6 +74,9 @@ def main(argv=None) -> int:
     except (ValueError, OSError, RuntimeError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
+    finally:
+        if servicio is not None:                 # también si la partida terminó por un error o con Ctrl+C
+            mostrar_reporte(servicio)
 
 
 if __name__ == "__main__":
