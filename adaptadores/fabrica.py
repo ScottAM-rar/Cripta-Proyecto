@@ -27,6 +27,7 @@ TAMANO_CACHE = 25
 # alguien llame crear_servicio() varias veces, la API ve siempre el mismo
 # cliente y el contador de solicitudes es el de toda la ejecución.
 _cliente_compartido = None
+_persistente_compartido = None     # (url, carpeta, ClientePersistente)
 
 
 def _cliente_http_de_ejecucion(url: str):
@@ -37,11 +38,25 @@ def _cliente_http_de_ejecucion(url: str):
     return _cliente_compartido
 
 
+def _persistente_de_ejecucion(url: str, carpeta: str):
+    """Un solo ClientePersistente por ejecución: así listar criptas y luego iniciar
+    la partida (que crean servicios distintos) no repiten la lista de criptas, los
+    datos generales ni la versión del catálogo. Cada una es una solicitud menos."""
+    global _persistente_compartido
+    if (_persistente_compartido is None
+            or _persistente_compartido[0] != url.strip("/")
+            or _persistente_compartido[1] != carpeta):
+        cliente = ClientePersistente(_cliente_http_de_ejecucion(url), AlmacenDisco(carpeta))
+        _persistente_compartido = (url.strip("/"), carpeta, cliente)
+    return _persistente_compartido[2]
+
+
 def reiniciar_cliente_compartido() -> None:
-    """Olvida el cliente de red compartido (nuevo UUID y contador en 0).
+    """Olvida el cliente de red compartido (nuevo UUID y contador en 0) y la sesión.
     Solo para pruebas; el juego no debería necesitarlo."""
-    global _cliente_compartido
+    global _cliente_compartido, _persistente_compartido
     _cliente_compartido = None
+    _persistente_compartido = None
 
 
 def crear_servicio(offline: bool = False,
@@ -57,19 +72,18 @@ def crear_servicio(offline: bool = False,
     cliente_http solo para pruebas: un cliente de red falso en lugar del real.
 
     Llamarla varias veces en la misma ejecución reutiliza el mismo cliente de
-    red (mismo UUID, mismo contador), pero cada llamada arma un servicio y una
-    caché nuevos. Lo ideal es crearla UNA vez en main y pasar el servicio.
+    red y de persistencia (mismo UUID, mismo contador, misma sesión), pero cada
+    llamada arma un servicio y una caché nuevos. Lo ideal es crearla UNA vez en
+    main y pasar el servicio.
     """
     if cache_size < 1:
         raise ValueError("El tamaño de la caché debe ser al menos 1")
 
-    almacen = AlmacenDisco(carpeta)
-
     if offline:
-        cliente = ClienteOffline(almacen)
+        cliente = ClienteOffline(AlmacenDisco(carpeta))
+    elif cliente_http is None:
+        cliente = _persistente_de_ejecucion(url, carpeta)
     else:
-        if cliente_http is None:
-            cliente_http = _cliente_http_de_ejecucion(url)
-        cliente = ClientePersistente(cliente_http, almacen)
+        cliente = ClientePersistente(cliente_http, AlmacenDisco(carpeta))
 
     return ServicioCripta(cliente, CacheLRU(cache_size))

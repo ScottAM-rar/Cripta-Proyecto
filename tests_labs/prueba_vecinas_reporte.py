@@ -83,13 +83,13 @@ with tempfile.TemporaryDirectory() as raiz:
     http3 = HttpFalso()
     s3, c3 = servicio_nuevo(os.path.join(raiz, "c"), http3)
     s3.crear_jugador(c3)
-    comprobar("procesa la actual y su vecina (2 salas)", s3.precargar_vecinas(c3, 1) == 2)
+    comprobar("procesa la actual y su vecina (2 salas)", s3.precargar_vecinas(c3, 1, 1) == 2)
     antes = http3.solicitudes_realizadas
     s3.construir_sala(c3, 1)
     s3.construir_sala(c3, 2)
     comprobar("construir las salas 1 y 2 NO gasta solicitudes", http3.solicitudes_realizadas == antes)
     comprobar("la sala 3 todavía no estaba precargada", http3.veces("contenido") == 1)
-    s3.precargar_vecinas(c3, 2)
+    s3.precargar_vecinas(c3, 2, 1)
     comprobar("al avanzar a la 2 solo se pide lo que faltaba (sala 3 y su ficha)",
               http3.llamadas[antes:] == [("contenido", [3]), ("catalogo", ["ent_guardian_oseo"])],
               f"(llamadas: {http3.llamadas[antes:]})")
