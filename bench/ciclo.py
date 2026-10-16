@@ -7,6 +7,7 @@ esbirro de la sala actúa una vez, así que con E esbirros el ciclo procesa E ev
 from __future__ import annotations
 
 import contextlib
+import gc
 import tempfile
 
 from DTO.EventoDTO import EventoDTO
@@ -33,6 +34,8 @@ def ejecutar(filas: list) -> bool:
         for enemigos in ENEMIGOS:
             juego = nuevo_juego(carpeta, enemigos)
             _esperar(juego)                                   # un ciclo previo, para no medir el arranque
+            gc.collect()
+            gc.freeze()                                       # lo ya creado deja de recorrerse
             pendientes = len(juego.estadoJuego.reloj.heap)
             resultado = medir(lambda: _esperar(juego), repeticiones=CICLOS)
             mediana, _, maximo = resultado
@@ -42,6 +45,7 @@ def ejecutar(filas: list) -> bool:
             anotar(filas, SECCION, f"{enemigos:>5} esbirros activos ({pendientes:>5} eventos pendientes)  1 ciclo completo", resultado)
             filas.append((SECCION, f"    ¿el peor de {CICLOS} ciclos < 20 ms?", "CUMPLE" if cumple else "NO CUMPLE", f"(máx {texto(maximo)})" + ("" if enemigos <= ESCALA_DE_REFERENCIA else "  prueba de estrés, no decide el veredicto")))
 
+        gc.unfreeze()
         # Reproducción: se juegan N acciones, se exporta el log y se repite en un juego nuevo.
         juego = nuevo_juego(carpeta, 10)
         for _ in range(ACCIONES_DE_REPETICION):

@@ -8,7 +8,6 @@ from __future__ import annotations
 from DTO.CambioDTO import CambioDTO
 from Logica.PergaminoLogica import PergaminoLogica
 from Logica.RetrocesoLogica import RetrocesoLogica
-from bench.datos import azar
 from bench.medicion import anotar, medir, nota, verificar
 
 SECCION = "Historial de retroceso (§4.6): diferencias en lista doble  vs  instantáneas del estado"

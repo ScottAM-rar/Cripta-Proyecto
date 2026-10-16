@@ -4,7 +4,7 @@ from DTO.ActorDTO import EnemigoDTO, JugadorDTO
 from DTO.CambioDTO import CambioDTO
 from DTO.EstadoJuegoDTO import EstadoJuego
 from DTO.EventoDTO import EventoDTO
-from DTO.Objeto import Arma, Armadura, Objeto, PergaminoRetroceso
+from DTO.Objeto import Arma, Objeto, PergaminoRetroceso
 from DTO.SalaDTO import SalaDTO, SalidaDTO
 from DTO.TrampaDTO import Trampa
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO

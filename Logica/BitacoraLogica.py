@@ -69,9 +69,3 @@ class BitacoraLogica:
             resultados.append(actual.resultado)
             actual = actual.siguiente
         return resultados
-
-    def imprimir_mensajes(self):
-        actual = self.frente
-        while actual is not None:
-            print(actual.resultado.mensaje)
-            actual = actual.siguiente
