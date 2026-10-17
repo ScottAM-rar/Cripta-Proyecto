@@ -47,6 +47,7 @@ class ObjetoLogica:
                 resultado.exito, resultado.mensaje, resultado.eventoResultado = True, f"Se ha usado la pocion {objeto.nombre}.", evento
             case Antidoto():
                 veneno_anterior = self.jugador.veneno
+                estado_veneno_anterior = (self.jugador.veneno, self.jugador.pulso_veneno)
                 self._consumir(objeto)
                 self._aplicar_antidoto(objeto)
                 cambios = [
@@ -56,6 +57,12 @@ class ObjetoLogica:
                         self.jugador,
                         valor_anterior=veneno_anterior,
                         valor_nuevo=self.jugador.veneno,
+                    ),
+                    CambioDTO(
+                        "ESTADO_VENENO",
+                        self.jugador,
+                        valor_anterior=estado_veneno_anterior,
+                        valor_nuevo=(self.jugador.veneno, self.jugador.pulso_veneno),
                     ),
                 ]
                 resultado.exito, resultado.mensaje = True, f"Se ha usado el antidoto."
@@ -120,8 +127,13 @@ class ObjetoLogica:
     
     def _aplicar_antidoto(self, antidoto: Antidoto):
         """Aplica los efectos del antidoto al jugador."""
-        #Primero tiene que estar envenenado y yo no veo que tenga nada de eso el jugador fajsfhasjfdsdajf, codigo "muerto":
         self.jugador.veneno = False
+        pulso = self.jugador.pulso_veneno
+        if pulso is not None:       # los pulsos futuros no hacen daño: se cancela el pendiente (por referencia, O(log n))
+            retroceso = self.pergamino_logica.retroceso_logica
+            if retroceso.reloj is not None and retroceso.reloj.quitar_evento(pulso):
+                retroceso.registrar_desencolado(pulso)
+            self.jugador.pulso_veneno = None
         
     def _usar_antorcha(self, antorcha: Antorcha) -> EventoDTO:
         """Enciende la antorcha del jugador por el tiempo de duracion de la antorcha."""

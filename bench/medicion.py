@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import time
 
-from Controlador.ordenamiento import insertion_sort
+from Logica.ordenamiento import insertion_sort
 
 UNIDAD = "µs"
 

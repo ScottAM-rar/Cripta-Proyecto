@@ -1,4 +1,4 @@
-from Controlador.ordenamiento import ordenar_adaptativo
+from Logica.ordenamiento import ordenar_adaptativo
 from DTO.ActorDTO import JugadorDTO, EnemigoDTO
 from DTO.CambioDTO import CambioDTO
 from DTO.SalaDTO import SalaDTO
@@ -270,3 +270,20 @@ def probar_todas_las_funciones():
         
 if __name__ == "__main__":
     probar_todas_las_funciones()
+
+def probar_orden_previo_adaptativo():
+    """ordenar_adaptativo: casi ordenada, desordenada, inversa y con empates dan lo mismo que la mezcla (estable)."""
+    import random
+    from Logica.ordenamiento import merge_sort
+    rng = random.Random(5)
+    casos = {
+        "casi ordenada": sorted(range(60)),
+        "desordenada": rng.sample(range(300), 300),
+        "inversa": list(range(80, 0, -1)),
+        "con empates": [(rng.randrange(5), i) for i in range(200)],
+    }
+    casos["casi ordenada"][3], casos["casi ordenada"][40] = casos["casi ordenada"][40], casos["casi ordenada"][3]
+    for nombre, datos in casos.items():
+        clave = (lambda x: x[0]) if nombre == "con empates" else (lambda x: x)
+        assert ordenar_adaptativo(datos, clave) == merge_sort(list(datos), clave), nombre
+    print("OK orden previo adaptativo")

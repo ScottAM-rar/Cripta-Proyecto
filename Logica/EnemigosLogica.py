@@ -40,7 +40,7 @@ class EnemigoLogica(ActorLogica):
         if self.enemigo is None:
             raise ValueError("No se puede decidir acciones sobre un enemigo que no existe")
         if self.enemigo.vida_actual <= 0:
-            return ResultadoEventoDTO(False, "ESTA MUERTO")
+            return ResultadoEventoDTO(False, "")      # un muerto no actúa ni deja mensajes: su cadena de eventos termina aquí
         if jugador.id_sala_actual == self.enemigo.id_sala_actual:
             accion = self.atacarJugador(jugador)
         else:

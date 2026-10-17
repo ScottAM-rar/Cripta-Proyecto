@@ -8,7 +8,7 @@ los nombra por su posición en esa tabla, así al restaurar vuelven a ser el mis
 from __future__ import annotations
 from dataclasses import dataclass, field
 
-VERSION_ESTADO = 1   # versión de la estructura de este DTO
+VERSION_ESTADO = 2   # versión de la estructura de este DTO
 
 
 @dataclass
@@ -33,6 +33,7 @@ class EnemigoGuardadoDTO:
     id_sala_actual: int
     suelta: list = field(default_factory=list)
     activo: bool = False
+    regeneracion: int = 0
 
 
 @dataclass
@@ -43,6 +44,7 @@ class TrampaGuardadaDTO:
     daño: int
     rearme: int
     armada: bool
+    veneno: int = 0
 
 
 @dataclass

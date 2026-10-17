@@ -1,0 +1,15 @@
+cripta: cripta-01
+semilla: 35871
+version_cripta: fd58f7743b9e
+version_catalogo: be68d322d2f5
+{"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_antorcha"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 1}, "norte"]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 2}, "norte"]}
+{"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_coraza_cuero"}]}
+{"tipo_accion": "USAR_OBJETO", "tiempo_ejecucion": 50, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_coraza_cuero"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 3}, "norte"]}
+{"tipo_accion": "ATACAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "enemigo", "id": "e-401"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 4}, "sur"]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 3}, "norte"]}
+{"tipo_accion": "RECOGER_OBJETO", "tiempo_ejecucion": 25, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "objeto", "id": "itm_pocion_menor"}]}
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 4}, "sur"]}

@@ -107,6 +107,10 @@ class PergaminoLogica:
                 jugador: JugadorDTO = cambio.objeto_afectado
                 jugador.antorcha_encendida = cambio.valor_anterior
                 
+            case "ESTADO_VENENO":       # (envenenado, pulso pendiente) antes del cambio; el evento se reinserta con EVENTO_DESENCOLADO
+                jugador: JugadorDTO = cambio.objeto_afectado
+                jugador.veneno, jugador.pulso_veneno = cambio.valor_anterior
+
             case "APLICAR_ANTIDOTO":
                 jugador: JugadorDTO = cambio.objeto_afectado
                 jugador.veneno = cambio.valor_anterior

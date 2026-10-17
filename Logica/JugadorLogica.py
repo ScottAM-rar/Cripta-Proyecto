@@ -43,28 +43,37 @@ class JugadorLogica(ActorLogica):
         if enemigo.id_sala_actual != self.jugador.id_sala_actual:
             return ResultadoEventoDTO(False, f"El jugador no puede atacar al enemigo {enemigo.id_instancia}: no está en su misma sala")
         vida_anterior = enemigo.vida_actual
-        eliminados_anteriores = self.jugador.enemigos_eliminados
         self._atacar(self.jugador,enemigo,self.azar)
-        if(enemigo.vida_actual<=0):
-            self.jugador.enemigos_eliminados+=1
         cambios = [CambioDTO(
             tipo_accion="ACTUALIZAR_VIDA",
             objeto_afectado=enemigo,
             valor_anterior=vida_anterior,
             valor_nuevo=enemigo.vida_actual,
         )]
-        if self.jugador.enemigos_eliminados != eliminados_anteriores:
-            cambios.append(CambioDTO(
-                tipo_accion="ENEMIGOS_ELIMINADOS",
-                objeto_afectado=self.jugador,
-                valor_anterior=eliminados_anteriores,
-                valor_nuevo=self.jugador.enemigos_eliminados,
-            ))
         mensaje = "El jugador ha atacado al enemigo causando daño"
-        if enemigo.vida_actual <= 0 and vida_anterior > 0 and obtener_botin is not None and sala_actual is not None:
-            mensaje += "." + self._soltar_botin(enemigo, sala_actual, obtener_botin, cambios)
+        if enemigo.vida_actual <= 0 and vida_anterior > 0:
+            botin = self.resolver_muerte_enemigo(enemigo, sala_actual, obtener_botin, cambios)
+            if obtener_botin is not None and sala_actual is not None:
+                mensaje += "." + botin
         self.retroceso.registrar_cambio(cambios)
         return ResultadoEventoDTO(True, mensaje, puntaje=50)
+
+    def resolver_muerte_enemigo(self, enemigo: EnemigoDTO, sala: SalaDTO | None, obtener_botin, cambios: list) -> str:
+        """Todo lo que ocurre cuando un enemigo muere, sea cual sea la causa (§2.6): cuenta como derrotado y lo que suelta
+        queda en el suelo de su sala. El cuerpo NO se retira de la sala: sigue ahí, con vida 0, para poder mostrarlo.
+        Quien detecta la muerte (vida de >0 a 0) llama aquí UNA vez; los cambios se agregan a `cambios` para que el
+        pergamino los deshaga junto con la acción. Devuelve el texto del botín para el mensaje."""
+        eliminados_anteriores = self.jugador.enemigos_eliminados
+        self.jugador.enemigos_eliminados += 1
+        cambios.append(CambioDTO(
+            tipo_accion="ENEMIGOS_ELIMINADOS",
+            objeto_afectado=self.jugador,
+            valor_anterior=eliminados_anteriores,
+            valor_nuevo=self.jugador.enemigos_eliminados,
+        ))
+        if obtener_botin is None or sala is None:
+            return ""
+        return self._soltar_botin(enemigo, sala, obtener_botin, cambios)
 
     def _soltar_botin(self, enemigo: EnemigoDTO, sala_actual: SalaDTO, obtener_botin, cambios: list) -> str:
         """El enemigo murió: lo que suelta queda en el suelo de la sala. Devuelve el texto para el mensaje."""

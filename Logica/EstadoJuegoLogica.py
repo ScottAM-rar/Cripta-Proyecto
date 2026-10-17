@@ -3,7 +3,7 @@ from DTO.SalaDTO import *
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import JugadorDTO, EnemigoDTO
 from DTO.FinPartidaDTO import FinPartidaDTO
-from Logica.GestorEventos import GestorEventos
+from Logica.GestorEventos import GestorEventos, PERIODO_REGENERACION
 from Logica.ActorLogica import ActorLogica
 from Logica.JugadorLogica import JugadorLogica
 from DTO.LogPartidaDTO import LogPartidaDTO
@@ -13,11 +13,11 @@ from Logica.RelojVirtual import RelojVirtual
 from Logica.RetrocesoLogica import RetrocesoLogica
 from DTO.CambioDTO import CambioDTO
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
-from adaptadores.servicioCripta import ServicioCripta
+from Logica.FuenteCripta import FuenteCripta
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
 from Logica import EstadoGuardadoLogica
 class EstadoJuegoLogica:
-    def __init__(self,semilla: int = None, cripta: str = None, comunicacion: ServicioCripta | None = None):
+    def __init__(self,semilla: int = None, cripta: str = None, comunicacion: FuenteCripta | None = None):
         self.tiempoMovimientoJugador = 0
         self.accionesJugador = 0       # acciones del jugador que consumieron tiempo virtual (§2.12)
         # Quien arma el juego entrega el servicio de criptas ya listo; al modelo no le importa de dónde saca los datos.
@@ -332,6 +332,8 @@ class EstadoJuegoLogica:
                 valor_nuevo=True,
             )])
             self.cargarEvento(EventoDTO(100, 0, menor, "ACCION_ENEMIGO", [self.estadoJuego.jugador]))
+            if menor.regeneracion > 0:      # §2.10: recupera vida cada PERIODO_REGENERACION mientras esté activo y vivo
+                self.cargarEvento(EventoDTO(PERIODO_REGENERACION, 0, None, "REGENERAR", [menor]))
 
     #TODO va a revisar la seccion del vector de la memoria
     #si la sala está (no es None) la devuelve
@@ -375,8 +377,9 @@ class EstadoJuegoLogica:
             velocidad_despues = ActorLogica.velocidad_efectiva(jugador)
             if velocidad_despues != velocidad_antes:
                 reloj.reajustar_velocidad(jugador, velocidad_antes, velocidad_despues)
-            self._registrarEnBitacora(accion)
-            print(accion.mensaje)
+            if accion.mensaje:              # los eventos silenciosos (p. ej. regenerar con la vida llena) no ensucian la bitácora
+                self._registrarEnBitacora(accion)
+                print(accion.mensaje)
             self._comprobarFinal()
             if not self.fin and accion.eventoResultado is not None:
                 self.cargarEvento(accion.eventoResultado)
