@@ -132,6 +132,37 @@ def _buscar_ficha(fichas: list[dict], id_catalogo: str) -> dict:
     raise KeyError(f"La API no devolvió la ficha de catálogo '{id_catalogo}'")
  
  
+def _ids_de_botin(contenidos: list[dict], fichas: list[dict], ya_pedidos: list[str]) -> list[str]:
+    """Ids de lo que sueltan los enemigos de estas salas (campo `suelta` de su ficha) y que todavía no se
+    pidieron. Se traen junto con la sala para que, al morir el enemigo, el botín salga de la caché o del disco
+    sin gastar solicitudes en pleno combate (y para que también funcione con --offline)."""
+    ids: list[str] = []
+    for contenido in contenidos:
+        for colocacion in contenido["enemigos"]:
+            ficha = _buscar_ficha(fichas, colocacion["tipo"])
+            for id_objeto in ficha.get("suelta") or []:
+                if id_objeto not in ya_pedidos and id_objeto not in ids:
+                    ids.append(id_objeto)
+    return ids
+
+
+def resolver_botin(cliente, cache, ids_suelta: list[str], id_sala: int) -> list[Objeto]:
+    """Instancias NUEVAS de lo que suelta un enemigo (una por cada id de `suelta`, aunque se repita), con
+    `id_sala` como sala donde quedan en el suelo. Las fichas que no estén en la caché ni en el disco se piden
+    juntas, en una sola solicitud en lote."""
+    if not ids_suelta:
+        return []
+    unicos: list[str] = []
+    for id_objeto in ids_suelta:
+        if id_objeto not in unicos:
+            unicos.append(id_objeto)
+    fichas = _obtener_fichas(unicos, cliente, cache)
+    botin: list[Objeto] = []
+    for id_objeto in ids_suelta:
+        botin.append(resolver_objeto(_buscar_ficha(fichas, id_objeto), id_sala))
+    return botin
+
+
 def _armar_sala(contenido: dict, fichas: list[dict], numero_sala: int):
     """Resuelve enemigos, objetos y trampas de UNA sala a partir de su
     colocación (/contenido) y de las fichas ya disponibles."""
@@ -157,7 +188,9 @@ def resolver_sala(cliente, cache, cripta_id: str, numero_sala: int):
         raise ValueError(f"La API no devolvió contenido para la sala {numero_sala}")
     contenido = resultado[0]
  
-    fichas = _obtener_fichas(_ids_necesarios(contenido), cliente, cache)
+    ids = _ids_necesarios(contenido)
+    fichas = _obtener_fichas(ids, cliente, cache)
+    fichas = fichas + _obtener_fichas(_ids_de_botin([contenido], fichas, ids), cliente, cache)
     return _armar_sala(contenido, fichas, numero_sala)
  
  
@@ -181,6 +214,7 @@ def resolver_salas(cliente, cache, cripta_id: str, numeros: list[int]):
                 ids.append(id_catalogo)
  
     fichas = _obtener_fichas(ids, cliente, cache)
+    fichas = fichas + _obtener_fichas(_ids_de_botin(contenidos, fichas, ids), cliente, cache)
  
     resultado = []
     posicion = 0

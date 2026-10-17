@@ -3,7 +3,7 @@ from DTO.SalaDTO import *
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import JugadorDTO, EnemigoDTO
 from DTO.FinPartidaDTO import FinPartidaDTO
-from Logica.GestorEventos import GestorEventos
+from Logica.GestorEventos import GestorEventos, PERIODO_REGENERACION
 from Logica.ActorLogica import ActorLogica
 from Logica.JugadorLogica import JugadorLogica
 from DTO.LogPartidaDTO import LogPartidaDTO
@@ -13,18 +13,20 @@ from Logica.RelojVirtual import RelojVirtual
 from Logica.RetrocesoLogica import RetrocesoLogica
 from DTO.CambioDTO import CambioDTO
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
-from adaptadores.servicioCripta import ServicioCripta
+from Logica.FuenteCripta import FuenteCripta
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
 from Logica import EstadoGuardadoLogica
 class EstadoJuegoLogica:
-    def __init__(self,semilla: int = None, cripta: str = None, comunicacion: ServicioCripta | None = None):
+    def __init__(self,semilla: int = None, cripta: str = None, comunicacion: FuenteCripta | None = None):
         self.tiempoMovimientoJugador = 0
+        self.accionesJugador = 0       # acciones del jugador que consumieron tiempo virtual (§2.12)
         # Quien arma el juego entrega el servicio de criptas ya listo; al modelo no le importa de dónde saca los datos.
         self.comunicacion = comunicacion
         
         self.iniciado = False
         self.fin = False
         self.motivoFin = None
+        self.idCripta = None           # se fija al iniciar o restaurar una partida; None = todavía no hay cripta elegida
         self.precargaInicialHecha = False
         self.registrador_log = None    # opcional: algo con agregar(linea); el modelo solo le avisa cada acción
         
@@ -70,7 +72,9 @@ class EstadoJuegoLogica:
             jugador,
             self.ingresarEnSala,
             self.semilla,
+            obtener_botin=self.comunicacion.objetos_que_suelta,
         )
+        self.gestorEventos.reloj = relojvirtual
         self.jugadorLogica = JugadorLogica(jugador,self.semilla,self.gestorEventos.azar)
         self.logEventos.vaciar()
         self.idCripta = cripta
@@ -93,6 +97,14 @@ class EstadoJuegoLogica:
         return self.fin, (
             self.motivoFin if self.motivoFin is not None else "No ha terminado"
         )
+
+    def reporteSolicitudes(self):
+        """Reporte de red de la cripta que se está jugando (§5.1): solicitudes realizadas, presupuesto,
+        aciertos y fallos de caché. Solo lee contadores, así que consultarlo no cuesta ninguna solicitud.
+        Devuelve None mientras todavía no se haya elegido una cripta."""
+        if self.comunicacion is None or self.idCripta is None:
+            return None
+        return self.comunicacion.reporte(self.idCripta)
         
     def exportar_log(self) -> LogPartidaDTO:
         """Log de reproducción de la partida en datos simples; no toca archivos."""
@@ -275,8 +287,15 @@ class EstadoJuegoLogica:
             raise ValueError("El juego no ha sido iniciado")
         if(sala < 1 or sala >= len(self.estadoJuego.salas)):
             raise ValueError("No existe la sala que se desea consultar")
-        if(self.estadoJuego.salas[sala] is not None):
-            return self.estadoJuego.salas[sala]
+        if(self.estadoJuego.salas[sala] is None):
+            self._cargarSala(sala)
+        sala_cargada = self.estadoJuego.salas[sala]
+        if sala == self.estadoJuego.jugador.id_sala_actual:
+            self._activarEnemigos(sala_cargada)     # el jugador está (o acaba de entrar) aquí: los dormidos despiertan
+        return sala_cargada
+
+    def _cargarSala(self, sala: int) -> None:
+        """Incorpora el contenido de la sala al modelo. Cargar una sala NO activa a sus enemigos (§2.4)."""
         # El jugador acaba de entrar (o empieza aquí): se trae el contenido por adelantado y en lotes antes de armar la sala.
         # Una sola vez, al inicio, se precarga profundo (3); después el entorno cercano (profundidad 2),
         # y precargar_vecinas únicamente pide las salas que todavía no estaban guardadas. Si la sala la carga un enemigo
@@ -289,21 +308,32 @@ class EstadoJuegoLogica:
                 self.precargaInicialHecha = True
         self.estadoJuego.salas[sala] = self.comunicacion.construir_sala(self.idCripta,sala) 
         sala_cargada = self.estadoJuego.salas[sala]
-        with self.jugadorLogica.retroceso.sin_registro():
-            for enemigo in sala_cargada.enemigos:
-                self.estadoJuego.catalogo_enemigos.append(enemigo)
-                self.cargarEvento(
-                    EventoDTO(
-                        100,
-                        0,
-                        enemigo,
-                        "ACCION_ENEMIGO",
-                        [self.estadoJuego.jugador]
-                    )
-                )
+        for enemigo in sala_cargada.enemigos:
+            self.estadoJuego.catalogo_enemigos.append(enemigo)
         for objeto in sala_cargada.objetos:
             self.estadoJuego.catalogo_objetos.append(objeto)
-        return sala_cargada
+
+    def _activarEnemigos(self, sala: SalaDTO) -> None:
+        """Activa a los enemigos dormidos (y vivos) de `sala`, en orden ascendente de id de instancia, para que reciban
+        números de secuencia deterministas (§2.4). Su primera acción se programa desde el reloj actual con costo 100.
+        Un enemigo que ya está activo no se toca. Dentro de una acción del jugador, la activación se puede deshacer."""
+        pendientes = [e for e in sala.enemigos if not e.activo and e.vida_actual > 0]
+        while pendientes:
+            menor = pendientes[0]
+            for candidato in pendientes:
+                if candidato.id_instancia < menor.id_instancia:
+                    menor = candidato
+            pendientes.remove(menor)
+            menor.activo = True
+            self.jugadorLogica.retroceso.registrar_cambio([CambioDTO(
+                tipo_accion="ACTIVAR_ENEMIGO",
+                objeto_afectado=menor,
+                valor_anterior=False,
+                valor_nuevo=True,
+            )])
+            self.cargarEvento(EventoDTO(100, 0, menor, "ACCION_ENEMIGO", [self.estadoJuego.jugador]))
+            if menor.regeneracion > 0:      # §2.10: recupera vida cada PERIODO_REGENERACION mientras esté activo y vivo
+                self.cargarEvento(EventoDTO(PERIODO_REGENERACION, 0, None, "REGENERAR", [menor]))
 
     #TODO va a revisar la seccion del vector de la memoria
     #si la sala está (no es None) la devuelve
@@ -321,60 +351,38 @@ class EstadoJuegoLogica:
             raise ValueError("El juego no ha sido iniciado")
         return self.jugadorLogica.tiene_llave(id_llave)
 
-    def _siguienteAccion(self):
-        if not self.iniciado:
-            raise ValueError("El juego no ha sido iniciado")
-        if self.fin:
-            raise ValueError("El juego ha finalizado, no se generan más acciones")
-        respuesta = None
-        while self.fin is False:
-            evento = self.estadoJuego.reloj.desencolar()
-
-            if not evento:
+    def _avanzarHastaProximoTurno(self) -> None:
+        """Ejecuta, en orden, los eventos que ocurren mientras el jugador espera su próximo turno (§2.3, §2.5).
+        Termina sacando el evento TURNO_JUGADOR: el reloj queda en el instante en que el jugador vuelve a decidir.
+        Si la partida termina por el camino (el jugador muere), se corta ahí: el reloj se queda en ese instante y el
+        turno NO se saca, así el tiempo final es el de la muerte y los eventos posteriores no se ejecutan."""
+        reloj = self.estadoJuego.reloj
+        jugador = self.estadoJuego.jugador
+        while not self.fin:
+            siguiente = reloj.siguiente()
+            if siguiente is None:
                 break
-
+            if siguiente.tipo_accion == "TURNO_JUGADOR":
+                reloj.desencolar()
+                return
+            evento = reloj.desencolar()
             print(
                 f"Evento: {evento.tipo_accion} | "
                 f"Tiempo: {evento.tiempo_ejecucion}"
             )
-            jugador = self.estadoJuego.jugador
             velocidad_antes = ActorLogica.velocidad_efectiva(jugador)
             accion = self.gestorEventos.procesar_evento(evento)
-            if not GestorEventos.es_uso_de_pergamino(evento):
-                # Si un efecto (una poción o su vencimiento) cambió la velocidad del jugador, la acción que ya
-                # tenía programada conserva el progreso realizado (§2.3). El pergamino ya restaura toda la agenda.
-                velocidad_despues = ActorLogica.velocidad_efectiva(jugador)
-                if velocidad_despues != velocidad_antes:
-                    self.estadoJuego.reloj.reajustar_velocidad(jugador, velocidad_antes, velocidad_despues)
-            self._registrarEnBitacora(accion)
-            respuesta = accion
-            print(accion.mensaje)
-
-            # Entrar a una sala con trampas armadas las activa justo al terminar el movimiento, antes del siguiente evento
-            resultados_trampas = []
-            if evento.tipo_accion == "MOVER_JUGADOR" and evento.actor is jugador and accion.exito:
-                resultados_trampas = self.gestorEventos.activar_trampas(self.estadoJuego.salas[jugador.id_sala_actual])
-                for resultado in resultados_trampas:
-                    self._registrarEnBitacora(resultado)
-                    print(resultado.mensaje)
-                if resultados_trampas:
-                    mensajes = "\n".join(r.mensaje for r in resultados_trampas)
-                    respuesta = ResultadoEventoDTO(accion.exito, f"{accion.mensaje}\n{mensajes}", accion.eventoResultado, accion.puntaje)
-
+            # Si un efecto (el vencimiento de una poción) cambió la velocidad del jugador, su turno ya programado
+            # conserva el progreso realizado (§2.3).
+            velocidad_despues = ActorLogica.velocidad_efectiva(jugador)
+            if velocidad_despues != velocidad_antes:
+                reloj.reajustar_velocidad(jugador, velocidad_antes, velocidad_despues)
+            if accion.mensaje:              # los eventos silenciosos (p. ej. regenerar con la vida llena) no ensucian la bitácora
+                self._registrarEnBitacora(accion)
+                print(accion.mensaje)
             self._comprobarFinal()
-            if not self.fin and (
-                accion.eventoResultado is not None
-            ):
+            if not self.fin and accion.eventoResultado is not None:
                 self.cargarEvento(accion.eventoResultado)
-            if not self.fin:
-                for resultado in resultados_trampas:
-                    if resultado.eventoResultado is not None:
-                        self.cargarEvento(resultado.eventoResultado)
-            if evento.actor is self.estadoJuego.jugador:
-                self._sumarPuntaje(accion.puntaje)
-                break
-
-        return respuesta
 
     def _registrarEnBitacora(self, accion: ResultadoEventoDTO):
         descartado = self.logEventosJuego.agregar_evento(accion)
@@ -437,14 +445,63 @@ class EstadoJuegoLogica:
         return self.estadoJuego.reloj.encolar(self._intervalo(evento),evento.actor,evento.tipo_accion,evento.datos_extra)
 
     def accionJugador(self, evento: EventoDTO):
+        """El jugador decide en el instante actual del reloj y su acción ocurre AHORA (§2.3). El costo (que viene en
+        evento.tiempo_ejecucion) solo sirve para programar su próximo turno. Después se ejecuta todo lo que pasa antes
+        de ese turno. Una acción rechazada no cambia nada ni consume tiempo (Apéndice B)."""
         if not self.iniciado:
             raise ValueError("El juego no ha sido iniciado")
-        self.tiempoMovimientoJugador = self.cargarEvento(evento)
-        respuesta = self._siguienteAccion()
+        if self.fin:
+            raise ValueError("El juego ha finalizado, no se generan más acciones")
+        costo = evento.tiempo_ejecucion
+        if not isinstance(costo, int) or isinstance(costo, bool) or costo <= 0:
+            raise ValueError("El costo de la acción del jugador debe ser un entero positivo")
+        reloj = self.estadoJuego.reloj
+        jugador = self.estadoJuego.jugador
+
+        print(f"Evento: {evento.tipo_accion} | Tiempo: {reloj.tiempo_actual}")
+        accion = self.gestorEventos.procesar_evento(evento)
+        self._registrarEnBitacora(accion)
+        print(accion.mensaje)
+        if accion.exito is False:
+            return accion                       # rechazada: sin tiempo, sin historial y fuera del log
+        if GestorEventos.es_uso_de_pergamino(evento):
+            self._registrarAccionEnLog(evento)  # el retroceso no consume tiempo, pero sí es parte de la partida
+            self.tiempoMovimientoJugador = reloj.tiempo_actual
+            return accion
+
+        respuesta = accion
+        resultados_trampas = []
+        # Entrar a una sala con trampas armadas las activa justo al terminar el movimiento, antes del siguiente evento
+        if evento.tipo_accion == "MOVER_JUGADOR" and accion.exito:
+            resultados_trampas = self.gestorEventos.activar_trampas(self.estadoJuego.salas[jugador.id_sala_actual])
+            for resultado in resultados_trampas:
+                self._registrarEnBitacora(resultado)
+                print(resultado.mensaje)
+            if resultados_trampas:
+                mensajes = "\n".join(r.mensaje for r in resultados_trampas)
+                respuesta = ResultadoEventoDTO(accion.exito, f"{accion.mensaje}\n{mensajes}", accion.eventoResultado, accion.puntaje)
+
+        self.accionesJugador += 1
+        self._sumarPuntaje(accion.puntaje)
+        self._comprobarFinal()
+        if not self.fin:
+            if accion.eventoResultado is not None:
+                self.cargarEvento(accion.eventoResultado)
+            for resultado in resultados_trampas:
+                if resultado.eventoResultado is not None:
+                    self.cargarEvento(resultado.eventoResultado)
+            # El próximo turno usa la velocidad con que el jugador termina esta acción (p. ej. la que dio una poción)
+            intervalo = RelojVirtual.intervalo_por_velocidad(costo, ActorLogica.velocidad_efectiva(jugador))
+            reloj.programar(intervalo, jugador, "TURNO_JUGADOR", [])
+            self._avanzarHastaProximoTurno()
+        self.tiempoMovimientoJugador = reloj.tiempo_actual
+        self._registrarAccionEnLog(evento)
+        return respuesta
+
+    def _registrarAccionEnLog(self, evento: EventoDTO) -> None:
         self.logEventos.registrar_evento(evento)
         if self.registrador_log is not None:
             self.registrador_log.agregar(self.logEventos.cola.accion)
-        return respuesta
 
     def obtenerPuntaje(self) -> int:
         return self.estadoJuego.puntaje
@@ -460,8 +517,9 @@ class EstadoJuegoLogica:
 
         return FinPartidaDTO(
             self.idCripta,
-            "1.0",
-            self.logEventosJuego.imprimir_mensajes(),
+            self.comunicacion.version_cripta(self.idCripta) if self.comunicacion is not None else None,
+            self.accionesJugador,
             self.jugadorLogica.enemigos_eliminados(),
             self.estadoJuego.reloj.tiempo_actual,
+            not self.jugadorLogica.esta_muerto(),
         )

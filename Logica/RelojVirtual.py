@@ -48,6 +48,14 @@ class RelojVirtual:
 
     def encolar(self, intervalo: int, actor: object , tipo_accion: str, datos_extra: list | None = None) -> int:
         """Calcula el tiempo futuro y coloca el evento en la posición correcta del Heap. Devuelve el tiempo calculado"""
+        return self.programar(intervalo, actor, tipo_accion, datos_extra).tiempo_ejecucion
+
+    def siguiente(self) -> EventoDTO | None:
+        """El evento que se ejecutaría a continuación, sin sacarlo."""
+        return self.heap[0] if self.heap else None
+
+    def programar(self, intervalo: int, actor: object , tipo_accion: str, datos_extra: list | None = None) -> EventoDTO:
+        """Igual que encolar, pero devuelve el evento creado."""
         self.secuencia_actual += 1
         tiempo_futuro = self.tiempo_actual + intervalo
         
@@ -62,7 +70,7 @@ class RelojVirtual:
         self.insertar_evento(nuevo_evento)
         if self.retroceso is not None:
             self.retroceso.registrar_encolado(nuevo_evento)
-        return tiempo_futuro
+        return nuevo_evento
 
     def insertar_evento(self, evento: EventoDTO) -> None:
         evento.posicion = len(self.heap)

@@ -1,6 +1,7 @@
 import argparse
 import os
 import sys
+import gc
 
 from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
 from Controlador.ControladorJuego import ControladorJuego
@@ -24,6 +25,10 @@ def leer_argumentos(argv=None) -> argparse.Namespace:
                         help="juega solo con los datos guardados en disco, sin conectarse a la red")
     parser.add_argument("--cache-size", type=_tamano_de_cache, default=TAMANO_CACHE, metavar="N",
                         help=f"cantidad de fichas del catálogo que se mantienen en memoria (por defecto {TAMANO_CACHE})")
+    parser.add_argument("--bench", nargs="?", const="todo", metavar="BLOQUES",
+                        help="mide el rendimiento con cargas sintéticas, sin red ni vista (todos los bloques, o una lista "
+                             "separada por comas: agenda, cache, inventario, retroceso, ordenamiento, guardado, bitacora, ciclo)")
+    parser.add_argument("--bench-csv", metavar="ARCHIVO.csv", help="con --bench, guarda además los resultados en un CSV")
     parser.add_argument("--replay", metavar="PARTIDA.log",
                         help=f"reproduce una partida grabada, sin pedir nada al usuario (el log debe estar en {CARPETA_LOGS}/)")
     return parser.parse_args(argv)
@@ -42,8 +47,30 @@ def reproducir(servicio: EstadoJuegoServicio, archivo: str) -> int:
     return 0
 
 
+def mostrar_reporte(servicio: EstadoJuegoServicio) -> None:
+    """§5.1: al terminar se informan solicitudes, presupuesto y aciertos/fallos de caché.
+    Solo lee contadores (no hace solicitudes) y nunca debe tapar cómo terminó la partida."""
+    try:
+        reporte = servicio.reporteSolicitudes()
+    except Exception as error:
+        print(f"No se pudo generar el reporte de solicitudes: {error}", file=sys.stderr)
+        return
+    if reporte is not None:                      # None = nunca se llegó a elegir una cripta
+        print("\n--- Reporte de solicitudes ---")
+        print(reporte.texto())
+UMBRAL_GC = (50_000, 20, 100)
+
+def ajustar_recolector_de_basura() -> None:
+    gc.set_threshold(*UMBRAL_GC)
+
 def main(argv=None) -> int:
     args = leer_argumentos(argv)
+    ajustar_recolector_de_basura()           # vale para el juego, --replay y --bench
+    if args.bench is not None:               # --bench no usa la red ni crea la vista interactiva
+        from bench import ejecutar as ejecutar_bench
+        bloques = None if args.bench == "todo" else [b.strip() for b in args.bench.split(",") if b.strip()]
+        return ejecutar_bench(bloques, args.bench_csv)
+    servicio = None
     try:
         # El servicio de cripta se arma UNA vez aquí (un solo cliente de red y un solo UUID por ejecución)
         # y se entrega al juego; --offline y --cache-size se aplican en este punto.
@@ -60,6 +87,9 @@ def main(argv=None) -> int:
     except (ValueError, OSError, RuntimeError) as error:
         print(f"Error: {error}", file=sys.stderr)
         return 1
+    finally:
+        if servicio is not None:                 # también si la partida terminó por un error o con Ctrl+C
+            mostrar_reporte(servicio)
 
 
 if __name__ == "__main__":

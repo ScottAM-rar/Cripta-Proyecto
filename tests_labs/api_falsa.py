@@ -85,6 +85,8 @@ class HttpFalso:
              "suelta": ["itm_pocion_menor"]},
             {"id": "ent_guardian_oseo", "clase": "enemigo", "nombre": "Guardián óseo", "vida_max": 20,
              "ataque": 7, "defensa": 3, "velocidad": 80, "comportamiento": "guardián", "suelta": []},
+            {"id": "itm_pocion_menor", "clase": "pocion", "nombre": "Poción menor", "peso": 1, "valor": 10,
+             "cura": 8, "modificador_velocidad": 0, "duracion": 0},
         ]
         devueltas = []
         for ficha in fichas:

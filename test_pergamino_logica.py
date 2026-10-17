@@ -4,7 +4,7 @@ from DTO.ActorDTO import EnemigoDTO, JugadorDTO
 from DTO.CambioDTO import CambioDTO
 from DTO.EstadoJuegoDTO import EstadoJuego
 from DTO.EventoDTO import EventoDTO
-from DTO.Objeto import Arma, Armadura, Objeto, PergaminoRetroceso
+from DTO.Objeto import Arma, Objeto, PergaminoRetroceso
 from DTO.SalaDTO import SalaDTO, SalidaDTO
 from DTO.TrampaDTO import Trampa
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
@@ -258,14 +258,15 @@ class TestPergaminoLogica(unittest.TestCase):
         self.accion_del_jugador(tiempo=400)
         self.assertEqual(self.retroceso.cantidad_acciones, 2)
 
-    def test_una_accion_fallida_o_sin_efecto_tambien_cuenta(self):
+    def test_una_accion_rechazada_no_cuenta(self):
         self.jugador.id_sala_actual = 1
         self.accion_del_jugador()
-        self.gestor.procesar_evento(
+        resultado = self.gestor.procesar_evento(
             EventoDTO(100, 2, self.jugador, "MOVER_JUGADOR", [self.sala_anterior, "norte"])
         )
 
-        self.assertEqual(self.retroceso.cantidad_acciones, 2)
+        self.assertFalse(resultado.exito)
+        self.assertEqual(self.retroceso.cantidad_acciones, 1)
 
     def test_el_uso_del_pergamino_no_abre_una_accion(self):
         pergamino = PergaminoRetroceso("p", "Pergamino", 1, 1)

@@ -8,7 +8,7 @@ los nombra por su posición en esa tabla, así al restaurar vuelven a ser el mis
 from __future__ import annotations
 from dataclasses import dataclass, field
 
-VERSION_ESTADO = 1   # versión de la estructura de este DTO
+VERSION_ESTADO = 2   # versión de la estructura de este DTO
 
 
 @dataclass
@@ -32,6 +32,8 @@ class EnemigoGuardadoDTO:
     velocidad: int
     id_sala_actual: int
     suelta: list = field(default_factory=list)
+    activo: bool = False
+    regeneracion: int = 0
 
 
 @dataclass
@@ -42,6 +44,7 @@ class TrampaGuardadaDTO:
     daño: int
     rearme: int
     armada: bool
+    veneno: int = 0
 
 
 @dataclass
@@ -127,6 +130,7 @@ class EstadoGuardadoDTO:
     semilla: int = 0
     estado_azar: list = field(default_factory=list)    # random.Random.getstate() aplanado: [versión, [ints...], gauss]
     puntaje: int = 0
+    acciones_jugador: int = 0             # acciones que consumieron tiempo virtual (tabla de puntajes)
     fin: bool = False
     motivo_fin: str | None = None
     offline: bool = False                 # lo completa quien conozca el origen de los datos (el modelo no lo sabe)

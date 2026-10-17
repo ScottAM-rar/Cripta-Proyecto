@@ -107,9 +107,21 @@ class PergaminoLogica:
                 jugador: JugadorDTO = cambio.objeto_afectado
                 jugador.antorcha_encendida = cambio.valor_anterior
                 
+            case "ESTADO_VENENO":       # (envenenado, pulso pendiente) antes del cambio; el evento se reinserta con EVENTO_DESENCOLADO
+                jugador: JugadorDTO = cambio.objeto_afectado
+                jugador.veneno, jugador.pulso_veneno = cambio.valor_anterior
+
             case "APLICAR_ANTIDOTO":
                 jugador: JugadorDTO = cambio.objeto_afectado
                 jugador.veneno = cambio.valor_anterior
+
+            case "BOTIN_ENEMIGO":       # el enemigo revive (ACTUALIZAR_VIDA): lo que soltó deja de estar en el suelo
+                sala = cambio.objeto_afectado
+                for objeto in cambio.elemento:
+                    for posicion in range(len(sala.objetos)):
+                        if sala.objetos[posicion] is objeto:
+                            del sala.objetos[posicion]
+                            break
 
             case "CAMBIAR_PUERTA":
                 salida = cambio.objeto_afectado
@@ -136,6 +148,9 @@ class PergaminoLogica:
 
             case "ENEMIGOS_ELIMINADOS":
                 cambio.objeto_afectado.enemigos_eliminados = cambio.valor_anterior
+
+            case "ACTIVAR_ENEMIGO":
+                cambio.objeto_afectado.activo = cambio.valor_anterior
 
             case "ULTIMO_PASO":
                 cambio.objeto_afectado.ultimo_paso = cambio.valor_anterior

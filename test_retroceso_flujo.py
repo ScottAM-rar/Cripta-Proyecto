@@ -142,11 +142,13 @@ class TestAgrupacionDeAcciones(PruebaRetroceso):
         self.assertTrue(salida.cerrada)
         self.assertEqual(RetrocesoLogica().cantidad_acciones, 0)
 
-    def test_accion_fallida_del_jugador_cuenta(self):
+    def test_accion_rechazada_no_consume_tiempo_ni_cuenta(self):
         logica = self.nueva()
+        tiempo = logica.estadoJuego.reloj.tiempo_actual
         resultado = self.mover(logica, "sur")
         self.assertFalse(resultado.exito)
-        self.assertEqual(RetrocesoLogica().cantidad_acciones, 1)
+        self.assertEqual(RetrocesoLogica().cantidad_acciones, 0)
+        self.assertEqual(logica.estadoJuego.reloj.tiempo_actual, tiempo)
 
     def test_solo_las_acciones_del_jugador_abren_grupo(self):
         logica = self.nueva()
@@ -207,16 +209,16 @@ class TestRestauracionExacta(PruebaRetroceso):
 
         despues = self.foto(logica)
         self.assertEqual(despues, antes)
-        self.assertEqual(logica.estadoJuego.reloj.tiempo_actual, 100)
+        self.assertEqual(logica.estadoJuego.reloj.tiempo_actual, 0)
         mensajes = [r.mensaje for r in logica.logEventosJuego.obtener_eventos()]
         self.assertEqual(mensajes, mensajes_antes + [MENSAJE_PERGAMINO])
 
     def test_restaura_todo_lo_ocurrido_despues_de_la_accion(self):
         logica = self.nueva()
         self.mover(logica, "norte")
-        self.esperar(logica)
         referencia = self.foto(logica)
         tiempo = logica.estadoJuego.reloj.tiempo_actual
+        self.esperar(logica)
 
         self.usar_pergamino(logica)
 
@@ -233,6 +235,7 @@ class TestRestauracionExacta(PruebaRetroceso):
         for otro in sala.enemigos[1:]:
             otro.vida_actual = 0
         puntaje = logica.estadoJuego.puntaje
+        mensajes_antes_del_ataque = [r.mensaje for r in logica.logEventosJuego.obtener_eventos()]
 
         self.jugar(logica, "ATACAR", [enemigo])
         ultimo_paso_con_ataque = sala.ultimo_paso
@@ -247,7 +250,7 @@ class TestRestauracionExacta(PruebaRetroceso):
         self.assertEqual(enemigo.vida_actual, 1)
         self.assertLess(sala.ultimo_paso, ultimo_paso_con_ataque)
         mensajes = [r.mensaje for r in logica.logEventosJuego.obtener_eventos()]
-        self.assertEqual(mensajes, mensajes_con_ataque[:-1] + [MENSAJE_PERGAMINO])
+        self.assertEqual(mensajes, mensajes_antes_del_ataque + [MENSAJE_PERGAMINO])
 
 class TestEventosDelEntorno(PruebaRetroceso):
     def test_enemigo_revivido_sigue_activo(self):
@@ -289,8 +292,8 @@ class TestEventosDelEntorno(PruebaRetroceso):
         self.assertTrue(salida.cerrada)
         self.assertEqual(self.pendientes(logica, "CERRAR_PUERTA"), [])
 
-        self.jugar(logica, "ABRIR_PUERTA", [sala, "norte"])
         apertura = logica.estadoJuego.reloj.tiempo_actual
+        self.jugar(logica, "ABRIR_PUERTA", [sala, "norte"])
         for _ in range(8):
             self.esperar(logica)
             if salida.cerrada:
@@ -425,13 +428,13 @@ class TestTrampas(PruebaRetroceso):
         jugador = logica.estadoJuego.jugador
         trampa = logica.estadoJuego.salas[1].trampas[0]
         self.mover(logica, "norte")
+        vida_antes_de_entrar = jugador.vida_actual
         self.mover(logica, "sur")
         self.assertFalse(trampa.armada)
-        vida_tras_entrar = jugador.vida_actual
         self.usar_pergamino(logica)
         self.assertTrue(trampa.armada)
-        # solo se devuelve lo que hizo la trampa; los golpes de enemigos previos a la acción no pertenecen a ella
-        self.assertEqual(jugador.vida_actual, vida_tras_entrar + trampa.daño)
+        # la acción se ejecuta en t: se deshace la trampa y lo que ocurrió hasta la siguiente decisión
+        self.assertEqual(jugador.vida_actual, vida_antes_de_entrar)
         self.assertEqual(jugador.id_sala_actual, 2)
         self.assertEqual(self.pendientes(logica, "ARMAR_TRAMPA", "t-1"), [])
         self.assertEqual(self.pendientes(logica, "ACTIVAR_TRAMPA", "t-1"), [])
@@ -503,7 +506,9 @@ class TestSimulacionAleatoria(PruebaRetroceso):
         for enemigo in estado.catalogo_enemigos:
             self.assertEqual(ubicaciones.get(enemigo.id_instancia), [enemigo.id_sala_actual])
             if enemigo.vida_actual > 0:
-                self.assertEqual(len(self.pendientes(logica, "ACCION_ENEMIGO", enemigo.id_instancia)), 1)
+                # un enemigo activo tiene exactamente una acción pendiente; uno dormido (sala cargada pero sin visitar) ninguna
+                esperadas = 1 if enemigo.activo else 0
+                self.assertEqual(len(self.pendientes(logica, "ACCION_ENEMIGO", enemigo.id_instancia)), esperadas)
         for evento in estado.reloj.heap:
             self.assertGreaterEqual(evento.tiempo_ejecucion, estado.reloj.tiempo_actual)
 

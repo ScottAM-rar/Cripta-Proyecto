@@ -1,5 +1,5 @@
 from Logica.NodoInventario import NodoInventario
-from Controlador.ordenamiento import ordenar_adaptativo
+from Logica.ordenamiento import ordenar_adaptativo
 from DTO.Objeto import Arma, Armadura, Objeto
 
 CRITERIOS_VALIDOS = ("peso", "valor", "nombre")
@@ -246,8 +246,11 @@ class InventarioLogica:
         
     def insertar_en_indice_por_retroceso(self, indice: int, objeto: Objeto):
         """Restaura objetos eliminados en el inventario en la posición indicada"""
-        if indice < 0 or indice > self.cantidad_actual:
+        if indice < 0:
             raise ValueError("Indice fuera de rango")
+        # Si quedan menos objetos que cuando se usó (p. ej. el pergamino que se consume antes de revertir estaba delante),
+        # el objeto vuelve al final en vez de fallar
+        indice = min(indice, self.cantidad_actual)
 
         if self.cantidad_actual >= self.capacidad_maxima:
             raise ValueError("Indice fuera de la capacidad máxima del inventario")

@@ -1,7 +1,7 @@
 
 class VistaConsola:
    
-   def mostrar_juego(self, jugador, sala_actual):
+   def mostrar_juego(self, jugador, sala_actual, objeto_actual=None):
         
         print("\n" + "="*50)
         print(f"SALA: {sala_actual.nombre} (ID: {sala_actual.id})")
@@ -9,9 +9,18 @@ class VistaConsola:
         
         print("\n--- SALIDAS ---")
         for salida in sala_actual.salidas:
-            estado_puerta = "CERRADA (Requiere llave)" if salida.cerrada else "Abierta"
-            print(f"  > {salida.direccion.capitalize()} -> Sala {salida.sala_destino} [{estado_puerta}]")
-            
+            if salida.cerrada:
+                if salida.llave:
+                    estado_puerta = f"CERRADA (Requiere: {salida.llave})"
+                else:
+                    estado_puerta = "CERRADA"
+            else:
+                estado_puerta = "Abierta"
+
+            print(
+                f"  > {salida.direccion.capitalize()} -> "
+                f"Sala {salida.sala_destino} [{estado_puerta}]"
+            )
         print("\n--- OBJETOS EN LA SALA ---")
         if sala_actual.objetos:
             for obj in sala_actual.objetos:
@@ -51,12 +60,28 @@ class VistaConsola:
             print("  (Sin trampas)")
 
         print("\n--- INVENTARIO ---")
-        if hasattr(jugador, "inventario") and jugador.inventario and jugador.inventario.actual:
-            try:
-            
-                obj_actual = jugador.inventario.mostrar_objeto_actual()
-                print(f"  > Objeto Actual: {obj_actual.nombre} (ID: {getattr(obj_actual, 'id', 'N/A')})")
-            except ValueError:
-                print("  > Objeto Actual: [Inventario vacío]")
+        if objeto_actual is not None:
+            print(f"  > Objeto Actual: {objeto_actual.nombre} "
+                  f"(ID: {getattr(objeto_actual, 'id_catalogo', 'N/A')})")
         else:
             print("  > Objeto Actual: [Inventario vacío]")
+
+   def mostrar_puntajes(self, registros, limite=10, resaltar=None):
+        """Tabla de puntajes (§2.12): los `limite` mejores, ya ordenados. `resaltar` marca el registro recién guardado."""
+        print("\n" + "=" * 78)
+        print("TABLA DE PUNTAJES")
+        print("=" * 78)
+        if not registros:
+            print("Todavía no hay partidas registradas.")
+            print("=" * 78)
+            return
+        print(f"{'#':>3}  {'Nombre':<15}  {'Cripta':<10}  {'Vers.':<6}  {'Acc.':>5}  {'Enem.':>5}  {'Tiempo':>7}  Resultado")
+        for puesto, r in enumerate(registros[:limite], start=1):
+            marca = "  <-- tú" if r is resaltar or r == resaltar else ""
+            resultado = "Victoria" if r.victoria else "Derrota"
+            print(f"{puesto:>3}  {r.nombre:<15}  {r.id_cripta:<10}  {r.version_cripta:<6}  "
+                  f"{r.acciones_jugador:>5}  {r.enemigos_derrotados:>5}  {r.tiempo_final:>7}  {resultado}{marca}")
+        if resaltar is not None and resaltar in registros[limite:]:
+            puesto = registros.index(resaltar) + 1
+            print(f"  ...\n{puesto:>3}  {resaltar.nombre:<15}  (tu puesto)")
+        print("=" * 78)

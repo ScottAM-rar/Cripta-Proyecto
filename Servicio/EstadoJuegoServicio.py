@@ -2,17 +2,25 @@ from Logica.EstadoJuegoLogica import *
 from DTO.FinPartidaDTO import FinPartidaDTO
 from adaptadores.AlmacenPartidaBinario import AlmacenPartidaBinario
 from adaptadores.AlmacenLogTexto import AlmacenLogTexto
+from adaptadores.AlmacenPuntajes import AlmacenPuntajes, MAX_NOMBRE
+from DTO.RegistroPuntajeDTO import RegistroPuntajeDTO
+from Logica.ordenamiento import ordenar_adaptativo
 from adaptadores.fabrica import crear_servicio
 from adaptadores.extension import ruta_archivo, EXTENSION_PARTIDA, CARPETA_PARTIDAS
 
 
 class EstadoJuegoServicio:
+    MAX_NOMBRE_JUGADOR = MAX_NOMBRE      # largo máximo del nombre en la tabla de puntajes
+
     def __init__(self, semilla: int = None, cripta: str = None, comunicacion=None, offline: bool = False):
         self._offline = offline
         if cripta is not None and comunicacion is None:
             comunicacion = crear_servicio(offline=offline)
         self._estadoJuegoLogica = EstadoJuegoLogica(semilla, cripta, comunicacion)
         self._almacenLog: AlmacenLogTexto | None = None
+        self.almacenPuntajes = AlmacenPuntajes()       # reemplazable (p. ej. para pruebas con otra ruta)
+        self._puntajeRegistrado = False
+        self._esRepeticion = False
         if self._estadoJuegoLogica.iniciado:
             self._abrirLog(None)
 
@@ -48,6 +56,7 @@ class EstadoJuegoServicio:
         AlmacenLogTexto(nombre_log).comprobar_nombre()      # antes de empezar: un nombre repetido no deja la partida a medias
         self._asegurarServicio(offline)
         self._estadoJuegoLogica.iniciarJuego(cripta,semilla)
+        self._puntajeRegistrado = self._esRepeticion = False
         self._abrirLog(nombre_log)
 
     def _abrirLog(self, nombre: str | None) -> None:
@@ -69,6 +78,7 @@ class EstadoJuegoServicio:
         self._asegurarServicio()
         self._estadoJuegoLogica.registrador_log = None
         self._almacenLog = None
+        self._esRepeticion = True       # una repetición no es una partida nueva: no entra a la tabla de puntajes
         return self._estadoJuegoLogica.repetirPartida(log)
 
     def guardarPartida(self, nombre_archivo: str) -> None:
@@ -88,7 +98,21 @@ class EstadoJuegoServicio:
             self._offline = estado.offline
             self._asegurarServicio()        # se usa el mismo origen de datos con el que se guardó la partida
         self._estadoJuegoLogica.restaurar_estado(estado)
+        self._puntajeRegistrado = self._esRepeticion = False
         self._abrirLog(None)      # la partida cargada sigue en un log nuevo que ya incluye las acciones anteriores
+
+    def siguienteObjetoInventario(self) -> bool:
+        """Mueve el cursor del inventario al siguiente objeto. False si ya estaba en el último; ValueError si está vacío."""
+        return self._estadoJuegoLogica.obtenerJugador().inventario.siguiente_objeto()
+
+    def anteriorObjetoInventario(self) -> bool:
+        """Mueve el cursor del inventario al objeto anterior. False si ya estaba en el primero; ValueError si está vacío."""
+        return self._estadoJuegoLogica.obtenerJugador().inventario.anterior_objeto()
+
+    def objetoActualInventario(self):
+        """El objeto donde está el cursor del inventario, o None si el inventario está vacío."""
+        inventario = self._estadoJuegoLogica.obtenerJugador().inventario
+        return None if inventario.actual is None else inventario.mostrar_objeto_actual()
 
     def getJudador(self):
         return self._estadoJuegoLogica.obtenerJugador()
@@ -96,6 +120,35 @@ class EstadoJuegoServicio:
     def finPartida(self) -> FinPartidaDTO:
         return self._estadoJuegoLogica.finPartida()
 
+    def registrarPuntaje(self, nombre: str) -> RegistroPuntajeDTO:
+        """Guarda en la tabla de puntajes local la partida que acaba de terminar, a nombre de `nombre` (máx. 15 caracteres).
+        Falla si la partida no terminó, si es una repetición (--replay), si ya se registró o si el nombre no es válido."""
+        if self._esRepeticion:
+            raise ValueError("Una repetición no se registra en la tabla de puntajes")
+        if self._puntajeRegistrado:
+            raise ValueError("El puntaje de esta partida ya fue registrado")
+        fin = self._estadoJuegoLogica.finPartida()      # falla si la partida no ha terminado
+        registro = RegistroPuntajeDTO(
+            AlmacenPuntajes.validar_nombre(nombre), fin.id_Cripta, fin.vers_Cripta or "",
+            fin.acciones_jugador, fin.cantEnemigosDerrotados, fin.tiempoReloj, fin.victoria,
+        )
+        self.almacenPuntajes.agregar(registro)
+        self._puntajeRegistrado = True
+        return registro
+
+    def tablaPuntajes(self) -> list[RegistroPuntajeDTO]:
+        """La tabla de puntajes, del mejor al peor: primero las victorias, luego menos tiempo, menos acciones y más
+        enemigos derrotados."""
+        registros = self.almacenPuntajes.leer_todos()
+        return ordenar_adaptativo(
+            registros,
+            key=lambda r: (0 if r.victoria else 1, r.tiempo_final, r.acciones_jugador, -r.enemigos_derrotados),
+        )
+
     def terminado(self) -> tuple[bool, str]:
         return self._estadoJuegoLogica.terminado()
+
+    def reporteSolicitudes(self):
+        """Solicitudes de red, presupuesto y caché de la cripta en juego (§5.1), o None si aún no hay cripta."""
+        return self._estadoJuegoLogica.reporteSolicitudes()
     

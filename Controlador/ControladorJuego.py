@@ -11,6 +11,9 @@ class ControladorJuego:
     def iniciar(self):
         print("\n¡Bienvenido a Cripta!")
 
+        if input("¿Deseas ver la tabla de puntajes? (s/n): ").strip().lower() == 's':
+            self._mostrar_puntajes()
+
         # 1. PREGUNTAR SI DESEA CARGAR PARTIDA ANTES DE EMPEZAR
         cargar = input("¿Deseas cargar una partida guardada anterior? (s/n): ").strip().lower()
         partida_cargada = False
@@ -69,10 +72,16 @@ class ControladorJuego:
                 print("Error: No se pudo obtener el estado del jugador.")
                 break
                 
-            if jugador.vida_actual <= 0:
+            terminado, _ = self.servicio.terminado()
+            if terminado or jugador.vida_actual <= 0:
                 print("\n" + "=" * 50)
-                print("¡HAS MUERTO! Tu aventura en la cripta ha llegado a su fin.")
+                if jugador.vida_actual <= 0:
+                    print("¡HAS MUERTO! Tu aventura en la cripta ha llegado a su fin.")
+                else:
+                    print("¡HAS LLEGADO A LA SALA DE SALIDA! Has escapado de la cripta.")
                 print("=" * 50)
+                # El puntaje se registra antes de mostrar el historial: reproducirlo marca la partida como repetición
+                self._registrar_puntaje()
                 # 1. El log se fue grabando solo durante la partida
                 nombre_log = self.servicio.nombreLog()
                 if nombre_log:
@@ -105,7 +114,7 @@ class ControladorJuego:
                 
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
             
-            self.vista.mostrar_juego(jugador, sala_actual)
+            self.vista.mostrar_juego(jugador, sala_actual, self.servicio.objetoActualInventario())
 
             accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
             "\n usar[objeto actual],siguiente[objeto],anterior[objeto]," \
@@ -133,9 +142,59 @@ class ControladorJuego:
             else:
                 print("Acción no reconocida o comando inválido.")
 
+    def _registrar_puntaje(self):
+        """Pide el nombre del jugador y registra la partida terminada en la tabla de puntajes (§2.12)."""
+        maximo = self.servicio.MAX_NOMBRE_JUGADOR
+        print("\n--- REGISTRO DE PUNTAJE ---")
+        while True:
+            nombre = input(f"Ingresa tu nombre (máx. {maximo} caracteres): ").strip()
+            if not nombre:
+                print("El nombre no puede estar vacío.")
+                continue
+            if len(nombre) > maximo:
+                print(f"El nombre no puede pasar de {maximo} caracteres (tiene {len(nombre)}).")
+                continue
+            try:
+                registro = self.servicio.registrarPuntaje(nombre)
+                print("¡Puntaje registrado!")
+            except Exception as e:
+                print(f"No se pudo registrar el puntaje: {e}")
+                return
+            self._mostrar_puntajes(registro)
+            return
+
+    def _mostrar_puntajes(self, resaltar=None):
+        """Muestra la tabla de puntajes; un archivo dañado se informa sin detener el juego."""
+        try:
+            self.vista.mostrar_puntajes(self.servicio.tablaPuntajes(), resaltar=resaltar)
+        except Exception as e:
+            print(f"No se pudo leer la tabla de puntajes: {e}")
+
     def _mapear_entrada_a_evento(self, accion: str, sala_actual, jugador) -> EventoDTO | None:
-        # Movimiento de salas
+       # Movimiento de salas
         if accion in ["norte", "sur", "este", "oeste"]:
+            salida = next(
+                (
+                    salida for salida in sala_actual.salidas
+                    if salida.direccion.lower() == accion
+                ),
+                None
+            )
+
+            if salida is None:
+                print(f"No existe una salida hacia el '{accion}'.")
+                return "IGNORAR"
+
+            if salida.cerrada:
+                if salida.llave:
+                    print(
+                        f"La salida hacia el '{accion}' está cerrada. "
+                        f"Necesitas la llave: '{salida.llave}'."
+                    )
+                else:
+                    print(f"La salida hacia el '{accion}' está cerrada.")
+                return "IGNORAR"
+
             return EventoDTO(
                 tiempo_ejecucion=100,
                 id_secuencia=0,
@@ -181,49 +240,65 @@ class ControladorJuego:
                 datos_extra=[objetivo]
             )
                 
-     # Abrir puerta o salida bloqueada
+        # Abrir puerta o salida bloqueada
         elif accion == "abrir":
             if not hasattr(sala_actual, "salidas") or not sala_actual.salidas:
                 print("No hay salidas en esta sala.")
                 return "IGNORAR"
-            
-            # 1. Mostramos las salidas de la sala para que el jugador elija
+
+            # Mostramos únicamente las puertas cerradas
+            puertas_cerradas = [
+                salida for salida in sala_actual.salidas
+                if salida.cerrada
+            ]
+
+            if not puertas_cerradas:
+                print("No hay puertas cerradas en esta sala.")
+                return "IGNORAR"
+
             print("\n¿Qué puerta deseas abrir?")
-            for salida in sala_actual.salidas:
-                estado_puerta = "CERRADA" if salida.cerrada else "ABIERTA"
-                print(f"  - {salida.direccion} [{estado_puerta}]")
-            
-            direccion = input("Ingresa la dirección de la puerta que deseas abrir: ").strip().lower()
+            for salida in puertas_cerradas:
+                if salida.llave:
+                    print(
+                        f"  - {salida.direccion} "
+                        f"[CERRADA - Requiere: {salida.llave}]"
+                    )
+                else:
+                    print(f"  - {salida.direccion} [CERRADA]")
+
+            direccion = input(
+                "Ingresa la dirección de la puerta que deseas abrir: "
+            ).strip().lower()
+
             if not direccion:
                 print("Dirección no válida.")
                 return "IGNORAR"
-            
-            # 2. Buscamos la salida correspondiente
+
+            # Buscamos solamente entre las puertas cerradas mostradas
             salida_encontrada = None
-            for salida in sala_actual.salidas:
+            for salida in puertas_cerradas:
                 if getattr(salida, "direccion", "").lower() == direccion:
                     salida_encontrada = salida
                     break
-            
+
             if not salida_encontrada:
-                print(f"No hay ninguna salida hacia el '{direccion}'.")
+                print(f"No hay ninguna puerta cerrada hacia el '{direccion}'.")
                 return "IGNORAR"
-            
-            # 3. Verificamos si la salida ya está abierta
-            if not salida_encontrada.cerrada:
-                print(f"La puerta hacia el '{direccion}' ya está abierta.")
-                return "IGNORAR"
-            
-            # 4. Validación de llave mediante el servicio
+
+            # Validación de llave mediante el servicio
             id_llave_necesaria = salida_encontrada.llave
-            
+
             if id_llave_necesaria:
                 tiene_la_llave = self.servicio.tieneLlave(id_llave_necesaria)
+
                 if not tiene_la_llave:
-                    print(f"La puerta está cerrada. Necesitas la llave: '{id_llave_necesaria}' para poder abrirla.")
+                    print(
+                        f"La puerta está cerrada. Necesitas la llave: "
+                        f"'{id_llave_necesaria}' para poder abrirla."
+                    )
                     return "IGNORAR"
-            
-            # 5. GestorEventos espera [sala_actual, direccion].
+
+            # GestorEventos espera [sala_actual, direccion]
             return EventoDTO(
                 tiempo_ejecucion=50,
                 id_secuencia=0,
@@ -264,7 +339,7 @@ class ControladorJuego:
         # 1. MOVERSE AL SIGUIENTE OBJETO DEL INVENTARIO
         elif accion in ("siguiente", "sig"):
             try:
-                movido = jugador.inventario.siguiente_objeto()
+                movido = self.servicio.siguienteObjetoInventario()
                 if movido:
                     print("-> Te has movido al siguiente objeto del inventario.")
                 else:
@@ -276,7 +351,7 @@ class ControladorJuego:
         # 2. MOVERSE AL OBJETO ANTERIOR DEL INVENTARIO
         elif accion in ("anterior", "ant"):
             try:
-                movido = jugador.inventario.anterior_objeto()
+                movido = self.servicio.anteriorObjetoInventario()
                 if movido:
                     print("-> Te has movido al objeto anterior del inventario.")
                 else:
@@ -287,15 +362,9 @@ class ControladorJuego:
 
         # 3. USAR EL OBJETO ACTUAL
         elif accion == "usar":
-            if not hasattr(jugador, "inventario") or not jugador.inventario or jugador.inventario.actual is None:
+            obj_actual = self.servicio.objetoActualInventario()
+            if obj_actual is None:
                 print("Tu inventario está vacío.")
-                return "IGNORAR"
-            
-            try:
-                # Obtenemos directamente el objeto actual usando el método de tu compañero
-                obj_actual = jugador.inventario.mostrar_objeto_actual()
-            except ValueError as e:
-                print(f"-> {e}")
                 return "IGNORAR"
 
             return EventoDTO(
@@ -308,15 +377,9 @@ class ControladorJuego:
 
         # 4. SOLTAR EL OBJETO ACTUAL
         elif accion == "soltar":
-            if not hasattr(jugador, "inventario") or not jugador.inventario or jugador.inventario.actual is None:
+            obj_actual = self.servicio.objetoActualInventario()
+            if obj_actual is None:
                 print("Tu inventario está vacío.")
-                return "IGNORAR"
-            
-            try:
-                # Obtenemos el objeto actual que va a ser soltado
-                obj_actual = jugador.inventario.mostrar_objeto_actual()
-            except ValueError as e:
-                print(f"-> {e}")
                 return "IGNORAR"
 
             return EventoDTO(

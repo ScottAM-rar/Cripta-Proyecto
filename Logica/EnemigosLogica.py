@@ -28,15 +28,11 @@ class EnemigoLogica(ActorLogica):
             raise ValueError("No existe el comportamiento creado")
         self._comportamiento = comp
 
-    def mover_enemigo(self, sala_actual: SalaDTO, direccion: str) -> None:
-        respuesta = self._mover(self.enemigo, sala_actual, direccion)
-        if(respuesta.exito == True):
-            respuesta.mensaje = f"El enemigo {self.enemigo.id_instancia} se ha movido a la sala {self.enemigo.id_sala_actual}"
-        return respuesta
-
     def atacarJugador(self,jugador: ActorDTO):
         if jugador.vida_actual <= 0:
             return ResultadoEventoDTO(False, f"El enemigo {self.enemigo.id_instancia} no atacó al jugador ya que está muerto")
+        if self.enemigo.id_sala_actual != jugador.id_sala_actual:
+            return ResultadoEventoDTO(False, f"El enemigo {self.enemigo.id_instancia} no puede atacar: el jugador no está en su sala")
         self._atacar(self.enemigo, jugador, self.azar)
         return ResultadoEventoDTO(True,f"El enemigo {self.enemigo.id_instancia} ha atacado al jugador causando daño")
 
@@ -44,7 +40,7 @@ class EnemigoLogica(ActorLogica):
         if self.enemigo is None:
             raise ValueError("No se puede decidir acciones sobre un enemigo que no existe")
         if self.enemigo.vida_actual <= 0:
-            return ResultadoEventoDTO(False, "ESTA MUERTO")
+            return ResultadoEventoDTO(False, "")      # un muerto no actúa ni deja mensajes: su cadena de eventos termina aquí
         if jugador.id_sala_actual == self.enemigo.id_sala_actual:
             accion = self.atacarJugador(jugador)
         else:

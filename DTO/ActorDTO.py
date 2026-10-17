@@ -1,6 +1,5 @@
 from __future__ import annotations
 from dataclasses import dataclass, field, InitVar
-from collections import deque
 from DTO.Objeto import *
 from Logica.InventarioLogica import InventarioLogica
 
@@ -25,6 +24,7 @@ class JugadorDTO(ActorDTO):
     armadura: Armadura | None = None
     arma: Arma | None = None
     veneno: bool = False
+    pulso_veneno: object | None = field(default=None, repr=False, compare=False)   # próximo PULSO_VENENO pendiente en el reloj (para cancelarlo sin recorrer la agenda)
     modificador_velocidad: int = 0
     antorcha_encendida: bool = False
     antorcha_hasta: int = 0
@@ -42,3 +42,5 @@ class EnemigoDTO(ActorDTO):
     comportamiento: str
     vida_actual: int
     suelta: list[str] = field(default_factory=list)
+    regeneracion: int = 0   # vida que recupera cada PERIODO_REGENERACION mientras está activo y vivo (0 = no regenera)
+    activo: bool = False    # dormido hasta que el jugador entra a su sala (§2.4); un enemigo activo no vuelve a dormirse
