@@ -4,7 +4,7 @@ from __future__ import annotations
 import tempfile
 
 from adaptadores.AlmacenDisco import AlmacenDisco
-from adaptadores.bench_red import ClienteSintetico
+from adaptadores.bench_red_mejorado import ClienteSintetico
 from adaptadores.cache import CacheLRU
 from adaptadores.cliente_persistente import ClientePersistente
 from adaptadores.servicioCripta import ServicioCripta

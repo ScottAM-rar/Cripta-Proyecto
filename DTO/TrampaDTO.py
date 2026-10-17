@@ -9,5 +9,6 @@ class Trampa:
     daño: int
     rearme: int #Unidades virtuales para volver a armarse tras activarse
     armada: bool = True
+    veneno: int = 0   # daño por pulso del veneno que deja al jugador al activarse (0 = no envenena)
 
 

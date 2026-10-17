@@ -13,13 +13,13 @@ import sys
 import tempfile
 from datetime import datetime
 
-from bench import agenda, bitacora, ciclo, guardado, inventario, ordenamiento, retroceso
+from bench import agenda, bitacora, ciclo, guardado, inventario, ordenamiento, retroceso, salas
 from bench.datos import SEMILLA
 from bench.salida import escribir_csv, imprimir_tabla
 
 
 def _red(filas: list) -> None:
-    from adaptadores import bench_red
+    from adaptadores import bench_red_mejorado as bench_red
     bench_red_filas = []
     with tempfile.TemporaryDirectory() as raiz:
         bench_red.solicitudes_por_estrategia(bench_red_filas, raiz)
@@ -27,6 +27,7 @@ def _red(filas: list) -> None:
         bench_red.ficha_liberada(bench_red_filas, raiz)
         bench_red.guardado_en_lote(bench_red_filas, raiz)
         bench_red.planear_vecindad(bench_red_filas, raiz)
+        bench_red.cache_en_partida(bench_red_filas, raiz)
     for fila in bench_red_filas:
         filas.append(("Red, caché y disco (§4.2–§4.4, §5.1): " + str(fila[0]), fila[1], fila[2], fila[3]))
 
@@ -34,6 +35,7 @@ def _red(filas: list) -> None:
 BLOQUES = (
     ("agenda", agenda.ejecutar),
     ("cache", _red),
+    ("salas", salas.ejecutar),
     ("inventario", inventario.ejecutar),
     ("retroceso", retroceso.ejecutar),
     ("ordenamiento", ordenamiento.ejecutar),

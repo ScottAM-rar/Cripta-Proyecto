@@ -14,6 +14,9 @@ from Logica.TrampaLogica import TrampaLogica# from Logica.RetrocesoLogica import
 from Logica.ObjetoLogica import ObjetoLogica
 from Logica.PergaminoLogica import PergaminoLogica
 from DTO.CambioDTO import CambioDTO
+PERIODO_VENENO = 80          # el veneno hace daño cada 80 unidades (§2.10)
+PULSOS_VENENO = 5            # dura 400 unidades: pulsos en +80, +160, +240, +320 y +400
+PERIODO_REGENERACION = 200   # un enemigo con regeneración recupera vida cada 200 unidades (§2.10)
 #Aquí van a ir TODOS los eventos que se pueden manejar, para hacer un acción se va a consultar aquí
 
 
@@ -272,6 +275,7 @@ class GestorEventos:
                         valor_anterior=vida_enemigo_anterior,
                         valor_nuevo=evento.actor.vida_actual,
                     ))
+                res.mensaje = (res.mensaje or "") + self._resolver_muertes([(evento.actor, vida_enemigo_anterior)], cambios)
                 if cambios:
                     self.jugador_logica.retroceso.registrar_cambio(cambios)
                 return res
@@ -329,9 +333,73 @@ class GestorEventos:
                         valor_anterior=armada_anterior,
                         valor_nuevo=trampa.armada,
                     ))
+                resultado.mensaje += self._resolver_muertes(vidas_anteriores, cambios)
+                # Además del golpe, la trampa envenena, pero solo si el jugador no tiene ya un ciclo de veneno en marcha
+                if (resultado.exito and trampa.veneno > 0 and self.reloj is not None
+                        and jugador.id_sala_actual == salaTrampa.id and jugador.vida_actual > 0 and not jugador.veneno):
+                    cambios.append(self._envenenar(jugador, trampa.veneno))
+                    resultado.mensaje += (f" El jugador queda envenenado: pierde {trampa.veneno} de vida cada "
+                                          f"{PERIODO_VENENO} unidades durante {PERIODO_VENENO * PULSOS_VENENO}.")
                 if cambios:
                     self.jugador_logica.retroceso.registrar_cambio(cambios)
                 return resultado
+
+            case "PULSO_VENENO":
+                # Datos adicionales [daño, pulsos que quedan]. El actor es None: el intervalo es exacto, no depende de la velocidad
+                self._validar_cantidad_datos(evento, 2)
+                daño, restantes = evento.datos_extra
+                if not jugador.veneno:
+                    return ResultadoEventoDTO(False, "")        # el antídoto ya lo canceló: nada que aplicar
+                vida_anterior = jugador.vida_actual
+                estado_anterior = (jugador.veneno, jugador.pulso_veneno)
+                jugador.vida_actual = max(0, jugador.vida_actual - daño)
+                restantes -= 1
+                if restantes > 0 and jugador.vida_actual > 0:
+                    jugador.pulso_veneno = self.reloj.programar(PERIODO_VENENO, None, "PULSO_VENENO", [daño, restantes])
+                    mensaje = f"El veneno hiere al jugador y le quita {daño} de vida (quedan {restantes} pulsos)."
+                else:
+                    jugador.veneno = False
+                    jugador.pulso_veneno = None
+                    mensaje = f"El veneno hiere al jugador y le quita {daño} de vida. El veneno se disipa."
+                cambios = [CambioDTO(
+                    tipo_accion="ACTUALIZAR_VIDA",
+                    objeto_afectado=jugador,
+                    valor_anterior=vida_anterior,
+                    valor_nuevo=jugador.vida_actual,
+                ), CambioDTO(
+                    tipo_accion="ESTADO_VENENO",
+                    objeto_afectado=jugador,
+                    valor_anterior=estado_anterior,
+                    valor_nuevo=(jugador.veneno, jugador.pulso_veneno),
+                )]
+                self.jugador_logica.retroceso.registrar_cambio(cambios)
+                return ResultadoEventoDTO(True, mensaje)
+
+            case "REGENERAR":
+                # Datos adicionales [enemigo]. Solo regenera mientras está activo y vivo; al morir la cadena se corta
+                self._validar_cantidad_datos(evento, 1)
+                enemigo = evento.datos_extra[0]
+                if not isinstance(enemigo, EnemigoDTO):
+                    raise TypeError("El objetivo de REGENERAR debe ser un enemigo")
+                if enemigo.vida_actual <= 0 or not enemigo.activo or enemigo.regeneracion <= 0:
+                    return ResultadoEventoDTO(False, "")
+                siguiente = EventoDTO(PERIODO_REGENERACION, 0, None, "REGENERAR", [enemigo])
+                vida_anterior = enemigo.vida_actual
+                enemigo.vida_actual = min(enemigo.vida_max, enemigo.vida_actual + enemigo.regeneracion)
+                if enemigo.vida_actual == vida_anterior:
+                    return ResultadoEventoDTO(True, "", siguiente)      # ya está en vida_max: no hay nada que contar
+                self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
+                    tipo_accion="ACTUALIZAR_VIDA",
+                    objeto_afectado=enemigo,
+                    valor_anterior=vida_anterior,
+                    valor_nuevo=enemigo.vida_actual,
+                )])
+                return ResultadoEventoDTO(
+                    True,
+                    f"El enemigo {enemigo.id_instancia} regenera {enemigo.vida_actual - vida_anterior} de vida.",
+                    siguiente,
+                )
+
             case "USAR_OBJETO":
                 self._validar_actor_jugador(evento)
                 self._validar_cantidad_datos(evento, 1)
@@ -370,6 +438,29 @@ class GestorEventos:
 
             case _:
                 raise ValueError(f"Tipo de acción no soportado: {evento.tipo_accion}")
+
+    def _resolver_muertes(self, vidas_anteriores: list, cambios: list) -> str:
+        """Cualquier evento que pueda herir enemigos pasa por aquí: los que tenían vida y ahora no, mueren (botín y contador).
+        Devuelve el texto adicional para el mensaje del evento."""
+        texto = ""
+        for actor, vida_anterior in vidas_anteriores:
+            if isinstance(actor, EnemigoDTO) and vida_anterior > 0 and actor.vida_actual <= 0:
+                sala = self.salas[actor.id_sala_actual] if 0 <= actor.id_sala_actual < len(self.salas) else None
+                botin = self.jugador_logica.resolver_muerte_enemigo(actor, sala, self.obtener_botin, cambios)
+                texto += f" {actor.nombre} ha muerto." + botin
+        return texto
+
+    def _envenenar(self, jugador: JugadorDTO, daño: int) -> CambioDTO:
+        """Deja al jugador envenenado y programa el primer pulso. Devuelve el cambio para poder deshacerlo."""
+        anterior = (jugador.veneno, jugador.pulso_veneno)
+        jugador.veneno = True
+        jugador.pulso_veneno = self.reloj.programar(PERIODO_VENENO, None, "PULSO_VENENO", [daño, PULSOS_VENENO])
+        return CambioDTO(
+            tipo_accion="ESTADO_VENENO",
+            objeto_afectado=jugador,
+            valor_anterior=anterior,
+            valor_nuevo=(jugador.veneno, jugador.pulso_veneno),
+        )
 
     def _validar_actor_jugador(self, evento: EventoDTO) -> None:
         if evento.actor is not self.jugador_logica.jugador:

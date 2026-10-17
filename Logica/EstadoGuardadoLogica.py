@@ -183,12 +183,12 @@ def exportar(logica) -> EstadoGuardadoDTO:
     enemigos = [
         EnemigoGuardadoDTO(
             e.id_instancia, e.tipo, e.nombre, e.comportamiento, e.vida_actual, e.vida_max, e.ataque,
-            e.defensa, e.velocidad, e.id_sala_actual, list(e.suelta), e.activo,
+            e.defensa, e.velocidad, e.id_sala_actual, list(e.suelta), e.activo, e.regeneracion,
         )
         for e in tablas.enemigos
     ]
     trampas = [
-        TrampaGuardadaDTO(t.id_instancia, t.id_catalogo, t.id_sala, t.daño, t.rearme, t.armada)
+        TrampaGuardadaDTO(t.id_instancia, t.id_catalogo, t.id_sala, t.daño, t.rearme, t.armada, t.veneno)
         for t in tablas.trampas
     ]
 
@@ -261,12 +261,13 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
         EnemigoDTO(
             vida_actual=g.vida_actual, vida_max=g.vida_max, ataque=g.ataque, defensa=g.defensa,
             velocidad=g.velocidad, id_sala_actual=g.id_sala_actual, id_instancia=g.id_instancia, tipo=g.tipo,
-            nombre=g.nombre, comportamiento=g.comportamiento, suelta=list(g.suelta), activo=g.activo,
+            nombre=g.nombre, comportamiento=g.comportamiento, suelta=list(g.suelta), regeneracion=g.regeneracion,
+            activo=g.activo,
         )
         for g in estado.enemigos
     ]
     trampas = [
-        Trampa(g.id_instancia, g.id_catalogo, g.id_sala, g.daño, g.rearme, g.armada)
+        Trampa(g.id_instancia, g.id_catalogo, g.id_sala, g.daño, g.rearme, g.armada, g.veneno)
         for g in estado.trampas
     ]
 
@@ -311,6 +312,11 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
         actor = None if g.actor is None else _resolver(g.actor, jugador, salas, enemigos, trampas)
         datos = [_resolver(d, jugador, salas, enemigos, trampas) for d in g.datos_extra]
         reloj.insertar_evento(EventoDTO(g.tiempo_ejecucion, g.id_secuencia, actor, g.tipo_accion, datos))
+    if jugador.veneno:      # vuelve a enlazar el pulso pendiente, que es el que cancelaría un antídoto
+        for pendiente in reloj.heap:
+            if pendiente.tipo_accion == "PULSO_VENENO":
+                jugador.pulso_veneno = pendiente
+                break
 
     retroceso = RetrocesoLogica()
     retroceso.reiniciar()          # el historial del pergamino no se guarda: empieza vacío

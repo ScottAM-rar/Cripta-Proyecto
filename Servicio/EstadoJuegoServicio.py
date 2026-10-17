@@ -2,14 +2,16 @@ from Logica.EstadoJuegoLogica import *
 from DTO.FinPartidaDTO import FinPartidaDTO
 from adaptadores.AlmacenPartidaBinario import AlmacenPartidaBinario
 from adaptadores.AlmacenLogTexto import AlmacenLogTexto
-from adaptadores.AlmacenPuntajes import AlmacenPuntajes
+from adaptadores.AlmacenPuntajes import AlmacenPuntajes, MAX_NOMBRE
 from DTO.RegistroPuntajeDTO import RegistroPuntajeDTO
-from Controlador.ordenamiento import ordenar_adaptativo
+from Logica.ordenamiento import ordenar_adaptativo
 from adaptadores.fabrica import crear_servicio
 from adaptadores.extension import ruta_archivo, EXTENSION_PARTIDA, CARPETA_PARTIDAS
 
 
 class EstadoJuegoServicio:
+    MAX_NOMBRE_JUGADOR = MAX_NOMBRE      # largo máximo del nombre en la tabla de puntajes
+
     def __init__(self, semilla: int = None, cripta: str = None, comunicacion=None, offline: bool = False):
         self._offline = offline
         if cripta is not None and comunicacion is None:
@@ -98,6 +100,19 @@ class EstadoJuegoServicio:
         self._estadoJuegoLogica.restaurar_estado(estado)
         self._puntajeRegistrado = self._esRepeticion = False
         self._abrirLog(None)      # la partida cargada sigue en un log nuevo que ya incluye las acciones anteriores
+
+    def siguienteObjetoInventario(self) -> bool:
+        """Mueve el cursor del inventario al siguiente objeto. False si ya estaba en el último; ValueError si está vacío."""
+        return self._estadoJuegoLogica.obtenerJugador().inventario.siguiente_objeto()
+
+    def anteriorObjetoInventario(self) -> bool:
+        """Mueve el cursor del inventario al objeto anterior. False si ya estaba en el primero; ValueError si está vacío."""
+        return self._estadoJuegoLogica.obtenerJugador().inventario.anterior_objeto()
+
+    def objetoActualInventario(self):
+        """El objeto donde está el cursor del inventario, o None si el inventario está vacío."""
+        inventario = self._estadoJuegoLogica.obtenerJugador().inventario
+        return None if inventario.actual is None else inventario.mostrar_objeto_actual()
 
     def getJudador(self):
         return self._estadoJuegoLogica.obtenerJugador()
