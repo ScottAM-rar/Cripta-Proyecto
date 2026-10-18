@@ -116,9 +116,9 @@ class ControladorJuego:
             
             self.vista.mostrar_juego(jugador, sala_actual, self.servicio.objetoActualInventario())
 
-            accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
-            "\n usar[objeto actual],siguiente[objeto],anterior[objeto]," \
-            "\n soltar, atacar, abrir[puerta], cerrar[puerta], salir: ").strip().lower()
+            accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger, " \
+            "\n usar,siguiente,anterior," \
+            "\n soltar, atacar, abrir, cerrar, salir: ").strip().lower()
 
             if accion == "salir":
                 guardar = input("¿Deseas guardar la partida antes de salir? (s/n): ").strip().lower()
