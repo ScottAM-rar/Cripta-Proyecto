@@ -166,7 +166,13 @@ class GestorEventos:
                 if sala is None:
                     raise ValueError("La sala actual del jugador no está cargada")
 
-                return self.jugador_logica.soltarObjeto(sala)
+                # Datos extra: [] (suelta el del cursor) o [objeto] (suelta ese)
+                if len(evento.datos_extra) > 1:
+                    raise ValueError("La acción SOLTAR_OBJETO acepta cero o un dato extra")
+                objeto_a_soltar = evento.datos_extra[0] if evento.datos_extra else None
+                if objeto_a_soltar is not None and not isinstance(objeto_a_soltar, Objeto):
+                    raise TypeError("El objeto a soltar debe ser una instancia de Objeto")
+                return self.jugador_logica.soltarObjeto(sala, objeto_a_soltar)
             case "ATACAR":
                 # Datos extra: [objetivo]
                 self._validar_cantidad_datos(evento, 1)

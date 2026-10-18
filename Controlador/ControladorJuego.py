@@ -80,23 +80,24 @@ class ControladorJuego:
                 else:
                     print("¡HAS LLEGADO A LA SALA DE SALIDA! Has escapado de la cripta.")
                 print("=" * 50)
-                # El puntaje se registra antes de mostrar el historial: reproducirlo marca la partida como repetición
+                # El puntaje se registra primero, antes de mostrar nada más de la partida
                 self._registrar_puntaje()
                 # 1. El log se fue grabando solo durante la partida
                 nombre_log = self.servicio.nombreLog()
                 if nombre_log:
                     print(f"Log de la partida guardado en logs/{nombre_log} (para reproducirlo: python main.py --replay {nombre_log})")
                 
-                # 2. MOSTRAR EL HISTORIAL CRONOLÓGICO AQUÍ (Al morir)
-                print("\n-------- HISTORIAL CRONOLÓGICO DE TU JUEGO --------")
+                # 2. Los últimos mensajes del juego (§4.8: máximo 20); el registro completo está en el log
+                print("\n-------- ÚLTIMOS MENSAJES DEL JUEGO (máx. 20) --------")
                 try:
-                    # Si tienes un método para obtener o repetir los eventos del log:
-                    resultados = self.servicio.repetirPartida(nombre_log)
-                    if resultados:
-                        for res in resultados:
-                            print(res)
+                    mensajes = self.servicio.ultimosMensajes()
+                    if mensajes:
+                        for mensaje in mensajes:
+                            print(mensaje)
+                    else:
+                        print("(sin mensajes)")
                 except Exception as e:
-                    print(f"No se pudo mostrar el historial: {e}")
+                    print(f"No se pudieron mostrar los mensajes: {e}")
 
                 # 3. Mostrar el resumen con FinPartidaDTO
                 try:
@@ -114,11 +115,12 @@ class ControladorJuego:
                 
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
             
-            self.vista.mostrar_juego(jugador, sala_actual, self.servicio.objetoActualInventario())
+            self.vista.mostrar_juego(jugador, sala_actual, self.servicio.objetoActualInventario(), self.servicio.ultimosMensajes())
 
-            accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger, " \
-            "\n usar,siguiente,anterior," \
-            "\n soltar, atacar, abrir, cerrar, salir: ").strip().lower()
+            accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
+            "\n usar[objeto actual],siguiente[objeto],anterior[objeto]," \
+            "\n soltar, atacar, esperar, abrir[puerta], cerrar[puerta]," \
+            "\n inventario[peso/valor/nombre], salir: ").strip().lower()
 
             if accion == "salir":
                 guardar = input("¿Deseas guardar la partida antes de salir? (s/n): ").strip().lower()
@@ -137,7 +139,6 @@ class ControladorJuego:
             if evento == "IGNORAR":
                 continue  
             elif evento:
-                print("\n --------HISTORIAL CRONOLÓGICO DE TU JUEGO--------\n")
                 self.servicio.accionJugador(evento)
             else:
                 print("Acción no reconocida o comando inválido.")
@@ -389,6 +390,31 @@ class ControladorJuego:
                 tipo_accion="SOLTAR_OBJETO",
                 datos_extra=[obj_actual]
             )
+
+        # 5. ESPERAR (§2.3: costo 100; no cambia nada, solo deja pasar el tiempo)
+        elif accion == "esperar":
+            return EventoDTO(
+                tiempo_ejecucion=100,
+                id_secuencia=0,
+                actor=jugador,
+                tipo_accion="ESPERAR",
+                datos_extra=[]
+            )
+
+        # 6. VER EL INVENTARIO (§4.5, §10.2): orden real, o vista ordenada por peso, valor o nombre. No consume tiempo
+        elif accion.split()[:1] == ["inventario"]:
+            partes = accion.split()
+            if len(partes) > 2:
+                print("Uso: inventario [peso|valor|nombre]")
+                return "IGNORAR"
+            criterio = partes[1] if len(partes) == 2 else None
+            try:
+                objetos = self.servicio.vistaInventario(criterio)
+            except ValueError as e:
+                print(f"-> {e}")
+                return "IGNORAR"
+            self.vista.mostrar_inventario(objetos, jugador, criterio)
+            return "IGNORAR"
         
-        print("Objeto no especificado o no disponible en tu inventario.")
+        print("Comando no reconocido.")
         return None

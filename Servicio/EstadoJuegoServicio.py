@@ -103,11 +103,16 @@ class EstadoJuegoServicio:
 
     def siguienteObjetoInventario(self) -> bool:
         """Mueve el cursor del inventario al siguiente objeto. False si ya estaba en el último; ValueError si está vacío."""
-        return self._estadoJuegoLogica.obtenerJugador().inventario.siguiente_objeto()
+        return self._estadoJuegoLogica.siguienteObjetoInventario()
 
     def anteriorObjetoInventario(self) -> bool:
         """Mueve el cursor del inventario al objeto anterior. False si ya estaba en el primero; ValueError si está vacío."""
-        return self._estadoJuegoLogica.obtenerJugador().inventario.anterior_objeto()
+        return self._estadoJuegoLogica.anteriorObjetoInventario()
+
+    def vistaInventario(self, criterio: str | None = None) -> list:
+        """Los objetos del inventario en su orden real, o en una vista ordenada por "peso", "valor" o "nombre" (§4.5).
+        ValueError si el criterio no es válido."""
+        return self._estadoJuegoLogica.vistaInventario(criterio)
 
     def objetoActualInventario(self):
         """El objeto donde está el cursor del inventario, o None si el inventario está vacío."""
@@ -147,6 +152,10 @@ class EstadoJuegoServicio:
 
     def terminado(self) -> tuple[bool, str]:
         return self._estadoJuegoLogica.terminado()
+
+    def ultimosMensajes(self) -> list[str]:
+        """Los últimos mensajes del juego (máximo 20, §4.8), del más viejo al más reciente."""
+        return self._estadoJuegoLogica.ultimosMensajes()
 
     def reporteSolicitudes(self):
         """Solicitudes de red, presupuesto y caché de la cripta en juego (§5.1), o None si aún no hay cripta."""

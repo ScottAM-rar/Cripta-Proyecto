@@ -113,13 +113,18 @@ class JugadorLogica(ActorLogica):
             return ResultadoEventoDTO(False, str(e))
         return ResultadoEventoDTO(True, f"El jugador ha recogido el objeto {objeto.nombre}",puntaje=15)
 
-    def soltarObjeto(self, salaActual: SalaDTO):
+    def soltarObjeto(self, salaActual: SalaDTO, objeto: Objeto | None = None):
+        """Suelta `objeto` en la sala. Sin objeto, suelta el que está en el cursor del inventario."""
         try:
-            if self.jugador.inventario.actual is None:
-                raise ValueError("El inventario esta vacio")
-            objeto_actual = self.jugador.inventario.actual.objeto
-            indice_original = self.jugador.inventario.indice_de_objeto(objeto_actual)
-            objeto = self.jugador.inventario.soltar_objeto_actual()
+            inventario = self.jugador.inventario
+            if objeto is None:
+                if inventario.actual is None:
+                    raise ValueError("El inventario esta vacio")
+                objeto = inventario.actual.objeto
+            elif inventario.buscar_objeto(objeto) is None:
+                raise ValueError("El objeto no se encuentra en el inventario")
+            indice_original = inventario.indice_de_objeto(objeto)
+            inventario.eliminar_objeto_utilizado(objeto)      # saca ese nodo y deja el cursor en la cabeza, como soltar_objeto_actual
         except ValueError as e:
             return ResultadoEventoDTO(False, str(e))
         salaActual.objetos.append(objeto)

@@ -7,7 +7,7 @@ from Logica.GestorEventos import GestorEventos, PERIODO_REGENERACION
 from Logica.ActorLogica import ActorLogica
 from Logica.JugadorLogica import JugadorLogica
 from DTO.LogPartidaDTO import LogPartidaDTO
-from Logica.LogEventos import LogEventos, ReferenciaEvento, RegistroEvento
+from Logica.LogEventos import LogEventos, ReferenciaEvento, RegistroEvento, TIPOS_CURSOR_INVENTARIO
 from Logica.BitacoraLogica import BitacoraLogica
 from Logica.RelojVirtual import RelojVirtual
 from Logica.RetrocesoLogica import RetrocesoLogica
@@ -130,6 +130,9 @@ class EstadoJuegoLogica:
 
         resultados = []
         for registro in log_original.obtener_registros_cronologicos():
+            if registro.tipo_accion in TIPOS_CURSOR_INVENTARIO:
+                self._repetirMovimientoDeCursor(registro.tipo_accion)
+                continue
             evento = self._crear_evento_repeticion(registro)
             resultados.append(self.accionJugador(evento))
 
@@ -183,7 +186,13 @@ class EstadoJuegoLogica:
             )
             return EventoDTO(costo, 0, jugador, tipo, [objeto])
 
-        if tipo == "SOLTAR_OBJETO" or tipo == "ESPERAR":
+        if tipo == "SOLTAR_OBJETO":
+            if not datos:       # los logs anteriores no guardaban el objeto: se suelta el del cursor
+                return EventoDTO(costo, 0, jugador, tipo, [])
+            objeto = self._buscar_objeto(self._id_referencia(datos, "objeto"), True)
+            return EventoDTO(costo, 0, jugador, tipo, [objeto])
+
+        if tipo == "ESPERAR":
             return EventoDTO(costo, 0, jugador, tipo, [])
 
         if tipo in {"ARMAR_TRAMPA", "ACTIVAR_TRAMPA"}:
@@ -243,6 +252,9 @@ class EstadoJuegoLogica:
 
     def _buscar_objeto(self, id_objeto: str | int, en_inventario: bool):
         if en_inventario:
+            actual = self.estadoJuego.jugador.inventario.actual
+            if actual is not None and actual.objeto.id_catalogo == id_objeto:
+                return actual.objeto        # con ids repetidos manda el cursor, que es lo que eligió el jugador
             nodo = self.estadoJuego.jugador.inventario.cabeza
             while nodo is not None:
                 if nodo.objeto.id_catalogo == id_objeto:
@@ -366,10 +378,6 @@ class EstadoJuegoLogica:
                 reloj.desencolar()
                 return
             evento = reloj.desencolar()
-            print(
-                f"Evento: {evento.tipo_accion} | "
-                f"Tiempo: {evento.tiempo_ejecucion}"
-            )
             velocidad_antes = ActorLogica.velocidad_efectiva(jugador)
             accion = self.gestorEventos.procesar_evento(evento)
             # Si un efecto (el vencimiento de una poción) cambió la velocidad del jugador, su turno ya programado
@@ -379,7 +387,6 @@ class EstadoJuegoLogica:
                 reloj.reajustar_velocidad(jugador, velocidad_antes, velocidad_despues)
             if accion.mensaje:              # los eventos silenciosos (p. ej. regenerar con la vida llena) no ensucian la bitácora
                 self._registrarEnBitacora(accion)
-                print(accion.mensaje)
             self._comprobarFinal()
             if not self.fin and accion.eventoResultado is not None:
                 self.cargarEvento(accion.eventoResultado)
@@ -392,6 +399,13 @@ class EstadoJuegoLogica:
             valor_anterior=descartado,
             elemento=accion,
         )])
+
+    def ultimosMensajes(self) -> list[str]:
+        """Los mensajes de la bitácora de la partida (máximo 20, §4.8), del más viejo al más reciente.
+        Solo lee: no reproduce ni modifica nada."""
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+        return [r.mensaje for r in self.logEventosJuego.obtener_eventos() if r.mensaje]
 
     def _sumarPuntaje(self, puntaje: int):
         if not puntaje:
@@ -458,10 +472,8 @@ class EstadoJuegoLogica:
         reloj = self.estadoJuego.reloj
         jugador = self.estadoJuego.jugador
 
-        print(f"Evento: {evento.tipo_accion} | Tiempo: {reloj.tiempo_actual}")
         accion = self.gestorEventos.procesar_evento(evento)
         self._registrarEnBitacora(accion)
-        print(accion.mensaje)
         if accion.exito is False:
             return accion                       # rechazada: sin tiempo, sin historial y fuera del log
         if GestorEventos.es_uso_de_pergamino(evento):
@@ -476,7 +488,6 @@ class EstadoJuegoLogica:
             resultados_trampas = self.gestorEventos.activar_trampas(self.estadoJuego.salas[jugador.id_sala_actual])
             for resultado in resultados_trampas:
                 self._registrarEnBitacora(resultado)
-                print(resultado.mensaje)
             if resultados_trampas:
                 mensajes = "\n".join(r.mensaje for r in resultados_trampas)
                 respuesta = ResultadoEventoDTO(accion.exito, f"{accion.mensaje}\n{mensajes}", accion.eventoResultado, accion.puntaje)
@@ -497,6 +508,43 @@ class EstadoJuegoLogica:
         self.tiempoMovimientoJugador = reloj.tiempo_actual
         self._registrarAccionEnLog(evento)
         return respuesta
+
+    def vistaInventario(self, criterio: str | None = None) -> list:
+        """Objetos del inventario en su orden real (criterio=None) o en una vista ordenada por "peso", "valor" o "nombre"
+        (§4.5). Solo lee: no cambia el orden real, el cursor, el reloj ni el log."""
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+        inventario = self.estadoJuego.jugador.inventario
+        if criterio is None:
+            return inventario.listar_objetos()
+        return inventario.obtener_vista_ordenada(criterio)
+
+    def siguienteObjetoInventario(self) -> bool:
+        """Mueve el cursor del inventario al siguiente objeto. False si ya estaba en el último; ValueError si está vacío.
+        No consume tiempo ni entra al retroceso, pero queda en el log: usar y soltar actúan sobre el objeto del cursor."""
+        return self._moverCursorInventario(siguiente=True)
+
+    def anteriorObjetoInventario(self) -> bool:
+        """Mueve el cursor del inventario al objeto anterior. False si ya estaba en el primero; ValueError si está vacío."""
+        return self._moverCursorInventario(siguiente=False)
+
+    def _moverCursorInventario(self, siguiente: bool) -> bool:
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+        if self.fin:
+            raise ValueError("El juego ha finalizado, no se generan más acciones")
+        inventario = self.estadoJuego.jugador.inventario
+        movido = inventario.siguiente_objeto() if siguiente else inventario.anterior_objeto()
+        if movido:      # si el cursor no se movió el estado no cambió: no hay nada que repetir
+            self.logEventos.registrar_cursor("SIGUIENTE_OBJETO" if siguiente else "ANTERIOR_OBJETO")
+            if self.registrador_log is not None:
+                self.registrador_log.agregar(self.logEventos.cola.accion)
+        return movido
+
+    def _repetirMovimientoDeCursor(self, tipo_accion: str) -> None:
+        movido = self.siguienteObjetoInventario() if tipo_accion == "SIGUIENTE_OBJETO" else self.anteriorObjetoInventario()
+        if not movido:
+            raise ValueError(f"El log pide {tipo_accion} pero el cursor no se pudo mover: la reproducción no es fiel")
 
     def _registrarAccionEnLog(self, evento: EventoDTO) -> None:
         self.logEventos.registrar_evento(evento)
