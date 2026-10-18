@@ -1,7 +1,7 @@
 
 class VistaConsola:
    
-   def mostrar_juego(self, jugador, sala_actual, objeto_actual=None):
+   def mostrar_juego(self, jugador, sala_actual, objeto_actual=None, mensajes=None):
         
         print("\n" + "="*50)
         print(f"SALA: {sala_actual.nombre} (ID: {sala_actual.id})")
@@ -65,6 +65,25 @@ class VistaConsola:
                   f"(ID: {getattr(objeto_actual, 'id_catalogo', 'N/A')})")
         else:
             print("  > Objeto Actual: [Inventario vacío]")
+
+        # §4.8 y §10.2: la pantalla muestra únicamente los últimos 20 mensajes del juego
+        print("\n--- ÚLTIMOS MENSAJES (máx. 20) ---")
+        if mensajes:
+            for mensaje in mensajes:
+                print(f"  {mensaje}")
+        else:
+            print("  (sin mensajes)")
+
+   def mostrar_inventario(self, objetos, jugador, criterio=None):
+        """Lista de objetos del inventario (§4.5, §10.2): en su orden real o ordenada por `criterio`."""
+        orden = "orden real" if criterio is None else f"ordenado por {criterio}"
+        print(f"\n--- INVENTARIO ({orden}) ---")
+        if not objetos:
+            print("  (vacío)")
+            return
+        for posicion, objeto in enumerate(objetos, start=1):
+            equipado = " [equipado]" if objeto is jugador.arma or objeto is jugador.armadura else ""
+            print(f"  {posicion}. {objeto.nombre} | peso: {objeto.peso} | valor: {objeto.valor}{equipado}")
 
    def mostrar_puntajes(self, registros, limite=10, resaltar=None):
         """Tabla de puntajes (§2.12): los `limite` mejores, ya ordenados. `resaltar` marca el registro recién guardado."""

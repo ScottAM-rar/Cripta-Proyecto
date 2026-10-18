@@ -5,6 +5,11 @@ import json
 from DTO.LogPartidaDTO import LogPartidaDTO
 
 
+# Mover el cursor del inventario no consume tiempo ni es un evento del reloj, pero decide sobre qué objeto actúan
+# "usar" y "soltar": por eso queda en el log y la repetición lo reproduce.
+TIPOS_CURSOR_INVENTARIO = ("SIGUIENTE_OBJETO", "ANTERIOR_OBJETO")
+
+
 class RegistroEvento:
     """Datos de un evento cargado desde un archivo de repetición."""
 
@@ -77,6 +82,17 @@ class LogEventos:
             "tipo_accion": tipo_accion.strip(),
             "id_afectado": id_texto,
             "tiempo_ejecucion": 100,
+            "datos_extra": [],
+        }, ensure_ascii=False))
+
+    def registrar_cursor(self, tipo_accion: str) -> None:
+        """Guarda un movimiento del cursor del inventario (costo 0: no pasa por el reloj)."""
+        if tipo_accion not in TIPOS_CURSOR_INVENTARIO:
+            raise ValueError(f"Tipo de movimiento de cursor no válido: {tipo_accion!r}")
+        self.agregar(json.dumps({
+            "tipo_accion": tipo_accion,
+            "tiempo_ejecucion": 0,
+            "actor": {"tipo": "jugador"},
             "datos_extra": [],
         }, ensure_ascii=False))
 
