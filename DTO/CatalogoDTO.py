@@ -12,6 +12,7 @@ class EnemigoCatalogoDTO:
     velocidad: int
     comportamiento: str
     suelta: list[str] = field(default_factory=list)
+    regeneracion: int = 0   # vida que recupera cada 200 unidades (§2.10); 0 = no regenera
 
 
 @dataclass

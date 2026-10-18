@@ -1,4 +1,5 @@
 from __future__ import annotations
+from dataclasses import fields
 from DTO.CatalogoDTO import EnemigoCatalogoDTO
 from DTO.ActorDTO import EnemigoDTO
 from DTO.TrampaDTO import Trampa
@@ -45,11 +46,18 @@ def resolver_objeto(ficha: dict, id_sala: int | None = None) -> Objeto:
  
     return Clase(**datos)
  
+# Nombres de los campos que la ficha del enemigo sabe guardar. Es una tupla (no un set) a propósito.
+_CAMPOS_FICHA_ENEMIGO = tuple(campo.name for campo in fields(EnemigoCatalogoDTO))
+
 def resolver_ficha_enemigo(ficha: dict) -> EnemigoCatalogoDTO:
     """Convierte la ficha cruda de /catalogo (clase == 'enemigo') en
-    EnemigoCatalogoDTO."""
+    EnemigoCatalogoDTO. Las claves que el DTO no conoce (campos nuevos que el servidor agregue, como pasaría
+    con una cripta no vista) se ignoran en vez de romper el juego; la ficha cruda sigue intacta en la caché."""
     datos = dict(ficha)
     datos.pop("clase")
+    for clave in list(datos):
+        if clave not in _CAMPOS_FICHA_ENEMIGO:
+            datos.pop(clave)
     return EnemigoCatalogoDTO(**datos)
  
 def resolver_enemigo(colocacion: dict, ficha: EnemigoCatalogoDTO, id_sala: int) -> EnemigoDTO:
@@ -70,6 +78,7 @@ def resolver_enemigo(colocacion: dict, ficha: EnemigoCatalogoDTO, id_sala: int) 
         nombre=ficha.nombre,
         comportamiento=ficha.comportamiento,
         suelta=list(ficha.suelta),
+        regeneracion=ficha.regeneracion or 0,   # None o ausente -> 0 (no regenera)
     )
  
  
@@ -83,6 +92,7 @@ def resolver_trampa(colocacion: dict, ficha: dict, id_sala: int) -> Trampa:
         id_catalogo=ficha["id"],
         daño=ficha["daño"],
         rearme=ficha["rearme"],
+        veneno=ficha.get("veneno") or 0,   # daño por pulso; ausente o None -> 0 (no envenena)
     )
  
  
