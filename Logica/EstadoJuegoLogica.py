@@ -134,7 +134,12 @@ class EstadoJuegoLogica:
                 self._repetirMovimientoDeCursor(registro.tipo_accion)
                 continue
             evento = self._crear_evento_repeticion(registro)
-            resultados.append(self.accionJugador(evento))
+            resultado = self.accionJugador(evento)
+            if resultado.exito is False:     # el log solo guarda acciones aceptadas: si ahora se rechaza, ya no es fiel
+                raise ValueError(
+                    f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
+                )
+            resultados.append(resultado)
 
         return resultados
 
@@ -261,6 +266,13 @@ class EstadoJuegoLogica:
                     return nodo.objeto
                 nodo = nodo.siguiente
 
+        # Recoger solo ocurre en la sala del jugador: se busca ahí primero para no tomar un objeto con el mismo id
+        # de otra sala (la reproducción divergería).
+        sala_actual = self.estadoJuego.salas[self.estadoJuego.jugador.id_sala_actual]
+        if sala_actual is not None:
+            for objeto in sala_actual.objetos:
+                if objeto.id_catalogo == id_objeto:
+                    return objeto
         for sala in self.estadoJuego.salas:
             if sala is not None:
                 for objeto in sala.objetos:

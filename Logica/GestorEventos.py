@@ -145,6 +145,7 @@ class GestorEventos:
                 )
                 if res.exito == True:
                     self.cargar_sala(jugador.id_sala_actual)
+                    self._dejar_rastro_en_destino(self._ahora(evento))
                 return res 
             
             case "RECOGER_OBJETO":
@@ -444,6 +445,24 @@ class GestorEventos:
 
             case _:
                 raise ValueError(f"Tipo de acción no soportado: {evento.tipo_accion}")
+
+    def _dejar_rastro_en_destino(self, tiempo: int) -> None:
+        """§2.9: al completar un movimiento, la sala destino recibe el tiempo actual como rastro. Se hace aquí y no
+        al inicio de la siguiente acción, para que un rastreador que actúe antes ya vea el rastro fresco.
+        El cambio queda en el historial de la acción para que el pergamino lo deshaga."""
+        destino = self.salas[self.jugador_logica.jugador.id_sala_actual]
+        if destino is None:
+            return
+        anterior = destino.ultimo_paso
+        self.salas_logica.sala = destino
+        self.salas_logica.actualizarTiempo(tiempo)
+        if destino.ultimo_paso != anterior:
+            self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
+                tipo_accion="ULTIMO_PASO",
+                objeto_afectado=destino,
+                valor_anterior=anterior,
+                valor_nuevo=destino.ultimo_paso,
+            )])
 
     def _resolver_muertes(self, vidas_anteriores: list, cambios: list) -> str:
         """Cualquier evento que pueda herir enemigos pasa por aquí: los que tenían vida y ahora no, mueren (botín y contador).
