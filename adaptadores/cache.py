@@ -85,6 +85,20 @@ class CacheLRU:
         if entrada is not None and entrada[2] > 0:
             entrada[2] -= 1
 
+    def establecer_en_uso(self, claves: list[str]) -> None:
+        """Deja como "en uso" exactamente las claves dadas, cada entrada queda con tantas
+        referencias como veces aparece su clave. Se recalcula desde cero, así nunca se desfasa."""
+        for entrada in self._entradas:
+            veces = 0
+            for clave in claves:
+                if clave == entrada[0]:
+                    veces += 1
+            entrada[2] = veces
+
+    def en_uso(self, clave: str) -> bool:
+        entrada = self._buscar(clave)
+        return entrada is not None and entrada[2] > 0
+
     def _desalojar(self) -> str | None:
         for entrada in reversed(self._entradas):
             if entrada[2] == 0:

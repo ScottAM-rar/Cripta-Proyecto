@@ -33,4 +33,4 @@ class SalaDTO:
     enemigos: list[EnemigoDTO] = field(default_factory=list) # Reutiliza el DTO de enemigos TODO revisar si es el mejor tipo de arreglo
     objetos: list[str] = field(default_factory=list)          # IDs de catálogo en el suelo (ej: "itm_antorcha")[cite: 1] TODO revisar si es el mejor tipo de arreglo
     trampas: list[Trampa] = field(default_factory=list) # TODO revisar si es el mejor tipo de arreglo
-    ultimo_paso: int  = 0     # Rastro del tiempo virtual de la última visita del jugador[cite: 1]
+    ultimo_paso: int  = -1     # Rastro del tiempo virtual de la última visita del jugador[cite: 1]

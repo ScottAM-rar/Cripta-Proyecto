@@ -302,6 +302,11 @@ class ServicioCripta:
         for id_catalogo in ids_catalogo:
             self.cache.marcar_libre(id_catalogo)
 
+    def fijar_fichas_en_uso(self, ids_catalogo: list[str]) -> None:
+        """El modelo informa qué fichas referencian sus instancias activas (un id por instancia).
+        La caché no desaloja ninguna mientras siga en esta lista."""
+        self.cache.establecer_en_uso(ids_catalogo)
+
     def reporte(self, cripta_id: str) -> ReporteSolicitudes:
         """Solicitudes hechas contra el presupuesto de la cripta, y aciertos y
         fallos de la caché. Para mostrar al final de la partida."""

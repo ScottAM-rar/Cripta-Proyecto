@@ -285,7 +285,7 @@ class TestPergaminoLogica(unittest.TestCase):
 
         self.assertEqual(self.retroceso.cantidad_acciones, 0)
         self.assertIsNone(self.retroceso.cabeza)
-        self.assertEqual(self.sala_anterior.ultimo_paso, 0)
+        self.assertEqual(self.sala_anterior.ultimo_paso, -1)
 
     def test_el_tope_elimina_la_accion_mas_antigua_con_todo_lo_posterior(self):
         for numero in range(1, 8):

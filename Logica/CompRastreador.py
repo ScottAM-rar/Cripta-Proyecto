@@ -7,13 +7,13 @@ class ComportamientoRastreador(ComportamientoEnemigo):
 
     @staticmethod
     def _ultimo_paso(salas: list[SalaDTO], indice: int, tiempo_actual: int | None) -> int:
-        """Rastro de la sala: el tiempo de la última visita del jugador, o 0 si nunca la pisó o el rastro ya se enfrió
+        """Rastro de la sala: el tiempo de la última visita del jugador, o -1 si nunca la pisó o el rastro ya se enfrió
         (hace VIGENCIA_RASTRO o más que pasó). Sin reloj conocido no se descarta ningún rastro."""
         sala = salas[indice]
-        if sala is None or sala.ultimo_paso <= 0:
-            return 0
+        if sala is None or sala.ultimo_paso < 0:
+            return -1
         if tiempo_actual is not None and tiempo_actual - sala.ultimo_paso >= ComportamientoRastreador.VIGENCIA_RASTRO:
-            return 0
+            return -1
         return sala.ultimo_paso
 
     @staticmethod
@@ -34,7 +34,7 @@ class ComportamientoRastreador(ComportamientoEnemigo):
                 ):
                     siguienteSala = t
                     pasoSiguiente = paso
-        if siguienteSala is None:
+        if siguienteSala is None or pasoSiguiente < 0:
             return "NO SE MOVIÓ"
         salaActual = salas[enemigo.id_sala_actual]
         respuesta = ActorLogica._mover(enemigo, salaActual, siguienteSala.direccion)
