@@ -1,3 +1,9 @@
+
+# Cesar Segura Galeano
+# Jose Pablo Sánchez Ramírez
+# Aharam Scott Alvarado Marchena
+# Fernanda Alfaro 
+
 # Cripta-Proyecto
 Proyecto 1 de Estructura de datos
 
