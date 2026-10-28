@@ -3,6 +3,7 @@ from collections import deque
 from dataclasses import dataclass
  
 from DTO.ActorDTO import JugadorDTO
+from DTO.MapaDTO import AristaMapaDTO, MapaDTO, SalaMapaDTO
 from DTO.SalaDTO import SalaDTO, SalidaDTO
 from adaptadores.cliente_offline import ErrorOffline
 from adaptadores.resolucion import resolver_botin, resolver_sala, resolver_salas
@@ -25,6 +26,95 @@ def _nombre_direccion(letra: str) -> str:
  
 # Orden fijo en el que se agregan las salidas a la sala
 _LETRAS_EN_ORDEN = ("N", "S", "E", "O")
+
+COSTO_POR_DEFECTO = 100
+
+
+def _costo_valido(valor) -> bool:
+    """FR-101: entero >= 1 (un booleano no cuenta como entero)."""
+    return isinstance(valor, int) and not isinstance(valor, bool) and valor >= 1
+
+
+def _agregar_advertencia(advertencias: list[str], texto: str) -> None:
+    if texto not in advertencias:
+        advertencias.append(texto)
+
+
+def _costo_declarado(salida: dict, advertencias: list[str] | None, sala: int, letra: str) -> int | None:
+    """Costo declarado por una salida, o None si no declara ninguno. Un costo inválido (cero, negativo, no entero)
+    cuenta como no declarado y, si `advertencias` no es None, deja una advertencia (FR-101)."""
+    if "costo" not in salida:
+        return None
+    valor = salida["costo"]
+    if _costo_valido(valor):
+        return valor
+    if advertencias is not None:
+        _agregar_advertencia(advertencias, f"Sala {sala}, salida {letra}: costo inválido {valor!r}; se usa {COSTO_POR_DEFECTO}")
+    return None
+
+
+def _salida_de_vuelta(por_id: list, origen: int, destino: int) -> tuple | None:
+    """(letra, salida) de la sala `destino` que lleva de vuelta a `origen`, o None si la conexión es de un solo sentido
+    (FR-124). Si hubiera varias, la primera en el orden N, S, E, O."""
+    if destino < 0 or destino >= len(por_id) or por_id[destino] is None:
+        return None
+    salidas = por_id[destino].get("salidas") or {}
+    for letra in _LETRAS_EN_ORDEN:
+        if letra in salidas and salidas[letra]["sala"] == origen:
+            return letra, salidas[letra]
+    return None
+
+
+def normalizar_esqueleto(salas: list[dict], advertencias: list[str]) -> list[dict]:
+    """Copia del esqueleto con el campo "costo" resuelto en TODAS las salidas (FR-101, FR-102, FR-124).
+
+    - Sin costo declarado: 100. Costo inválido: cuenta como no declarado y deja una advertencia.
+    - Si una sola de las dos salidas de la conexión declara costo, ese vale para ambos sentidos.
+    - Si las dos declaran costos distintos, vale el de la sala de menor id y se advierte (una vez por conexión).
+    - Una conexión de un solo sentido usa el costo de su única salida.
+    No usa ningún índice por diccionario: el acceso por id va en una lista de posición = id."""
+    mayor = 0
+    for sala in salas:
+        if sala["id"] > mayor:
+            mayor = sala["id"]
+    por_id: list = [None] * (mayor + 1)
+    for sala in salas:
+        por_id[sala["id"]] = sala
+
+    resultado: list[dict] = []
+    for sala in salas:
+        origen = sala["id"]
+        nueva = dict(sala)
+        salidas_api = sala.get("salidas")
+        if salidas_api is not None:
+            salidas_nuevas = {}
+            for letra in _LETRAS_EN_ORDEN:
+                if letra not in salidas_api:
+                    continue
+                salida = salidas_api[letra]
+                destino = salida["sala"]
+                propio = _costo_declarado(salida, advertencias, origen, letra)
+                vuelta = _salida_de_vuelta(por_id, origen, destino)
+                ajeno = None if vuelta is None else _costo_declarado(vuelta[1], None, destino, vuelta[0])
+                if propio is None and ajeno is None:
+                    costo = COSTO_POR_DEFECTO
+                elif ajeno is None:
+                    costo = propio
+                elif propio is None:
+                    costo = ajeno
+                elif propio == ajeno:
+                    costo = propio
+                else:
+                    costo = propio if origen < destino else ajeno       # gana la declaración de la sala de menor id
+                    if origen < destino:
+                        _agregar_advertencia(advertencias, f"Conexión entre las salas {origen} y {destino}: costos distintos "
+                                                           f"({propio} y {ajeno}); vale el de la sala {origen}")
+                copia = dict(salida)
+                copia["costo"] = costo
+                salidas_nuevas[letra] = copia
+            nueva["salidas"] = salidas_nuevas
+        resultado.append(nueva)
+    return resultado
  
  
 @dataclass
@@ -61,7 +151,8 @@ class ServicioCripta:
         self.cache = cache
         self._criptas: list[dict] | None = None      # lista de /criptas ya pedida
         self._esqueleto_id: str | None = None        # cripta a la que pertenece el esqueleto
-        self._esqueleto: list[dict] = []             # salas crudas de /salas
+        self._esqueleto: list[dict] = []             # salas de /salas con el costo de cada salida ya resuelto
+        self.advertencias: list[str] = []            # datos inválidos que se corrigieron al leer (costos, rangos)
         self._datos_id: str | None = None            # cripta a la que pertenecen los datos generales
         self._datos: dict | None = None              # respuesta cruda de /criptas/{id}
         self._listas_id: str | None = None           # cripta a la que pertenecen las salas ya precargadas
@@ -142,23 +233,43 @@ class ServicioCripta:
         if not self.existe_cripta(cripta_id):
             raise ValueError(f"La cripta '{cripta_id}' no existe")
         if self._esqueleto_id != cripta_id:
-            self._esqueleto = self.cliente.obtener_salas(cripta_id)
+            self._esqueleto = normalizar_esqueleto(self.cliente.obtener_salas(cripta_id), self.advertencias)
             self._esqueleto_id = cripta_id
         return self._esqueleto
  
     def total_salas(self, cripta_id: str) -> int:
         return len(self._cargar_esqueleto(cripta_id))
+
+    def obtener_mapa(self, cripta_id: str) -> MapaDTO:
+        """Esqueleto completo con el costo de cada salida y el estado inicial de las puertas. Sale del esqueleto que
+        ya se descarga al iniciar: no gasta solicitudes ni depende de qué salas tengan contenido traído."""
+        esqueleto = self._cargar_esqueleto(cripta_id)
+        mayor = 0
+        for sala in esqueleto:
+            if sala["id"] > mayor:
+                mayor = sala["id"]
+        salas: list = [None] * (mayor + 1)
+        for sala in esqueleto:
+            aristas: list[AristaMapaDTO] = []
+            salidas_api = sala.get("salidas") or {}
+            for letra in _LETRAS_EN_ORDEN:
+                if letra in salidas_api:
+                    datos = salidas_api[letra]
+                    aristas.append(AristaMapaDTO(_nombre_direccion(letra), datos["sala"], datos["costo"],
+                                                 datos.get("cerrada", False)))
+            salas[sala["id"]] = SalaMapaDTO(sala["id"], aristas)
+        return MapaDTO(salas, list(self.advertencias))
  
     def construir_sala(self, cripta_id: str, numero_sala: int) -> SalaDTO:
         """Arma una SalaDTO completa: esqueleto (nombre y salidas) + contenido."""
         esqueleto = self._buscar_esqueleto(cripta_id, numero_sala)
-        contenido = resolver_sala(self.cliente, self.cache, cripta_id, numero_sala)
+        contenido = resolver_sala(self.cliente, self.cache, cripta_id, numero_sala, self.advertencias)
         return self._ensamblar(esqueleto, contenido)
  
     def construir_salas(self, cripta_id: str, numeros: list[int]) -> list[SalaDTO]:
         """Arma varias SalaDTO pidiendo todo el contenido en lote."""
         esqueletos = [self._buscar_esqueleto(cripta_id, n) for n in numeros]
-        contenidos = resolver_salas(self.cliente, self.cache, cripta_id, numeros)
+        contenidos = resolver_salas(self.cliente, self.cache, cripta_id, numeros, self.advertencias)
         salas: list[SalaDTO] = []
         posicion = 0
         for esqueleto in esqueletos:
@@ -353,5 +464,6 @@ class ServicioCripta:
                     cerrada=datos.get("cerrada", False),
                     llave=datos.get("llave"),
                     cierre_automatico=datos.get("cierre_automatico"),
+                    costo=datos.get("costo", COSTO_POR_DEFECTO),
                 ))
         return salidas

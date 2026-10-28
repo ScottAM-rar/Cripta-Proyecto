@@ -14,6 +14,8 @@ from Logica.RetrocesoLogica import RetrocesoLogica
 from DTO.CambioDTO import CambioDTO
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.FuenteCripta import FuenteCripta
+from Logica.CampoDeCostos import CampoDeCostos
+from Logica.MapaCripta import MapaCripta
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
 from Logica import EstadoGuardadoLogica
 
@@ -77,6 +79,7 @@ class EstadoJuegoLogica:
             obtener_botin=self.comunicacion.objetos_que_suelta,
         )
         self.gestorEventos.reloj = relojvirtual
+        self.gestorEventos.campo_de_costos = self._crearCampoDeCostos(cripta, salas, jugador)
         self.jugadorLogica = JugadorLogica(jugador,self.semilla,self.gestorEventos.azar)
         self.logEventos.vaciar()
         self.idCripta = cripta
@@ -84,6 +87,14 @@ class EstadoJuegoLogica:
         self.registrador_log = None
         self.fin = False
         self.motivoFin = None
+
+    def _crearCampoDeCostos(self, cripta: str, salas: list, jugador) -> CampoDeCostos | None:
+        """Mapa del esqueleto completo + campo de costos hacia el jugador, para los cazadores (FR-117). Si la fuente
+        no entrega el mapa, los cazadores no pueden decidir y fallan con un error claro."""
+        obtener = getattr(self.comunicacion, "obtener_mapa", None)
+        if obtener is None:
+            return None
+        return CampoDeCostos(MapaCripta(obtener(cripta)), jugador, salas)
 
     def _comprobarFinal(self):
         if self.jugadorLogica.esta_muerto():

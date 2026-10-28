@@ -44,3 +44,4 @@ class EnemigoDTO(ActorDTO):
     suelta: list[str] = field(default_factory=list)
     regeneracion: int = 0   # vida que recupera cada PERIODO_REGENERACION mientras está activo y vivo (0 = no regenera)
     activo: bool = False    # dormido hasta que el jugador entra a su sala (§2.4); un enemigo activo no vuelve a dormirse
+    rango: int = 0          # solo cazador: costo máximo de ruta a partir del cual deja de perseguir (FR-108); 0 = solo ataca en su sala

@@ -30,6 +30,7 @@ class GestorEventos:
         self.salas = salas
         self.cargar_sala = cargar_sala
         self.obtener_botin = obtener_botin      # lo que suelta un enemigo al morir (§2.6); lo entrega quien arma el juego
+        self.campo_de_costos = None   # lo asigna quien arma la partida: lo usa el cazador para decidir (FR-111)
         self.reloj = None     # lo asigna quien arma la partida: de aquí sale "el instante actual" de cada acción
         # Inyección de dependencias de la capa de lógica
         # Un único generador por partida, compartido por jugador y enemigos: así la secuencia de tiradas es reproducible
@@ -38,10 +39,16 @@ class GestorEventos:
         self.pergamino_logica = PergaminoLogica(
             self.jugador_logica.retroceso,
             salas,
+            avisar_puerta=self._puerta_cambio,
         )
         self.objeto_logica = ObjetoLogica(jugador, self.pergamino_logica)
-        self.salas_logica = SalaLogica(None)
+        self.salas_logica = SalaLogica(None, avisar_puerta=self._puerta_cambio)
         self.enemigo_logica = EnemigoLogica(None,semilla,self.azar)
+
+    def _puerta_cambio(self, salida) -> None:
+        """Una puerta cambió de estado: el campo de costos de los cazadores decide si lo que guardó sigue valiendo."""
+        if self.campo_de_costos is not None:
+            self.campo_de_costos.puerta_cambio(salida.sala_destino)
 
     @staticmethod
     def es_uso_de_pergamino(evento: EventoDTO) -> bool:
@@ -257,7 +264,7 @@ class GestorEventos:
                 vida_enemigo_anterior = evento.actor.vida_actual
                 sala_anterior = evento.actor.id_sala_actual
                 self.enemigo_logica.setEnemigo(evento.actor)
-                res =  self.enemigo_logica.decidirAccion(jugador,self.salas,evento.tiempo_ejecucion)
+                res =  self.enemigo_logica.decidirAccion(jugador,self.salas,evento.tiempo_ejecucion,self.campo_de_costos)
                 if evento.actor.id_sala_actual != sala_enemigo:
                     self.cargar_sala(evento.actor.id_sala_actual).enemigos.append(evento.actor)
                 cambios = []

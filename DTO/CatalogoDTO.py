@@ -12,6 +12,7 @@ class EnemigoCatalogoDTO:
     velocidad: int
     comportamiento: str
     suelta: list[str] = field(default_factory=list)
+    rango: int = 0   # solo cazador: entero >= 0 en unidades de costo (FR-108); 0 solo ataca en su sala
 
 
 @dataclass

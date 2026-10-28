@@ -95,6 +95,59 @@ class HttpFalso:
         return devueltas
  
  
+class HttpConfigurable(HttpFalso):
+    """HttpFalso con la cripta definida por la prueba: esqueleto, enemigos por sala y fichas extra.
+
+    `salas`: lista de salas del esqueleto, como las entrega la API (cada salida admite "costo").
+    `enemigos`: lista de tuplas (sala, instancia, tipo, vida o None).
+    `fichas`: fichas de catálogo adicionales (p. ej. un cazador con "rango").
+    """
+
+    def __init__(self, salas, enemigos=None, fichas=None, sala_inicial=1, sala_salida=None, vida_jugador=5000,
+                 **versiones):
+        super().__init__(**versiones)
+        self.salas = salas
+        self.enemigos = [] if enemigos is None else enemigos
+        self.fichas = [] if fichas is None else fichas
+        self.sala_inicial = sala_inicial
+        self.sala_salida = sala_salida if sala_salida is not None else salas[-1]["id"]
+        self.vida_jugador = vida_jugador
+
+    def obtener_criptas(self):
+        self.llamadas.append(("criptas", None))
+        return [{"id": "cripta-01", "nombre": "Cripta de prueba", "salas": len(self.salas), "dificultad": 1}]
+
+    def obtener_datos_generales(self, cripta_id):
+        datos = super().obtener_datos_generales(cripta_id)
+        datos["salas_total"] = len(self.salas)
+        datos["sala_inicial"] = self.sala_inicial
+        datos["sala_salida"] = self.sala_salida
+        datos["jugador"]["vida_max"] = self.vida_jugador
+        return datos
+
+    def obtener_salas(self, cripta_id):
+        self.llamadas.append(("salas", cripta_id))
+        return self.salas
+
+    def obtener_contenido(self, cripta_id, salas):
+        self.llamadas.append(("contenido", list(salas)))
+        contenidos = []
+        for numero in salas:
+            colocados = []
+            for sala, instancia, tipo, vida in self.enemigos:
+                if sala == numero:
+                    colocados.append({"instancia": instancia, "tipo": tipo, "vida": vida})
+            contenidos.append({"sala": numero, "enemigos": colocados, "objetos": [], "trampas": []})
+        return contenidos
+
+    def obtener_catalogo(self, ids):
+        devueltas = super().obtener_catalogo(ids)
+        for ficha in self.fichas:
+            if ficha["id"] in ids:
+                devueltas.append(ficha)
+        return devueltas
+
+
 def nueva_ejecucion(carpeta, **versiones):
     """Simula abrir el juego: cliente falso nuevo, almacén nuevo, servicio nuevo."""
     http = HttpFalso(**versiones)

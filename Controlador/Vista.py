@@ -1,5 +1,10 @@
 
 class VistaConsola:
+
+   def mostrar_advertencias(self, advertencias):
+        """Datos inválidos de la cripta que se corrigieron al leerlos (costos de salida, rangos de cazador)."""
+        for advertencia in advertencias:
+            print(f"AVISO: {advertencia}")
    
    def mostrar_juego(self, jugador, sala_actual, objeto_actual=None, mensajes=None):
         
@@ -19,7 +24,7 @@ class VistaConsola:
 
             print(
                 f"  > {salida.direccion.capitalize()} -> "
-                f"Sala {salida.sala_destino} [{estado_puerta}]"
+                f"Sala {salida.sala_destino} [{estado_puerta}] costo {salida.costo}"
             )
         print("\n--- OBJETOS EN LA SALA ---")
         if sala_actual.objetos:
@@ -37,7 +42,8 @@ class VistaConsola:
         print("\n--- ENEMIGOS ---")
         if sala_actual.enemigos:
             for enm in sala_actual.enemigos:
-                print(f"  - {enm.nombre} (Vida: {enm.vida_actual}/{enm.vida_max})")
+                marca = "[CAZADOR] " if enm.comportamiento == "cazador" else ""
+                print(f"  - {marca}{enm.nombre} (Vida: {enm.vida_actual}/{enm.vida_max})")
         else:
             print("  (No hay enemigos)")
             

@@ -17,7 +17,8 @@ class ComportamientoRastreador(ComportamientoEnemigo):
         return sala.ultimo_paso
 
     @staticmethod
-    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None, tiempo_actual: int | None = None) -> str:
+    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None, tiempo_actual: int | None = None,
+               campo_de_costos=None) -> AccionEnemigoDTO:
         siguienteSala: SalidaDTO = None
         pasoSiguiente = 0
         for t in salas[enemigo.id_sala_actual].salidas:
@@ -35,12 +36,12 @@ class ComportamientoRastreador(ComportamientoEnemigo):
                     siguienteSala = t
                     pasoSiguiente = paso
         if siguienteSala is None or pasoSiguiente < 0:
-            return "NO SE MOVIÓ"
+            return AccionEnemigoDTO("NO SE MOVIÓ")
         salaActual = salas[enemigo.id_sala_actual]
         respuesta = ActorLogica._mover(enemigo, salaActual, siguienteSala.direccion)
         if not respuesta.exito:
-            return "NO SE MOVIÓ"
+            return AccionEnemigoDTO("NO SE MOVIÓ")
         if enemigo in salaActual.enemigos:
             salaActual.enemigos.remove(enemigo)
         #salas[siguienteSala.sala_destino].enemigos.append(enemigo)
-        return f"SE MOVIO A {siguienteSala.direccion}"
+        return AccionEnemigoDTO(f"SE MOVIO A {siguienteSala.direccion}", respuesta.costo)

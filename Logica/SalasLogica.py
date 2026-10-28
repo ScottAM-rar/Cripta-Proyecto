@@ -3,9 +3,11 @@ from DTO.ActorDTO import JugadorDTO
 from Logica.JugadorLogica import *
 from DTO.EventoDTO import EventoDTO
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
+from Logica.PuertasLogica import fijar_cerrada
 class SalaLogica :
-    def __init__(self,sala:SalaDTO):
+    def __init__(self,sala:SalaDTO, avisar_puerta=None):
         self.sala: SalaDTO = sala
+        self.avisar_puerta = avisar_puerta     # se llama con la salida cada vez que una puerta cambia de estado
 
     def _obtener_salida(self, direccion: Direccion) -> SalidaDTO | None:
         """Recorre la deque del DTO externamente y devuelve la salida o None."""
@@ -28,7 +30,7 @@ class SalaLogica :
                     respuesta.exito,respuesta.mensaje =  False, "No tiene la llave adecuada para abrir la puerta"
                     return respuesta
             
-            salida.cerrada = False
+            fijar_cerrada(salida, False, self.avisar_puerta)
             respuesta.exito,respuesta.mensaje, respuesta.puntaje = True, "La puerta ha sido abierta", 25
             if(salida.cierre_automatico is not None):
                 respuesta.eventoResultado = EventoDTO(salida.cierre_automatico,None,self.sala,"CERRAR_PUERTA",[direccion])
@@ -41,7 +43,7 @@ class SalaLogica :
         if not salida:
             respuesta.exito, respuesta.mensaje = False, "No existe la salida a cerrar"
         else:
-            salida.cerrada = True
+            fijar_cerrada(salida, True, self.avisar_puerta)
             respuesta.exito, respuesta.mensaje = True, f"Se ha cerrado la puerta {salida.direccion} de la sala {self.sala.id}"
         return respuesta
     def actualizarTiempo(self,nuevoTiempo: int):

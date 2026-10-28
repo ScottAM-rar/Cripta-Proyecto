@@ -2,6 +2,7 @@ from Logica.ComportamientoEnemigo import *
 from Logica.CompGuardian import ComportamientoGuardian
 from Logica.CompErrante import ComportamientoErrante
 from Logica.CompRastreador import ComportamientoRastreador
+from Logica.CompCazador import ComportamientoCazador
 class ComportamientoFactory:
 
     @staticmethod
@@ -13,5 +14,7 @@ class ComportamientoFactory:
                 return ComportamientoErrante()
             case "rastreador":
                 return ComportamientoRastreador()
+            case "cazador":
+                return ComportamientoCazador()
             case _:
                 raise ValueError(f"El comportamiento '{tipo}' no existe")

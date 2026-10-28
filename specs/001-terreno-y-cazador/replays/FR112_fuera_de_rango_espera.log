@@ -1,0 +1,10 @@
+cripta: cripta-01
+semilla: 1
+version_cripta: c1
+version_catalogo: k1
+{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 300, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 2}, "oeste"]}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}

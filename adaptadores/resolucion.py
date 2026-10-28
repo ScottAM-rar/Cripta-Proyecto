@@ -45,11 +45,28 @@ def resolver_objeto(ficha: dict, id_sala: int | None = None) -> Objeto:
  
     return Clase(**datos)
  
-def resolver_ficha_enemigo(ficha: dict) -> EnemigoCatalogoDTO:
+def _rango_de(ficha: dict, advertencias: list[str] | None) -> int:
+    """Rango de un cazador (FR-108): entero >= 0. Ausente o inválido (negativo, no entero) vale 0 y deja una
+    advertencia; 0 declarado es válido. Solo importa si el comportamiento es 'cazador'; para los demás vale 0."""
+    if ficha.get("comportamiento") != "cazador":
+        return 0
+    valor = ficha.get("rango")
+    if isinstance(valor, int) and not isinstance(valor, bool) and valor >= 0:
+        return valor
+    if advertencias is not None:
+        motivo = "sin rango" if "rango" not in ficha else f"rango inválido {valor!r}"
+        texto = f"Ficha {ficha.get('id')}: cazador {motivo}; se usa 0 (solo ataca en su sala)"
+        if texto not in advertencias:
+            advertencias.append(texto)
+    return 0
+
+
+def resolver_ficha_enemigo(ficha: dict, advertencias: list[str] | None = None) -> EnemigoCatalogoDTO:
     """Convierte la ficha cruda de /catalogo (clase == 'enemigo') en
     EnemigoCatalogoDTO."""
     datos = dict(ficha)
     datos.pop("clase")
+    datos["rango"] = _rango_de(ficha, advertencias)
     return EnemigoCatalogoDTO(**datos)
  
 def resolver_enemigo(colocacion: dict, ficha: EnemigoCatalogoDTO, id_sala: int) -> EnemigoDTO:
@@ -70,6 +87,7 @@ def resolver_enemigo(colocacion: dict, ficha: EnemigoCatalogoDTO, id_sala: int) 
         nombre=ficha.nombre,
         comportamiento=ficha.comportamiento,
         suelta=list(ficha.suelta),
+        rango=ficha.rango,
     )
  
  
@@ -163,12 +181,12 @@ def resolver_botin(cliente, cache, ids_suelta: list[str], id_sala: int) -> list[
     return botin
 
 
-def _armar_sala(contenido: dict, fichas: list[dict], numero_sala: int):
+def _armar_sala(contenido: dict, fichas: list[dict], numero_sala: int, advertencias: list[str] | None = None):
     """Resuelve enemigos, objetos y trampas de UNA sala a partir de su
     colocación (/contenido) y de las fichas ya disponibles."""
     enemigos = []
     for colocacion in contenido["enemigos"]:
-        ficha = resolver_ficha_enemigo(_buscar_ficha(fichas, colocacion["tipo"]))
+        ficha = resolver_ficha_enemigo(_buscar_ficha(fichas, colocacion["tipo"]), advertencias)
         enemigos.append(resolver_enemigo(colocacion, ficha, numero_sala))
  
     objetos = []
@@ -182,7 +200,7 @@ def _armar_sala(contenido: dict, fichas: list[dict], numero_sala: int):
     return enemigos, objetos, trampas
  
  
-def resolver_sala(cliente, cache, cripta_id: str, numero_sala: int):
+def resolver_sala(cliente, cache, cripta_id: str, numero_sala: int, advertencias: list[str] | None = None):
     resultado = cliente.obtener_contenido(cripta_id, [numero_sala])
     if not resultado:
         raise ValueError(f"La API no devolvió contenido para la sala {numero_sala}")
@@ -191,10 +209,10 @@ def resolver_sala(cliente, cache, cripta_id: str, numero_sala: int):
     ids = _ids_necesarios(contenido)
     fichas = _obtener_fichas(ids, cliente, cache)
     fichas = fichas + _obtener_fichas(_ids_de_botin([contenido], fichas, ids), cliente, cache)
-    return _armar_sala(contenido, fichas, numero_sala)
+    return _armar_sala(contenido, fichas, numero_sala, advertencias)
  
  
-def resolver_salas(cliente, cache, cripta_id: str, numeros: list[int]):
+def resolver_salas(cliente, cache, cripta_id: str, numeros: list[int], advertencias: list[str] | None = None):
     """Igual que resolver_sala pero para varias salas a la vez.
  
     Pide el contenido de todas en lotes de 10 y las fichas que falten en
@@ -219,6 +237,6 @@ def resolver_salas(cliente, cache, cripta_id: str, numeros: list[int]):
     resultado = []
     posicion = 0
     for numero in numeros:
-        resultado.append(_armar_sala(contenidos[posicion], fichas, numero))
+        resultado.append(_armar_sala(contenidos[posicion], fichas, numero, advertencias))
         posicion += 1
     return resultado

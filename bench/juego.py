@@ -13,14 +13,18 @@ from Logica.RetrocesoLogica import RetrocesoLogica
 
 FICHA_ENEMIGO = {"id": "ent_bench", "clase": "enemigo", "nombre": "Esbirro", "vida_max": 1_000_000, "ataque": 1,
                  "defensa": 0, "velocidad": 100, "comportamiento": "guardián", "suelta": []}
+RANGO_CAZADOR = 1_000      # unos diez pasos en la rejilla sintética (cada salida cuesta 100)
 
 
 class ClienteDeBatalla(ClienteSintetico):
     """Cripta en rejilla con `enemigos` esbirros en la sala inicial y un jugador que no muere por el bench."""
 
-    def __init__(self, ancho: int, alto: int, enemigos: int) -> None:
+    def __init__(self, ancho: int, alto: int, enemigos: int, comportamiento: str = "guardián") -> None:
         super().__init__(ancho, alto)
         self.enemigos = enemigos
+        self.ficha = dict(FICHA_ENEMIGO, comportamiento=comportamiento)
+        if comportamiento == "cazador":
+            self.ficha["rango"] = RANGO_CAZADOR
 
     def obtener_datos_generales(self, cripta_id):
         datos = super().obtener_datos_generales(cripta_id)
@@ -39,11 +43,11 @@ class ClienteDeBatalla(ClienteSintetico):
 
     def obtener_catalogo(self, ids):
         self.llamadas += 1
-        return [dict(FICHA_ENEMIGO)] if "ent_bench" in ids else []
+        return [dict(self.ficha)] if "ent_bench" in ids else []
 
 
-def servicio_sintetico(carpeta: str, enemigos: int = 0, ancho: int = 5, alto: int = 5):
-    cliente = ClienteDeBatalla(ancho, alto, enemigos)
+def servicio_sintetico(carpeta: str, enemigos: int = 0, ancho: int = 5, alto: int = 5, comportamiento: str = "guardián"):
+    cliente = ClienteDeBatalla(ancho, alto, enemigos, comportamiento)
     servicio = ServicioCripta(ClientePersistente(cliente, AlmacenDisco(carpeta)), CacheLRU(25))
     servicio.listar_criptas()
     return servicio, servicio.obtener_id_cripta(1)
@@ -56,10 +60,10 @@ def juego_sin_iniciar(carpeta: str, enemigos: int = 0) -> EstadoJuegoLogica:
     return EstadoJuegoLogica(None, None, servicio)
 
 
-def nuevo_juego(carpeta: str, enemigos: int = 0) -> EstadoJuegoLogica:
+def nuevo_juego(carpeta: str, enemigos: int = 0, comportamiento: str = "guardián") -> EstadoJuegoLogica:
     """Juego del modelo real sobre la cripta sintética (sin log en disco, sin vista)."""
     RetrocesoLogica().reiniciar()
-    servicio, cripta = servicio_sintetico(tempfile.mkdtemp(dir=carpeta), enemigos)
+    servicio, cripta = servicio_sintetico(tempfile.mkdtemp(dir=carpeta), enemigos, comportamiento=comportamiento)
     juego = EstadoJuegoLogica(1, cripta, servicio)
     juego.ingresarEnSala(juego.estadoJuego.jugador.id_sala_actual)     # como hace el controlador al empezar: carga la sala y activa a sus enemigos
     return juego

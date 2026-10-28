@@ -7,6 +7,14 @@ class ControladorJuego:
     def __init__(self, servicio: EstadoJuegoServicio):
         self.servicio = servicio
         self.vista = VistaConsola()
+        self._advertencias_mostradas = 0
+
+    def _mostrar_advertencias_nuevas(self):
+        """Muestra las advertencias de datos que aparecieron desde la última vez (cada una se muestra una sola vez)."""
+        todas = self.servicio.advertenciasDeDatos()
+        if len(todas) > self._advertencias_mostradas:
+            self.vista.mostrar_advertencias(todas[self._advertencias_mostradas:])
+            self._advertencias_mostradas = len(todas)
 
     def iniciar(self):
         print("\n¡Bienvenido a Cripta!")
@@ -71,6 +79,7 @@ class ControladorJuego:
             if not jugador:
                 print("Error: No se pudo obtener el estado del jugador.")
                 break
+            self._mostrar_advertencias_nuevas()
                 
             terminado, _ = self.servicio.terminado()
             if terminado or jugador.vida_actual <= 0:
@@ -197,7 +206,7 @@ class ControladorJuego:
                 return "IGNORAR"
 
             return EventoDTO(
-                tiempo_ejecucion=100,
+                tiempo_ejecucion=salida.costo,      # moverse cuesta lo que cuesta la salida (FR-103)
                 id_secuencia=0,
                 actor=jugador,
                 tipo_accion="MOVER_JUGADOR",

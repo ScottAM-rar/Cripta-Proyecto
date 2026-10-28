@@ -13,7 +13,7 @@ import sys
 import tempfile
 from datetime import datetime
 
-from bench import agenda, bitacora, ciclo, guardado, inventario, ordenamiento, retroceso, salas
+from bench import agenda, bitacora, ciclo, guardado, inventario, ordenamiento, retroceso, salas, terreno
 from bench.datos import SEMILLA
 from bench.salida import escribir_csv, imprimir_tabla
 
@@ -42,6 +42,7 @@ BLOQUES = (
     ("guardado", guardado.ejecutar),
     ("bitacora", bitacora.ejecutar),
     ("ciclo", ciclo.ejecutar),
+    ("terreno", terreno.ejecutar),
 )
 
 
@@ -66,12 +67,12 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
             continue
         imprimir(f"... midiendo {nombre}")
         resultado = funcion(filas)
-        if nombre == "ciclo" and resultado is False:
+        if nombre in ("ciclo", "terreno") and resultado is False:
             cumple = False
     imprimir_tabla(filas, imprimir)
     if ruta_csv:
         escribir_csv(filas, ruta_csv)
         imprimir(f"\nResultados guardados en {ruta_csv}")
-    if "ciclo" in pedidos:
+    if "ciclo" in pedidos or "terreno" in pedidos:
         imprimir("\n§5.2: " + ("el ciclo de eventos CUMPLE el límite de 20 ms." if cumple else "el ciclo de eventos NO cumple el límite de 20 ms."))
     return 0 if cumple else 1

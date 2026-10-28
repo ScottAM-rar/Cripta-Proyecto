@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Protocol
 
 from DTO.ActorDTO import EnemigoDTO, JugadorDTO
+from DTO.MapaDTO import MapaDTO
 from DTO.SalaDTO import SalaDTO
 
 
@@ -23,6 +24,8 @@ class FuenteCripta(Protocol):
     def total_salas(self, cripta_id: str) -> int: ...
 
     def construir_sala(self, cripta_id: str, numero_sala: int) -> SalaDTO: ...
+
+    def obtener_mapa(self, cripta_id: str) -> MapaDTO: ...
 
     def objetos_que_suelta(self, enemigo: EnemigoDTO) -> list: ...
 

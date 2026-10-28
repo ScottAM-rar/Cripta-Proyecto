@@ -20,6 +20,7 @@ class SalidaDTO:
     cerrada: bool = False               # True si requiere llave para abrirse
     llave: str | None = None           # ID de la llave necesaria (ej: "itm_llave_bronce")[cite: 1]
     cierre_automatico: int | None = None # Tiempo virtual de re-cierre si aplica[cite: 1]
+    costo: int = 100                   # costo de tránsito, entero >= 1 (FR-101); el mismo en ambos sentidos
 
 
 

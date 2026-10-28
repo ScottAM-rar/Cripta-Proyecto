@@ -386,6 +386,15 @@ Registro de prompts usados con herramientas de IA, separado por integrante. Cada
   > dime que pasa con "esperar" en el proyecto, la accion de juego esperar
 - **Uso de la respuesta:** Consultar cómo funciona la acción de juego esperar en el proyecto.
 
+
+###Proyecto 2
+## 1. Ayudar a hacer el constitution
+- **Fecha:** 2026-10-27
+- **Herramienta / modelo:** Claude Sonnet 5.5
+- **Prompt:**
+  > ayudame a hacer el constitution prompt más robusto que se pueda explicando todo el anterior y lo que se va a agregar con este, revisa todo y crealo lo mas conciso y robusto posible
+- **Uso de la respuesta:** Empezar a realizar los primeros pasos, crear el constitution
+
 ---
 
 # Fernanda

@@ -36,17 +36,20 @@ class EnemigoLogica(ActorLogica):
         self._atacar(self.enemigo, jugador, self.azar)
         return ResultadoEventoDTO(True,f"El enemigo {self.enemigo.id_instancia} ha atacado al jugador causando daño")
 
-    def decidirAccion(self,jugador: ActorDTO, salas: list[SalaDTO], tiempo_actual: int | None = None)-> ResultadoEventoDTO:
+    def decidirAccion(self,jugador: ActorDTO, salas: list[SalaDTO], tiempo_actual: int | None = None,
+                      campo_de_costos=None)-> ResultadoEventoDTO:
         if self.enemigo is None:
             raise ValueError("No se puede decidir acciones sobre un enemigo que no existe")
         if self.enemigo.vida_actual <= 0:
             return ResultadoEventoDTO(False, "")      # un muerto no actúa ni deja mensajes: su cadena de eventos termina aquí
+        costo = 100                                    # atacar y esperar siguen costando 100 (FR-107)
         if jugador.id_sala_actual == self.enemigo.id_sala_actual:
             accion = self.atacarJugador(jugador)
         else:
-            mensaje = f"El enemigo {self.enemigo.id_instancia} " + self._comportamiento.acción(self.enemigo,salas,self.azar,tiempo_actual)
-            accion = ResultadoEventoDTO(True, mensaje)
-        eventoNuevo = EventoDTO(100,0,self.enemigo,"ACCION_ENEMIGO",[jugador])
+            decision = self._comportamiento.acción(self.enemigo,salas,self.azar,tiempo_actual,campo_de_costos)
+            accion = ResultadoEventoDTO(True, f"El enemigo {self.enemigo.id_instancia} " + decision.mensaje)
+            costo = decision.costo                     # moverse cuesta lo que cuesta la salida (FR-103)
+        eventoNuevo = EventoDTO(costo,0,self.enemigo,"ACCION_ENEMIGO",[jugador])
 
         accion.eventoResultado = eventoNuevo
         return accion
