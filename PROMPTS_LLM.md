@@ -14,3 +14,4 @@ Herramienta en todas las entradas: Spec Kit 1.2.3 con Claude Code. Modelo: `clau
 | 4 | `/speckit-plan` (sin texto adicional) | — | `plan.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md` |
 | 5 | `/speckit-tasks` (sin texto adicional) | — | `tasks.md` |
 | 6 | `/speckit-implement` (sin texto adicional) y respuestas durante la ejecución | Costos distintos en los dos lados: gana la sala de menor id; conexiones de un solo sentido: válidas; control de versiones: no confirmar nada | Código, pruebas y `mediciones.md`; FR-102 ampliado y FR-124 nuevo en `spec.md` |
+| 7 | `/speckit-specify` | Capacidad transversal de recorrido por niveles de la cripta: visitar las salas en orden de cercanía desde un origen, desempate determinista, una sola visita por sala, límite de niveles, salidas de un solo sentido, determinismo, costo proporcional a lo visitado y escenarios de aceptación | `specs/005-recorrido-por-niveles/spec.md` (FR-501 a FR-512) |
