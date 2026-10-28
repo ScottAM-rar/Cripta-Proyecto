@@ -47,6 +47,7 @@ Quien revisa pide el recorrido desde una sala y obtiene la secuencia de salas al
 8. **Dado** una salida que quien pide el recorrido no declara transitable, **cuando** se recorre, **entonces** esa salida no se recorre y las salas que solo se alcanzan por ella no aparecen. *(FR-507, FR-505)*
 9. **Dado** que quien pide el recorrido no declara ningún criterio, **cuando** se recorre, **entonces** se recorren todas las salidas existentes. *(FR-507)*
 10. **Dado** un origen que no existe en la cripta, **cuando** se pide el recorrido, **entonces** se rechaza con un error claro. *(FR-512)*
+11. **Dado** una sala con una salida que lleva a una sala que no existe en la cripta, **cuando** se recorre, **entonces** esa salida se ignora, la sala inexistente no aparece en el recorrido y el resto del recorrido no cambia. *(FR-513)*
 
 ---
 
@@ -77,7 +78,7 @@ Quien revisa comprueba que dos ejecuciones iguales dan la misma secuencia y que 
 **Escenarios de aceptación**:
 
 1. **Dado** la misma cripta y el mismo origen, **cuando** se recorre dos veces con el mismo criterio de transitabilidad, **entonces** la secuencia de salas es exactamente la misma. *(FR-509)*
-2. **Dado** un recorrido de pocos niveles, **cuando** la cripta crece cien veces sin cambiar la zona alrededor del origen, **entonces** el costo no crece en esa proporción (SC-004). *(FR-510)*
+2. **Dado** un recorrido de pocos niveles, **cuando** la cripta crece cien veces sin cambiar la zona alrededor del origen, **entonces** las salas visitadas y las salidas examinadas no crecen con el tamaño de la cripta (SC-004). *(FR-510)*
 3. **Dado** `--bench`, **cuando** se ejecuta, **entonces** informa el recorrido sobre criptas sintéticas deterministas por semilla. *(FR-511)*
 
 ---
@@ -88,6 +89,7 @@ Quien revisa comprueba que dos ejecuciones iguales dan la misma secuencia y que 
 - Límite de niveles negativo o no entero: se rechaza con un error claro (FR-504).
 - Una sala que tiene dos salidas hacia la misma sala: se visita una sola vez (FR-503).
 - Una salida que lleva de una sala a sí misma: no repite la sala (FR-503).
+- Una salida que lleva a una sala que no existe en la cripta: se ignora, como si no existiera; no se rechaza el recorrido ni aparece esa sala (FR-513).
 - Origen dentro de un ciclo: el origen aparece una sola vez, al principio (FR-501, FR-503).
 - Dentro de un mismo nivel, el orden es por menor id de sala: el resultado no depende del orden en que estén declaradas las salidas ni de la sala por la que se llegó (FR-502).
 - Una salida que quien pide el recorrido no declara transitable no se recorre: es como si no existiera para ese recorrido, y las salas que solo se alcanzan por ella no aparecen (FR-507).
@@ -108,6 +110,7 @@ Quien revisa comprueba que dos ejecuciones iguales dan la misma secuencia y que 
 - **FR-507**: Quien pide el recorrido PUEDE declarar qué salidas son transitables. Solo las salidas declaradas transitables se recorren; las demás se tratan como si no existieran para ese recorrido. Si no se declara ningún criterio, todas las salidas existentes son transitables. El criterio forma parte de lo que determina el resultado (FR-509).
 - **FR-508**: Si el origen no tiene salidas transitables, el recorrido DEBE contener solo el origen.
 - **FR-512**: Un origen que no existe en la cripta DEBE rechazarse con un error claro.
+- **FR-513**: Una salida que lleva a una sala que no existe en la cripta DEBE ignorarse: esa sala NO DEBE aparecer en el recorrido y el recorrido NO DEBE rechazarse por ello.
 
 **Determinismo**
 
@@ -132,7 +135,7 @@ Quien revisa comprueba que dos ejecuciones iguales dan la misma secuencia y que 
 - **SC-001**: En 100 % de los escenarios de aceptación, la secuencia obtenida coincide con la esperada.
 - **SC-002**: Repetir 100 veces el mismo recorrido sobre la misma cripta produce la misma secuencia en las 100.
 - **SC-003**: Ninguna sala aparece dos veces en ningún recorrido de las pruebas, incluidas criptas con ciclos y caminos paralelos.
-- **SC-004**: Un recorrido de 2 niveles toma casi el mismo tiempo en una cripta de 400 salas que en una de 40 000 (a lo sumo el doble), siempre que la zona alrededor del origen sea igual.
+- **SC-004**: Un recorrido acotado de 2 niveles desde el centro de criptas de 400, de 4 900 y de 40 000 salas, con la misma zona alrededor del origen, visita **las mismas salas** y examina **las mismas salidas** en las tres: la cantidad de salas visitadas y la de salidas examinadas no crecen con el tamaño de la cripta y son proporcionales a lo visitado. Este conteo es el criterio verificable. La razón entre los tiempos de la cripta de 40 000 y la de 400 se informa con `--bench` como **medición informativa**: se espera cercana a 1, pero no se exige ningún valor, porque depende de la máquina.
 - **SC-005**: Quien revisa puede escribir a mano el recorrido esperado de una cripta pequeña a partir de las reglas de esta especificación, sin consultar el programa, y coincide con el resultado.
 
 ## Supuestos
