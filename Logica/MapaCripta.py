@@ -26,9 +26,11 @@ class MapaCripta:
         self.tamano = len(mapa.salas)                       # mayor id + 1; la posición 0 no se usa
         self.salientes: list[list[AristaCripta]] = [[] for _ in range(self.tamano)]
         self.entrantes: list[list[AristaCripta]] = [[] for _ in range(self.tamano)]
+        self.existe: list[bool] = [False] * self.tamano     # existe[i]: el esqueleto tiene una sala con id i (FR-512, FR-513)
         for sala in mapa.salas:
             if sala is None:
                 continue
+            self.existe[sala.id] = True
             for a in sala.salidas:
                 arista = AristaCripta(sala.id, a.direccion, a.destino, a.costo, a.cerrada_inicial)
                 self.salientes[sala.id].append(arista)

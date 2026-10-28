@@ -95,3 +95,86 @@ def esqueleto_de_conexiones(conexiones: list[tuple], total: int | None = None) -
                 salida["cerrada"] = True
             salas[origen - 1]["salidas"][letra] = salida
     return salas
+
+
+# ---------------------------------------------------------------- recorrido por niveles (capacidad 005)
+
+_OPUESTA = {"N": "S", "S": "N", "E": "O", "O": "E"}
+
+
+def esqueleto_arbol(ramificacion: int, niveles: int) -> list[dict]:
+    """Árbol completo: la raíz (sala 1) tiene `ramificacion` hijos y cada hijo también; ids desde 1 en orden de niveles.
+    Cada sala usa una letra para su padre y las demás para sus hijos, así que la ramificación máxima es 3.
+    `esqueleto_arbol(3, 9)` tiene 29 524 salas (el último nivel, 19 683): la forma de cripta de frontera más ancha."""
+    if not 1 <= ramificacion <= 3:
+        raise ValueError("La ramificación debe estar entre 1 y 3 (cada sala tiene a lo sumo 4 salidas)")
+    total = 0
+    ancho = 1
+    for _ in range(niveles + 1):
+        total += ancho
+        ancho *= ramificacion
+    salas = [{"id": i, "nombre": f"Sala {i}", "salidas": {}} for i in range(1, total + 1)]
+    letra_al_padre = [None] * (total + 1)
+    for padre in range(1, total + 1):
+        libres = [l for l in LETRAS if l != letra_al_padre[padre]]
+        for j in range(ramificacion):
+            hijo = (padre - 1) * ramificacion + 2 + j
+            if hijo > total:
+                break
+            letra = libres[j]
+            salas[padre - 1]["salidas"][letra] = {"sala": hijo}
+            letra_al_padre[hijo] = _OPUESTA[letra]
+            salas[hijo - 1]["salidas"][_OPUESTA[letra]] = {"sala": padre}
+    return salas
+
+
+def esqueleto_dirigido_aleatorio(total: int, semilla: int, fraccion_un_sentido: float = 0.2,
+                                 fraccion_inexistentes: float = 0.0) -> list[dict]:
+    """Cripta al azar, determinista por semilla, pensada para estresar el recorrido: ciclos, caminos paralelos, dos
+    salidas distintas hacia la misma sala, salidas de una sala a sí misma, conexiones de un solo sentido y, según
+    `fraccion_inexistentes`, salidas hacia ids que no existen (fuera de rango o en un hueco). A lo sumo 4 salidas por
+    sala. Ids desde 1; con `fraccion_inexistentes` > 0 faltan algunas salas del medio."""
+    azar = random.Random(semilla)
+    hueco = [False] * (total + 1)
+    if fraccion_inexistentes > 0 and total > 3:
+        for i in range(2, total):
+            hueco[i] = azar.random() < fraccion_inexistentes / 2
+    ids = [i for i in range(1, total + 1) if not hueco[i]]
+    salas = {}
+    for i in ids:
+        salas[i] = {"id": i, "nombre": f"Sala {i}", "salidas": {}}
+
+    def destino_al_azar():
+        if fraccion_inexistentes > 0 and azar.random() < fraccion_inexistentes:
+            huecos = [i for i in range(1, total + 1) if hueco[i]]
+            if huecos and azar.random() < 0.5:
+                return huecos[azar.randrange(len(huecos))]
+            return total + azar.randint(1, 5)
+        return ids[azar.randrange(len(ids))]
+
+    for i in ids:
+        cuantas = azar.choice((0, 1, 2, 2, 3, 3, 4))
+        letras = list(LETRAS)
+        azar.shuffle(letras)
+        for letra in letras[:cuantas]:
+            if letra in salas[i]["salidas"]:
+                continue
+            destino = destino_al_azar()
+            salas[i]["salidas"][letra] = {"sala": destino}
+            if destino in salas and destino != i and azar.random() >= fraccion_un_sentido:
+                for vuelta in LETRAS:                                   # su inversa, si la sala destino tiene una letra libre
+                    if vuelta not in salas[destino]["salidas"]:
+                        salas[destino]["salidas"][vuelta] = {"sala": i}
+                        break
+    return [salas[i] for i in ids]
+
+
+def mapa_desde_esqueleto(esqueleto: list[dict]):
+    """MapaCripta armado por el mismo camino que usa el juego: ServicioCripta.obtener_mapa sobre una API falsa."""
+    from adaptadores.cache import CacheLRU
+    from adaptadores.servicioCripta import ServicioCripta
+    from Logica.MapaCripta import MapaCripta
+    from tests_labs.api_falsa import HttpConfigurable
+    servicio = ServicioCripta(HttpConfigurable(esqueleto), CacheLRU(5))
+    servicio.listar_criptas()
+    return MapaCripta(servicio.obtener_mapa(servicio.obtener_id_cripta(1)))
