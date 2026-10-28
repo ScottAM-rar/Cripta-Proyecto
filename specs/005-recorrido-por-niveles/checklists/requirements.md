@@ -35,3 +35,4 @@
 - El escenario 8 del enunciado (dos ejecuciones iguales) quedó como Historia 3, escenario 1 (FR-509).
 - Se agregó FR-512 (origen inexistente), no pedido en el enunciado, por ser un caso límite que el enunciado no cubre; revisar si el grupo lo quiere.
 - FR-510 no se mide con un número fijo de milisegundos porque el enunciado pide proporcionalidad; SC-004 la concreta como a lo sumo el doble al multiplicar el tamaño de la cripta por 100.
+- 2026-10-28 (implement T001): plan y tareas revisados contra la lista de prohibidos del principio I. Sin hallazgos: cola circular y marcas de época sobre list; orden con ordenar_adaptativo; las alternativas del bench (pop(0), índice de cabeza, dos listas, MonticuloMinimo propio) no necesitan deque ni collections. Preexistente de la Parte I, que esta capacidad no amplía: deque en SalaDTO.salidas, servicioCripta.salas_vecinas y adaptadores/cache.py.

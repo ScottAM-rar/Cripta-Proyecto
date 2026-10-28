@@ -19,3 +19,4 @@ Herramienta en todas las entradas: Spec Kit 1.2.3 con Claude Code. Modelo: `clau
 | 11 | `/speckit-analyze` | Reporte de consistencia: 0 críticos, 6 medios, 4 bajos |
 | 12 | Corrección de spec tras analyze: una salida hacia una sala inexistente se ignora (FR-513) y SC-004 se verifica por conteo con la razón de tiempos solo informativa. | `spec.md` |
 | 13 | Alineación de plan y tareas con la spec corregida (C1, I1, I2, U1, A1, S1, D1, T1, M1). | `tasks.md`, `plan.md`, `quickstart.md`, `data-model.md` |
+| 14 | `/speckit-implement` (2026-10-28, sin texto adicional) | Código de la capacidad 005: `Logica/ColaCircular.py`, `Logica/RecorridoPorNiveles.py`, `DTO/RecorridoDTO.py`, `MapaCripta.existe`; pruebas y `bench/recorrido.py`; `mediciones.md` |

@@ -13,12 +13,13 @@ Proyecto 1 de Estructura de datos
    Reproducir: python main.py --replay NOMBRE.log (los logs quedan en logs/)
    Mediciones: python main.py --bench
    Mediciones de terreno y cazador: python main.py --bench terreno
+   Mediciones del recorrido por niveles: python main.py --bench recorrido
    Pruebas: python -m unittest discover -p "test_*.py"
    Datos generados: datos_cripta/, logs/, Partidas Guardadas/
 
 ## Desarrollo guiado por especificaciones (Parte II)
 
-Capacidades (cada una en `specs/<NNN-nombre>/`): `001-terreno-y-cazador` (costo de las salidas y enemigo cazador). Las decisiones y su comparación con el plan original están en `DECISIONES.md`; los comandos de Spec Kit con texto propio, en `PROMPTS_LLM.md`.
+Capacidades (cada una en `specs/<NNN-nombre>/`): `001-terreno-y-cazador` (costo de las salidas y enemigo cazador); `005-recorrido-por-niveles` (visitar las salas en orden de cercanía; por ahora solo se construye y se mide: la precarga y la verificación de resolubilidad lo adoptarán después). Las decisiones y su comparación con el plan original están en `DECISIONES.md`; los comandos de Spec Kit con texto propio, en `PROMPTS_LLM.md`.
 
 **Compatibilidad de partidas guardadas**: el formato binario subió de la versión 5 a la 6 (costo por salida y rango por enemigo). Un archivo de una versión anterior se rechaza con un mensaje que indica la versión encontrada y la esperada; no se migra.
 
