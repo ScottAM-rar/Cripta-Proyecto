@@ -18,6 +18,13 @@ Varias funciones del juego necesitan visitar las salas de la cripta en orden de 
 
 **Fuera de alcance**: costos de las salidas y cazador (capacidad 001), puertas y llaves, mapa conocido del jugador, verificación de resolubilidad. Esta capacidad entrega el recorrido; no decide qué hacer con las salas visitadas.
 
+## Clarificaciones
+
+### Sesión 2026-10-27
+
+- Q: Dentro de un mismo nivel, ¿en qué orden se visitan las salas? → A: Por menor id de sala (orden creciente de id).
+- Q: Al pedir un recorrido, ¿se recorren todas las salidas existentes o solo las que quien lo pide declara transitables? → A: Solo las que quien lo pide declara transitables.
+
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
 ### Historia 1 — Recorrer la cripta en orden de cercanía (Prioridad: P1)
@@ -31,12 +38,15 @@ Quien revisa pide el recorrido desde una sala y obtiene la secuencia de salas al
 **Escenarios de aceptación**:
 
 1. **Dado** una cripta en línea de 5 salas, **cuando** se recorre desde un extremo, **entonces** se visitan en orden de cercanía, empezando por el origen. *(FR-501)*
-2. **Dado** una sala con dos vecinas al mismo nivel, **cuando** se recorre, **entonces** se respeta el desempate definido para ese nivel. *(FR-502)*
+2. **Dado** una sala con dos vecinas al mismo nivel, **cuando** se recorre, **entonces** se visita primero la de menor id, aunque su salida esté declarada después. *(FR-502)*
 3. **Dado** un ciclo entre salas, **cuando** se recorre, **entonces** ninguna sala se repite. *(FR-503)*
 4. **Dado** dos caminos hacia la misma sala, **cuando** se recorre, **entonces** se visita una sola vez, en el nivel del camino más corto. *(FR-503)*
 5. **Dado** un origen sin salidas, **cuando** se recorre, **entonces** el recorrido contiene solo el origen. *(FR-505, FR-508)*
 6. **Dado** salas sin ningún camino desde el origen, **cuando** se recorre, **entonces** no aparecen en el recorrido. *(FR-505)*
 7. **Dado** una salida de un solo sentido, **cuando** se recorre, **entonces** no se recorre al revés. *(FR-506)*
+8. **Dado** una salida que quien pide el recorrido no declara transitable, **cuando** se recorre, **entonces** esa salida no se recorre y las salas que solo se alcanzan por ella no aparecen. *(FR-507, FR-505)*
+9. **Dado** que quien pide el recorrido no declara ningún criterio, **cuando** se recorre, **entonces** se recorren todas las salidas existentes. *(FR-507)*
+10. **Dado** un origen que no existe en la cripta, **cuando** se pide el recorrido, **entonces** se rechaza con un error claro. *(FR-512)*
 
 ---
 
@@ -66,7 +76,7 @@ Quien revisa comprueba que dos ejecuciones iguales dan la misma secuencia y que 
 
 **Escenarios de aceptación**:
 
-1. **Dado** la misma cripta y el mismo origen, **cuando** se recorre dos veces, **entonces** la secuencia de salas es exactamente la misma. *(FR-509)*
+1. **Dado** la misma cripta y el mismo origen, **cuando** se recorre dos veces con el mismo criterio de transitabilidad, **entonces** la secuencia de salas es exactamente la misma. *(FR-509)*
 2. **Dado** un recorrido de pocos niveles, **cuando** la cripta crece cien veces sin cambiar la zona alrededor del origen, **entonces** el costo no crece en esa proporción (SC-004). *(FR-510)*
 3. **Dado** `--bench`, **cuando** se ejecuta, **entonces** informa el recorrido sobre criptas sintéticas deterministas por semilla. *(FR-511)*
 
@@ -79,8 +89,9 @@ Quien revisa comprueba que dos ejecuciones iguales dan la misma secuencia y que 
 - Una sala que tiene dos salidas hacia la misma sala: se visita una sola vez (FR-503).
 - Una salida que lleva de una sala a sí misma: no repite la sala (FR-503).
 - Origen dentro de un ciclo: el origen aparece una sola vez, al principio (FR-501, FR-503).
-- Dentro de un mismo nivel, el orden es: [NEEDS CLARIFICATION: ¿se desempata por menor id de sala, o por el orden de las direcciones N, S, E, O de la sala desde la que se llegó?]
-- Qué salidas cuentan como transitables: [NEEDS CLARIFICATION: ¿se recorren todas las salidas existentes, o solo las que quien pide el recorrido declara transitables?]
+- Dentro de un mismo nivel, el orden es por menor id de sala: el resultado no depende del orden en que estén declaradas las salidas ni de la sala por la que se llegó (FR-502).
+- Una salida que quien pide el recorrido no declara transitable no se recorre: es como si no existiera para ese recorrido, y las salas que solo se alcanzan por ella no aparecen (FR-507).
+- Quien pide el recorrido no declara ningún criterio: se recorren todas las salidas existentes (FR-507).
 
 ## Requisitos *(obligatorio)*
 
@@ -89,12 +100,12 @@ Quien revisa comprueba que dos ejecuciones iguales dan la misma secuencia y que 
 **Orden y alcance**
 
 - **FR-501**: Dada una sala de origen, el recorrido DEBE visitar las salas alcanzables por salidas en orden creciente de nivel (cantidad de salidas recorridas por el camino más corto desde el origen). El origen es el primero y está en el nivel 0.
-- **FR-502**: Dentro de un mismo nivel, el orden DEBE ser determinista y definido por una regla escrita: [NEEDS CLARIFICATION: menor id de sala u orden de las direcciones N, S, E, O].
+- **FR-502**: Dentro de un mismo nivel, las salas DEBEN visitarse en orden creciente de id de sala. El orden NO DEBE depender del orden en que estén declaradas las salidas ni de la sala por la que se llegó.
 - **FR-503**: Cada sala DEBE visitarse una sola vez, en el nivel de su camino más corto, aunque existan varios caminos, ciclos, salidas repetidas hacia la misma sala o salidas hacia sí misma.
 - **FR-504**: Quien pide el recorrido PUEDE indicar un límite de niveles, entero mayor o igual que 0. Las salas con nivel mayor que el límite NO DEBEN visitarse. Un límite negativo o no entero DEBE rechazarse con un error claro. Sin límite, se recorre todo lo alcanzable.
 - **FR-505**: Las salas sin camino desde el origen NO DEBEN aparecer en el recorrido.
 - **FR-506**: Una salida de un solo sentido DEBE recorrerse solo en el sentido en que existe.
-- **FR-507**: Las salidas transitables son: [NEEDS CLARIFICATION: todas las salidas existentes, o solo las que quien pide el recorrido declara transitables].
+- **FR-507**: Quien pide el recorrido PUEDE declarar qué salidas son transitables. Solo las salidas declaradas transitables se recorren; las demás se tratan como si no existieran para ese recorrido. Si no se declara ningún criterio, todas las salidas existentes son transitables. El criterio forma parte de lo que determina el resultado (FR-509).
 - **FR-508**: Si el origen no tiene salidas transitables, el recorrido DEBE contener solo el origen.
 - **FR-512**: Un origen que no existe en la cripta DEBE rechazarse con un error claro.
 
