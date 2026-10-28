@@ -1,4 +1,5 @@
 """ColaCircular (Logica/ColaCircular.py): orden FIFO, crecimiento al llenarse y cumplimiento del principio I."""
+"""Pruebas de la cola circular propia (FR-510, principio I)."""
 import os
 import unittest
 
