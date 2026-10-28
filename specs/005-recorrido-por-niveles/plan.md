@@ -31,7 +31,7 @@ El enfoque, justificado en [research.md](research.md):
 
 **Tipo de proyecto**: aplicación de consola por capas. Esta capacidad agrega módulos a la capa de lógica y no toca la vista, el controlador ni los adaptadores.
 
-**Objetivos de rendimiento** (FR-510, SC-004): costo proporcional a las salas y salidas visitadas; un recorrido de 2 niveles en una cripta de 40 000 salas toma a lo sumo el doble que en una de 400.
+**Objetivos de rendimiento** (FR-510, SC-004): costo proporcional a las salas y salidas visitadas. El criterio verificable es de **conteo**: un recorrido de 2 niveles desde el centro visita las mismas salas y examina las mismas salidas en criptas de 400, de 4 900 y de 40 000 salas. La razón de tiempos entre 40 000 y 400 salas se informa con `--bench` como medición informativa, sin umbral.
 
 **Restricciones**: sin `dict`/`set` como índice, sin `heapq`/`bisect`/`collections`/bibliotecas de grafos; sin `list.sort()` ni `sorted()` para ordenar lo evaluado (convención del repositorio, `bench/ordenamiento.py`). El modelo no importa red, disco ni vista. Sin ids ni tamaños de una cripta concreta.
 
@@ -60,7 +60,8 @@ El enfoque, justificado en [research.md](research.md):
 1. **La cola circular y el orden por nivel se solapan.** Como cada nivel se ordena antes de procesarse, la cola solo contiene un nivel a la vez: hace el papel de «nivel actual» y una lista auxiliar acumula «el nivel siguiente». Es válido y es lo que se pidió, pero una alternativa que intercambia dos listas por nivel (sin cola) hace lo mismo con menos piezas. El plan mantiene la cola circular como decisión y **mide las dos**; si la alternativa gana, se cambia y se documenta (principio VII). Detalle en `research.md` §3.
 2. **Existe un recorrido previo, `ServicioCripta.salas_vecinas`**, que usa `deque` y busca repetidos con `in` sobre una lista (lineal). No se toca en esta capacidad. Se incluye en el bench como referencia de «lo que hay hoy». Retirarlo es parte de la capacidad que adopte el recorrido.
 3. **Costos de salida ignorados**: el nivel cuenta salidas, no costos (supuesto de la especificación). El recorrido lee solo destino y dirección de `MapaCripta`.
-4. **SC-004 puede ser frágil**: «a lo sumo el doble» al pasar de 400 a 40 000 salas depende del comportamiento de la memoria en Python. Si la medición lo contradice, la corrección va primero a `spec.md` (principio X), no al código.
+4. **SC-004 ya no depende del tiempo** (resuelto): tras la corrección de `spec.md`, su criterio verificable es de conteo (salas visitadas y salidas examinadas), que es estable. La razón de tiempos queda como medición informativa porque depende del hardware y de Python. El código de salida de `--bench` usa el conteo, no el tiempo.
+5. **Salidas hacia salas inexistentes** (FR-513): el recorrido las ignora usando la lista de existencia que se agrega a `MapaCripta`; no se rechaza el recorrido por ello.
 
 ## Estructura del proyecto
 
@@ -88,15 +89,18 @@ DTO/
 Logica/
 ├── ColaCircular.py            # NUEVO: cola sobre list que crece al llenarse
 ├── RecorridoPorNiveles.py     # NUEVO: el recorrido (marcas de época, orden por nivel, límite, transitabilidad)
-└── MapaCripta.py              # MODIFICADO (mínimo): indica qué ids existen en el esqueleto
+└── MapaCripta.py              # MODIFICADO (mínimo): indica qué ids existen en el esqueleto (FR-512, FR-513)
 
 bench/
 ├── recorrido.py               # NUEVO: bloque "recorrido"
 └── __init__.py                # registra el bloque
 
 test_cola_circular.py          # NUEVO: la cola y su cumplimiento del principio I
-test_recorrido_por_niveles.py  # NUEVO: escenarios de la especificación, equivalencia con una referencia, determinismo
+test_recorrido_por_niveles.py  # NUEVO: escenarios de la especificación y equivalencia con una referencia
+test_recorrido_determinismo.py # NUEVO: mismo recorrido repetido, mismas secuencias (FR-509)
+test_recorrido_proporcional.py # NUEVO: conteo de salas visitadas y salidas examinadas (FR-510, SC-004)
 tests_labs/
+├── cripta_sintetica.py        # AMPLIADO: esqueleto_arbol, esqueleto_dirigido_aleatorio, mapa_desde_esqueleto
 └── referencia_recorrido.py    # NUEVO: recorrido ingenuo de referencia para las pruebas (no se usa en el juego)
 ```
 

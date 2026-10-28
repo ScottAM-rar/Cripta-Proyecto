@@ -39,6 +39,8 @@ Servicio de recorrido asociado a un `MapaCripta`. Se crea una vez por mapa y se 
 | `_nivel` | lista de enteros, tamaño `mapa.tamano` | Nivel de la sala; solo vale si `_marca` es la época actual |
 | `_epoca` | entero | Sube en 1 en cada recorrido |
 | `_cola` | `ColaCircular` | Contiene el nivel en curso |
+| `salas_visitadas` | entero | Salas que visitó el **último** recorrido. Se pone en 0 al empezar cada recorrido |
+| `salidas_examinadas` | entero | Salidas que examinó el **último** recorrido: las salientes de cada sala visitada cuyo nivel es menor que el límite, se haya recorrido o no la salida (no transitable, ya visitada, hacia sí misma o hacia una sala inexistente). Las salidas de las salas con nivel igual al límite no se cuentan. Se pone en 0 al empezar cada recorrido |
 
 Operación pública: `recorrer(origen, limite=None, transitable=None) -> RecorridoDTO`. Detalle en `contracts/interfaz-recorrido.md`.
 
@@ -47,6 +49,7 @@ Operación pública: `recorrer(origen, limite=None, transitable=None) -> Recorri
 - `origen`: "ha de existir en el esqueleto"; si no, `ValueError` (FR-512).
 - `limite`: "entero mayor o igual que 0, o ausente"; un booleano, un negativo o un no entero se rechazan con `ValueError` (FR-504).
 - `transitable`: "función que recibe una arista y devuelve verdadero o falso", o ausente (todas las salidas son transitables, FR-507).
+- Una salida hacia una sala que no existe: se ignora; esa sala no aparece y el recorrido no se rechaza (FR-513).
 
 ## Entidades existentes que cambian
 
@@ -54,7 +57,7 @@ Operación pública: `recorrer(origen, limite=None, transitable=None) -> Recorri
 
 | Campo | Tipo | Regla |
 |---|---|---|
-| `existe` (nuevo) | lista de booleanos, tamaño `tamano` | `existe[i]` es verdadero si el esqueleto tiene una sala con id `i`. Sirve para FR-512 y para ignorar salidas hacia salas inexistentes |
+| `existe` (nuevo) | lista de booleanos, tamaño `tamano` | `existe[i]` es verdadero si el esqueleto tiene una sala con id `i`. Sirve para FR-512 (origen inexistente) y FR-513 (ignorar salidas hacia salas inexistentes) |
 
 El resto de `MapaCripta` (aristas salientes y entrantes, `esta_abierta`) no cambia.
 

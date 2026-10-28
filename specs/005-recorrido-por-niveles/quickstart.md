@@ -5,11 +5,11 @@ Prerrequisitos: Python 3.11+ y `pip install requests` (el bench no usa la red).
 ## 1. Pruebas automatizadas
 
 ```bash
-python -m unittest test_cola_circular test_recorrido_por_niveles
+python -m unittest test_cola_circular test_recorrido_por_niveles test_recorrido_determinismo test_recorrido_proporcional
 python -m unittest discover -p "test_*.py"     # la suite completa debe seguir pasando
 ```
 
-Resultado esperado: todas pasan. Las pruebas del recorrido comparan contra una referencia ingenua (`tests_labs/referencia_recorrido.py`) en criptas aleatorias con ciclos, caminos paralelos y conexiones de un solo sentido.
+Resultado esperado: todas pasan. Las pruebas del recorrido comparan contra una referencia ingenua (`tests_labs/referencia_recorrido.py`) en criptas aleatorias con ciclos, caminos paralelos, conexiones de un solo sentido y salidas hacia salas que no existen; los resultados de los escenarios están escritos a mano en las pruebas. La proporcionalidad (SC-004) se comprueba contando salas visitadas y salidas examinadas, no con tiempos.
 
 ## 2. Mediciones
 
@@ -17,7 +17,7 @@ Resultado esperado: todas pasan. Las pruebas del recorrido comparan contra una r
 python main.py --bench recorrido
 ```
 
-Resultado esperado: sección A con el recorrido acotado casi constante al crecer la cripta; sección B con las cuatro colas dando el mismo recorrido; sección F con 0 diferencias. Los resultados se guardan en `mediciones.md`.
+Resultado esperado: sección A con los mismos conteos (salas visitadas y salidas examinadas) del recorrido acotado en las tres criptas y la razón de tiempos como dato informativo; sección B con las cuatro colas dando el mismo recorrido; sección F con 0 diferencias. Los resultados se guardan en `mediciones.md`.
 
 ## 3. Escenarios a mano
 
@@ -35,8 +35,9 @@ Para comprobar a mano el orden (SC-005): en la cripta del ejemplo de `research.m
 | FR-506 | Historia 1 (7) | `test_recorrido_por_niveles` (un solo sentido) |
 | FR-507 | Historia 1 (8, 9) | `test_recorrido_por_niveles` (criterio de transitabilidad y sin criterio) |
 | FR-508 | Historia 1 (5) | `test_recorrido_por_niveles` (origen sin salidas; sin salidas transitables) |
-| FR-509 | Historia 3 (1) | `test_recorrido_por_niveles` (100 repeticiones iguales) |
-| FR-510 | Historia 3 (2) | `python main.py --bench recorrido`, sección A |
+| FR-509 | Historia 3 (1) | `test_recorrido_determinismo` (100 repeticiones iguales, mismo recorridor reutilizado) |
+| FR-510 | Historia 3 (2) | `test_recorrido_proporcional` (conteo de salas visitadas y salidas examinadas: criterio de SC-004); `python main.py --bench recorrido`, sección A (razón de tiempos, informativa) |
 | FR-511 | Historia 3 (3) | `python main.py --bench recorrido` |
 | FR-512 | Historia 1 (10) | `test_recorrido_por_niveles` (origen inexistente) |
+| FR-513 | Historia 1 (11) | `test_recorrido_por_niveles` (salida hacia una sala que no existe; también presente en la prueba de equivalencia) |
 | Principio I | — | `test_cola_circular` (sin importaciones prohibidas) |
