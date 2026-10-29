@@ -2,7 +2,7 @@
 
 **Rama**: `001-terreno-y-cazador` | **Fecha**: 2026-10-27 | **Especificación**: [spec.md](spec.md)
 
-**Entrada**: `specs/001-terreno-y-cazador/spec.md` (FR-101 a FR-131, con las 3 clarificaciones de la sesión 2026-10-27)
+**Entrada**: `specs/001-terreno-y-cazador/spec.md` (FR-101 a FR-131, con las 5 clarificaciones de la sesión 2026-10-27)
 
 ## Resumen
 
@@ -100,6 +100,7 @@ Logica/
 ├── MonticuloMinimo.py         # NUEVO: montículo binario sobre list, clave (costo, id)
 ├── MapaCripta.py              # NUEVO: aristas salientes y entrantes en listas contiguas
 ├── CampoDeCostos.py           # NUEVO: costo mínimo hacia la sala del jugador, acotado; con invalidación
+├── BuscadorRutas.py           # NUEVO (T068): búsqueda de rutas sobre una vista del mapa
 ├── CompCazador.py             # NUEVO: ComportamientoCazador
 ├── ComportamientoEnemigo.py   # contrato: devuelve AccionEnemigoDTO
 ├── CompErrante.py / CompRastreador.py / CompGuardian.py   # adaptados al contrato (misma conducta)
@@ -131,6 +132,8 @@ bench/
 
 test_terreno_costos.py         # NUEVO: historias 1 y 5, datos inválidos, persistencia
 test_cazador.py                # NUEVO: historia 2
+test_mapa_cripta.py           # NUEVO (T063, T065): consultas del esqueleto y version_puertas
+test_buscador_rutas.py         # NUEVO (T067): búsqueda sobre una vista falsa
 test_monticulo_minimo.py       # NUEVO: montículo propio y comprobación de importaciones prohibidas
 test_equivalencia_cazador.py   # NUEVO: historia 3 (comparación con cálculo desde cero)
 test_puertas_punto_unico.py    # NUEVO: ninguna otra parte escribe el estado de una puerta
@@ -152,14 +155,16 @@ No hay violaciones de la constitución que justificar.
 |---|---|---|
 | Campo compartido con invalidación por evento en lugar de recalcular en cada turno | Con decenas de cazadores, recalcular por cazador multiplica el trabajo. El presupuesto es 20 ms por ciclo. | Recalcular por cazador y por turno. Se conserva como alternativa **medida** en `--bench` (VII) y como referencia de las pruebas de equivalencia (III). |
 
-## Ampliación 2026-10-28: infraestructura compartida
+## Ampliación 2026-10-29: contrato compartido de rutas
 
 Motivo: los specs 002 (niebla e «ir a») y 003 (resolubilidad) reutilizan la búsqueda de rutas y la cola de recorrido de esta capacidad. No cambia ninguna regla del juego de spec.md.
 
 | Pieza | Decisión | Requisito que la justifica |
 |---|---|---|
-| Contador de versión de puertas en el mapa del esqueleto | Sube cada vez que una puerta cambia de estado; permite a otros módulos saber si su cálculo sigue vigente | FR-116 |
+| Contador `version_puertas` en `MapaCripta` | Dueño único: el mapa; lo sube solo la función única de cambio de puertas (T041); permite a otros módulos saber si su cálculo sigue vigente | FR-116 |
 | Buscador de rutas sobre una vista del mapa | Generaliza el campo de costos para que acepte una vista (mapa real o mapa conocido). Mismo desempate por menor id | FR-111, FR-114 |
-| Cola circular propia sobre lista | Sustituye al uso de `deque` en recorridos nuevos; la usará el recorrido de resolubilidad | Principio I (constitución) |
+| Nueva consulta del esqueleto: `total_salas`, `salidas(sala)`, `entrantes(sala)` en `MapaCripta` | Fachada de lectura sobre las listas actuales, sin romper los campos que usa el cazador | FR-116 |
 
-Alternativas descartadas y mediciones: pendientes; se agregan a `mediciones.md` y a `DECISIONES.md` al implementar.
+La cola circular la aporta el spec 005 (recorrido por niveles), no esta capacidad.
+
+Alternativas descartadas y mediciones: pendientes; las cubre T071 (`mediciones.md` y `DECISIONES.md`).

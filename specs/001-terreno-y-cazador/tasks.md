@@ -2,7 +2,7 @@
 
 **Entrada**: documentos de diseño en `specs/001-terreno-y-cazador/` (`plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`)
 
-**Prerrequisitos**: `plan.md` y `spec.md` (con las 3 clarificaciones de la sesión 2026-10-27).
+**Prerrequisitos**: `plan.md` y `spec.md` (con las 5 clarificaciones de la sesión 2026-10-27).
 
 **Pruebas**: se incluyen en todas las historias porque la constitución (principio IX) exige que cada escenario de aceptación tenga una prueba automatizada o un `partida.log` que cite su requisito. Cada prueba se escribe **antes** del código y debe fallar primero.
 
@@ -222,26 +222,28 @@
 
 | Requisito | Tareas |
 |---|---|
-| FR-101, FR-102 | T002, T006, T010, T013, T014 |
+| FR-101, FR-102 | T002, T006, T010, T013, T014 (el caso de costos distintos en ambos lados está en `test_terreno_costos.py`) |
 | FR-103, FR-104, FR-105 | T008, T013, T016, T021, T022 |
 | FR-106, FR-107 | T009, T013, T017 a T021 |
 | FR-108 | T003, T007, T011, T012, T026, T034, T037 |
 | FR-109 | T003, T026, T036 |
 | FR-110 a FR-115 | T025, T032, T033 |
-| FR-116 | T036, T038 a T045 |
+| FR-116 | T036, T038 a T045, T063 a T066, T069 |
 | FR-117 | T026, T029 a T031, T035, T046 |
 | FR-118, FR-119 | T003, T010, T011, T014, T015, T023, T037, T055 |
 | FR-120 | T046, T047 |
 | FR-121, FR-122, FR-123 | T032, T048 a T052 |
+| FR-124 | T026 (`test_cazador.py`, escenario 10 de la Historia 2) |
 | FR-130, FR-131 | T053 a T055 |
 
 ## Fase final: contrato compartido de rutas
 
-- [ ] T063 Crear pruebas de los métodos `total_salas`, `salidas(sala)` y `entrantes(sala)` de `MapaCripta`, incluidos ids sin sala y conexiones de un solo sentido. (FR-116)
+- [ ] T063 [P] Crear `test_mapa_cripta.py` con pruebas de los métodos `total_salas`, `salidas(sala)` y `entrantes(sala)` de `MapaCripta`, incluidos ids sin sala y conexiones de un solo sentido. (FR-116)
 - [ ] T064 Agregar esos métodos a `Logica/MapaCripta.py` sin romper los campos actuales. (FR-116)
-- [ ] T065 Crear pruebas de `version_puertas`: sube con cada cambio de puerta y no sube sin cambio. (FR-116)
-- [ ] T066 Agregar `version_puertas` a `MapaCripta` y hacer que `CampoDeCostos.puerta_cambio` la suba. (FR-116)
-- [ ] T067 Crear pruebas de `BuscadorRutas` con una vista falsa de pocas salas: mismas decisiones que el cazador actual, desempate por menor id, ruta inexistente. (FR-111, FR-114)
+- [ ] T065 [P] Agregar a `test_mapa_cripta.py` pruebas de `version_puertas`: sube con cada cambio de puerta y no sube sin cambio. (FR-116)
+- [ ] T066 Agregar `version_puertas` a `MapaCripta`. Único dueño: `MapaCripta`; único punto de incremento: la función única de T041 (la comprueba T040). `CampoDeCostos.puerta_cambio` solo lee el valor y no lo sube. (FR-116)
+- [ ] T067 [P] Crear `test_buscador_rutas.py` con pruebas de `BuscadorRutas` con una vista falsa de pocas salas: mismas decisiones que el cazador actual, desempate por menor id, ruta inexistente. (FR-111, FR-114)
 - [ ] T068 Crear `Logica/BuscadorRutas.py` con `distancias_hacia(destino, vista, limite)` y `siguiente_paso(origen)`. (FR-111, FR-114)
 - [ ] T069 Hacer que el cazador use `BuscadorRutas` sin cambiar su decisión. (FR-111, FR-114, FR-116)
 - [ ] T070 Comprobar que las pruebas existentes siguen pasando y que `--bench terreno` da tiempos comparables. (FR-121, FR-122)
+- [ ] T071 Medir la alternativa descartada de `BuscadorRutas` (mantener el campo de costos sin vista) en `bench/terreno.py`, anotar el antes y el después en `specs/001-terreno-y-cazador/mediciones.md` y en `DECISIONES.md`, y registrar en `PROMPTS_LLM.md` los comandos `/speckit` usados. (VII, XI)
