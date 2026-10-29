@@ -20,3 +20,5 @@ Herramienta en todas las entradas: Spec Kit 1.2.3 con Claude Code. Modelo: `clau
 | 12 | Corrección de spec tras analyze: una salida hacia una sala inexistente se ignora (FR-513) y SC-004 se verifica por conteo con la razón de tiempos solo informativa. | `spec.md` |
 | 13 | Alineación de plan y tareas con la spec corregida (C1, I1, I2, U1, A1, S1, D1, T1, M1). | `tasks.md`, `plan.md`, `quickstart.md`, `data-model.md` |
 | 14 | `/speckit-implement` (2026-10-28, sin texto adicional) | Código de la capacidad 005: `Logica/ColaCircular.py`, `Logica/RecorridoPorNiveles.py`, `DTO/RecorridoDTO.py`, `MapaCripta.existe`; pruebas y `bench/recorrido.py`; `mediciones.md` |
+| 15 | `/speckit-analyze` sobre la 001 | Reporte de consistencia de `spec.md`, `plan.md` y `tasks.md` con la ampliación T063 a T070; un hallazgo crítico (estructuras en la spec) y correcciones de cobertura |
+| 16 | Corrección tras analyze de la 001: se retira la ampliación de la spec (C1) y se alinean plan y tareas (G1, G2, G4, G5, I1, I3, I4, U1, U2). | `spec.md`, `plan.md`, `tasks.md` |
