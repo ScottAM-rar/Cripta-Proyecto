@@ -151,3 +151,15 @@ No hay violaciones de la constitución que justificar.
 | Decisión que podría parecer compleja | Por qué se necesita | Alternativa más simple descartada |
 |---|---|---|
 | Campo compartido con invalidación por evento en lugar de recalcular en cada turno | Con decenas de cazadores, recalcular por cazador multiplica el trabajo. El presupuesto es 20 ms por ciclo. | Recalcular por cazador y por turno. Se conserva como alternativa **medida** en `--bench` (VII) y como referencia de las pruebas de equivalencia (III). |
+
+## Ampliación 2026-10-28: infraestructura compartida
+
+Motivo: los specs 002 (niebla e «ir a») y 003 (resolubilidad) reutilizan la búsqueda de rutas y la cola de recorrido de esta capacidad. No cambia ninguna regla del juego de spec.md.
+
+| Pieza | Decisión | Requisito que la justifica |
+|---|---|---|
+| Contador de versión de puertas en el mapa del esqueleto | Sube cada vez que una puerta cambia de estado; permite a otros módulos saber si su cálculo sigue vigente | FR-116 |
+| Buscador de rutas sobre una vista del mapa | Generaliza el campo de costos para que acepte una vista (mapa real o mapa conocido). Mismo desempate por menor id | FR-111, FR-114 |
+| Cola circular propia sobre lista | Sustituye al uso de `deque` en recorridos nuevos; la usará el recorrido de resolubilidad | Principio I (constitución) |
+
+Alternativas descartadas y mediciones: pendientes; se agregan a `mediciones.md` y a `DECISIONES.md` al implementar.

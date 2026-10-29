@@ -234,3 +234,14 @@
 | FR-120 | T046, T047 |
 | FR-121, FR-122, FR-123 | T032, T048 a T052 |
 | FR-130, FR-131 | T053 a T055 |
+
+## Fase final: contrato compartido de rutas
+
+- [ ] T063 Crear pruebas de los métodos `total_salas`, `salidas(sala)` y `entrantes(sala)` de `MapaCripta`, incluidos ids sin sala y conexiones de un solo sentido. (FR-116)
+- [ ] T064 Agregar esos métodos a `Logica/MapaCripta.py` sin romper los campos actuales. (FR-116)
+- [ ] T065 Crear pruebas de `version_puertas`: sube con cada cambio de puerta y no sube sin cambio. (FR-116)
+- [ ] T066 Agregar `version_puertas` a `MapaCripta` y hacer que `CampoDeCostos.puerta_cambio` la suba. (FR-116)
+- [ ] T067 Crear pruebas de `BuscadorRutas` con una vista falsa de pocas salas: mismas decisiones que el cazador actual, desempate por menor id, ruta inexistente. (FR-111, FR-114)
+- [ ] T068 Crear `Logica/BuscadorRutas.py` con `distancias_hacia(destino, vista, limite)` y `siguiente_paso(origen)`. (FR-111, FR-114)
+- [ ] T069 Hacer que el cazador use `BuscadorRutas` sin cambiar su decisión. (FR-111, FR-114, FR-116)
+- [ ] T070 Comprobar que las pruebas existentes siguen pasando y que `--bench terreno` da tiempos comparables. (FR-121, FR-122)
