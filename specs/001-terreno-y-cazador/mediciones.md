@@ -126,3 +126,41 @@ Ciclo de eventos entre dos decisiones (§5.2): límite 20 ms
   reproducir un log de 300 acciones (incluye armar el juego)         22.66 ms  (22.39 ms – 22.67 ms)  mediana (mín – máx)
   Un ciclo = la acción ESPERAR del jugador + todos los eventos que ocurren hasta su siguiente decisión.
 ```
+
+## Búsqueda con vista del mapa frente al campo sin vista (T071, 2026-10-29)
+
+`BuscadorRutas` busca sobre una vista (`entrantes`, `salidas` y `transitable`) para que otras capacidades puedan usarlo con el mapa conocido por el jugador. La alternativa descartada es mantener la búsqueda dentro del campo de costos, directa sobre las listas del mapa (el código anterior a T068, reescrito como `CampoSinVista` en `bench/terreno.py`). Sección E de `python main.py --bench terreno`; mismas cargas que A y B, y las dos variantes dan las mismas decisiones (verificación OK).
+
+| Carga | Sin vista (descartada) | Con vista (elegida) | Diferencia |
+|---|---|---|---|
+| 50 cazadores, jugador quieto | 33,0 µs | 40,2 µs | +22 % |
+| 50 cazadores, jugador se mueve cada ciclo | 92,9 µs | 105,8 µs | +14 % |
+| 200 cazadores, jugador quieto | 134,4 µs | 163,8 µs | +22 % |
+| 200 cazadores, jugador se mueve cada ciclo | 193,1 µs | 225,7 µs | +17 % |
+| Búsqueda fría de rango pequeño, 400 salas | 16,9 µs | 19,9 µs | +18 % |
+| Búsqueda fría de rango pequeño, 4 900 salas | 53,5 µs | 60,8 µs | +14 % |
+| Búsqueda fría de rango pequeño, 40 000 salas | 28,2 µs | 32,9 µs | +17 % |
+
+**Conclusión**: la vista cuesta entre un 14 % y un 22 % más (una llamada por arista), pero el peor ciclo medido sigue siendo de unos 0,25 ms frente al límite de 20 ms (FR-121), y la búsqueda de rango pequeño sigue sin crecer con la cripta (FR-122). Se mantiene la vista: es lo que permite reutilizar la búsqueda con el mapa conocido (otras capacidades). Si una capacidad futura necesitara la búsqueda más rápida, el camino es especializar la vista real, no quitarla.
+
+**Antes y después de T068**: las cifras de la primera tabla de este archivo (por ejemplo 17 µs con 50 cazadores y el jugador quieto) se midieron otro día y con el código anterior; no son comparables con esta tabla porque la máquina y la carga cambian. Para comparar se usan solo las dos columnas de arriba, medidas en la misma ejecución.
+
+```text
+Terreno y cazador (E): búsqueda con vista del mapa frente al campo sin vista (T071)
+  verificación: 50 cazadores: ambas decisiones coinciden             OK
+    50 cazadores, jugador quieto              con vista (elegida)    40.2 µs  (38.9 µs – 72.8 µs)
+    50 cazadores, jugador quieto              sin vista (descartada) 33.0 µs  (32.5 µs – 33.8 µs)
+    50 cazadores, jugador se mueve cada ciclo con vista (elegida)    105.8 µs  (83.9 µs – 116.4 µs)
+    50 cazadores, jugador se mueve cada ciclo sin vista (descartada) 92.9 µs  (73.7 µs – 105.5 µs)
+  verificación: 200 cazadores: ambas decisiones coinciden            OK
+   200 cazadores, jugador quieto              con vista (elegida)    163.8 µs  (162.6 µs – 180.4 µs)
+   200 cazadores, jugador quieto              sin vista (descartada) 134.4 µs  (131.2 µs – 157.5 µs)
+   200 cazadores, jugador se mueve cada ciclo con vista (elegida)    225.7 µs  (167.9 µs – 246.4 µs)
+   200 cazadores, jugador se mueve cada ciclo sin vista (descartada) 193.1 µs  (145.2 µs – 219.9 µs)
+     400 salas, búsqueda fría de rango pequeño con vista (elegida)   19.9 µs  (19.7 µs – 21.3 µs)
+     400 salas, búsqueda fría de rango pequeño sin vista (descartada) 16.9 µs  (16.6 µs – 17.7 µs)
+    4900 salas, búsqueda fría de rango pequeño con vista (elegida)   60.8 µs  (58.7 µs – 61.6 µs)
+    4900 salas, búsqueda fría de rango pequeño sin vista (descartada) 53.5 µs  (53.0 µs – 64.9 µs)
+   40000 salas, búsqueda fría de rango pequeño con vista (elegida)   32.9 µs  (32.2 µs – 37.5 µs)
+   40000 salas, búsqueda fría de rango pequeño sin vista (descartada) 28.2 µs  (27.7 µs – 29.3 µs)
+```
