@@ -22,3 +22,4 @@ Herramienta en todas las entradas: Spec Kit 1.2.3 con Claude Code. Modelo: `clau
 | 14 | `/speckit-implement` (2026-10-28, sin texto adicional) | Código de la capacidad 005: `Logica/ColaCircular.py`, `Logica/RecorridoPorNiveles.py`, `DTO/RecorridoDTO.py`, `MapaCripta.existe`; pruebas y `bench/recorrido.py`; `mediciones.md` |
 | 15 | `/speckit-analyze` sobre la 001 | Reporte de consistencia de `spec.md`, `plan.md` y `tasks.md` con la ampliación T063 a T070; un hallazgo crítico (estructuras en la spec) y correcciones de cobertura |
 | 16 | Corrección tras analyze de la 001: se retira la ampliación de la spec (C1) y se alinean plan y tareas (G1, G2, G4, G5, I1, I3, I4, U1, U2). | `spec.md`, `plan.md`, `tasks.md` |
+| 17 | `/speckit-implement T063 a T070` | Contrato compartido de rutas: `Logica/BuscadorRutas.py`, `MapaCripta` (`total_salas`, `salidas`, `entrantes`, `version_puertas`); pruebas `test_mapa_cripta.py` y `test_buscador_rutas.py` |
