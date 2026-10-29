@@ -10,14 +10,16 @@ cero en este instante. Se invalida por evento (tabla en specs/001-terreno-y-caza
   - moverse, atacar o morir otros actores no cambia ninguna salida ni costo: no invalida.
 Un campo nuevo (`CampoDeCostos(...)`) siempre calcula desde cero: es la referencia de las pruebas de equivalencia.
 
-La búsqueda sale de la sala del jugador y recorre las aristas
-ENTRANTES, usando solo las que están abiertas ahora; se detiene al pasar la cota, así que explora la región dentro de
-la cota y no toda la cripta. El reinicio entre búsquedas es una marca de época: no se limpia ninguna lista.
+La búsqueda la hace `BuscadorRutas` sobre una vista del mapa real: sale de la sala del jugador, recorre las aristas
+ENTRANTES usando solo las abiertas ahora y se detiene al pasar la cota, así que explora la región dentro de la cota y no
+toda la cripta. Este módulo solo decide cuándo hay que volver a buscar.
+
+`MapaCripta.version_puertas` lo sube `fijar_cerrada`, el único punto de cambio de puertas; este módulo no lo toca.
 """
 from __future__ import annotations
 
+from Logica.BuscadorRutas import BuscadorRutas, VistaMapaReal
 from Logica.MapaCripta import MapaCripta
-from Logica.MonticuloMinimo import MonticuloMinimo
 
 
 class CampoDeCostos:
@@ -25,10 +27,8 @@ class CampoDeCostos:
         self.mapa = mapa
         self.jugador = jugador          # se lee su sala EN CADA búsqueda: no hay copia que se pueda quedar vieja
         self.salas = salas
-        self._costo: list[int] = [0] * mapa.tamano
-        self._marca: list[int] = [0] * mapa.tamano
-        self._epoca = 0
-        self._monticulo = MonticuloMinimo()
+        self.buscador = BuscadorRutas()
+        self._vista = VistaMapaReal(mapa, salas)
         self._valido = False            # ¿lo guardado sigue siendo lo que daría calcular desde cero ahora?
         self._origen = -1               # sala del jugador con la que se calculó
         self._cota = -1                 # cota con la que se calculó
@@ -36,7 +36,10 @@ class CampoDeCostos:
         self.invalidar_siempre = False  # True: cualquier cambio de puerta invalida (alternativa que mide --bench)
         self.calculos = 0               # contadores para --bench y las pruebas
         self.invalidaciones = 0
-        self.salas_fijadas = 0
+
+    @property
+    def salas_fijadas(self) -> int:
+        return self.buscador.salas_fijadas
 
     def obtener(self, cota: int) -> "CampoDeCostos":
         """Deja listo el campo para consultar con `costo()` (puede reutilizar lo ya calculado). Un valor `costo(sala)`
@@ -56,43 +59,18 @@ class CampoDeCostos:
         """Avisa que cambió el estado de una salida que lleva a la sala `destino` (abrir, cerrar, deshacer)."""
         if not self._valido:
             return
-        if self.invalidar_siempre or (0 <= destino < self.mapa.tamano and self._marca[destino] == self._epoca):
+        if self.invalidar_siempre or self.buscador.alcanzo(destino):
             self._valido = False
             self.invalidaciones += 1
 
     def costo(self, sala: int) -> int | None:
         """Costo mínimo de `sala` hasta el jugador, o None si no hay ruta de costo <= cota."""
-        if 0 <= sala < self.mapa.tamano and self._marca[sala] == self._epoca:
-            return self._costo[sala]
-        return None
+        return self.buscador.costo(sala)
+
+    def siguiente_paso(self, origen: int):
+        """Arista de menor id de destino que sigue una ruta de costo mínimo desde `origen`, o None (FR-114)."""
+        return self.buscador.siguiente_paso(origen)
 
     def _calcular(self, cota: int) -> None:
         self.calculos += 1
-        self._epoca += 1
-        epoca = self._epoca
-        origen = self.jugador.id_sala_actual
-        monticulo = self._monticulo
-        monticulo.vaciar()
-        if not 0 <= origen < self.mapa.tamano or cota < 0:
-            return
-        costos = self._costo
-        marcas = self._marca
-        costos[origen] = 0
-        marcas[origen] = epoca
-        monticulo.insertar(0, origen)
-        while not monticulo.vacio():
-            costo, sala = monticulo.extraer_minimo()
-            if costo > costos[sala]:
-                continue                            # entrada vieja: ya se encontró un costo menor
-            self.salas_fijadas += 1
-            for arista in self.mapa.entrantes[sala]:
-                if not self.mapa.esta_abierta(arista, self.salas):
-                    continue
-                nuevo = costo + arista.costo
-                if nuevo > cota:
-                    continue
-                x = arista.origen
-                if marcas[x] != epoca or nuevo < costos[x]:
-                    costos[x] = nuevo
-                    marcas[x] = epoca
-                    monticulo.insertar(nuevo, x)
+        self.buscador.distancias_hacia(self.jugador.id_sala_actual, self._vista, cota)

@@ -238,12 +238,12 @@
 
 ## Fase final: contrato compartido de rutas
 
-- [ ] T063 [P] Crear `test_mapa_cripta.py` con pruebas de los métodos `total_salas`, `salidas(sala)` y `entrantes(sala)` de `MapaCripta`, incluidos ids sin sala y conexiones de un solo sentido. (FR-116)
-- [ ] T064 Agregar esos métodos a `Logica/MapaCripta.py` sin romper los campos actuales. (FR-116)
-- [ ] T065 [P] Agregar a `test_mapa_cripta.py` pruebas de `version_puertas`: sube con cada cambio de puerta y no sube sin cambio. (FR-116)
-- [ ] T066 Agregar `version_puertas` a `MapaCripta`. Único dueño: `MapaCripta`; único punto de incremento: la función única de T041 (la comprueba T040). `CampoDeCostos.puerta_cambio` solo lee el valor y no lo sube. (FR-116)
-- [ ] T067 [P] Crear `test_buscador_rutas.py` con pruebas de `BuscadorRutas` con una vista falsa de pocas salas: mismas decisiones que el cazador actual, desempate por menor id, ruta inexistente. (FR-111, FR-114)
-- [ ] T068 Crear `Logica/BuscadorRutas.py` con `distancias_hacia(destino, vista, limite)` y `siguiente_paso(origen)`. (FR-111, FR-114)
-- [ ] T069 Hacer que el cazador use `BuscadorRutas` sin cambiar su decisión. (FR-111, FR-114, FR-116)
-- [ ] T070 Comprobar que las pruebas existentes siguen pasando y que `--bench terreno` da tiempos comparables. (FR-121, FR-122)
+- [X] T063 [P] Crear `test_mapa_cripta.py` con pruebas de los métodos `total_salas`, `salidas(sala)` y `entrantes(sala)` de `MapaCripta`, incluidos ids sin sala y conexiones de un solo sentido. (FR-116)
+- [X] T064 Agregar esos métodos a `Logica/MapaCripta.py` sin romper los campos actuales. (FR-116)
+- [X] T065 [P] Agregar a `test_mapa_cripta.py` pruebas de `version_puertas`: sube con cada cambio de puerta y no sube sin cambio. (FR-116)
+- [X] T066 Agregar `version_puertas` a `MapaCripta`. Único dueño: `MapaCripta`; único punto de incremento: la función única de T041 (la comprueba T040). `CampoDeCostos.puerta_cambio` solo lee el valor y no lo sube. (FR-116)
+- [X] T067 [P] Crear `test_buscador_rutas.py` con pruebas de `BuscadorRutas` con una vista falsa de pocas salas: mismas decisiones que el cazador actual, desempate por menor id, ruta inexistente. (FR-111, FR-114)
+- [X] T068 Crear `Logica/BuscadorRutas.py` con `distancias_hacia(destino, vista, limite)` y `siguiente_paso(origen)`. (FR-111, FR-114)
+- [X] T069 Hacer que el cazador use `BuscadorRutas` sin cambiar su decisión. (FR-111, FR-114, FR-116)
+- [X] T070 Comprobar que las pruebas existentes siguen pasando y que `--bench terreno` da tiempos comparables. (FR-121, FR-122)
 - [ ] T071 Medir la alternativa descartada de `BuscadorRutas` (mantener el campo de costos sin vista) en `bench/terreno.py`, anotar el antes y el después en `specs/001-terreno-y-cazador/mediciones.md` y en `DECISIONES.md`, y registrar en `PROMPTS_LLM.md` los comandos `/speckit` usados. (VII, XI)

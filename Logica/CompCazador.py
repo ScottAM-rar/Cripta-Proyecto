@@ -17,15 +17,14 @@ class ComportamientoCazador(ComportamientoEnemigo):
         d = campo.costo(origen)
         if d is None or d > enemigo.rango:
             return None, None                                          # sin ruta abierta o fuera de rango (FR-112)
+        arista = campo.siguiente_paso(origen)                          # solo salidas abiertas ahora (FR-115); menor id (FR-114)
+        if arista is None:
+            return None, None
         elegida = None
-        for salida in salas[origen].salidas:                           # solo salidas abiertas ahora (FR-115)
-            if salida.cerrada or salida.sala_destino is None:
-                continue
-            restante = campo.costo(salida.sala_destino)
-            if restante is None or salida.costo + restante != d:
-                continue
-            if elegida is None or salida.sala_destino < elegida.sala_destino:      # desempate: menor id (FR-114)
+        for salida in salas[origen].salidas:
+            if salida.direccion == arista.direccion:
                 elegida = salida
+                break
         if elegida is None:
             return None, None
         return elegida, d

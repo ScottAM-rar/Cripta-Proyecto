@@ -30,7 +30,7 @@ class GestorEventos:
         self.salas = salas
         self.cargar_sala = cargar_sala
         self.obtener_botin = obtener_botin      # lo que suelta un enemigo al morir (§2.6); lo entrega quien arma el juego
-        self.campo_de_costos = None   # lo asigna quien arma la partida: lo usa el cazador para decidir (FR-111)
+        self._campo_de_costos = None
         self.reloj = None     # lo asigna quien arma la partida: de aquí sale "el instante actual" de cada acción
         # Inyección de dependencias de la capa de lógica
         # Un único generador por partida, compartido por jugador y enemigos: así la secuencia de tiradas es reproducible
@@ -44,6 +44,18 @@ class GestorEventos:
         self.objeto_logica = ObjetoLogica(jugador, self.pergamino_logica)
         self.salas_logica = SalaLogica(None, avisar_puerta=self._puerta_cambio)
         self.enemigo_logica = EnemigoLogica(None,semilla,self.azar)
+
+    @property
+    def campo_de_costos(self):
+        """Lo asigna quien arma la partida: lo usa el cazador para decidir (FR-111)."""
+        return self._campo_de_costos
+
+    @campo_de_costos.setter
+    def campo_de_costos(self, campo) -> None:
+        self._campo_de_costos = campo
+        mapa = campo.mapa if campo is not None else None      # los cambios de puerta suben la versión de ese mapa
+        self.pergamino_logica.mapa_puertas = mapa
+        self.salas_logica.mapa_puertas = mapa
 
     def _puerta_cambio(self, salida) -> None:
         """Una puerta cambió de estado: el campo de costos de los cazadores decide si lo que guardó sigue valiendo."""
