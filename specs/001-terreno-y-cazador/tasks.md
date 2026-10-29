@@ -246,4 +246,4 @@
 - [X] T068 Crear `Logica/BuscadorRutas.py` con `distancias_hacia(destino, vista, limite)` y `siguiente_paso(origen)`. (FR-111, FR-114)
 - [X] T069 Hacer que el cazador use `BuscadorRutas` sin cambiar su decisión. (FR-111, FR-114, FR-116)
 - [X] T070 Comprobar que las pruebas existentes siguen pasando y que `--bench terreno` da tiempos comparables. (FR-121, FR-122)
-- [ ] T071 Medir la alternativa descartada de `BuscadorRutas` (mantener el campo de costos sin vista) en `bench/terreno.py`, anotar el antes y el después en `specs/001-terreno-y-cazador/mediciones.md` y en `DECISIONES.md`, y registrar en `PROMPTS_LLM.md` los comandos `/speckit` usados. (VII, XI)
+- [X] T071 Medir la alternativa descartada de `BuscadorRutas` (mantener el campo de costos sin vista) en `bench/terreno.py`, anotar el antes y el después en `specs/001-terreno-y-cazador/mediciones.md` y en `DECISIONES.md`, y registrar en `PROMPTS_LLM.md` los comandos `/speckit` usados. (VII, XI)

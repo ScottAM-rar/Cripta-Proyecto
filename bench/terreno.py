@@ -9,6 +9,8 @@ y no su movimiento, para que el estado no cambie entre repeticiones. Sin red ni 
   C. Puertas estables frente a cambiantes
                                    elegida: invalidar por evento           | descartada: invalidar con cualquier cambio
   D. Equivalencia                  la decisión reutilizada coincide con la calculada desde cero
+  E. Búsqueda con vista            elegida: BuscadorRutas sobre una vista del mapa | descartada: campo sin vista (la búsqueda
+                                   dentro del campo, directa sobre el mapa, como estaba antes del contrato compartido)
 """
 from __future__ import annotations
 
@@ -23,6 +25,7 @@ from DTO.ActorDTO import JugadorDTO
 from Logica.CampoDeCostos import CampoDeCostos
 from Logica.CompCazador import ComportamientoCazador
 from Logica.MapaCripta import MapaCripta
+from Logica.MonticuloMinimo import MonticuloMinimo
 from Logica.PuertasLogica import fijar_cerrada
 from tests_labs.api_falsa import HttpConfigurable
 from tests_labs.cripta_sintetica import esqueleto_rejilla
@@ -31,6 +34,8 @@ SECCION_A = "Terreno y cazador (A): un cazador frente a muchos, ciclo de decisio
 SECCION_B = "Terreno y cazador (B): rango pequeño frente a grande al crecer la cripta (FR-122)"
 SECCION_C = "Terreno y cazador (C): puertas estables frente a cambiantes (FR-123)"
 SECCION_D = "Terreno y cazador (D): la decisión reutilizada es la de calcular desde cero (principio III)"
+
+SECCION_E = "Terreno y cazador (E): búsqueda con vista del mapa frente al campo sin vista (T071)"
 
 LIMITE_US = 20_000
 COSTO_MAX = 300
@@ -223,9 +228,127 @@ def seccion_d(filas: list) -> None:
     filas.append((SECCION_D, "decisiones idénticas", f"{100 * (comparaciones - diferencias) // comparaciones} %", "debe ser 100 %"))
 
 
+class CampoSinVista(CampoDeCostos):
+    """ALTERNATIVA DESCARTADA (T071): el campo con la búsqueda escrita dentro, directa sobre las listas del mapa, sin la
+    capa de la vista (`entrantes`, `salidas` y `transitable` son aquí accesos directos). Es el código de `CampoDeCostos`
+    antes de `BuscadorRutas`; la invalidación y la reutilización son las mismas, solo cambia cómo se busca."""
+
+    def __init__(self, mapa, jugador, salas) -> None:
+        super().__init__(mapa, jugador, salas)
+        self._costo_d: list[int] = [0] * mapa.tamano
+        self._marca_d: list[int] = [0] * mapa.tamano
+        self._epoca_d = 0
+        self._monticulo_d = MonticuloMinimo()
+        self._fijadas = 0
+
+    @property
+    def salas_fijadas(self) -> int:
+        return self._fijadas
+
+    def puerta_cambio(self, destino: int) -> None:
+        if not self._valido:
+            return
+        if self.invalidar_siempre or (0 <= destino < self.mapa.tamano and self._marca_d[destino] == self._epoca_d):
+            self._valido = False
+            self.invalidaciones += 1
+
+    def costo(self, sala: int):
+        if 0 <= sala < self.mapa.tamano and self._marca_d[sala] == self._epoca_d:
+            return self._costo_d[sala]
+        return None
+
+    def siguiente_paso(self, origen: int):
+        d = self.costo(origen)
+        if d is None or d == 0:
+            return None
+        elegida = None
+        for arista in self.mapa.salientes[origen]:
+            if not self.mapa.esta_abierta(arista, self.salas):
+                continue
+            restante = self.costo(arista.destino)
+            if restante is None or arista.costo + restante != d:
+                continue
+            if elegida is None or arista.destino < elegida.destino:
+                elegida = arista
+        return elegida
+
+    def _calcular(self, cota: int) -> None:
+        self.calculos += 1
+        self._epoca_d += 1
+        epoca = self._epoca_d
+        origen = self.jugador.id_sala_actual
+        monticulo = self._monticulo_d
+        monticulo.vaciar()
+        if not 0 <= origen < self.mapa.tamano or cota < 0:
+            return
+        costos, marcas = self._costo_d, self._marca_d
+        costos[origen] = 0
+        marcas[origen] = epoca
+        monticulo.insertar(0, origen)
+        while not monticulo.vacio():
+            costo, sala = monticulo.extraer_minimo()
+            if costo > costos[sala]:
+                continue
+            self._fijadas += 1
+            for arista in self.mapa.entrantes_por_sala[sala]:
+                if not self.mapa.esta_abierta(arista, self.salas):
+                    continue
+                nuevo = costo + arista.costo
+                if nuevo > cota:
+                    continue
+                x = arista.origen
+                if marcas[x] != epoca or nuevo < costos[x]:
+                    costos[x] = nuevo
+                    marcas[x] = epoca
+                    monticulo.insertar(nuevo, x)
+
+
+def seccion_e(filas: list) -> bool:
+    """Misma carga que la sección A (50 y 200 cazadores en el cuadrado de 9 x 9) y que la B (búsqueda fría, rango pequeño
+    y sin cota): lo único que cambia es si la búsqueda pasa por la vista o va directa al mapa."""
+    cumple = True
+    cripta = Cripta(50)
+    centro = cripta.jugador.id_sala_actual
+    recorrido = [centro, centro + 1, centro + 51, centro + 50, centro - 1, centro - 51, centro - 50]
+    for cantidad in (50, 200):
+        cazadores = cripta.poner_cazadores(cantidad, RANGO_PEQUENO, radio=4)
+        elegida = cripta.campo()
+        descartada = CampoSinVista(cripta.mapa, cripta.jugador, cripta.salas)
+        cumple = verificar(filas, SECCION_E, f"{cantidad} cazadores: ambas decisiones coinciden",
+                           decidir_a_todos(cazadores, cripta.salas, elegida) == decidir_a_todos(cazadores, cripta.salas, descartada)) and cumple
+        turno = [0]
+
+        def ciclo(campo, se_mueve):
+            if se_mueve:
+                turno[0] += 1
+                cripta.jugador.id_sala_actual = recorrido[turno[0] % len(recorrido)]
+            decidir_a_todos(cazadores, cripta.salas, campo)
+
+        for se_mueve, etiqueta in ((False, "jugador quieto"), (True, "jugador se mueve cada ciclo")):
+            anotar(filas, SECCION_E, f"{cantidad:>4} cazadores, {etiqueta:<27} con vista (elegida)",
+                   medir(lambda: ciclo(elegida, se_mueve), repeticiones=25))
+            anotar(filas, SECCION_E, f"{cantidad:>4} cazadores, {etiqueta:<27} sin vista (descartada)",
+                   medir(lambda: ciclo(descartada, se_mueve), repeticiones=25))
+        cripta.jugador.id_sala_actual = centro
+    for lado in LADOS:
+        cripta = Cripta(lado)
+        cazadores = cripta.poner_cazadores(1, RANGO_PEQUENO, radio=4)
+        elegida = cripta.campo()
+        elegida.reutilizar = False
+        descartada = CampoSinVista(cripta.mapa, cripta.jugador, cripta.salas)
+        descartada.reutilizar = False
+        anotar(filas, SECCION_E, f"{cripta.total:>6} salas, búsqueda fría de rango pequeño con vista (elegida)",
+               medir(lambda: decidir_a_todos(cazadores, cripta.salas, elegida), repeticiones=9))
+        anotar(filas, SECCION_E, f"{cripta.total:>6} salas, búsqueda fría de rango pequeño sin vista (descartada)",
+               medir(lambda: decidir_a_todos(cazadores, cripta.salas, descartada), repeticiones=9))
+    nota(filas, SECCION_E, "La vista agrega una llamada por arista (entrantes, transitable y salidas); lo que se mide es ese costo frente a lo que se gana al poder buscar sobre el mapa conocido.")
+    return cumple
+
+
 def ejecutar(filas: list) -> bool:
     cumple = seccion_a(filas)
     seccion_b(filas)
     seccion_c(filas)
     seccion_d(filas)
+    cumple = seccion_e(filas) and cumple
     return cumple

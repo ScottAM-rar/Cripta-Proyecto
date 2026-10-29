@@ -65,7 +65,7 @@ class MapaCripta:
 
     def registrar_cambio_de_puerta(self) -> None:
         """Avisa que una puerta cambió de estado. Otros módulos comparan `version_puertas` para saber si un cálculo
-        guardado sigue vigente. Lo llama el único camino de aviso de cambios de puerta (CampoDeCostos.puerta_cambio)."""
+        guardado sigue vigente. Lo llama solo `fijar_cerrada` (PuertasLogica), el único punto de cambio de puertas."""
         self.version_puertas += 1
 
     def esta_abierta(self, arista: AristaCripta, salas: list) -> bool:
