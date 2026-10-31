@@ -150,6 +150,11 @@ class EstadoJuegoServicio:
             key=lambda r: (0 if r.victoria else 1, r.tiempo_final, r.acciones_jugador, -r.enemigos_derrotados),
         )
 
+    def advertenciasDeDatos(self) -> list[str]:
+        """Datos inválidos de la cripta que se corrigieron al leerlos (costos de salida, rangos de cazador). Solo lee."""
+        comunicacion = self._estadoJuegoLogica.comunicacion
+        return list(getattr(comunicacion, "advertencias", []))
+
     def terminado(self) -> tuple[bool, str]:
         return self._estadoJuegoLogica.terminado()
 

@@ -14,8 +14,11 @@ from Logica.RetrocesoLogica import RetrocesoLogica
 from DTO.CambioDTO import CambioDTO
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.FuenteCripta import FuenteCripta
+from Logica.CampoDeCostos import CampoDeCostos
+from Logica.MapaCripta import MapaCripta
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
 from Logica import EstadoGuardadoLogica
+
 class EstadoJuegoLogica:
     def __init__(self,semilla: int = None, cripta: str = None, comunicacion: FuenteCripta | None = None):
         self.tiempoMovimientoJugador = 0
@@ -41,6 +44,7 @@ class EstadoJuegoLogica:
         """Deja la partida como estaba cuando se exportó `estado`. El historial del pergamino empieza vacío."""
         self._exigirServicio()
         EstadoGuardadoLogica.restaurar(self, estado)
+        self._actualizarFichasEnUso()
 
     def _exigirServicio(self) -> None:
         if self.comunicacion is None:
@@ -75,6 +79,7 @@ class EstadoJuegoLogica:
             obtener_botin=self.comunicacion.objetos_que_suelta,
         )
         self.gestorEventos.reloj = relojvirtual
+        self.gestorEventos.campo_de_costos = self._crearCampoDeCostos(cripta, salas, jugador)
         self.jugadorLogica = JugadorLogica(jugador,self.semilla,self.gestorEventos.azar)
         self.logEventos.vaciar()
         self.idCripta = cripta
@@ -82,6 +87,14 @@ class EstadoJuegoLogica:
         self.registrador_log = None
         self.fin = False
         self.motivoFin = None
+
+    def _crearCampoDeCostos(self, cripta: str, salas: list, jugador) -> CampoDeCostos | None:
+        """Mapa del esqueleto completo + campo de costos hacia el jugador, para los cazadores (FR-117). Si la fuente
+        no entrega el mapa, los cazadores no pueden decidir y fallan con un error claro."""
+        obtener = getattr(self.comunicacion, "obtener_mapa", None)
+        if obtener is None:
+            return None
+        return CampoDeCostos(MapaCripta(obtener(cripta)), jugador, salas)
 
     def _comprobarFinal(self):
         if self.jugadorLogica.esta_muerto():
@@ -134,7 +147,12 @@ class EstadoJuegoLogica:
                 self._repetirMovimientoDeCursor(registro.tipo_accion)
                 continue
             evento = self._crear_evento_repeticion(registro)
-            resultados.append(self.accionJugador(evento))
+            resultado = self.accionJugador(evento)
+            if resultado.exito is False:     # el log solo guarda acciones aceptadas: si ahora se rechaza, ya no es fiel
+                raise ValueError(
+                    f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
+                )
+            resultados.append(resultado)
 
         return resultados
 
@@ -261,6 +279,13 @@ class EstadoJuegoLogica:
                     return nodo.objeto
                 nodo = nodo.siguiente
 
+        # Recoger solo ocurre en la sala del jugador: se busca ahí primero para no tomar un objeto con el mismo id
+        # de otra sala (la reproducción divergería).
+        sala_actual = self.estadoJuego.salas[self.estadoJuego.jugador.id_sala_actual]
+        if sala_actual is not None:
+            for objeto in sala_actual.objetos:
+                if objeto.id_catalogo == id_objeto:
+                    return objeto
         for sala in self.estadoJuego.salas:
             if sala is not None:
                 for objeto in sala.objetos:
@@ -303,8 +328,39 @@ class EstadoJuegoLogica:
             self._cargarSala(sala)
         sala_cargada = self.estadoJuego.salas[sala]
         if sala == self.estadoJuego.jugador.id_sala_actual:
-            self._activarEnemigos(sala_cargada)     # el jugador está (o acaba de entrar) aquí: los dormidos despiertan
+            if sala_cargada.ultimo_paso < 0 and self.accionesJugador == 0:
+                sala_cargada.ultimo_paso = self.estadoJuego.reloj.tiempo_actual
+            self._activarEnemigos(sala_cargada)
+            self._actualizarFichasEnUso()
         return sala_cargada
+
+    def fichasEnUso(self) -> list[str]:
+        """Ids de catálogo referenciados por instancias activas (§4.4), uno por instancia: enemigos vivos y
+        activos, los dormidos de la sala actual, el inventario y los objetos y trampas del suelo de la sala actual."""
+        ids: list[str] = []
+        jugador = self.estadoJuego.jugador
+        sala_actual = None
+        if 0 <= jugador.id_sala_actual < len(self.estadoJuego.salas):
+            sala_actual = self.estadoJuego.salas[jugador.id_sala_actual]
+        for enemigo in self.estadoJuego.catalogo_enemigos:
+            if enemigo.vida_actual > 0 and (enemigo.activo or enemigo.id_sala_actual == jugador.id_sala_actual):
+                ids.append(enemigo.tipo)
+        nodo = jugador.inventario.cabeza
+        while nodo is not None:
+            ids.append(nodo.objeto.id_catalogo)
+            nodo = nodo.siguiente
+        if sala_actual is not None:
+            for objeto in sala_actual.objetos:
+                ids.append(objeto.id_catalogo)
+            for trampa in sala_actual.trampas:
+                ids.append(trampa.id_catalogo)
+        return ids
+
+    def _actualizarFichasEnUso(self) -> None:
+        """Le dice a la fuente qué fichas no puede liberar. El modelo no conoce la caché."""
+        fijar = getattr(self.comunicacion, "fijar_fichas_en_uso", None)
+        if fijar is not None:
+            fijar(self.fichasEnUso())
 
     def _cargarSala(self, sala: int) -> None:
         """Incorpora el contenido de la sala al modelo. Cargar una sala NO activa a sus enemigos (§2.4)."""
@@ -479,6 +535,7 @@ class EstadoJuegoLogica:
         if GestorEventos.es_uso_de_pergamino(evento):
             self._registrarAccionEnLog(evento)  # el retroceso no consume tiempo, pero sí es parte de la partida
             self.tiempoMovimientoJugador = reloj.tiempo_actual
+            self._actualizarFichasEnUso()
             return accion
 
         respuesta = accion
@@ -507,6 +564,7 @@ class EstadoJuegoLogica:
             self._avanzarHastaProximoTurno()
         self.tiempoMovimientoJugador = reloj.tiempo_actual
         self._registrarAccionEnLog(evento)
+        self._actualizarFichasEnUso()
         return respuesta
 
     def vistaInventario(self, criterio: str | None = None) -> list:

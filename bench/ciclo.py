@@ -28,6 +28,39 @@ def _esperar(juego):
     juego.accionJugador(EventoDTO(100, 0, jugador, "ESPERAR", []))
 
 
+CAZADORES = (10, 50)            # "decenas de cazadores" (FR-121)
+
+
+def _caminar(juego, destinos: list):
+    """El jugador cruza una salida (costo 100): fuerza a cada cazador a recalcular su ruta en el ciclo."""
+    jugador = juego.estadoJuego.jugador
+    direccion = destinos[0]
+    destinos.reverse()
+    sala = juego.ingresarEnSala(jugador.id_sala_actual)
+    juego.accionJugador(EventoDTO(100, 0, jugador, "MOVER_JUGADOR", [sala, direccion]))
+
+
+def ciclo_con_cazadores(filas: list, carpeta: str) -> bool:
+    """Los mismos ciclos, con cazadores que persiguen al jugador mientras éste camina entre dos salas (FR-121)."""
+    cumple = True
+    for cazadores in CAZADORES:
+        juego = nuevo_juego(carpeta, cazadores, "cazador")
+        destinos = ["este", "oeste"]
+        _caminar(juego, destinos)                             # un ciclo previo, para no medir el arranque
+        gc.collect()
+        gc.freeze()
+        resultado = medir(lambda: _caminar(juego, destinos), repeticiones=CICLOS)
+        gc.unfreeze()
+        juntos = sum(1 for e in juego.estadoJuego.catalogo_enemigos if e.id_sala_actual == juego.estadoJuego.jugador.id_sala_actual)
+        mediana, _, maximo = resultado
+        ok = maximo < LIMITE_US
+        cumple = cumple and ok
+        anotar(filas, SECCION, f"{cazadores:>5} cazadores persiguiendo (el jugador camina)  1 ciclo completo", resultado)
+        filas.append((SECCION, f"    ¿el peor de {CICLOS} ciclos < 20 ms?", "CUMPLE" if ok else "NO CUMPLE",
+                      f"(máx {texto(maximo)}; {juntos} de {cazadores} comparten sala con el jugador al final)"))
+    return cumple
+
+
 def ejecutar(filas: list) -> bool:
     cumple_todo = True
     with tempfile.TemporaryDirectory() as carpeta, contextlib.redirect_stdout(salida_muda()):
@@ -46,6 +79,7 @@ def ejecutar(filas: list) -> bool:
             filas.append((SECCION, f"    ¿el peor de {CICLOS} ciclos < 20 ms?", "CUMPLE" if cumple else "NO CUMPLE", f"(máx {texto(maximo)})" + ("" if enemigos <= ESCALA_DE_REFERENCIA else "  prueba de estrés, no decide el veredicto")))
 
         gc.unfreeze()
+        cumple_todo = ciclo_con_cazadores(filas, carpeta) and cumple_todo
         # Reproducción: se juegan N acciones, se exporta el log y se repite en un juego nuevo.
         juego = nuevo_juego(carpeta, 10)
         for _ in range(ACCIONES_DE_REPETICION):

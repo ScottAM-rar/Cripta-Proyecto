@@ -20,6 +20,7 @@ class SalidaDTO:
     cerrada: bool = False               # True si requiere llave para abrirse
     llave: str | None = None           # ID de la llave necesaria (ej: "itm_llave_bronce")[cite: 1]
     cierre_automatico: int | None = None # Tiempo virtual de re-cierre si aplica[cite: 1]
+    costo: int = 100                   # costo de tránsito, entero >= 1 (FR-101); el mismo en ambos sentidos
 
 
 
@@ -33,4 +34,4 @@ class SalaDTO:
     enemigos: list[EnemigoDTO] = field(default_factory=list) # Reutiliza el DTO de enemigos TODO revisar si es el mejor tipo de arreglo
     objetos: list[str] = field(default_factory=list)          # IDs de catálogo en el suelo (ej: "itm_antorcha")[cite: 1] TODO revisar si es el mejor tipo de arreglo
     trampas: list[Trampa] = field(default_factory=list) # TODO revisar si es el mejor tipo de arreglo
-    ultimo_paso: int  = 0     # Rastro del tiempo virtual de la última visita del jugador[cite: 1]
+    ultimo_paso: int  = -1     # Rastro del tiempo virtual de la última visita del jugador[cite: 1]
