@@ -250,7 +250,7 @@ Quien revisa reproduce una partida y obtiene el mismo mapa conocido; comprueba q
 
 - El esqueleto de la cripta, descargado completo al iniciar, incluye el nombre y las salidas de cada sala; por eso explorar una sala con la antorcha no requiere descargar su contenido.
 - El jugador «entra» a una sala en el instante en que su movimiento termina, según la regla existente de movimiento; mientras cruza una salida sigue observando las puertas de la sala de origen.
-- Una puerta es una sola para las dos salas que conecta; abrirla o cerrarla desde un lado cambia su estado visto desde el otro.
+- Cada salida tiene su propia puerta. Una conexión entre dos salas se compone de una salida por sentido, con estados independientes. El jugador observa una puerta mientras está en la sala de origen o en la de destino de esa salida.
 - El id de una sala explorada puede mostrarse; el de una avistada no.
 - La forma exacta del comando de mapa y su presentación textual se definen en el plan; esta especificación fija qué se muestra y qué no.
 - La cripta de referencia y los umbrales de tiempo son los del reglamento del proyecto.
