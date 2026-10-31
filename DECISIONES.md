@@ -39,3 +39,26 @@ Por capacidad: enlace a su especificación y a su plan, si la decisión final co
 | SC-004 se verifica por conteo y la razón de tiempos solo informa | **Cambió respecto de la especificación original**, que usaba una razón de tiempos (≤ 2×) | `/speckit-analyze` (A1): el tiempo de operaciones de decenas de µs es frágil. Medido: la razón fue 0,99× |
 | FR-513: una salida hacia una sala que no existe se ignora | **Agregado a la especificación tras `/speckit-analyze` (S1)**; el plan ya lo suponía | `TestOrigenYSalasInexistentes` y la equivalencia con la referencia |
 | `ServicioCripta.salas_vecinas` no se modifica | Sí | Medido como referencia: con límite 5 en 40 000 salas tarda 11,75 ms frente a 0,02 ms del recorrido nuevo, porque busca cada sala con un recorrido lineal. Reemplazarlo le toca a la capacidad que adopte el recorrido |
+
+## 002 · Niebla de guerra y mapa conocido
+
+- Especificación: [`specs/002-niebla-de-guerra/spec.md`](specs/002-niebla-de-guerra/spec.md) (FR-201 a FR-226)
+- Plan: [`specs/002-niebla-de-guerra/plan.md`](specs/002-niebla-de-guerra/plan.md), con [`research.md`](specs/002-niebla-de-guerra/research.md)
+- Mediciones: [`specs/002-niebla-de-guerra/mediciones.md`](specs/002-niebla-de-guerra/mediciones.md)
+- Estado: historias 1 a 5 y 7 implementadas; **historia 6 (guardado del conocimiento) pendiente** del cierre de P3 (numeración del formato) con Scott. Mientras tanto, una partida cargada empieza su conocimiento en la sala actual.
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| Estado por sala en un arreglo indexado por id | Sí | `--bench mapa` A: ≈ 110 µs por 1 000 consultas en 400, 2 000 y 20 000 salas, con k = 1 y k = N/10, y una posición leída por consulta. La lista de conocidas pasa de 0,66 ms a 33,8 ms con k = N/10; con k = 1 es 3× más rápida (límite) |
+| Memoria de puertas en una lista plana de 4·N; lectura al entrar y aviso al cambiar | Sí | `--bench mapa` F: aviso 122 µs frente a sondeo 20,5 ms por 1 000 eventos (cambios raros); 2,66 ms frente a 20,1 ms (frecuentes); 0 lecturas del esqueleto por evento con el aviso |
+| El aviso del pergamino no observa; la memoria se restaura con `OBSERVAR_PUERTA` | Sí | `test_mapa_conocido` (caminos de cambio de puertas) y `test_niebla_retroceso` (equivalencia con la referencia en recorridos aleatorios) |
+| Orden del comando `mapa`: ordenar al consultar con `ordenar_adaptativo` | Sí, **con una corrección a la evidencia preliminar** | `--bench mapa` D: el cruce con el escaneo del arreglo está cerca de k ≈ N/40 y no de N/8 como sugería la medición preliminar; el comando completo con 5 000 exploradas en 20 000 salas cuesta 22,2 ms. Se revisa si el k realista supera N/40 (híbrido) |
+| Antorcha con bucle directo sobre las salidas | Sí | `--bench mapa` C: 3,4 µs frente a 9,4 µs de `RecorridoPorNiveles` con límite 1 en 400 salas (la razón baja a 1,4× con 20 000 por una reserva O(N) común a ambos en el bench) |
+| Cambios deshacibles `EXPLORAR_SALA`, `AVISTAR_SALA` y `OBSERVAR_PUERTA` con valor anterior | Sí | `--bench mapa` E: 17 µs frente a 953 µs de la instantánea con 20 000 salas; con 400 salas y r ≥ 87 la instantánea gana (límite). `test_niebla_proporcional`: cambios revertidos = registrados |
+| Vista para `BuscadorRutas` con consulta directa a los arreglos | Sí | `--bench mapa` G: 1,89 ms frente a 6,84 ms con 20 000 salas; con 2 000 salas las dos se igualan (límite) |
+| La vista de consola recibe solo DTO de conocimiento (`mostrar_juego` exige las salidas conocidas) | Sí | `test_niebla_vista`: vista con el grafo completo apagado, sin fugas y búsqueda inversa en el texto |
+| Cada salida tiene su propia puerta (un par de salidas por conexión, estados independientes) | **Cambió respecto de la especificación original** | El supuesto de `spec.md` decía que una puerta era una sola; el modelo ya tenía un objeto por salida. Corregido en `spec.md` antes de implementar (principio X) |
+| El jugador entra a la sala en el instante de la acción; no hay estado «cruzando» | **Cambió respecto de la especificación original** | `accionJugador`: la acción ocurre ahora y el costo solo programa el siguiente turno. Corregido en `spec.md` |
+| `SalaMapaDTO.nombre`: el mapa del esqueleto conserva el nombre de cada sala | **Cambió respecto del plan original** (pendiente P2) | Permite mostrar el nombre de una sala explorada por la antorcha sin descargar su contenido; `MapaCripta` no se modificó |
+| `mostrar_juego` ya no muestra el id de las salas no exploradas | **Cambió una prueba de la 001**: `test_terreno_costos` esperaba `Sala 3` | FR-219; la prueba ahora espera «sala sin explorar» y que no aparezca el id |
+| Mediciones de la Parte I repetidas con la carga nueva (`ordenamiento`, `inventario`, `ciclo` informativo) | Sí: ninguna decisión de la Parte I dejó de servir | `mediciones.md`; `retroceso` y `guardado` los repiten sus responsables (por confirmar) |

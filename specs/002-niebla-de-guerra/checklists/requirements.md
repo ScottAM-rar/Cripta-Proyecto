@@ -33,3 +33,4 @@
 
 - Las 2 dudas iniciales (FR-209 y FR-221) se resolvieron en la sesión de clarificación 2026-10-31 (ver spec.md).
 - Los requisitos de rendimiento (FR-223 a FR-226) se expresan como crecimiento respecto del tamaño, sin nombrar estructuras.
+- 2026-10-31 (implement T001): plan y tareas revisados contra la lista de prohibidos del principio I; sin hallazgos. Se recorre el `deque` de `SalaDTO.salidas` solo en lectura; no se agrega ningún uso nuevo de `deque`, `dict`, `set`, `sorted()` ni `list.sort()`.
