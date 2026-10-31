@@ -33,10 +33,11 @@ Genera un `partida.log` por escenario en `specs/002-niebla-de-guerra/replays/`, 
 
 ```text
 python main.py --bench mapa
-python main.py --bench ordenamiento,inventario,retroceso,guardado,ciclo
+python main.py --bench ordenamiento,inventario
+python main.py --bench ciclo
 ```
 
-Resultado esperado: las verificaciones previas de cada sección dicen `OK`; los criterios duros (conteos de B, E y F, equivalencia H) se cumplen; `ciclo` queda bajo 20 ms. Los resultados y su comparación con la Parte I y la 001 van a `mediciones.md`; el antes y el después de cualquier decisión que cambie, a `DECISIONES.md`. Ver [contracts/bench-mapa.md](contracts/bench-mapa.md).
+Resultado esperado: las verificaciones previas de cada sección dicen `OK`; los criterios duros (conteos de A, B, E y F, equivalencia H) se cumplen; `ciclo` queda bajo 20 ms (comprobación informativa: `retroceso`, `guardado` y `ciclo` los repiten sus responsables). Los resultados y su comparación con la Parte I y la 001 van a `mediciones.md`; el antes y el después de cualquier decisión que cambie, a `DECISIONES.md`. Ver [contracts/bench-mapa.md](contracts/bench-mapa.md).
 
 ## 4. Recorrido manual (humo)
 
@@ -77,7 +78,7 @@ Pruebas en la raíz del repositorio. Los escenarios son los de `spec.md` (H = hi
 | FR-220 | H6.1, H6.2 | `EstadoGuardadoLogica`, `EstadoGuardadoDTO` | `test_niebla_guardado` |
 | FR-221 | H6.3 | `EstadoGuardadoLogica`, `AlmacenPartidaBinario` | `test_niebla_guardado` (versión encontrada y esperada) |
 | FR-222 | H6.2, H7.1 | todos | `test_niebla_determinismo`, `test_niebla_guardado`, escenarios de reproducción |
-| FR-223 | H7.3 | `MapaConocido` | `--bench mapa` A; `test_niebla_proporcional` (conteos) |
+| FR-223 | H7.3 | `MapaConocido` | `--bench mapa` A (posiciones leídas por consulta); `test_niebla_proporcional` (conteos) |
 | FR-224 | H7.4 | `MapaConocido` | `test_niebla_proporcional`: salas reveladas y salidas examinadas iguales en tres tamaños; `--bench mapa` B |
 | FR-225 | H7.5 | `MapaConocido`, `PergaminoLogica` | `test_niebla_proporcional`: cambios revertidos = r; `--bench mapa` E |
 | FR-226 | H7.3 a H7.5 | `bench/mapa.py` | `--bench mapa` |
@@ -86,6 +87,6 @@ Sin huecos: los 26 requisitos tienen escenario y prueba. Esta matriz se revisa e
 
 ## 6. Evidencia que debe quedar en el repositorio
 
-- `specs/002-niebla-de-guerra/mediciones.md` con los resultados de `--bench mapa` y las repeticiones de la Parte I.
+- `specs/002-niebla-de-guerra/mediciones.md` con los resultados de `--bench mapa`, las repeticiones de `ordenamiento` e `inventario` y la constancia de quién repite `retroceso`, `guardado` y `ciclo`.
 - `specs/002-niebla-de-guerra/replays/` con un `partida.log` por escenario.
 - `DECISIONES.md` con la sección «002 · Niebla de guerra», que enlaza a `spec.md` y `plan.md` e indica, para cada decisión, si coincide con el plan original y la medición que lo respalda.

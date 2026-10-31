@@ -49,7 +49,7 @@ El enfoque técnico, justificado en [research.md](research.md), tiene seis pieza
 | IV. MVC y adaptadores | `MapaConocido` vive en Lógica y no importa red, disco ni vista. La vista recibe un DTO de conocimiento y no el mapa completo. El nombre de cada sala llega por el esqueleto, que ya viene por la interfaz de fuente de datos (`--offline` incluido). | Pasa |
 | V. Sin datos de una cripta | Todo se dimensiona con el mayor id del esqueleto. Ningún id, cantidad ni nombre fijo. | Pasa |
 | VI. Presupuesto y versiones | 0 solicitudes extra (la antorcha no descarga contenido). El formato de partida sube de versión y un archivo sin niebla se rechaza con versión encontrada y esperada. | Pasa con pendiente P3 |
-| VII. Rendimiento medido | Bloque nuevo `mapa` en `--bench` con la alternativa descartada de cada decisión; se repiten `ordenamiento`, `inventario`, `retroceso`, `guardado` y `ciclo` con la carga nueva ([contracts/bench-mapa.md](contracts/bench-mapa.md)). | Pasa |
+| VII. Rendimiento medido | Bloque nuevo `mapa` en `--bench` con la alternativa descartada de cada decisión; se repiten `ordenamiento` e `inventario` con la carga nueva; `retroceso`, `guardado` y `ciclo` los repiten sus responsables y la 002 solo comprueba `ciclo` de forma informativa ([contracts/bench-mapa.md](contracts/bench-mapa.md)). | Pasa |
 | VIII. Especificación primero | Este plan no agrega reglas. Lo que la especificación dice distinto del modelo se eleva como pendiente (abajo). | Pasa (P1 resuelto) |
 | IX. Trazabilidad | Matriz FR → módulo → prueba en [quickstart.md](quickstart.md); cada caso del Apéndice B tiene escenario y prueba. | Pasa |
 | X. Cambios de especificación | P1 se corrige primero en `spec.md`, en confirmación aparte, antes de tocar el código. | Pasa (P1 corregido en `spec.md` en confirmación aparte) |
@@ -63,10 +63,10 @@ El enfoque técnico, justificado en [research.md](research.md), tiene seis pieza
 
 Ninguno bloquea el plan. P1, P2 y P4 quedaron resueltos (2026-10-31); P3 sigue pendiente de acuerdo con Scott antes de implementar.
 
-- **P1. La especificación dice una cosa distinta del modelo sobre las puertas. (Resuelto: el supuesto de `spec.md` se corrigió con la redacción propuesta, en una confirmación aparte, antes de tocar el código.)** Los Supuestos de `spec.md` afirman que «una puerta es una sola para las dos salas que conecta; abrirla o cerrarla desde un lado cambia su estado visto desde el otro». En el modelo no es así: cada salida de cada sala es un objeto propio con su estado, y abrir o cerrar solo cambia la salida de la sala donde ocurre (`SalaLogica.intentarAbrirPuerta`, `cerrarPuerta`; `GestorEventos` registra un `CAMBIAR_PUERTA` para esa salida). Una conexión A↔B son dos salidas que pueden estar en estados distintos. El plan es válido con ambas lecturas: la memoria es **por salida** (cuatro por sala), y estar en A o en B observa **las dos** salidas de la conexión (la propia y la entrante). Pero el texto del supuesto es falso y debe corregirse en `spec.md` antes de implementar (principio X). Redacción propuesta: «Cada salida tiene su propia puerta. Una conexión entre dos salas se compone de una salida por sentido, con estados independientes. El jugador observa una puerta mientras está en la sala de origen o en la de destino de esa salida.»
+- **P1. La especificación dice una cosa distinta del modelo sobre las puertas. (Resuelto: el supuesto de `spec.md` se corrigió con la redacción propuesta, en una confirmación aparte, antes de tocar el código.)** Los Supuestos de `spec.md` afirmaban que «una puerta es una sola para las dos salas que conecta; abrirla o cerrarla desde un lado cambia su estado visto desde el otro». En el modelo no es así: cada salida de cada sala es un objeto propio con su estado, y abrir o cerrar solo cambia la salida de la sala donde ocurre (`SalaLogica.intentarAbrirPuerta`, `cerrarPuerta`; `GestorEventos` registra un `CAMBIAR_PUERTA` para esa salida). Una conexión A↔B son dos salidas que pueden estar en estados distintos. El plan es válido con ambas lecturas: la memoria es **por salida** (cuatro por sala), y estar en A o en B observa **las dos** salidas de la conexión (la propia y la entrante). Pero el texto del supuesto era falso; se corrigió en `spec.md` antes de implementar (principio X) con esta redacción: «Cada salida tiene su propia puerta. Una conexión entre dos salas se compone de una salida por sentido, con estados independientes. El jugador observa una puerta mientras está en la sala de origen o en la de destino de esa salida.»
 - **P2. El esqueleto trae el nombre de cada sala, pero el mapa del esqueleto lo descarta. (Aceptado: se agrega `SalaMapaDTO.nombre`; se avisa a Cesar.)** `MapaDTO` guarda solo salidas. Para mostrar el nombre de una sala explorada por la antorcha sin descargar su contenido hace falta conservarlo. Cambio aditivo y sin efecto sobre la 001: `SalaMapaDTO.nombre` (por defecto vacío), que rellena `ServicioCripta.obtener_mapa`. `MapaCripta` no se toca (ignora el campo). No es un hueco de especificación; queda aquí por transparencia.
 - **P3. Numeración del formato binario.** El repositorio ya declara `VERSION_FORMATO = 6` y `VERSION_ESTADO = 3` por la 001. Este plan llama «formato v6» al que entrega Scott el 9 de noviembre, como pide la tarea. Si ese «6» es el que ya existe, un archivo de la 001 llegaría al decodificador con otra cantidad de campos y daría un error genérico en lugar de «versión encontrada y esperada» (FR-221). El contrato recomienda subir a `VERSION_FORMATO = 7` y `VERSION_ESTADO = 4`. Decide el grupo con Scott.
-- **P4. Referencia «§5.6».** (Resuelto: es la sección «Revisión de decisiones de la primera parte» del enunciado de la Parte II, que no está en el repositorio; a esta capacidad le tocan ordenamiento y vista, y los demás bloques los repiten sus responsables.) Se interpretó «mediciones de ordenamiento y de vista de la Parte I» como los bloques `ordenamiento` (§4.9) e `inventario` (§4.5, `vistaInventario`) de `--bench`, más `retroceso`, `guardado` y `ciclo` por tocar lo mismo que esta carga. Si «§5.6» designa otra cosa, hay que añadirla a la lista de [contracts/bench-mapa.md](contracts/bench-mapa.md).
+- **P4. Referencia «§5.6».** (Resuelto: es la sección «Revisión de decisiones de la primera parte» del enunciado de la Parte II, que no está en el repositorio; a esta capacidad le tocan ordenamiento y vista, y los demás bloques los repiten sus responsables.) En esta capacidad se repiten `ordenamiento` (§4.9) e `inventario` (§4.5, `vistaInventario`); `retroceso`, `guardado` y `ciclo` los repiten sus responsables, y la 002 solo corre `ciclo` de forma informativa (tasks T041).
 
 ## Estructura del proyecto
 
@@ -96,7 +96,7 @@ specs/002-niebla-de-guerra/
 DTO/
 ├── MapaDTO.py                 # SalaMapaDTO.nombre (aditivo, por defecto vacío)
 ├── ConocimientoDTO.py         # NUEVO: MapaConocidoDTO, SalaConocidaDTO, SalidaConocidaDTO (lo que ve la vista)
-└── EstadoGuardadoDTO.py       # ConocimientoGuardadoDTO, PuertaRecordadaDTO; campo `conocimiento` al final; VERSION_ESTADO
+└── EstadoGuardadoDTO.py       # ConocimientoGuardadoDTO, PuertaRecordadaDTO; campo `conocimiento` al final (por defecto `None`); VERSION_ESTADO (sin cambiar la numeración: P3)
 
 Logica/
 ├── MapaConocido.py            # NUEVO: estado de salas, puertas recordadas, exploradas; entrar, puerta_cambio, deshacer,
@@ -106,9 +106,10 @@ Logica/
 ├── BuscadorRutas.py           # SIN CAMBIOS (la vista nueva cumple su contrato)
 ├── PuertasLogica.py           # SIN CAMBIOS: sigue siendo el único punto de cambio de puertas
 ├── GestorEventos.py           # engancha `entrar` tras MOVER_JUGADOR; el aviso de puerta de las acciones hacia adelante
-│                              #   también llega a MapaConocido (el del pergamino no)
+│                              #   también llega a MapaConocido (el del pergamino no); sin conocimiento (`None`) no hace nada
 ├── PergaminoLogica.py         # revierte los 3 cambios nuevos delegando en MapaConocido
-├── EstadoJuegoLogica.py       # construye MapaConocido al iniciar (conocimiento del instante 0) y expone la consulta
+├── EstadoJuegoLogica.py       # construye MapaConocido al iniciar (conocimiento del instante 0) con un auxiliar único que
+│                              #   también usa la restauración; expone la consulta
 └── EstadoGuardadoLogica.py    # exporta y restaura el conocimiento; rechaza un conocimiento incoherente
 
 adaptadores/
@@ -121,11 +122,11 @@ Servicio/
 
 Controlador/
 ├── ControladorJuego.py        # comando `mapa` (no es acción: no pasa por accionJugador ni por el log)
-└── Vista.py                   # mostrar_mapa_conocido; mostrar_juego muestra salidas desde el conocimiento
+└── Vista.py                   # mostrar_mapa_conocido; mostrar_juego recibe las salidas conocidas (parámetro obligatorio)
 
 bench/
 ├── mapa.py                    # NUEVO: bloque "mapa"
-├── ordenamiento.py / inventario.py / retroceso.py / guardado.py / ciclo.py   # se repiten con la carga nueva
+├── ordenamiento.py / inventario.py   # se repiten con la carga nueva (retroceso, guardado y ciclo los repiten sus responsables)
 └── __init__.py                # registra el bloque
 
 test_mapa_conocido.py          # NUEVO: historias 1, 2 y 3 (estados, puertas, antorcha)

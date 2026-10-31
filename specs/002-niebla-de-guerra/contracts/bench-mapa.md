@@ -12,7 +12,7 @@ Lección de la 005: **el criterio duro es por conteo** (cuántas salas y salidas
 
 | Sección | Mide | Alternativa descartada que también se mide | Criterio |
 |---|---|---|---|
-| A. Consulta | Estado de una sala y puerta recordada, 1 000 consultas, k fijo y k proporcional a N | Recorrer una lista de salas conocidas | Elegida no crece con N ni con k (FR-223); se informa la razón |
+| A. Consulta | Estado de una sala y puerta recordada, 1 000 consultas, k fijo y k proporcional a N | Recorrer una lista de salas conocidas | **Duro (SC-006)**: posiciones leídas por consulta = 1 en los tres tamaños y con k distinto (FR-223). Tiempo informativo; se informa la razón |
 | B. Exploración al entrar | `entrar` sin y con antorcha en un mapa conocido grande (k = N/10) frente a uno vacío | — | **Duro**: salas reveladas y salidas examinadas por entrada iguales en los tres tamaños y con k distinto (FR-224). Tiempo informativo |
 | C. Antorcha | Explorar las vecinas con bucle directo | `RecorridoPorNiveles` con límite 1 | Ambos exploran el mismo conjunto (verificación); se informa la razón |
 | D. Orden del comando | Obtener las exploradas ascendentes, k = 50, 500 y 5 000 por tamaño | Escanear el arreglo de 1 a N; lista siempre ordenada | Tres resultados iguales (verificación); **se informan los cruces** y el tiempo del comando completo (armar el DTO incluido) |
@@ -21,23 +21,28 @@ Lección de la 005: **el criterio duro es por conteo** (cuántas salas y salidas
 | G. Vista para rutas | Una búsqueda `BuscadorRutas` sobre la vista, tras un cambio del conocimiento | Mapa conocido materializado | Mismos costos hallados (verificación); se informa |
 | H. Equivalencia | Conocimiento incremental frente a la referencia reconstruida desde cero tras cada acción y cada deshacer | — | 100 % idénticos (SC-003) |
 
-## Se repiten con la carga nueva
+## Se repiten en esta capacidad con la carga nueva
 
 | Bloque | Por qué |
 |---|---|
 | `ordenamiento` (§4.9) | El comando `mapa` es un uso nuevo del ordenamiento |
 | `inventario` (§4.5, `vistaInventario`) | Comparte la presentación de listas ordenadas |
-| `retroceso` (§4.6) | Tres tipos nuevos de diferencia en el historial |
-| `guardado` | El estado guardado crece con el conocimiento |
-| `ciclo` | Cada movimiento llama a `entrar`; el ciclo debe seguir bajo **20 ms** con decenas de cazadores (código de salida distinto de 0 si no) |
 
-Se compara con las cifras de `specs/001-terreno-y-cazador/mediciones.md` y de `DOCUMENTACION_DECISIONES_DISENO.md`, y el antes y el después de cualquier decisión que cambie se anota en `DECISIONES.md` (ver pendiente P4 del plan sobre la referencia «§5.6»).
+## Los repiten sus responsables
+
+| Bloque | Qué cambia con la carga nueva | Qué hace la 002 |
+|---|---|---|
+| `retroceso` (§4.6) | Tres tipos nuevos de diferencia en el historial | Solo deja constancia de quién lo repite |
+| `guardado` | El estado guardado crece con el conocimiento | Solo deja constancia de quién lo repite |
+| `ciclo` | Cada movimiento llama a `entrar`; el ciclo debe seguir bajo **20 ms** con decenas de cazadores | Lo corre de forma **informativa** (`python main.py --bench ciclo`); el código de salida existente del bloque no cambia |
+
+Se compara con las cifras de `specs/001-terreno-y-cazador/mediciones.md` y de `DOCUMENTACION_DECISIONES_DISENO.md`, y el antes y el después de cualquier decisión que cambie se anota en `DECISIONES.md` (ver P4 del plan).
 
 ## Qué resultado cambiaría cada decisión
 
 | Decisión | Se revisa si… |
 |---|---|
-| Arreglo por id | La consulta crece con N de forma apreciable en A |
+| Arreglo por id | En A una consulta lee más de una posición, o el tiempo crece con N de forma sostenida en las tres medianas |
 | Ordenar al consultar | En D, el comando completo pasa de 50 ms para el k realista de la cripta de referencia |
 | Bucle directo en la antorcha | La antorcha pasara a más de un nivel (C) |
 | Diferencias para deshacer | Las diferencias de E dejan de ganar a la instantánea con r pequeño y N pequeño |

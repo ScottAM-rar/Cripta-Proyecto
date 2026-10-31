@@ -16,6 +16,8 @@ Notación: N = mayor id de sala + 1 (tamaño de las listas; los ids van desde 1)
 6. **El jugador «entra» en `MOVER_JUGADOR` con éxito.** `GestorEventos` llama entonces a `cargar_sala` (que es `ingresarEnSala`, y activa enemigos) y luego `EstadoJuegoLogica.accionJugador` activa las trampas. Son los puntos que la antorcha no debe tocar.
 7. **El pergamino no abre grupo** y, al deshacer, `fijar_cerrada` vuelve a llamar al aviso de puertas. Si ese aviso observara, registraría cambios nuevos en medio de una reversión (research §2).
 
+8. **Puede no haber conocimiento.** Si la fuente no entrega el mapa (`obtener_mapa` ausente) o quien arma `GestorEventos` no le asigna `mapa_conocido`, este queda en `None` y `entrar`, el aviso de puertas y el deshacer no hacen nada. Es el comportamiento de la Parte I y de las pruebas existentes, y es también el modo «conocimiento desactivado» con el que se prueba FR-213.
+
 ## 1. Estado de conocimiento por sala (FR-201 a FR-206, FR-223)
 
 **Decisión.** Una lista `estado` de tamaño N con un entero por sala (0 desconocida, 1 avistada, 2 explorada), indexada por id. Consultar es `estado[id]`.
@@ -38,7 +40,7 @@ Notación: N = mayor id de sala + 1 (tamaño de las listas; los ids van desde 1)
 
 El arreglo es entre 115 y 150 veces más rápido y casi no crece al multiplicar N por 100 (2,9 → 4,0 µs, efecto de caché del procesador). La lista crece con k.
 
-**Evidencia que dará `--bench mapa` A**: consulta de estado y de puerta en tres tamaños (400, 2 000 y 20 000 salas), con k fijo y con k proporcional a N.
+**Evidencia que dará `--bench mapa` A**: consulta de estado y de puerta en tres tamaños (400, 2 000 y 20 000 salas), con k fijo y con k proporcional a N. **Criterio duro (SC-006, por conteo, como en la 005)**: cada consulta lee exactamente una posición de `estado` o de `puertas` en los tres tamaños y con k distinto; la razón de tiempos solo se informa.
 
 **Límites.** El arreglo ocupa memoria proporcional a la cripta aunque se explore poco (con 40 000 salas, las dos listas suman unos 1,6 MB de punteros, 5·N posiciones; comparable al esqueleto que `MapaCripta` ya guarda). Reiniciar o restaurar cuesta O(N) una vez. Si una cripta llegara a millones de salas, la alternativa de listas pequeñas ganaría en memoria; la capacidad 001 ya asume el mismo dimensionamiento para el esqueleto.
 
@@ -209,7 +211,7 @@ Deshacer: `PergaminoLogica` delega en `MapaConocido.deshacer(cambio)`, que resta
 
 ## 6. Persistencia (FR-220, FR-221)
 
-**Decisión.** El estado guardado gana un campo `conocimiento` (al final, como pide el mecanismo del codec), con tres listas: exploradas en orden de descubrimiento, avistadas en orden ascendente y puertas observadas. Detalle en [contracts/estado-guardado-niebla.md](contracts/estado-guardado-niebla.md).
+**Decisión.** El estado guardado gana un campo `conocimiento` (al final, como pide el mecanismo del codec; con `None` por defecto para no romper a quien construye el estado, y `restaurar` rechaza un conocimiento ausente), con tres listas: exploradas en orden de descubrimiento, avistadas en orden ascendente y puertas observadas. Detalle en [contracts/estado-guardado-niebla.md](contracts/estado-guardado-niebla.md).
 
 | | Solo lo no desconocido (elegida) | Volcar los arreglos completos (N y 4·N enteros) |
 |---|---|---|
@@ -220,7 +222,7 @@ Deshacer: `PergaminoLogica` delega en `MapaConocido.deshacer(cambio)`, que resta
 
 La lista de avistadas **se puede derivar** de las exploradas y el esqueleto (FR-203: no explorada y destino de una salida de una explorada), pero FR-220 pide guardarla. Se guarda y se **valida al cargar** que coincide con la derivada: así un archivo incoherente se rechaza antes de tocar la partida (`restaurar` arma todo primero y reemplaza al final). Los archivos sin conocimiento se rechazan por versión (FR-221); el número depende de P3.
 
-**Evidencia que dará `--bench guardado`** (repetido): tamaño y tiempo de guardar y cargar con el conocimiento, en los tres tamaños, para comprobar que no se rompe la ventaja del binario sobre JSON de la Parte I.
+**Evidencia.** El bloque `guardado` de la Parte I lo repite su responsable con la carga nueva (tamaño y tiempo de guardar y cargar con el conocimiento, para comprobar que no se rompe la ventaja del binario sobre JSON); tasks T041 y T049 dejan registrado que se hizo.
 
 ## 7. Vista del conocimiento para `BuscadorRutas` (futura 006)
 
@@ -263,7 +265,7 @@ La lista de avistadas **se puede derivar** de las exploradas y el esqueleto (FR-
 
 ## 9. Mediciones de la Parte I que se repiten
 
-Constitución VII: si la carga nueva cambia una decisión de la Parte I, se cambia y se documenta antes y después. Se repiten `ordenamiento` y `inventario` (el comando `mapa` es un uso nuevo del ordenamiento y comparte la presentación de listas con `vistaInventario`), `retroceso` (tres tipos nuevos de diferencia), `guardado` (el estado guardado crece) y `ciclo` (cada movimiento llama a `entrar`; límite 20 ms). Ver P4 sobre la referencia «§5.6».
+Constitución VII: si la carga nueva cambia una decisión de la Parte I, se cambia y se documenta antes y después. Esta capacidad repite `ordenamiento` e `inventario` (el comando `mapa` es un uso nuevo del ordenamiento y comparte la presentación de listas con `vistaInventario`). Los bloques `retroceso` (tres tipos nuevos de diferencia), `guardado` (el estado guardado crece) y `ciclo` (cada movimiento llama a `entrar`; límite 20 ms) los repiten sus responsables; la 002 solo corre `ciclo` de forma informativa y deja registrado en `mediciones.md` quién repite cada uno (tasks T041 y T049). Ver P4 del plan.
 
 ## 10. Resumen de las decisiones
 
