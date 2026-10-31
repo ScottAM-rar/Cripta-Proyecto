@@ -13,7 +13,7 @@
 
 ## Completitud de requisitos
 
-- [ ] Sin marcadores [NEEDS CLARIFICATION] pendientes
+- [x] Sin marcadores [NEEDS CLARIFICATION] pendientes
 - [x] Requisitos comprobables y sin ambigüedad
 - [x] Criterios de éxito medibles
 - [x] Criterios de éxito sin detalles de tecnología
@@ -31,5 +31,5 @@
 
 ## Notas
 
-- Quedan 2 marcadores [NEEDS CLARIFICATION]: FR-209 (puertas de vecinas exploradas por la antorcha) y FR-221 (partidas guardadas sin niebla). Resolver en `/speckit-clarify` antes de `/speckit-plan`.
+- Las 2 dudas iniciales (FR-209 y FR-221) se resolvieron en la sesión de clarificación 2026-10-31 (ver spec.md).
 - Los requisitos de rendimiento (FR-223 a FR-226) se expresan como crecimiento respecto del tamaño, sin nombrar estructuras.

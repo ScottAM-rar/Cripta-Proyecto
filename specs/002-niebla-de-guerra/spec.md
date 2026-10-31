@@ -18,6 +18,13 @@ Quien juega debe sentir que la cripta se descubre poco a poco y que su mapa pued
 
 **Fuera de alcance**: el comando «ir a» (otra especificación); el cazador y los costos (001); la línea de tiempo; el formato binario v6 en sí (lo codifica otra persona; esta especificación solo dice qué conocimiento se guarda).
 
+## Clarificaciones
+
+### Sesión 2026-10-31
+
+- Q: Cuando la antorcha explora una vecina, ¿sus puertas nunca vistas aparecen «sin observar» o con su estado real? → A: Aparecen «sin observar» hasta que el jugador esté en una de las dos salas que conecta la puerta.
+- Q: ¿Qué pasa al cargar una partida guardada por una versión sin niebla? → A: Se rechaza con un mensaje que indique la versión encontrada y la esperada.
+
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
 ### Historia 1 — Explorar y avistar salas (Prioridad: P1)
@@ -73,7 +80,7 @@ Con la antorcha encendida, al entrar a una sala el jugador también explora toda
 4. **Dado** la antorcha apagada, **cuando** el jugador entra a una sala, **entonces** sus vecinas solo pasan a avistadas. *(FR-204, FR-210)*
 5. **Dado** el jugador ya dentro de una sala con la antorcha apagada, **cuando** la enciende, **entonces** sus vecinas no cambian de estado hasta la siguiente entrada a una sala. *(FR-212)*
 6. **Dado** salas exploradas por la antorcha, **cuando** la antorcha se apaga, **entonces** esas salas siguen exploradas. *(FR-205, FR-212)*
-7. **Dado** una vecina explorada por la antorcha en la que el jugador nunca estuvo, **cuando** se consulta el estado de las puertas de sus salidas que no dan a la sala actual, **entonces** se muestran según FR-209. *(FR-209)*
+7. **Dado** una vecina explorada por la antorcha en la que el jugador nunca estuvo, **cuando** se consulta el estado de las puertas de sus salidas que no dan a la sala actual, **entonces** figuran como «sin observar» y pasan a mostrar su estado real cuando el jugador entra a una de las dos salas que conectan cada una de esas puertas. *(FR-209, FR-207)*
 
 ---
 
@@ -126,7 +133,7 @@ Quien juega guarda la partida y, al cargarla, conserva exactamente el mismo mapa
 
 1. **Dado** una partida con salas exploradas, avistadas y puertas recordadas con un estado distinto del real, **cuando** se guarda y se carga, **entonces** cada sala tiene el mismo estado, cada puerta el mismo estado recordado y el mapa se muestra igual. *(FR-220)*
 2. **Dado** una partida guardada y cargada, **cuando** se continúa con las mismas acciones que una partida que no se guardó, **entonces** el conocimiento resultante es idéntico en las dos. *(FR-220, FR-222)*
-3. **Dado** un archivo de partida guardado por una versión sin niebla de guerra, **cuando** se intenta cargar, **entonces** se procede según FR-221. *(FR-221)*
+3. **Dado** un archivo de partida guardado por una versión sin niebla de guerra, **cuando** se intenta cargar, **entonces** se rechaza con un mensaje que indica la versión encontrada y la esperada, y no se carga. *(FR-221)*
 
 ---
 
@@ -158,7 +165,7 @@ Quien revisa reproduce una partida y obtiene el mismo mapa conocido; comprueba q
 - Puerta que cambia mientras el jugador está lejos: el mapa conserva el estado viejo hasta la siguiente observación (FR-208).
 - Encender la antorcha dentro de una sala: no explora las vecinas hasta la siguiente entrada (FR-212).
 - La antorcha se apaga: lo explorado con ella sigue explorado (FR-205).
-- Vecina explorada por la antorcha: no se ve su contenido ni se activan sus enemigos ni trampas (FR-211); sus puertas no compartidas con la sala actual se muestran según FR-209.
+- Vecina explorada por la antorcha: no se ve su contenido ni se activan sus enemigos ni trampas (FR-211); sus puertas no compartidas con la sala actual figuran como «sin observar» (FR-209).
 - Varias salidas hacia la misma sala avistada: el mapa no revela que es la misma (FR-219).
 - Consultar el mapa no es una acción: no consume tiempo ni pergamino (FR-218).
 
@@ -173,13 +180,13 @@ Quien revisa reproduce una partida y obtiene el mismo mapa conocido; comprueba q
 - **FR-203**: Una sala DEBE estar avistada si y solo si no está explorada y es destino de al menos una salida de una sala explorada, sin importar cómo llegó a estar explorada esa sala. De una sala avistada el jugador solo sabe que existe detrás de esa salida: NO conoce su nombre, sus salidas ni su contenido. Una sala que solo tiene una salida hacia una explorada, sin salida de vuelta, NO queda avistada por esa conexión.
 - **FR-204**: Al entrar el jugador a una sala, esta DEBE pasar a explorada y cada sala destino de cualquiera de sus salidas, abierta o cerrada, DEBE pasar a avistada si no estaba explorada.
 - **FR-205**: Una sala explorada NO DEBE volver a avistada ni a desconocida, y una avistada NO DEBE volver a desconocida, salvo por el pergamino de retroceso (FR-214). Volver a entrar a una sala explorada no cambia el estado de ninguna sala.
-- **FR-206**: De cada sala explorada el jugador DEBE conocer su nombre, sus salidas (dirección y sala destino), el costo de cada salida y el estado recordado de la puerta de cada salida.
+- **FR-206**: De cada sala explorada el jugador DEBE conocer su nombre, sus salidas (dirección y sala destino), el costo de cada salida y el estado recordado de la puerta de cada salida (abierta, cerrada o «sin observar», FR-209).
 
 **Memoria de puertas**
 
 - **FR-207**: El jugador DEBE observar una puerta en todo instante en que esté en cualquiera de las dos salas que conecta: al entrar a una de ellas y cada vez que la puerta cambie de estado mientras él siga allí. Observar una puerta hace que su estado recordado pase a ser el estado real en ese instante.
 - **FR-208**: El estado recordado de una puerta NO DEBE cambiar mientras el jugador no la observe, aunque su estado real cambie (por ejemplo, por cierre automático).
-- **FR-209**: Una puerta de una sala explorada que el jugador nunca ha observado (solo posible en salas exploradas por la antorcha) DEBE mostrarse como [NEEDS CLARIFICATION: ¿«sin observar» hasta que el jugador esté en una de sus salas, o la antorcha también observa las puertas de las vecinas que explora?].
+- **FR-209**: Una puerta que el jugador nunca ha observado (solo posible en salas exploradas por la antorcha) DEBE figurar como «sin observar»; la antorcha NO DEBE observar puertas. Pasa a tener estado recordado en la primera observación (FR-207).
 
 **Antorcha**
 
@@ -198,7 +205,7 @@ Quien revisa reproduce una partida y obtiene el mismo mapa conocido; comprueba q
 
 **Mapa conocido y vista**
 
-- **FR-216**: El jugador DEBE disponer de un comando que muestre el mapa conocido: cada sala explorada con su nombre y, por cada salida, su dirección, su costo, el estado recordado de su puerta y su destino (el nombre si la sala destino está explorada, o una marca de «sala sin explorar» si está avistada).
+- **FR-216**: El jugador DEBE disponer de un comando que muestre el mapa conocido: cada sala explorada con su nombre y, por cada salida, su dirección, su costo, el estado recordado de su puerta (abierta, cerrada o «sin observar») y su destino (el nombre si la sala destino está explorada, o una marca de «sala sin explorar» si está avistada).
 - **FR-217**: El mapa DEBE listar las salas exploradas en orden ascendente de id y las salidas de cada sala en el orden en que la sala las declara; las salas avistadas aparecen solo como destino de salidas y las desconocidas NO DEBEN aparecer.
 - **FR-218**: Consultar el mapa NO DEBE avanzar el reloj, contar como acción ni ser deshecho por el pergamino, y NO DEBE alterar en nada la partida.
 - **FR-219**: Todo lo que la vista muestre sobre la cripta fuera del contenido de la sala actual (en el mapa y en la vista de la sala actual) DEBE obtenerse solo del conocimiento del jugador, nunca del mapa completo ni del estado real de las puertas. En particular, el destino de una salida se muestra con nombre solo si está explorado, y la vista NO DEBE revelar la identidad de una sala avistada ni que dos salidas llevan a la misma sala avistada.
@@ -206,7 +213,7 @@ Quien revisa reproduce una partida y obtiene el mismo mapa conocido; comprueba q
 **Partida guardada**
 
 - **FR-220**: El conocimiento DEBE formar parte del estado de la partida: la partida guardada DEBE incluir el estado (explorada o avistada) de cada sala no desconocida y el estado recordado de cada puerta observada, y al cargarla DEBE restaurarse exactamente.
-- **FR-221**: Un archivo de partida guardado por una versión sin niebla de guerra DEBE [NEEDS CLARIFICATION: ¿rechazarse con un mensaje que indique la versión encontrada y la esperada, o migrarse de forma explícita reconstruyendo el conocimiento solo a partir de la sala actual?].
+- **FR-221**: Un archivo de partida guardado por una versión sin niebla de guerra DEBE rechazarse con un mensaje que indique la versión encontrada y la esperada; NO DEBE cargarse ni migrarse.
 
 **Determinismo**
 
@@ -223,7 +230,7 @@ Quien revisa reproduce una partida y obtiene el mismo mapa conocido; comprueba q
 
 - **Conocimiento del jugador**: lo que el jugador sabe de la cripta; parte del estado de la partida. Se compone del estado de cada sala y de la memoria de puertas.
 - **Estado de una sala**: explorada (se conoce nombre, salidas y costos), avistada (solo se sabe que existe detrás de una salida conocida) o desconocida.
-- **Puerta recordada**: estado de una puerta tal como estaba en la última observación del jugador, que puede no coincidir con el real.
+- **Puerta recordada**: estado de una puerta tal como estaba en la última observación del jugador (abierta o cerrada), o «sin observar» si nunca la observó; puede no coincidir con el real.
 - **Observación**: instante en que el jugador está en una de las dos salas que conecta una puerta y actualiza su estado recordado.
 - **Mapa conocido**: presentación del conocimiento del jugador, a pedido.
 
