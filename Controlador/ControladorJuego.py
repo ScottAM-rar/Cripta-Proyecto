@@ -124,12 +124,12 @@ class ControladorJuego:
                 
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
             
-            self.vista.mostrar_juego(jugador, sala_actual, self.servicio.objetoActualInventario(), self.servicio.ultimosMensajes())
+            self.vista.mostrar_juego(jugador, sala_actual, self.servicio.vistaSalaActual(), self.servicio.objetoActualInventario(), self.servicio.ultimosMensajes())
 
             accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
             "\n usar[objeto actual],siguiente[objeto],anterior[objeto]," \
             "\n soltar, atacar, esperar, abrir[puerta], cerrar[puerta]," \
-            "\n inventario[peso/valor/nombre], salir: ").strip().lower()
+            "\n inventario[peso/valor/nombre], mapa, salir: ").strip().lower()
 
             if accion == "salir":
                 guardar = input("¿Deseas guardar la partida antes de salir? (s/n): ").strip().lower()
@@ -142,6 +142,11 @@ class ControladorJuego:
                         print(f"Error al guardar la partida: {e}")
                 print("Saliendo del juego...")
                 break
+
+            if accion == "mapa":
+                # No es una acción del jugador: no pasa por accionJugador, no avanza el reloj ni entra al historial ni al log (FR-218)
+                self.vista.mostrar_mapa_conocido(self.servicio.mapaConocido())
+                continue
 
             evento = self._mapear_entrada_a_evento(accion, sala_actual, jugador)
 

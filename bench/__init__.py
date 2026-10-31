@@ -13,7 +13,7 @@ import sys
 import tempfile
 from datetime import datetime
 
-from bench import agenda, bitacora, ciclo, guardado, inventario, ordenamiento, recorrido, retroceso, salas, terreno
+from bench import agenda, bitacora, ciclo, guardado, inventario, mapa, ordenamiento, recorrido, retroceso, salas, terreno
 from bench.datos import SEMILLA
 from bench.salida import escribir_csv, imprimir_tabla
 
@@ -44,6 +44,7 @@ BLOQUES = (
     ("ciclo", ciclo.ejecutar),
     ("terreno", terreno.ejecutar),
     ("recorrido", recorrido.ejecutar),
+    ("mapa", mapa.ejecutar),
 )
 
 
@@ -64,6 +65,7 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
     filas: list = []
     cumple = True
     cumple_recorrido = True
+    cumple_mapa = True
     for nombre, funcion in BLOQUES:
         if nombre not in pedidos:
             continue
@@ -73,6 +75,8 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
             cumple = False
         if nombre == "recorrido" and resultado is False:
             cumple_recorrido = False
+        if nombre == "mapa" and resultado is False:
+            cumple_mapa = False
     imprimir_tabla(filas, imprimir)
     if ruta_csv:
         escribir_csv(filas, ruta_csv)
@@ -82,4 +86,7 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
     if "recorrido" in pedidos:
         imprimir("\nRecorrido por niveles (SC-004, equivalencia y verificaciones previas): "
                  + ("CUMPLE." if cumple_recorrido else "NO CUMPLE; la razón de tiempos solo informa, no decide."))
-    return 0 if cumple and cumple_recorrido else 1
+    if "mapa" in pedidos:
+        imprimir("\nMapa conocido (criterios duros por conteo y equivalencia con la referencia): "
+                 + ("CUMPLE." if cumple_mapa else "NO CUMPLE; la razón de tiempos solo informa, no decide."))
+    return 0 if cumple and cumple_recorrido and cumple_mapa else 1

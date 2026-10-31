@@ -16,6 +16,7 @@ from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.FuenteCripta import FuenteCripta
 from Logica.CampoDeCostos import CampoDeCostos
 from Logica.MapaCripta import MapaCripta
+from Logica.MapaConocido import MapaConocido
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
 from Logica import EstadoGuardadoLogica
 
@@ -31,6 +32,7 @@ class EstadoJuegoLogica:
         self.motivoFin = None
         self.idCripta = None           # se fija al iniciar o restaurar una partida; None = todavía no hay cripta elegida
         self.precargaInicialHecha = False
+        self.mapaConocido = None       # conocimiento del jugador (niebla de guerra, 002); None si la fuente no entrega el mapa
         self.registrador_log = None    # opcional: algo con agregar(linea); el modelo solo le avisa cada acción
         
         if(cripta is not None):
@@ -79,7 +81,12 @@ class EstadoJuegoLogica:
             obtener_botin=self.comunicacion.objetos_que_suelta,
         )
         self.gestorEventos.reloj = relojvirtual
-        self.gestorEventos.campo_de_costos = self._crearCampoDeCostos(cripta, salas, jugador)
+        campo, conocimiento = self._crearMapaYConocimiento(cripta, salas, jugador)
+        self.gestorEventos.campo_de_costos = campo
+        self.mapaConocido = conocimiento
+        self.gestorEventos.mapa_conocido = conocimiento
+        if conocimiento is not None:
+            conocimiento.iniciar(jugador.id_sala_actual)       # conocimiento del instante 0: sin historial, no se deshace (FR-202, FR-215)
         self.jugadorLogica = JugadorLogica(jugador,self.semilla,self.gestorEventos.azar)
         self.logEventos.vaciar()
         self.idCripta = cripta
@@ -88,13 +95,24 @@ class EstadoJuegoLogica:
         self.fin = False
         self.motivoFin = None
 
+    def _crearMapaYConocimiento(self, cripta: str, salas: list, jugador):
+        """Obtiene el esqueleto UNA vez y arma, compartiendo el mismo MapaCripta, el campo de costos de los cazadores y el
+        conocimiento del jugador. Devuelve (campo, conocimiento); ambos None si la fuente no entrega el mapa."""
+        obtener = getattr(self.comunicacion, "obtener_mapa", None)
+        if obtener is None:
+            return None, None
+        mapa_dto = obtener(cripta)
+        mapa = MapaCripta(mapa_dto)
+        nombres = []
+        for sala in mapa_dto.salas:
+            nombres.append("" if sala is None else getattr(sala, "nombre", ""))
+        conocimiento = MapaConocido(mapa, nombres, salas, jugador, RetrocesoLogica().registrar_cambio)
+        return CampoDeCostos(mapa, jugador, salas), conocimiento
+
     def _crearCampoDeCostos(self, cripta: str, salas: list, jugador) -> CampoDeCostos | None:
         """Mapa del esqueleto completo + campo de costos hacia el jugador, para los cazadores (FR-117). Si la fuente
         no entrega el mapa, los cazadores no pueden decidir y fallan con un error claro."""
-        obtener = getattr(self.comunicacion, "obtener_mapa", None)
-        if obtener is None:
-            return None
-        return CampoDeCostos(MapaCripta(obtener(cripta)), jugador, salas)
+        return self._crearMapaYConocimiento(cripta, salas, jugador)[0]
 
     def _comprobarFinal(self):
         if self.jugadorLogica.esta_muerto():
@@ -407,6 +425,22 @@ class EstadoJuegoLogica:
     #si la sala está (no es None) la devuelve
     #si no, se comunica con el comunicador, recibe la sala y la inserta en el vector y la devuelve
     #inicial todos los enemigos de las salas
+
+    def instantaneaMapaConocido(self):
+        """El mapa conocido del jugador en formato de lectura (FR-216). No avanza el reloj ni abre ninguna acción (FR-218)."""
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+        if self.mapaConocido is None:
+            raise ValueError("Esta cripta no entrega el esqueleto: no hay mapa conocido")
+        return self.mapaConocido.instantanea()
+
+    def vistaSalaActual(self):
+        """La sala actual con sus salidas según lo que el jugador conoce (FR-219)."""
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+        if self.mapaConocido is None:
+            raise ValueError("Esta cripta no entrega el esqueleto: no hay mapa conocido")
+        return self.mapaConocido.sala_conocida(self.estadoJuego.jugador.id_sala_actual)
 
     def obtenerJugador(self):
         if self.estadoJuego is None:

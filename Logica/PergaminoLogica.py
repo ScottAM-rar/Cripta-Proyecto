@@ -13,6 +13,7 @@ class PergaminoLogica:
         self.salas = salas
         self.avisar_puerta = avisar_puerta     # se llama con la salida cuando deshacer cambia el estado de una puerta
         self.mapa_puertas = None               # MapaCripta cuya versión de puertas sube con cada cambio
+        self.mapa_conocido = None              # conocimiento del jugador (002); sus cambios se deshacen aquí
 
     def hay_algo_para_deshacer(self) -> bool:
         """Verifica si hay acciones registradas en el historial de retroceso."""
@@ -129,6 +130,9 @@ class PergaminoLogica:
             case "CAMBIAR_PUERTA":
                 salida = cambio.objeto_afectado
                 fijar_cerrada(salida, cambio.valor_anterior, self.avisar_puerta, self.mapa_puertas)
+
+            case "EXPLORAR_SALA" | "AVISTAR_SALA" | "OBSERVAR_PUERTA":
+                cambio.objeto_afectado.deshacer(cambio)
 
             case "CAMBIAR_TRAMPA":
                 trampa = cambio.objeto_afectado

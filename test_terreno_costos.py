@@ -160,14 +160,15 @@ class TestVista(unittest.TestCase):
         sala = logica.estadoJuego.salas[jugador.id_sala_actual]
         salida = io.StringIO()
         with contextlib.redirect_stdout(salida):
-            VistaConsola().mostrar_juego(jugador, sala, None, [])
+            VistaConsola().mostrar_juego(jugador, sala, logica.vistaSalaActual(), None, [])
         return salida.getvalue()
 
     def test_FR130_cada_salida_muestra_su_costo(self):
         salas = esqueleto_lineal([250, None])
         salas[1]["salidas"]["E"]["costo"] = 70
         texto = self.mostrar(nueva_partida(salas, sala_inicial=2))
-        self.assertIn("Sala 3", texto)
+        self.assertIn("sala sin explorar", texto)            # FR-219: la vista no muestra el id de una sala avistada
+        self.assertNotIn("Sala 3", texto)
         self.assertIn("costo 70", texto)
         self.assertIn("costo 250", texto)
 

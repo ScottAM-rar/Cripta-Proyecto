@@ -6,25 +6,32 @@ class VistaConsola:
         for advertencia in advertencias:
             print(f"AVISO: {advertencia}")
    
-   def mostrar_juego(self, jugador, sala_actual, objeto_actual=None, mensajes=None):
-        
+   def mostrar_juego(self, jugador, sala_actual, sala_conocida, objeto_actual=None, mensajes=None):
+        """`sala_conocida`: la sala actual en el formato del conocimiento del jugador (SalaConocidaDTO). Las salidas salen
+        SOLO de ahí (FR-219): el destino lleva nombre únicamente si está explorado y nunca se muestra el id ni el nombre de
+        una sala avistada. El resto (objetos, enemigos, trampas) es contenido de la sala actual, que el jugador ve."""
+
         print("\n" + "="*50)
         print(f"SALA: {sala_actual.nombre} (ID: {sala_actual.id})")
         print(f"VIDA JUGADOR: {jugador.vida_actual}/{jugador.vida_max}")
-        
+
         print("\n--- SALIDAS ---")
-        for salida in sala_actual.salidas:
-            if salida.cerrada:
-                if salida.llave:
-                    estado_puerta = f"CERRADA (Requiere: {salida.llave})"
-                else:
-                    estado_puerta = "CERRADA"
-            else:
+        for salida in sala_conocida.salidas:
+            if salida.puerta == "cerrada":
+                llave = None
+                for real in sala_actual.salidas:         # la llave que pide una puerta de la sala actual es contenido de la sala
+                    if real.direccion == salida.direccion:
+                        llave = real.llave
+                estado_puerta = f"CERRADA (Requiere: {llave})" if llave else "CERRADA"
+            elif salida.puerta == "abierta":
                 estado_puerta = "Abierta"
+            else:
+                estado_puerta = "Sin observar"
+            destino = salida.destino_nombre if salida.destino_explorado else "sala sin explorar"
 
             print(
                 f"  > {salida.direccion.capitalize()} -> "
-                f"Sala {salida.sala_destino} [{estado_puerta}] costo {salida.costo}"
+                f"{destino} [{estado_puerta}] costo {salida.costo}"
             )
         print("\n--- OBJETOS EN LA SALA ---")
         if sala_actual.objetos:
@@ -79,6 +86,22 @@ class VistaConsola:
                 print(f"  {mensaje}")
         else:
             print("  (sin mensajes)")
+
+   def mostrar_mapa_conocido(self, mapa):
+        """Mapa conocido (FR-216, FR-217, FR-219): solo lo que viene en `mapa` (MapaConocidoDTO). Las salas exploradas, en el
+        orden recibido; el destino de una salida con nombre si está explorado y «sala sin explorar» si no."""
+        print("\n" + "=" * 20 + " MAPA CONOCIDO " + "=" * 20)
+        print(f"Salas exploradas: {len(mapa.salas)}   (estás en la sala marcada con *)")
+        for sala in mapa.salas:
+            marca = "*" if sala.id == mapa.sala_actual else " "
+            print(f" {marca} {sala.nombre} (id {sala.id})")
+            for salida in sala.salidas:
+                if salida.destino_explorado:
+                    destino = f"{salida.destino_nombre} (id {salida.destino_id})"
+                else:
+                    destino = "sala sin explorar"
+                print(f"     {salida.direccion:<6} -> {destino:<34} costo {salida.costo:<5} {salida.puerta}")
+        print("=" * 55)
 
    def mostrar_inventario(self, objetos, jugador, criterio=None):
         """Lista de objetos del inventario (§4.5, §10.2): en su orden real o ordenada por `criterio`."""

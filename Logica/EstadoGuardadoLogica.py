@@ -334,7 +334,13 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     gestor = GestorEventos(salas, jugador, logica.ingresarEnSala, estado.semilla,
                            obtener_botin=logica.comunicacion.objetos_que_suelta)
     gestor.reloj = reloj
-    gestor.campo_de_costos = logica._crearCampoDeCostos(estado.id_cripta, salas, jugador)
+    campo, conocimiento = logica._crearMapaYConocimiento(estado.id_cripta, salas, jugador)
+    gestor.campo_de_costos = campo
+    gestor.mapa_conocido = conocimiento
+    if conocimiento is not None:
+        # PROVISIONAL hasta T035 (guardado del conocimiento, bloqueado por P3): el conocimiento de una partida cargada
+        # empieza en la sala actual en lugar de restaurarse del archivo.
+        conocimiento.iniciar(jugador.id_sala_actual)
     gestor.azar.setstate((estado.estado_azar[0], tuple(estado.estado_azar[1]), estado.estado_azar[2]))
 
     bitacora = BitacoraLogica()
@@ -351,6 +357,7 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     logica.semilla = estado.semilla
     logica.estadoJuego = estado_juego
     logica.gestorEventos = gestor
+    logica.mapaConocido = conocimiento
     logica.jugadorLogica = JugadorLogica(jugador, estado.semilla, gestor.azar)
     logica.logEventos = log
     logica.logEventosJuego = bitacora

@@ -15,6 +15,7 @@ class AristaMapaDTO:
 class SalaMapaDTO:
     id: int
     salidas: list[AristaMapaDTO] = field(default_factory=list)   # en el orden N, S, E, O
+    nombre: str = ""                                              # nombre de la sala en el esqueleto (vacío si no se conoce)
 
 
 @dataclass

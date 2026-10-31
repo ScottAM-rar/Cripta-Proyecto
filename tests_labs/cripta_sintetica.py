@@ -178,3 +178,13 @@ def mapa_desde_esqueleto(esqueleto: list[dict]):
     servicio = ServicioCripta(HttpConfigurable(esqueleto), CacheLRU(5))
     servicio.listar_criptas()
     return MapaCripta(servicio.obtener_mapa(servicio.obtener_id_cripta(1)))
+
+
+def mapa_dto_desde_esqueleto(esqueleto: list[dict]):
+    """MapaDTO (con los nombres de las salas) armado por el mismo camino que usa el juego (capacidad 002)."""
+    from adaptadores.cache import CacheLRU
+    from adaptadores.servicioCripta import ServicioCripta
+    from tests_labs.api_falsa import HttpConfigurable
+    servicio = ServicioCripta(HttpConfigurable(esqueleto), CacheLRU(5))
+    servicio.listar_criptas()
+    return servicio.obtener_mapa(servicio.obtener_id_cripta(1))
