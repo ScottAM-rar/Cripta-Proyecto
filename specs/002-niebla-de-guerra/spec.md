@@ -243,13 +243,13 @@ Quien revisa reproduce una partida y obtiene el mismo mapa conocido; comprueba q
 - **SC-003**: Tras cualquier secuencia de hasta 5 acciones deshechas con el pergamino, el conocimiento coincide en el 100 % de los casos con el que había antes de esas acciones.
 - **SC-004**: Una partida guardada y cargada muestra el mismo mapa conocido que antes de guardar.
 - **SC-005**: Dos ejecuciones con la misma cripta, semilla y acciones producen el mismo mapa conocido en cada instante y registros idénticos.
-- **SC-006**: Al multiplicar por 10 el tamaño de la cripta, el tiempo de consultar el estado de una sala o de una puerta no aumenta de forma apreciable.
+- **SC-006**: Al multiplicar por 10 el tamaño de la cripta o del mapa conocido, consultar el estado de una sala o de una puerta sigue leyendo la misma cantidad de posiciones (una por consulta), y entrar a una sala con el mismo número de salidas examina las mismas salas y salidas. La razón de tiempos solo se informa.
 - **SC-007**: Quien juega identifica en el mapa, sin consultar documentación, qué salidas de las salas exploradas llevan a salas sin explorar y qué puertas recuerda cerradas.
 
 ## Supuestos
 
 - El esqueleto de la cripta, descargado completo al iniciar, incluye el nombre y las salidas de cada sala; por eso explorar una sala con la antorcha no requiere descargar su contenido.
-- El jugador «entra» a una sala en el instante en que su movimiento termina, según la regla existente de movimiento; mientras cruza una salida sigue observando las puertas de la sala de origen.
+- El jugador «entra» a una sala en el instante de la acción de moverse: desde ese instante está en la sala destino y observa sus puertas. No existe un estado «cruzando»; el costo de la salida solo determina cuándo es su siguiente turno.
 - Cada salida tiene su propia puerta. Una conexión entre dos salas se compone de una salida por sentido, con estados independientes. El jugador observa una puerta mientras está en la sala de origen o en la de destino de esa salida.
 - El id de una sala explorada puede mostrarse; el de una avistada no.
 - La forma exacta del comando de mapa y su presentación textual se definen en el plan; esta especificación fija qué se muestra y qué no.
