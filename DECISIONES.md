@@ -45,7 +45,7 @@ Por capacidad: enlace a su especificación y a su plan, si la decisión final co
 - Especificación: [`specs/002-niebla-de-guerra/spec.md`](specs/002-niebla-de-guerra/spec.md) (FR-201 a FR-226)
 - Plan: [`specs/002-niebla-de-guerra/plan.md`](specs/002-niebla-de-guerra/plan.md), con [`research.md`](specs/002-niebla-de-guerra/research.md)
 - Mediciones: [`specs/002-niebla-de-guerra/mediciones.md`](specs/002-niebla-de-guerra/mediciones.md)
-- Estado: historias 1 a 5 y 7 implementadas; **historia 6 (guardado del conocimiento) pendiente** del cierre de P3 (numeración del formato) con Scott. Mientras tanto, una partida cargada empieza su conocimiento en la sala actual.
+- Estado: las siete historias implementadas. **Pendiente abierto**: confirmar quién repite los bloques `retroceso` y `guardado` de la Parte I como responsable (la 002 solo los corrió de forma informativa; ver `mediciones.md`).
 
 | Decisión | ¿Coincide con el plan original? | Medición o motivo |
 |---|---|---|
@@ -62,3 +62,5 @@ Por capacidad: enlace a su especificación y a su plan, si la decisión final co
 | `SalaMapaDTO.nombre`: el mapa del esqueleto conserva el nombre de cada sala | **Cambió respecto del plan original** (pendiente P2) | Permite mostrar el nombre de una sala explorada por la antorcha sin descargar su contenido; `MapaCripta` no se modificó |
 | `mostrar_juego` ya no muestra el id de las salas no exploradas | **Cambió una prueba de la 001**: `test_terreno_costos` esperaba `Sala 3` | FR-219; la prueba ahora espera «sala sin explorar» y que no aparezca el id |
 | Mediciones de la Parte I repetidas con la carga nueva (`ordenamiento`, `inventario`, `ciclo` informativo) | Sí: ninguna decisión de la Parte I dejó de servir | `mediciones.md`; `retroceso` y `guardado` los repiten sus responsables (por confirmar) |
+| Persistencia: `ConocimientoGuardadoDTO` (exploradas en orden de descubrimiento, avistadas ascendentes, puertas observadas) validado con V1 a V5 **antes** de tocar la partida | Sí | `test_niebla_guardado`: ida y vuelta exacta, continuación idéntica, cada validación con la partida actual intacta. ≈ 37 B por sala explorada (`mediciones.md`) |
+| Numeración del formato: `VERSION_FORMATO` 7 y `VERSION_ESTADO` 4 (pendiente P3) | **Resuelto por el grupo**: el plan solo recomendaba esa numeración | Un archivo de la 001 (formato 6) y un estado de la versión 3 se rechazan con la versión encontrada y la esperada (FR-221); `test_niebla_guardado` y `test_terreno_costos` (FR-119) |

@@ -12,3 +12,4 @@ Herramienta en todas las entradas: Spec Kit 1.2.3 con Claude Code. Modelo: el in
 | 4 | 2026-10-31 | `claude-sonnet-5-5` | `/speckit-tasks` (sin texto adicional) | `specs/002-niebla-de-guerra/tasks.md` (49 tareas) |
 | 5 | 2026-10-31 | `claude-sonnet-5-5` | `/speckit-analyze` (sin texto adicional) | Reporte de consistencia de `spec.md`, `plan.md` y `tasks.md`: 0 críticos, 2 altos, 8 medios, 4 bajos; cobertura 26/26 requisitos |
 | 6 | 2026-10-31 | `claude-sonnet-5-5` | `/speckit-implement` (sin texto adicional) | Código y pruebas de la 002: T001 a T031 y T037 a T047 (42 tareas). Quedan pendientes T032 a T036 (guardado y carga) y T048 y T049 (revisión final) |
+| 7 | 2026-10-31 | `claude-sonnet-5-5` | `/speckit-implement T032 a T036 y T048 y T049` con formato 7 y estado 4 | Guardado y carga del conocimiento; revisión final de la 002 |
