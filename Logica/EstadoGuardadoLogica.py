@@ -25,6 +25,8 @@ from Logica.BitacoraLogica import BitacoraLogica
 from Logica.GestorEventos import GestorEventos
 from Logica.JugadorLogica import JugadorLogica
 from Logica.LogEventos import LogEventos
+from Logica.MapaConocido import MapaConocido
+from Logica.MapaCripta import MapaCripta
 from Logica.RelojVirtual import RelojVirtual
 from Logica.RetrocesoLogica import RetrocesoLogica
 
@@ -216,6 +218,7 @@ def exportar(logica) -> EstadoGuardadoDTO:
         reloj=reloj,
         bitacora=bitacora,
         acciones_log=acciones,
+        conocimiento=None if getattr(logica, "mapaConocido", None) is None else logica.mapaConocido.exportar(),
     )
 
 
@@ -250,6 +253,9 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
         raise ValueError("No hay un servicio de cripta para restaurar la partida")
     if not logica.comunicacion.existe_cripta(estado.id_cripta):
         raise ValueError(f"La cripta {estado.id_cripta!r} de la partida guardada ya no existe")
+    obtener_mapa = getattr(logica.comunicacion, "obtener_mapa", None)
+    if obtener_mapa is not None:      # el conocimiento se valida ANTES de tocar nada (FR-220): uno incoherente no deja la partida a medias
+        MapaConocido.validar(estado.conocimiento, MapaCripta(obtener_mapa(estado.id_cripta)), estado.jugador.id_sala_actual)
     actual = _version_cripta(logica.comunicacion, estado.id_cripta)
     if estado.version_cripta is not None and actual is not None and actual != estado.version_cripta:
         raise ValueError(
@@ -338,9 +344,7 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     gestor.campo_de_costos = campo
     gestor.mapa_conocido = conocimiento
     if conocimiento is not None:
-        # PROVISIONAL hasta T035 (guardado del conocimiento, bloqueado por P3): el conocimiento de una partida cargada
-        # empieza en la sala actual en lugar de restaurarse del archivo.
-        conocimiento.iniciar(jugador.id_sala_actual)
+        conocimiento.restaurar(estado.conocimiento)       # ya validado arriba; el historial del pergamino empieza vacío
     gestor.azar.setstate((estado.estado_azar[0], tuple(estado.estado_azar[1]), estado.estado_azar[2]))
 
     bitacora = BitacoraLogica()

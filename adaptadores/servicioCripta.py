@@ -257,7 +257,7 @@ class ServicioCripta:
                     datos = salidas_api[letra]
                     aristas.append(AristaMapaDTO(_nombre_direccion(letra), datos["sala"], datos["costo"],
                                                  datos.get("cerrada", False)))
-            salas[sala["id"]] = SalaMapaDTO(sala["id"], aristas)
+            salas[sala["id"]] = SalaMapaDTO(sala["id"], aristas, sala.get("nombre", ""))
         return MapaDTO(salas, list(self.advertencias))
  
     def construir_sala(self, cripta_id: str, numero_sala: int) -> SalaDTO:

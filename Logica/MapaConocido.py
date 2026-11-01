@@ -17,6 +17,7 @@ from __future__ import annotations
 from DTO.CambioDTO import CambioDTO
 from DTO.ConocimientoDTO import (MapaConocidoDTO, SalaConocidaDTO, SalidaConocidaDTO,
                                  PUERTA_ABIERTA, PUERTA_CERRADA, PUERTA_SIN_OBSERVAR)
+from DTO.EstadoGuardadoDTO import ConocimientoGuardadoDTO, PuertaRecordadaDTO
 from Logica.ordenamiento import ordenar_adaptativo
 
 DESCONOCIDA, AVISTADA, EXPLORADA = 0, 1, 2
@@ -175,6 +176,95 @@ class MapaConocido:
         else:
             raise ValueError(f"Cambio de conocimiento desconocido: {tipo!r}")
         self.version_conocimiento += 1
+
+    # --- partida guardada (FR-220, FR-221) ---
+
+    def exportar(self) -> ConocimientoGuardadoDTO:
+        """Lo que se guarda: las exploradas en orden de descubrimiento, las avistadas ascendentes y las puertas observadas
+        ascendentes por (sala, dirección). Lo desconocido y lo sin observar no se guarda; tampoco la versión ni los contadores."""
+        avistadas = []
+        for sala in range(self.mapa.tamano):
+            if self.estado[sala] == AVISTADA:
+                avistadas.append(sala)
+        puertas = []
+        for posicion in range(4 * self.mapa.tamano):
+            if self.puertas[posicion] != SIN_OBSERVAR:
+                puertas.append(PuertaRecordadaDTO(posicion // 4, posicion % 4, self.puertas[posicion] == CERRADA))
+        return ConocimientoGuardadoDTO(list(self.exploradas), avistadas, puertas)
+
+    @staticmethod
+    def validar(dto, mapa, sala_jugador: int) -> None:
+        """Comprueba V1 a V5 de contracts/estado-guardado-niebla.md §3 sin modificar nada. `ValueError` si es incoherente."""
+        def invalido(motivo):
+            return ValueError(f"conocimiento inválido: {motivo}")
+
+        if not isinstance(dto, ConocimientoGuardadoDTO):
+            raise invalido("falta en el estado guardado")
+        tamano = mapa.tamano
+
+        def sala_valida(sala):
+            return isinstance(sala, int) and not isinstance(sala, bool) and 0 < sala < tamano and mapa.existe[sala]
+
+        marca = [0] * tamano                                     # 1 explorada, 2 avistada
+        for sala in dto.exploradas:                              # V1 y V2
+            if not sala_valida(sala):
+                raise invalido(f"la sala explorada {sala!r} no existe en el esqueleto")
+            if marca[sala] != 0:
+                raise invalido(f"la sala {sala} está repetida entre las exploradas")
+            marca[sala] = 1
+        for sala in dto.avistadas:
+            if not sala_valida(sala):
+                raise invalido(f"la sala avistada {sala!r} no existe en el esqueleto")
+            if marca[sala] == 1:
+                raise invalido(f"la sala {sala} figura explorada y avistada")
+            if marca[sala] == 2:
+                raise invalido(f"la sala {sala} está repetida entre las avistadas")
+            marca[sala] = 2
+        derivada = [False] * tamano                              # V3: avistada si y solo si no explorada y destino de una explorada
+        for sala in dto.exploradas:
+            for arista in mapa.salidas(sala):
+                destino = arista.destino
+                if 0 <= destino < tamano and mapa.existe[destino] and marca[destino] != 1:
+                    derivada[destino] = True
+        for sala in range(tamano):
+            if (marca[sala] == 2) != derivada[sala]:
+                raise invalido(f"las avistadas no coinciden con las salidas de las exploradas (sala {sala})")
+        if not sala_valida(sala_jugador) or marca[sala_jugador] != 1:      # V4
+            raise invalido("la sala del jugador no está explorada")
+        vistas = [False] * (4 * tamano)                          # V5
+        for puerta in dto.puertas:
+            bien_formada = (isinstance(puerta, PuertaRecordadaDTO) and sala_valida(puerta.sala)
+                            and isinstance(puerta.direccion, int) and not isinstance(puerta.direccion, bool)
+                            and 0 <= puerta.direccion <= 3 and isinstance(puerta.cerrada, bool))
+            if not bien_formada:
+                raise invalido(f"puerta mal formada: {puerta!r}")
+            existe = False
+            for arista in mapa.salidas(puerta.sala):
+                if MapaConocido.indice_direccion(arista.direccion) == puerta.direccion:
+                    existe = True
+            if not existe:
+                raise invalido(f"la sala {puerta.sala} no tiene una salida en la dirección {puerta.direccion}")
+            posicion = puerta.sala * 4 + puerta.direccion
+            if vistas[posicion]:
+                raise invalido(f"la puerta ({puerta.sala}, {puerta.direccion}) está repetida")
+            vistas[posicion] = True
+
+    def restaurar(self, dto) -> None:
+        """Carga el conocimiento guardado, tras validarlo; si es incoherente no cambia nada. El historial del pergamino
+        empieza vacío, así que lo restaurado no se puede deshacer (FR-215)."""
+        self.validar(dto, self.mapa, self.jugador.id_sala_actual)
+        self.estado = [DESCONOCIDA] * self.mapa.tamano
+        self.puertas = [SIN_OBSERVAR] * (4 * self.mapa.tamano)
+        self.exploradas = list(dto.exploradas)
+        for sala in dto.exploradas:
+            self.estado[sala] = EXPLORADA
+        for sala in dto.avistadas:
+            self.estado[sala] = AVISTADA
+        for puerta in dto.puertas:
+            self.puertas[puerta.sala * 4 + puerta.direccion] = CERRADA if puerta.cerrada else ABIERTA
+        self.version_conocimiento = 0
+        self.salas_reveladas = 0
+        self.salidas_examinadas = 0
 
     # --- lo que ve la vista (FR-216, FR-217, FR-219) ---
 
