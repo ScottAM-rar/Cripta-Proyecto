@@ -146,10 +146,7 @@ class ObjetoLogica:
         
     def _equipar(self, objeto: Arma | Armadura):
         """Equipa el objeto al jugador."""
-        inv = self.jugador.inventario
-        if inv.actual is None or inv.actual.objeto != objeto:
-            raise ValueError("El objeto actual no coincide con el objeto a equipar.")
-        inv.equipar_objeto_actual()
+        self.jugador.inventario.equipar_objeto(objeto)      # el objeto lo manda el evento; no depende del cursor
         if isinstance(objeto, Arma):
             self.jugador.arma = objeto
         elif isinstance(objeto, Armadura): #Lo hice con elif por la posibilidad de meter por ejemplo, un baston magico.

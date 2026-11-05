@@ -3,7 +3,7 @@ from __future__ import annotations
 from adaptadores.Interfaz import ClienteInterfaz
  
  
-class ErrorOffline(Exception):
+class ErrorOffline(RuntimeError):
     """Falta en disco algo que el modo sin conexión necesita."""
  
  

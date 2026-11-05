@@ -7,17 +7,18 @@ class ComportamientoRastreador(ComportamientoEnemigo):
 
     @staticmethod
     def _ultimo_paso(salas: list[SalaDTO], indice: int, tiempo_actual: int | None) -> int:
-        """Rastro de la sala: el tiempo de la última visita del jugador, o 0 si nunca la pisó o el rastro ya se enfrió
+        """Rastro de la sala: el tiempo de la última visita del jugador, o -1 si nunca la pisó o el rastro ya se enfrió
         (hace VIGENCIA_RASTRO o más que pasó). Sin reloj conocido no se descarta ningún rastro."""
         sala = salas[indice]
-        if sala is None or sala.ultimo_paso <= 0:
-            return 0
+        if sala is None or sala.ultimo_paso < 0:
+            return -1
         if tiempo_actual is not None and tiempo_actual - sala.ultimo_paso >= ComportamientoRastreador.VIGENCIA_RASTRO:
-            return 0
+            return -1
         return sala.ultimo_paso
 
     @staticmethod
-    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None, tiempo_actual: int | None = None) -> str:
+    def acción(enemigo:EnemigoDTO, salas: list[SalaDTO], azar: random.Random | None = None, tiempo_actual: int | None = None,
+               campo_de_costos=None) -> AccionEnemigoDTO:
         siguienteSala: SalidaDTO = None
         pasoSiguiente = 0
         for t in salas[enemigo.id_sala_actual].salidas:
@@ -34,13 +35,13 @@ class ComportamientoRastreador(ComportamientoEnemigo):
                 ):
                     siguienteSala = t
                     pasoSiguiente = paso
-        if siguienteSala is None:
-            return "NO SE MOVIÓ"
+        if siguienteSala is None or pasoSiguiente < 0:
+            return AccionEnemigoDTO("NO SE MOVIÓ")
         salaActual = salas[enemigo.id_sala_actual]
         respuesta = ActorLogica._mover(enemigo, salaActual, siguienteSala.direccion)
         if not respuesta.exito:
-            return "NO SE MOVIÓ"
+            return AccionEnemigoDTO("NO SE MOVIÓ")
         if enemigo in salaActual.enemigos:
             salaActual.enemigos.remove(enemigo)
         #salas[siguienteSala.sala_destino].enemigos.append(enemigo)
-        return f"SE MOVIO A {siguienteSala.direccion}"
+        return AccionEnemigoDTO(f"SE MOVIO A {siguienteSala.direccion}", respuesta.costo)

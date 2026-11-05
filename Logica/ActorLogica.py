@@ -27,6 +27,7 @@ class ActorLogica:
             actor.id_sala_actual = salida.sala_destino
             respuesta.exito = True #no se pone mensaje porque cada logica se lo agrega dependiendo de quien se mueva
             respuesta.puntaje = 10
+            respuesta.costo = salida.costo     # lo que cuesta cruzar esta salida (FR-103)
         
         return respuesta
 
