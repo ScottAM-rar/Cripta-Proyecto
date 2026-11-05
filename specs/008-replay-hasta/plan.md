@@ -28,7 +28,7 @@ El enfoque técnico, respaldado y justificado en [research.md](research.md):
 - **Lenguaje/versión**: Python 3.11+ (estándar del proyecto).
 - **Dependencias principales**: Ninguna biblioteca externa nueva. Solo módulos estándar de Python (`argparse`, `dataclasses`, `time`, `gc`) y módulos existentes del repositorio (`EstadoJuegoServicio`, `EstadoJuegoLogica`, `RelojVirtual`).
 - **Almacenamiento**: Acceso de solo lectura a archivos de registro existentes en `logs/`. No se crean nuevos logs, no se modifican archivos de partidas ni se escribe en la tabla de puntajes (FR-410).
-- **Pruebas**: Framework `unittest` del repositorio (`test_replay_hasta.py`, `test_determinismo_replay.py`).
+- **Pruebas**: Framework `unittest` del repositorio (`test_replay_hasta.py`, `test_determinismo_replay.py`, `test_rendimiento_replay.py` y `bench/test_bench_replay.py`).
 - **Plataforma**: Multiplataforma consola (Windows / Linux / macOS).
 - **Tipo de proyecto**: Aplicación de consola por capas (Controlador → Servicio → Lógica → DTO / Adaptadores).
 - **Objetivos de rendimiento**: Costo computacional proporcional a lo reproducido hasta $t$ y nunca mayor que la reproducción completa (FR-412, SC-003). Criterio duro: conteo de eventos procesados $\le 0.55 \times \text{total}$ para $t = T / 2$.
@@ -131,12 +131,14 @@ Logica/
                                      # corte de log en repetirPartida, armado de DTO.
 bench/
 ├── __init__.py                      # Registro del bloque "replay" en BLOQUES.
-└── replay.py                        # Nuevo módulo de benchmark para evaluar proporcionalidad
-                                     # y comparar con alternativas descartadas a y c.
+├── replay.py                        # Nuevo módulo de benchmark para evaluar proporcionalidad
+│                                    # y comparar con alternativas descartadas a y c.
+└── test_bench_replay.py             # Prueba del bloque de benchmark y de su exportación a CSV.
 tests_labs/
 └── generador_partidas.py            # Generador determinista de logs sintéticos para pruebas y bench.
 test_replay_hasta.py                 # Suite de pruebas unitarias para todos los FR-4xx.
 test_determinismo_replay.py          # Pruebas de determinismo y propiedad de prefijo.
+test_rendimiento_replay.py           # Proporcionalidad por conteo de eventos procesados (FR-412).
 ```
 
 ---

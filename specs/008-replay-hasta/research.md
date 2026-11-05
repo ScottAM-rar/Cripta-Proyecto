@@ -56,7 +56,7 @@ Para acotar la ejecución según la especificación corregida (FR-402, FR-403, F
 
 ### 3.2 Estructura de salida y separación de responsabilidades (FR-404, Principio IV)
 - La capa de lógica (`EstadoJuegoLogica`) no interactúa con `sys.stdout` ni con la consola.
-- Se crea la clase `ResultadoReplayHastaDTO` en `DTO/ResultadoReplayHastaDTO.py` con los campos descritos en [data-model.md](data-model.md): instante pedido y alcanzado, acciones reproducidas, sala, vida, estadísticas vigentes (ataque, defensa, velocidad), llaves, objetos, efectos activos, enemigos de la sala con su vida, fin de partida con su motivo y log agotado.
+- Se crea la clase `ResultadoReplayHastaDTO` en `DTO/ResultadoReplayHastaDTO.py` con los campos descritos en [data-model.md](data-model.md): instante pedido y alcanzado, acciones reproducidas, sala, vida, estadísticas vigentes (ataque, defensa, velocidad), llaves, objetos, efectos activos, enemigos de la sala (identificador de instancia, nombre y vida), fin de partida con su motivo y log agotado.
 - El mapa conocido del jugador no se incluye: depende de la capacidad de niebla de guerra y está diferido (Assumptions de `spec.md`).
 - La función `reproducir()` en `main.py` recibe este DTO y formatea la salida de texto (ver `contracts/salida-texto.md`).
 

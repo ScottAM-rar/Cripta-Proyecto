@@ -10,7 +10,7 @@ Para ejecutar las pruebas unitarias y de integración de esta capacidad:
 
 ```bash
 # Ejecutar las pruebas específicas de replay acotado
-.venv/Scripts/python.exe -m unittest test_replay_hasta test_determinismo_replay
+.venv/Scripts/python.exe -m unittest test_replay_hasta test_determinismo_replay test_rendimiento_replay bench.test_bench_replay
 
 # Verificar que la suite completa de pruebas del repositorio sigue pasando sin regresiones
 .venv/Scripts/python.exe -m unittest discover -p "test_*.py"
@@ -75,12 +75,12 @@ Cada requisito funcional de `spec.md` cuenta con una o más pruebas automatizada
 | **FR-404** | Historia 1 (Escenarios 1 a 6) | `test_replay_hasta.py`: `TestEstadoReportado.test_fr404_contenido_exhaustivo_dto` (incluye estadísticas y efectos activos) |
 | **FR-405** | Historia 1 (Escenarios 4, 5, 6) | `test_replay_hasta.py`: `TestCasosLimite.test_fr405_t_mayor_que_final_avisa_log_agotado`, `test_fr405_muerte_antes_de_t`, `test_fr405_partida_termina_exactamente_en_t_sin_aviso` |
 | **FR-406** | Historia 1 (Escenario 2) | `test_replay_hasta.py`: `TestCasosLimite.test_fr406_t_igual_cero_sin_acciones` (consecuencia de FR-403, sin regla especial) |
-| **FR-407** | Historia 2 (Escenario 1) | `test_replay_hasta.py`: `TestArgumentosCLI.test_fr407_t_negativo_o_no_entero_rechazado` |
-| **FR-408** | Historia 2 (Escenario 2) | `test_replay_hasta.py`: `TestArgumentosCLI.test_fr408_hasta_sin_replay_rechazado` |
+| **FR-407** | Historia 2 (Escenario 1) | `test_replay_hasta.py`: `TestArgumentosCLI.test_fr407_t_negativo_o_no_entero_rechazado`, `test_sc004_rechazo_en_menos_de_100_ms` |
+| **FR-408** | Historia 2 (Escenario 2) | `test_replay_hasta.py`: `TestArgumentosCLI.test_fr408_hasta_sin_replay_rechazado`, `test_sc004_rechazo_en_menos_de_100_ms` |
 | **FR-409** | Historia 2 (Escenario 3) | `test_replay_hasta.py`: `TestCompatibilidadReplay.test_fr409_replay_sin_hasta_identico` |
 | **FR-410** | Historia 2 (Escenario 4) | `test_replay_hasta.py`: `TestAislamientoReplay.test_fr410_sin_vista_sin_log_sin_puntajes` |
 | **FR-411** | Historia 3 (Escenarios 1, 2) | `test_determinismo_replay.py`: `TestDeterminismoReplay.test_fr411_dos_ejecuciones_identicas`, `test_fr411_propiedad_prefijo_equivalente` (el estado en $t$ coincide con el de la reproducción completa en ese instante) |
-| **FR-412** | Historia 3 (Escenario 3) | `test_replay_hasta.py`: `TestRendimientoReplay.test_fr412_costo_proporcional_conteo_eventos` |
+| **FR-412** | Historia 3 (Escenario 3) | `test_rendimiento_replay.py`: `TestRendimientoReplay.test_fr412_costo_proporcional_conteo_eventos` |
 | **FR-413** | Historia 3 (Escenario 3) | `bench/test_bench_replay.py`: `TestBenchReplay.test_fr413_ejecucion_bloque_bench` |
 | **Principio I** | Constitución (Estructuras propias) | Inspección de importaciones y tipos en `DTO/ResultadoReplayHastaDTO.py` y `Logica/EstadoJuegoLogica.py` |
 | **Principio IV** | Constitución (Separación MVC) | `test_replay_hasta.py`: verificación de que la lógica devuelve un DTO puro y no escribe en `stdout` |

@@ -22,7 +22,7 @@ Estado del jugador:
   Llaves: {lista_llaves o "(ninguna)"}
   Objetos: {lista_objetos o "(ninguno)"}
 Enemigos en la sala:
-  - {nombre_enemigo}: {vida} PV
+  - {nombre} ({id_instancia}): {vida} PV
   (o "  (ninguno)" si la sala no contiene enemigos vivos)
 ```
 

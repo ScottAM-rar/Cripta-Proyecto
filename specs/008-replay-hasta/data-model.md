@@ -28,7 +28,7 @@ class ResultadoReplayHastaDTO:
     inventario_llaves: list[str] = field(default_factory=list)
     inventario_objetos: list[str] = field(default_factory=list)
     efectos_activos: list[str] = field(default_factory=list)
-    enemigos_sala: list[tuple[str, int]] = field(default_factory=list)
+    enemigos_sala: list[tuple[str, str, int]] = field(default_factory=list)
     partida_terminada: bool = False
     motivo_terminacion: str | None = None
     log_agotado: bool = False
@@ -47,7 +47,7 @@ class ResultadoReplayHastaDTO:
 | `inventario_llaves` | `list[str]` | FR-404 | Identificadores de llaves en posesión del jugador. |
 | `inventario_objetos` | `list[str]` | FR-404 | Nombres de los objetos que el jugador porta. |
 | `efectos_activos` | `list[str]` | FR-404 | Efectos vigentes sobre el jugador en ese instante (veneno, velocidad temporal por poción, antorcha encendida), en un orden fijo para garantizar determinismo. |
-| `enemigos_sala` | `list[tuple[str, int]]` | FR-404 | Pares `(nombre_o_tipo, vida_actual)` de los enemigos vivos presentes en la sala del jugador, ordenados por identificador de instancia. |
+| `enemigos_sala` | `list[tuple[str, str, int]]` | FR-404 | Tuplas `(id_instancia, nombre, vida_actual)` de los enemigos vivos presentes en la sala del jugador, ordenadas por identificador de instancia. El identificador distingue a varios enemigos del mismo tipo en la sala. |
 | `partida_terminada` | `bool` | FR-404, FR-405 | `True` si la partida concluyó (muerte o victoria) en o antes del instante alcanzado. |
 | `motivo_terminacion` | `str | None` | FR-404, FR-405 | Descripción del desenlace si `partida_terminada` es `True`; `None` si sigue en curso. |
 | `log_agotado` | `bool` | FR-405 | `True` si el registro se terminó con el reloj estrictamente antes de $t$ y la partida sin concluir. |
