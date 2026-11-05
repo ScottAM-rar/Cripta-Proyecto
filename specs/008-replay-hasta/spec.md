@@ -114,7 +114,7 @@ Como evaluador o revisor técnico, quiero que la reproducción acotada sea estri
   6. El listado de enemigos presentes en la sala actual del jugador junto con sus vidas respectivas.
   7. El estado de la partida: en curso, victoria o derrota (indicando explícitamente si la partida concluyó antes de alcanzar `t`).
 - **FR-405**: Si el instante `t` indicado es mayor o igual que el instante en el que concluye la partida grabada, el programa DEBE reproducir todos los eventos disponibles en el archivo de registro y DEBE emitir un mensaje indicando que el registro finalizó antes de alcanzar `t`.
-- **FR-406**: Si el valor de `t` es 0, el programa NO DEBE ejecutar ningún evento de la partida grabada y DEBE reportar el estado inicial exhaustivo del juego previo a la ejecución de cualquier acción.
+- **FR-406**: Si el valor de `t` es 0, el programa DEBE ejecutar solo los eventos que ocurrieron en t=0 de la partida grabada y DEBE reportar el estado inicial exhaustivo del juego previo a la ejecución de cualquier acción.
 - **FR-407**: Si el valor proporcionado para `t` es negativo o no corresponde a una representación válida de número entero, el programa DEBE rechazar el argumento con un mensaje claro y descriptivo, sin reproducir ninguna acción del registro.
 - **FR-408**: Si se especifica el argumento `--hasta` sin incluir la opción `--replay`, el programa DEBE rechazar la invocación con un mensaje claro de error sin iniciar ninguna partida ni modificar el estado del sistema.
 - **FR-409**: La ejecución de `--replay` sin la presencia del modificador `--hasta` DEBE conservar de forma íntegra e inalterada su comportamiento y formato de salida existentes.
