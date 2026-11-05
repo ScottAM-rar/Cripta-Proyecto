@@ -1,4 +1,4 @@
-﻿# Feature Specification: Reproducir partida grabada hasta un instante dado (replay-hasta)
+# Feature Specification: Reproducir partida grabada hasta un instante dado (replay-hasta)
 
 **Feature Branch**: `008-replay-hasta`
 
@@ -28,6 +28,13 @@ La opción `--hasta t` permite acotar la reproducción para que se detenga de fo
 - Modificaciones o adiciones al formato de los archivos de registro (`PARTIDA.log`).
 - Reproducción inversa o hacia atrás en el tiempo.
 
+## Clarificaciones
+
+### Sesión 2026-11-04
+
+- Q: ¿Cómo deben tratarse los eventos del juego programados exactamente para el instante virtual t? (FR-403) → A: Se ejecutan todos los eventos programados en t (límite inclusivo: se procesan todos los eventos con tiempo virtual menor o igual que t).
+- Q: ¿Qué datos exactos del estado final del juego deben mostrarse al detenerse la reproducción acotada? (FR-404) → A: Estado exhaustivo: instante virtual alcanzado, cantidad de acciones reproducidas del jugador, sala actual del jugador, vida actual del jugador, llaves y objetos en su inventario, listado de enemigos presentes en la sala actual con sus vidas respectivas, y estado de la partida (en curso, victoria o derrota).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### Historia 1 — Reproducción acotada hasta un instante intermedio (Prioridad: P1)
@@ -40,11 +47,11 @@ Como persona que revisa o audita partidas grabadas, quiero ejecutar la reproducc
 
 **Escenarios de aceptación**:
 
-1. **Dado** un archivo de registro con múltiples acciones cronológicas y un instante `t` situado en un punto intermedio de la partida, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** solo se ejecutan los eventos con tiempo anterior a `t`, la reproducción se detiene en `t` y el sistema informa el instante alcanzado, la cantidad de acciones del jugador ejecutadas y el estado del juego en dicho instante. *(FR-401, FR-402, FR-404)*
-2. **Dado** un archivo de registro válido y un valor de `t` igual a 0, **cuando** se ejecuta `--replay PARTIDA.log --hasta 0`, **entonces** no se ejecuta ningún evento del registro, la reproducción se detiene de inmediato y se informa el estado inicial del juego. *(FR-406, FR-404)*
-3. **Dado** un archivo de registro y un instante `t` que coincide exactamente con el tiempo programado de uno o más eventos, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** se respeta la regla de inclusión para eventos que ocurren en `t` [NEEDS CLARIFICATION: ¿se ejecutan todos los eventos de ese instante o no se ejecuta ninguno?] y el estado resultante refleja con fidelidad dicha decisión. *(FR-402, FR-403, FR-404)*
+1. **Dado** un archivo de registro con múltiples acciones cronológicas y un instante `t` situado en un punto intermedio de la partida, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** solo se ejecutan los eventos con tiempo virtual menor o igual que `t`, la reproducción se detiene tras completar los eventos de `t` y el sistema informa el instante alcanzado, la cantidad de acciones del jugador ejecutadas y el estado exhaustivo del juego (sala, vida, inventario con llaves y objetos, enemigos en la sala con su vida, y si la partida sigue en curso). *(FR-401, FR-402, FR-403, FR-404)*
+2. **Dado** un archivo de registro válido y un valor de `t` igual a 0, **cuando** se ejecuta `--replay PARTIDA.log --hasta 0`, **entonces** no se ejecuta ningún evento del registro, la reproducción se detiene de inmediato y se informa el estado inicial exhaustivo del juego. *(FR-406, FR-404)*
+3. **Dado** un archivo de registro y un instante `t` que coincide exactamente con el tiempo programado de uno o más eventos, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** se ejecutan todos los eventos programados en el instante `t` (límite inclusivo) y el estado resultante refleja las consecuencias de dichos eventos. *(FR-402, FR-403, FR-404)*
 4. **Dado** un archivo de registro cuya duración total es menor o igual al valor `t` solicitado, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** se reproduce la totalidad de los eventos del registro y el sistema emite un aviso explícito indicando que el registro finalizó antes de alcanzar el instante `t`. *(FR-405, FR-404)*
-5. **Dado** un archivo de registro en el cual la partida finaliza (por ejemplo, por muerte del jugador) en un instante virtual anterior a `t`, **cuando** se ejecuta la reproducción hasta `t`, **entonces** la simulación se detiene en el momento de la terminación y se informa explícitamente que la partida concluyó antes de alcanzar `t`. *(FR-404, FR-405)*
+5. **Dado** un archivo de registro en el cual la partida finaliza (por ejemplo, por muerte del jugador) en un instante virtual anterior a `t`, **cuando** se ejecuta la reproducción hasta `t`, **entonces** la simulación se detiene en el momento de la terminación y se informa explícitamente que la partida concluyó antes de alcanzar `t`, junto con la causa de terminación. *(FR-404, FR-405)*
 
 ---
 
@@ -84,10 +91,10 @@ Como evaluador o revisor técnico, quiero que la reproducción acotada sea estri
 ### Edge Cases
 
 - **Instante `t` igual a cero**: No se consume ninguna acción del registro y se exhibe el estado del jugador y del juego antes de cualquier interacción (FR-406).
-- **Eventos que coinciden exactamente en `t`**: [NEEDS CLARIFICATION: ¿Se ejecutan todos los eventos programados exactamente para el instante t, o ninguno de ellos?] (FR-403).
+- **Eventos que coinciden exactamente en `t`**: Se ejecutan todos los eventos programados para ese instante antes de detener la reproducción; el corte temporal es inclusivo ($\le t$) (FR-403).
 - **Múltiples eventos simultáneos en un mismo instante**: Si coinciden eventos de jugador y enemigos en un instante válido anterior o igual a `t`, se preserva el orden determinista existente según el reloj virtual y el número de secuencia.
 - **Instante `t` mayor que la duración del archivo**: La reproducción concluye pacíficamente al terminarse los eventos del registro, emitiendo una notificación de que el archivo finalizó antes de `t` (FR-405).
-- **Muerte o fin de partida antes de `t`**: El juego detiene la reproducción en el instante exacto en que termina la partida y notifica que concluyó antes de `t` (FR-404, FR-405).
+- **Muerte o fin de partida antes de `t`**: El juego detiene la reproducción en el instante exacto en que termina la partida y notifica que concluyó antes de `t`, detallando si ocurrió por muerte del jugador o victoria (FR-404, FR-405).
 - **Valores no válidos para `t`**: Valores negativos, números decimales, cadenas alfanuméricas o ausencia del valor numérico se rechazan con un mensaje explicativo sin procesar el archivo (FR-407).
 - **Parámetro huérfano**: Especificar `--hasta` en conjunción con otros modos (como juego interactivo o `--verificar`) sin `--replay` genera un error explícito (FR-408).
 
@@ -97,10 +104,17 @@ Como evaluador o revisor técnico, quiero que la reproducción acotada sea estri
 
 - **FR-401**: El programa DEBE admitir el argumento de línea de comandos `--hasta <t>` única y exclusivamente cuando se invoque en conjunto con la opción `--replay <PARTIDA.log>`, donde `<t>` representa un instante del reloj virtual del juego.
 - **FR-402**: La reproducción acotada DEBE detenerse al alcanzar el instante virtual `t`. Ningún evento del juego cuyo tiempo programado sea estrictamente mayor que `t` DEBE ejecutarse.
-- **FR-403**: Para todos los eventos programados exactamente en el instante `t`, el sistema DEBE [NEEDS CLARIFICATION: ejecutarlos todos antes de detener la reproducción, o no ejecutar ninguno y detenerse antes de procesarlos].
-- **FR-404**: Al detenerse la reproducción acotada (sea en `t` o por terminación anticipada de la partida), el programa DEBE informar el instante virtual alcanzado, la cantidad de acciones del jugador efectivamente reproducidas, y el estado resultante del juego: sala actual del jugador, vida del jugador, si la partida había finalizado antes de `t`, y [NEEDS CLARIFICATION: qué datos adicionales específicos del estado del juego se muestran, como por ejemplo llaves en inventario, estado de enemigos en la sala u otros atributos].
+- **FR-403**: Para todos los eventos programados exactamente en el instante `t`, el sistema DEBE ejecutarlos todos antes de detener la reproducción; el corte temporal de la simulación DEBE ser inclusivo, abarcando todos los eventos con tiempo virtual menor o igual que `t`.
+- **FR-404**: Al detenerse la reproducción acotada (sea en `t` o por terminación anticipada de la partida), el programa DEBE informar:
+  1. El instante virtual efectivamente alcanzado.
+  2. La cantidad de acciones del jugador ejecutadas.
+  3. La sala actual en la que se encuentra el jugador.
+  4. Los puntos de vida actuales del jugador.
+  5. El inventario actual del jugador, detallando las llaves y objetos en su poder.
+  6. El listado de enemigos presentes en la sala actual del jugador junto con sus vidas respectivas.
+  7. El estado de la partida: en curso, victoria o derrota (indicando explícitamente si la partida concluyó antes de alcanzar `t`).
 - **FR-405**: Si el instante `t` indicado es mayor o igual que el instante en el que concluye la partida grabada, el programa DEBE reproducir todos los eventos disponibles en el archivo de registro y DEBE emitir un mensaje indicando que el registro finalizó antes de alcanzar `t`.
-- **FR-406**: Si el valor de `t` es 0, el programa NO DEBE ejecutar ningún evento de la partida grabada y DEBE reportar el estado inicial del juego previo a la ejecución de cualquier acción.
+- **FR-406**: Si el valor de `t` es 0, el programa NO DEBE ejecutar ningún evento de la partida grabada y DEBE reportar el estado inicial exhaustivo del juego previo a la ejecución de cualquier acción.
 - **FR-407**: Si el valor proporcionado para `t` es negativo o no corresponde a una representación válida de número entero, el programa DEBE rechazar el argumento con un mensaje claro y descriptivo, sin reproducir ninguna acción del registro.
 - **FR-408**: Si se especifica el argumento `--hasta` sin incluir la opción `--replay`, el programa DEBE rechazar la invocación con un mensaje claro de error sin iniciar ninguna partida ni modificar el estado del sistema.
 - **FR-409**: La ejecución de `--replay` sin la presencia del modificador `--hasta` DEBE conservar de forma íntegra e inalterada su comportamiento y formato de salida existentes.
@@ -113,7 +127,7 @@ Como evaluador o revisor técnico, quiero que la reproducción acotada sea estri
 
 - **Partida grabada (Log)**: Archivo de registro histórico que almacena los metadatos iniciales (cripta, semilla aleatoria, versiones de cripta y catálogo) y la secuencia temporal de acciones efectuadas por el jugador.
 - **Instante virtual (`t`)**: Valor numérico entero no negativo que representa una coordenada de tiempo en el reloj virtual del juego.
-- **Estado del juego**: Instantánea de las condiciones del juego al detenerse la simulación, que comprende la sala en la que se encuentra el jugador, su salud actual, los elementos en su poder, los enemigos presentes y la condición de fin de partida (en curso, victoria o derrota).
+- **Estado del juego**: Instantánea exhaustiva de las condiciones del juego al detenerse la simulación en `t`, que comprende la sala del jugador, su salud actual, los objetos y llaves en su inventario, los enemigos presentes en dicha sala con sus vidas, y la condición de la partida (en curso, victoria o derrota).
 - **Acción del jugador**: Evento originado por la decisión del jugador (moverse, esperar, atacar, usar objeto) registrado en el archivo con su correspondiente costo de tiempo virtual.
 
 ## Success Criteria *(mandatory)*

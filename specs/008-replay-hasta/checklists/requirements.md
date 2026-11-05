@@ -1,4 +1,4 @@
-﻿# Specification Quality Checklist: Reproducir partida grabada hasta un instante dado (replay-hasta)
+# Specification Quality Checklist: Reproducir partida grabada hasta un instante dado (replay-hasta)
 
 **Purpose**: Validate specification completeness and quality before proceeding to planning
 **Created**: 2026-11-04
@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,4 +31,4 @@
 
 ## Notes
 
-- Hay 2 marcadores [NEEDS CLARIFICATION] intencionales solicitados en la entrada (comportamiento para eventos exactamente en t, y detalle exacto de datos de estado mostrados al detenerse). Deben resolverse en la fase de clarificación (`/speckit-clarify`) antes de pasar a la fase de planificación (`/speckit-plan`).
+- Todas las clarificaciones han sido resueltas en la sesión de `/speckit-clarify` del 2026-11-04 (límite inclusivo en t para FR-403 y reporte exhaustivo para FR-404). La especificación está lista para la fase de planificación (`/speckit-plan`).
