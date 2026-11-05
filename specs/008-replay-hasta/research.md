@@ -19,17 +19,19 @@ No quedan marcadores `NEEDS CLARIFICATION` en la especificación [spec.md](spec.
 
 ## 2. Decisión de truncamiento en el ciclo de eventos (Opción b)
 
-### Enfoque elegido: Tope de tiempo opcional en `_avanzarHastaProximoTurno`
+### Enfoque elegido: Tope de tiempo opcional en `_avanzarHastaProximoTurno` y regla de la decisión del jugador
 
-El ciclo de eventos de la lógica de juego gobierna la ejecución de los eventos de enemigos, trampas y efectos temporales entre dos decisiones consecutivas del jugador.
+El ciclo de eventos de la lógica de juego gobierna la ejecución de los eventos de enemigos, trampas y efectos temporales entre dos decisiones consecutivas del jugador. En la Parte I el jugador decide en el instante actual del reloj y su acción ocurre en ese momento; su costo solo programa el turno siguiente (`accionJugador`).
 
-Para acotar la ejecución:
+Para acotar la ejecución según la especificación corregida (FR-402, FR-403, FR-406):
 1. `_avanzarHastaProximoTurno` recibe un parámetro opcional `tope: int | None`.
 2. Antes de desapilar el siguiente evento del reloj, se consulta `siguiente = reloj.siguiente()`.
-3. Si `siguiente is not None` y `siguiente.tiempo_ejecucion > tope`, el bucle `while` termina inmediatamente mediante `break` sin desapilar dicho evento (FR-402).
-4. El límite es inclusivo (FR-403, clarificación Q1): si `siguiente.tiempo_ejecucion <= tope`, el evento se desapila y se ejecuta con normalidad.
-5. Si `siguiente.tipo_accion == "TURNO_JUGADOR"` y su tiempo es $\le tope$, se extrae y se da paso al siguiente turno del jugador. Si su tiempo es $> tope$, se interrumpe el avance y el turno del jugador permanece agendado en el reloj sin consumirse.
-6. En `EstadoJuegoLogica.repetirPartida`, si tras ejecutar una acción o al evaluar el inicio de la siguiente el reloj se detuvo por alcanzar el tope, se interrumpe la iteración sobre el log. De este modo, los registros restantes del archivo no se procesan, logrando un costo computacional proporcional a lo reproducido (FR-412).
+3. Si `siguiente is not None` y `siguiente.tiempo_ejecucion > tope`, el bucle termina con `break` sin desapilar dicho evento (FR-402). Esto incluye un `TURNO_JUGADOR` posterior al tope, que permanece agendado.
+4. El límite es inclusivo para los eventos de los demás actores (FR-403): si `siguiente.tiempo_ejecucion <= tope`, el evento se desapila y se ejecuta con normalidad. Si es el `TURNO_JUGADOR` (con tiempo $\le$ tope), se extrae y el ciclo devuelve el control, como hoy.
+5. **Decisión del jugador en $t$ (FR-403, FR-406)**: en `EstadoJuegoLogica.repetirPartida`, antes de tomar cada registro del log (acción con costo, movimiento de cursor o pergamino) se comprueba `reloj.tiempo_actual < hasta`. Si no se cumple, se detiene la lectura: la decisión del jugador cuyo instante es mayor o igual que $t$ no se ejecuta. Con $t = 0$ el reloj vale 0 y no se ejecuta ninguna acción, sin regla especial.
+6. **Compleción del instante $t$ (FR-403)**: si el `TURNO_JUGADOR` consumido tiene tiempo exactamente $t$, pueden quedar eventos de otros actores con tiempo $t$ y número de secuencia posterior. `_completarInstante(hasta)` los ejecuta con el mismo cuerpo de procesamiento del ciclo (se extrae a un método auxiliar compartido para no duplicar el código) y no ejecuta ninguna decisión del jugador. Así el estado es el posterior a todos los eventos de los demás actores en $t$.
+7. Si la partida termina (`self.fin`) se detiene de inmediato, congelando el reloj en el instante de la terminación.
+8. Al detenerse, `repetirPartida` cesa la lectura del log: los registros restantes no se procesan, logrando un costo proporcional a lo reproducido (FR-412).
 
 ### Alternativas consideradas y descartadas
 
@@ -54,31 +56,21 @@ Para acotar la ejecución:
 
 ### 3.2 Estructura de salida y separación de responsabilidades (FR-404, Principio IV)
 - La capa de lógica (`EstadoJuegoLogica`) no interactúa con `sys.stdout` ni con la consola.
-- Se crea la clase `ResultadoReplayHastaDTO` en `DTO/ResultadoReplayHastaDTO.py` con los siguientes campos:
-  - `instante_alcanzado: int` (tiempo del reloj tras el último evento procesado).
-  - `acciones_reproducidas: int` (contador de acciones del jugador ejecutadas).
-  - `id_sala_jugador: int` (sala donde quedó el jugador).
-  - `vida_jugador: int` (puntos de vida actuales).
-  - `inventario_llaves: list[str]` (identificadores de llaves en poder del jugador).
-  - `inventario_objetos: list[str]` (nombres o identificadores de objetos en posesión).
-  - `enemigos_sala: list[tuple[str, int]]` (lista de pares `(nombre_o_id, vida_actual)` de enemigos vivos en la sala actual).
-  - `partida_terminada: bool` (indica si la partida concluyó antes o al llegar a $t$).
-  - `motivo_terminacion: str | None` (detalle de la causa de fin: victoria, muerte por enemigo/trampa, o `None` si sigue en curso).
-  - `log_agotado: bool` (verdadero si el archivo de registro se terminó antes de alcanzar el instante $t$).
-- La función `reproducir()` en `main.py` recibe este DTO y formatea la salida de texto en la consola de manera legible (ver `contracts/salida-texto.md`).
+- Se crea la clase `ResultadoReplayHastaDTO` en `DTO/ResultadoReplayHastaDTO.py` con los campos descritos en [data-model.md](data-model.md): instante pedido y alcanzado, acciones reproducidas, sala, vida, estadísticas vigentes (ataque, defensa, velocidad), llaves, objetos, efectos activos, enemigos de la sala con su vida, fin de partida con su motivo y log agotado.
+- El mapa conocido del jugador no se incluye: depende de la capacidad de niebla de guerra y está diferido (Assumptions de `spec.md`).
+- La función `reproducir()` en `main.py` recibe este DTO y formatea la salida de texto (ver `contracts/salida-texto.md`).
 
-### 3.3 Tratamiento de registros del log sin costo temporal
-- Ciertas acciones del log, como la navegación en la mochila (`MOVER_CURSOR_SIGUIENTE`, `MOVER_CURSOR_ANTERIOR`), tienen costo temporal 0.
-- Si el reloj virtual actual es $\le t$ y la simulación no ha sido cortada por el tope, estas acciones se reproducen para mantener la consistencia del cursor del inventario con las acciones del jugador.
-- Si el reloj ya alcanzó el tope y se cortó el ciclo de turnos, no se procesan más registros.
+### 3.3 Registros del log sin costo temporal (FR-403)
+- Ciertas acciones del log, como la navegación en la mochila (`MOVER_CURSOR_SIGUIENTE`, `MOVER_CURSOR_ANTERIOR`) o el uso del pergamino, no avanzan el reloj por sí mismas: forman parte de la decisión del jugador en el instante actual.
+- Se reproducen solo si `reloj.tiempo_actual < hasta`, igual que cualquier otra decisión del jugador. Si el reloj ya alcanzó $t$, no se procesan más registros.
 
 ### 3.4 Detección de fin de partida y log agotado (FR-404, FR-405)
-- **Partida terminada antes de $t$**: Se detecta si `self.fin` es verdadero tras ejecutar una acción o evento de avance de turno, con `reloj.tiempo_actual <= t`. En este caso, el reloj se congela en el instante exacto de la terminación (por ejemplo, el momento de la muerte) y se reporta `partida_terminada = True` junto con su motivo.
-- **Log agotado antes de $t$**: Se detecta cuando el iterador de registros cronológicos del log se vacía por completo mientras `reloj.tiempo_actual < t` y la partida aún no ha terminado (`not self.fin`). Se reporta `log_agotado = True` y se emite la advertencia requerida por FR-405.
+- **Partida terminada**: se detecta si `self.fin` es verdadero tras ejecutar una acción o el avance de turno. El reloj queda congelado en el instante exacto de la terminación y se reporta `partida_terminada = True` junto con su motivo. El aviso de que la partida concluyó «antes de alcanzar $t$» se emite solo si `instante_alcanzado < instante_pedido`; si concluye exactamente en $t$, se informa el estado final sin ese aviso.
+- **Log agotado**: se detecta cuando los registros del log se terminan mientras `reloj.tiempo_actual < t` y la partida no ha terminado (`not self.fin`). Se reporta `log_agotado = True` y se emite la advertencia de FR-405. Si el reloj llegó exactamente a $t$ no hay aviso.
 
 ### 3.5 Definición formal de «instante alcanzado»
-- El «instante alcanzado» corresponde estrictamente al valor `self.estadoJuego.reloj.tiempo_actual` al momento de finalizar la ejecución.
-- Garantía matemática: `instante_alcanzado <= t`. Si no hubo eventos programados exactamente en $t$, el reloj refleja el instante del último evento efectivamente ejecutado.
+- El «instante alcanzado» corresponde al valor `self.estadoJuego.reloj.tiempo_actual` al finalizar la ejecución, es decir, el tiempo del último evento efectivamente ejecutado.
+- Garantía: `instante_alcanzado <= t`. Con $t = 0$ vale 0.
 
 ### 3.6 Determinismo estricto (FR-411, Principio II)
 - El orden de ejecución de eventos simultáneos está determinado por la tupla `(tiempo_ejecucion, id_secuencia)` del `RelojVirtual`.
@@ -97,4 +89,4 @@ Se define un bloque de evaluación de rendimiento denominado `replay` en `bench/
   1. **Reproducción completa vs Acotada a $t = T/2$**: Compara el conteo de eventos y tiempo de CPU de la Opción b al reproducir la mitad del tiempo virtual frente a la reproducción completa.
   2. **Opción b frente a Alternativa a (corte por acción)**: Comprueba que la opción b no procesa eventos espurios más allá de $t$.
   3. **Opción b frente a Alternativa c (reproducción total y recorte)**: Demuestra que la Opción b consume aproximadamente el 50% de operaciones en $T/2$, mientras que la opción c consume el 100% independientemente de $t$.
-- **Criterio de aceptación duro**: Conteo de eventos procesados y acciones ejecutadas ($K_{b} \le K_{total} / 2$). La razón de tiempos se reporta como métrica informativa para evitar falsos negativos por jitter del sistema operativo.
+- **Criterio de aceptación duro** (SC-003 de `spec.md`): conteo de eventos procesados para $t = T/2$ menor o igual que $0.55 \times$ los de la reproducción completa. La razón de tiempos se reporta como métrica informativa para evitar falsos negativos por jitter del sistema operativo.

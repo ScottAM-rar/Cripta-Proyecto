@@ -12,7 +12,7 @@
 
 Actualmente la opción `--replay` reproduce un archivo de registro (`PARTIDA.log`) de forma completa desde el inicio hasta el fin de la grabación. Cuando una persona necesita auditar o depurar un suceso específico de una partida (por ejemplo, entender qué ocurrió exactamente en el instante previo a la derrota del jugador o evaluar una secuencia crítica de turnos), se ve obligada a esperar la reproducción íntegra y analizar únicamente el estado final.
 
-La opción `--hasta t` permite acotar la reproducción para que se detenga de forma determinista en un instante específico `t` del reloj virtual del juego, presentando cómo quedó el estado del juego en ese punto exacto. Quien revisa debe poder predecir con exactitud hasta dónde avanzará la simulación, tener la certeza de que dos ejecuciones con los mismos parámetros arrojan resultados idénticos, y verificar que detenerse en `t` y luego continuar produce el mismo resultado que la reproducción completa.
+La opción `--hasta t` permite acotar la reproducción para que se detenga de forma determinista en un instante específico `t` del reloj virtual del juego, presentando cómo quedó el estado del juego en ese punto exacto. Quien revisa debe poder predecir con exactitud hasta dónde avanzará la simulación, tener la certeza de que dos ejecuciones con los mismos parámetros arrojan resultados idénticos, y verificar que el estado mostrado al detenerse en `t` es exactamente el que tenía la partida en ese instante durante la reproducción completa.
 
 **Contexto existente y vigente (no se re-especifica)**:
 - La opción `--replay PARTIDA.log` reproduce una partida previamente grabada de manera desatendida, sin interfaz gráfica ni interacción del usuario.
@@ -33,13 +33,23 @@ La opción `--hasta t` permite acotar la reproducción para que se detenga de fo
 ### Sesión 2026-11-04
 
 - Q: ¿Cómo deben tratarse los eventos del juego programados exactamente para el instante virtual t? (FR-403) → A: Se ejecutan todos los eventos programados en t (límite inclusivo: se procesan todos los eventos con tiempo virtual menor o igual que t).
-- Q: ¿Qué datos exactos del estado final del juego deben mostrarse al detenerse la reproducción acotada? (FR-404) → A: Estado exhaustivo: instante virtual alcanzado, cantidad de acciones reproducidas del jugador, sala actual del jugador, vida actual del jugador, llaves y objetos en su inventario, listado de enemigos presentes en la sala actual con sus vidas respectivas, y estado de la partida (en curso, victoria o derrota).
+- Q: ¿Qué datos exactos del estado final del juego deben mostrarse al detenerse la reproducción acotada? (FR-404) → A: Estado exhaustivo: instante virtual alcanzado, cantidad de acciones reproducidas del jugador, sala actual del jugador, vida actual del jugador, llaves y objetos en su inventario, listado de enemigos presentes en la sala actual con sus vidas respectivas, y estado de la partida (en curso, victoria o derrota). (Ampliado el 2026-11-04 tras el análisis: se agregan estadísticas y efectos activos; ver la sesión de corrección.)
+
+### Sesión 2026-11-04 (corrección tras el análisis de consistencia)
+
+Estas correcciones se hacen primero en la especificación (constitución, principio X) y se apoyan en el enunciado de la Parte II, §3.6 y Apéndice B.
+
+- Corrección 1 (FR-402, FR-403, FR-406): el enunciado define el estado en el instante `t` como el estado después de ejecutar todos los eventos con tiempo menor o igual que `t`, y añade que, si a `t` le corresponde una decisión del jugador, es el estado justo antes de tomarla. La respuesta A de la primera pregunta (límite inclusivo para todos los eventos) se afina: el límite inclusivo rige para los eventos de los demás actores; la decisión del jugador programada exactamente en `t` no se ejecuta. Con `t` igual a 0 el resultado es el estado inicial sin necesidad de una regla especial.
+- Corrección 2 (FR-404): el enunciado pide para `--hasta` el mismo resumen que la consulta de historia (reloj, sala, vida y estadísticas, inventario, efectos activos, enemigos de la sala con su vida y mapa conocido). Se agregan las estadísticas del jugador y sus efectos activos. El mapa conocido depende de la capacidad de niebla de guerra y queda como requisito diferido (ver Assumptions).
+- Corrección 3 (FR-405): el aviso de que el registro finalizó antes de `t` solo procede cuando la partida termina en un instante estrictamente menor que `t`.
+- Corrección 4 (SC-003): el criterio de rendimiento pasa de una razón de tiempos de reloj, frágil en la máquina local, a un conteo de eventos procesados; la razón de tiempos queda como dato informativo. Es el mismo ajuste que se hizo en la capacidad 005.
+- Corrección 5 (Historia 3, escenario 2 y FR-411): «reproducir hasta `t` y continuar» se expresa como propiedad de prefijo, porque la reproducción es un proceso por lotes sin reanudación interactiva.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### Historia 1 — Reproducción acotada hasta un instante intermedio (Prioridad: P1)
 
-Como persona que revisa o audita partidas grabadas, quiero ejecutar la reproducción de un archivo de registro indicando un instante virtual límite `t` mediante `--replay PARTIDA.log --hasta t`, para que el juego ejecute únicamente los eventos previos o alcanzados hasta `t` y me muestre el estado exacto del juego en ese punto sin necesidad de reproducir la partida completa.
+Como persona que revisa o audita partidas grabadas, quiero ejecutar la reproducción de un archivo de registro indicando un instante virtual límite `t` mediante `--replay PARTIDA.log --hasta t`, para que el juego ejecute únicamente lo ocurrido hasta `t` (con la regla de FR-402 y FR-403 para la decisión del jugador en `t`) y me muestre el estado exacto del juego en ese punto sin necesidad de reproducir la partida completa.
 
 **Por qué esta prioridad**: Es la funcionalidad central y el valor esencial de la capacidad, permitiendo la inspección temporal acotada de partidas sin requerir la ejecución de todo el registro.
 
@@ -47,11 +57,12 @@ Como persona que revisa o audita partidas grabadas, quiero ejecutar la reproducc
 
 **Escenarios de aceptación**:
 
-1. **Dado** un archivo de registro con múltiples acciones cronológicas y un instante `t` situado en un punto intermedio de la partida, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** solo se ejecutan los eventos con tiempo virtual menor o igual que `t`, la reproducción se detiene tras completar los eventos de `t` y el sistema informa el instante alcanzado, la cantidad de acciones del jugador ejecutadas y el estado exhaustivo del juego (sala, vida, inventario con llaves y objetos, enemigos en la sala con su vida, y si la partida sigue en curso). *(FR-401, FR-402, FR-403, FR-404)*
-2. **Dado** un archivo de registro válido y un valor de `t` igual a 0, **cuando** se ejecuta `--replay PARTIDA.log --hasta 0`, **entonces** no se ejecuta ningún evento del registro, la reproducción se detiene de inmediato y se informa el estado inicial exhaustivo del juego. *(FR-406, FR-404)*
-3. **Dado** un archivo de registro y un instante `t` que coincide exactamente con el tiempo programado de uno o más eventos, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** se ejecutan todos los eventos programados en el instante `t` (límite inclusivo) y el estado resultante refleja las consecuencias de dichos eventos. *(FR-402, FR-403, FR-404)*
-4. **Dado** un archivo de registro cuya duración total es menor o igual al valor `t` solicitado, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** se reproduce la totalidad de los eventos del registro y el sistema emite un aviso explícito indicando que el registro finalizó antes de alcanzar el instante `t`. *(FR-405, FR-404)*
+1. **Dado** un archivo de registro con múltiples acciones cronológicas y un instante `t` situado en un punto intermedio de la partida, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** no se ejecuta ningún evento con tiempo virtual mayor que `t`, la reproducción se detiene tras completar los eventos de los demás actores de `t` y el sistema informa el instante alcanzado, la cantidad de acciones del jugador ejecutadas y el estado exhaustivo del juego (sala, vida y estadísticas, inventario con llaves y objetos, efectos activos, enemigos en la sala con su vida, y si la partida sigue en curso). *(FR-401, FR-402, FR-403, FR-404)*
+2. **Dado** un archivo de registro válido y un valor de `t` igual a 0, **cuando** se ejecuta `--replay PARTIDA.log --hasta 0`, **entonces** no se ejecuta ninguna acción del jugador del registro, porque su primera decisión corresponde justamente al instante 0 y se informa el estado justo antes de tomarla; es decir, el estado inicial exhaustivo del juego. *(FR-406, FR-403, FR-404)*
+3. **Dado** un archivo de registro y un instante `t` que coincide exactamente con el tiempo programado de uno o más eventos, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** se ejecutan todos los eventos de los demás actores programados en el instante `t` (límite inclusivo) y el estado resultante refleja sus consecuencias, pero la decisión del jugador programada en `t`, si la hay, no se ejecuta: el estado es el de justo antes de tomarla. Si una acción del jugador comenzó en un instante anterior a `t`, se ejecuta completa aunque su costo la lleve más allá de `t`, y el estado informado es el que tenía la partida en `t` según FR-403. *(FR-402, FR-403, FR-404)*
+4. **Dado** un archivo de registro cuya partida termina, o cuyo registro se agota, en un instante estrictamente menor que el valor `t` solicitado, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** se reproduce la totalidad de los eventos del registro y el sistema emite un aviso explícito indicando que el registro finalizó antes de alcanzar el instante `t`. *(FR-405, FR-404)*
 5. **Dado** un archivo de registro en el cual la partida finaliza (por ejemplo, por muerte del jugador) en un instante virtual anterior a `t`, **cuando** se ejecuta la reproducción hasta `t`, **entonces** la simulación se detiene en el momento de la terminación y se informa explícitamente que la partida concluyó antes de alcanzar `t`, junto con la causa de terminación. *(FR-404, FR-405)*
+6. **Dado** un archivo de registro cuya partida termina exactamente en el instante `t` solicitado, **cuando** se ejecuta `--replay PARTIDA.log --hasta t`, **entonces** se informa el estado final con su causa de terminación y no se emite el aviso de que el registro finalizó antes de alcanzar `t`, porque `t` sí se alcanzó. *(FR-404, FR-405)*
 
 ---
 
@@ -78,22 +89,23 @@ Como evaluador o revisor técnico, quiero que la reproducción acotada sea estri
 
 **Por qué esta prioridad**: Asegura que las pruebas sean completamente reproducibles y que el uso de `--hasta` sea eficiente para inspeccionar momentos tempranos de partidas extensas.
 
-**Prueba independiente**: Ejecutar dos veces el comando con idéntico registro y mismo valor `t` comparando la salida reportada; verificar que continuar la simulación produce el resultado completo; y medir con `--bench` el tiempo de ejecución en función de `t`.
+**Prueba independiente**: Ejecutar dos veces el comando con idéntico registro y mismo valor `t` comparando la salida reportada; verificar que el estado al detenerse en `t` coincide con el de la reproducción completa en ese instante; y medir con `--bench` el tiempo de ejecución en función de `t`.
 
 **Escenarios de aceptación**:
 
 1. **Dado** un mismo archivo de registro y un mismo instante `t`, **cuando** se ejecutan dos reproducciones independientes bajo las mismas condiciones, **entonces** ambas ejecuciones arrojan salidas y estados finales idénticos. *(FR-411)*
-2. **Dado** un archivo de registro, **cuando** se reproduce hasta un instante `t` y a partir de ese estado se continúa la simulación hasta el final, **entonces** el estado final obtenido es equivalente al de una reproducción directa de la partida completa. *(FR-411)*
-3. **Dado** un conjunto de partidas sintéticas generadas de forma determinista mediante semilla, **cuando** se ejecuta `--bench`, **entonces** la herramienta mide y reporta el tiempo de reproducción acotada, evidenciando que el costo no excede la reproducción completa y escala en proporción a lo reproducido. *(FR-412, FR-413)*
+2. **Dado** un archivo de registro y un instante `t`, **cuando** se reproduce hasta `t` y, en otra ejecución independiente, se reproduce la partida completa, **entonces** el estado informado al detenerse en `t` coincide exactamente con el estado que la reproducción completa tenía en ese mismo instante (propiedad de prefijo). *(FR-411)*
+3. **Dado** un conjunto de partidas sintéticas generadas de forma determinista mediante semilla, **cuando** se ejecuta `--bench`, **entonces** la herramienta mide y reporta la cantidad de eventos procesados y el tiempo de la reproducción acotada, evidenciando que el costo no excede la reproducción completa y escala en proporción a lo reproducido. *(FR-412, FR-413)*
 
 ---
 
 ### Edge Cases
 
-- **Instante `t` igual a cero**: No se consume ninguna acción del registro y se exhibe el estado del jugador y del juego antes de cualquier interacción (FR-406).
-- **Eventos que coinciden exactamente en `t`**: Se ejecutan todos los eventos programados para ese instante antes de detener la reproducción; el corte temporal es inclusivo ($\le t$) (FR-403).
-- **Múltiples eventos simultáneos en un mismo instante**: Si coinciden eventos de jugador y enemigos en un instante válido anterior o igual a `t`, se preserva el orden determinista existente según el reloj virtual y el número de secuencia.
+- **Instante `t` igual a cero**: La primera decisión del jugador corresponde al instante 0, por lo que no se consume ninguna acción del registro y se exhibe el estado del juego justo antes de esa decisión (FR-406, FR-403).
+- **Eventos que coinciden exactamente en `t`**: Se ejecutan todos los eventos de los demás actores programados para ese instante; el corte temporal es inclusivo ($\le t$) para ellos. La decisión del jugador programada en `t` no se ejecuta (FR-403).
+- **Múltiples eventos simultáneos en un mismo instante**: Si coinciden eventos de varios actores en un instante anterior a `t`, o de actores distintos del jugador en `t`, se preserva el orden determinista existente según el reloj virtual y el número de secuencia.
 - **Instante `t` mayor que la duración del archivo**: La reproducción concluye pacíficamente al terminarse los eventos del registro, emitiendo una notificación de que el archivo finalizó antes de `t` (FR-405).
+- **Partida que termina exactamente en `t`**: Se informa el estado final y su causa, sin el aviso de registro finalizado antes de `t` (FR-405).
 - **Muerte o fin de partida antes de `t`**: El juego detiene la reproducción en el instante exacto en que termina la partida y notifica que concluyó antes de `t`, detallando si ocurrió por muerte del jugador o victoria (FR-404, FR-405).
 - **Valores no válidos para `t`**: Valores negativos, números decimales, cadenas alfanuméricas o ausencia del valor numérico se rechazan con un mensaje explicativo sin procesar el archivo (FR-407).
 - **Parámetro huérfano**: Especificar `--hasta` en conjunción con otros modos (como juego interactivo o `--verificar`) sin `--replay` genera un error explícito (FR-408).
@@ -103,23 +115,26 @@ Como evaluador o revisor técnico, quiero que la reproducción acotada sea estri
 ### Functional Requirements
 
 - **FR-401**: El programa DEBE admitir el argumento de línea de comandos `--hasta <t>` única y exclusivamente cuando se invoque en conjunto con la opción `--replay <PARTIDA.log>`, donde `<t>` representa un instante del reloj virtual del juego.
-- **FR-402**: La reproducción acotada DEBE detenerse al alcanzar el instante virtual `t`. Ningún evento del juego cuyo tiempo programado sea estrictamente mayor que `t` DEBE ejecutarse.
-- **FR-403**: Para todos los eventos programados exactamente en el instante `t`, el sistema DEBE ejecutarlos todos antes de detener la reproducción; el corte temporal de la simulación DEBE ser inclusivo, abarcando todos los eventos con tiempo virtual menor o igual que `t`.
+- **FR-402**: La reproducción acotada DEBE detenerse al alcanzar el instante virtual `t`. Ningún evento del juego cuyo tiempo programado sea estrictamente mayor que `t` DEBE ejecutarse, ni tampoco la decisión del jugador programada exactamente en `t` (FR-403).
+- **FR-403**: El estado informado DEBE ser el que tiene la partida después de ejecutar todos los eventos con tiempo virtual menor o igual que `t`, salvo que a `t` le corresponda una decisión del jugador: en ese caso DEBE ser el estado justo antes de tomarla. Por tanto, los eventos de los demás actores programados exactamente en `t` se ejecutan todos (límite inclusivo), la decisión del jugador programada exactamente en `t` no se ejecuta, y las decisiones del jugador anteriores a `t` se ejecutan completas. Dentro de un mismo instante rige el orden determinista del reloj virtual.
 - **FR-404**: Al detenerse la reproducción acotada (sea en `t` o por terminación anticipada de la partida), el programa DEBE informar:
   1. El instante virtual efectivamente alcanzado.
   2. La cantidad de acciones del jugador ejecutadas.
   3. La sala actual en la que se encuentra el jugador.
-  4. Los puntos de vida actuales del jugador.
+  4. Los puntos de vida actuales del jugador y sus estadísticas (ataque, defensa y velocidad vigentes).
   5. El inventario actual del jugador, detallando las llaves y objetos en su poder.
-  6. El listado de enemigos presentes en la sala actual del jugador junto con sus vidas respectivas.
-  7. El estado de la partida: en curso, victoria o derrota (indicando explícitamente si la partida concluyó antes de alcanzar `t`).
-- **FR-405**: Si el instante `t` indicado es mayor o igual que el instante en el que concluye la partida grabada, el programa DEBE reproducir todos los eventos disponibles en el archivo de registro y DEBE emitir un mensaje indicando que el registro finalizó antes de alcanzar `t`.
-- **FR-406**: Si el valor de `t` es 0, el programa DEBE ejecutar solo los eventos que ocurrieron en t=0 de la partida grabada y DEBE reportar el estado inicial exhaustivo del juego previo a la ejecución de cualquier acción.
+  6. Los efectos activos sobre el jugador en ese instante (por ejemplo veneno, velocidad temporal por una poción o antorcha encendida).
+  7. El listado de enemigos presentes en la sala actual del jugador junto con sus vidas respectivas.
+  8. El estado de la partida: en curso, victoria o derrota (indicando explícitamente si la partida concluyó antes de alcanzar `t`).
+
+  El mapa conocido por el jugador en ese instante forma parte del resumen exigido por el enunciado, pero depende de la capacidad de niebla de guerra y queda diferido (ver Assumptions).
+- **FR-405**: Si la partida grabada concluye, o el registro se agota, en un instante estrictamente menor que `t`, el programa DEBE reproducir todos los eventos disponibles en el archivo de registro y DEBE emitir un mensaje indicando que el registro finalizó antes de alcanzar `t`. Si concluye exactamente en `t`, DEBE informar el estado final sin ese mensaje.
+- **FR-406**: Si el valor de `t` es 0, el programa DEBE reportar el estado inicial exhaustivo del juego, previo a la primera decisión del jugador, como consecuencia de FR-403 y sin ejecutar ninguna acción del jugador del registro.
 - **FR-407**: Si el valor proporcionado para `t` es negativo o no corresponde a una representación válida de número entero, el programa DEBE rechazar el argumento con un mensaje claro y descriptivo, sin reproducir ninguna acción del registro.
 - **FR-408**: Si se especifica el argumento `--hasta` sin incluir la opción `--replay`, el programa DEBE rechazar la invocación con un mensaje claro de error sin iniciar ninguna partida ni modificar el estado del sistema.
 - **FR-409**: La ejecución de `--replay` sin la presencia del modificador `--hasta` DEBE conservar de forma íntegra e inalterada su comportamiento y formato de salida existentes.
 - **FR-410**: La reproducción acotada con `--replay ... --hasta` NO DEBE inicializar componentes de interfaz visual, NO DEBE generar un nuevo archivo de registro (`partida.log`) y NO DEBE registrar entradas en la tabla de puntajes.
-- **FR-411**: Determinismo: Para un mismo archivo de registro y un mismo valor de `t`, dos o más ejecuciones DEBEN producir idéntico resultado y reporte de estado. Asimismo, reproducir hasta `t` y luego continuar la simulación hasta el final DEBE generar el mismo estado y desenlace que reproducir el registro completo de una sola vez.
+- **FR-411**: Determinismo: Para un mismo archivo de registro y un mismo valor de `t`, dos o más ejecuciones DEBEN producir idéntico resultado y reporte de estado. Asimismo, el estado informado al detenerse en `t` DEBE coincidir exactamente con el que tenía la partida en el instante `t` durante la reproducción completa del mismo registro (propiedad de prefijo).
 - **FR-412**: Rendimiento: El tiempo de cómputo requerido para reproducir hasta el instante `t` NO DEBE exceder el tiempo de la reproducción completa del mismo archivo, y DEBE ser proporcional a la cantidad de eventos procesados hasta `t` y no al tamaño total del archivo de registro.
 - **FR-413**: Medición: La herramienta de evaluación de rendimiento `--bench` DEBE permitir medir y reportar el desempeño de la reproducción acotada hasta `t` utilizando partidas sintéticas generadas de manera determinista mediante semilla.
 
@@ -136,7 +151,7 @@ Como evaluador o revisor técnico, quiero que la reproducción acotada sea estri
 
 - **SC-001**: El 100% de los escenarios de aceptación descritos en las Historias 1, 2 y 3 se ejecutan y validan de forma consistente en pruebas automatizadas.
 - **SC-002**: Para cualquier archivo de registro y valor de `t` válido, dos ejecuciones consecutivas bajo las mismas condiciones producen salidas idénticas carácter por carácter en el 100% de los casos.
-- **SC-003**: En pruebas de rendimiento con partidas sintéticas de al menos 1000 acciones, el tiempo requerido para reproducir hasta `t = T / 2` no supera el 60% del tiempo requerido para reproducir la partida completa hasta su finalización `T`.
+- **SC-003**: En pruebas de rendimiento con partidas sintéticas de al menos 1000 acciones, la cantidad de eventos del juego procesados al reproducir hasta `t = T / 2` no supera el 55% de los procesados al reproducir la partida completa hasta su finalización `T`. La razón entre los tiempos de reloj se reporta como dato informativo, sin umbral de aprobación.
 - **SC-004**: El 100% de las invocaciones con argumentos inválidos (`t` negativo, no entero, o `--hasta` sin `--replay`) son rechazadas en menos de 100 milisegundos con un mensaje de error explicativo para el usuario.
 - **SC-005**: La ejecución tradicional con `--replay` sin `--hasta` conserva el 100% de equivalencia en comportamiento y resultados con respecto a la versión previa a esta capacidad.
 
@@ -147,3 +162,4 @@ Como evaluador o revisor técnico, quiero que la reproducción acotada sea estri
 - Los mensajes informativos y de estado se emiten por la salida estándar, mientras que los mensajes de error por argumentos inválidos se emiten por la salida de error.
 - La ejecución de `--replay ... --hasta` es de naturaleza desatendida y orientada a línea de comandos, por lo que no requiere entradas del usuario durante su transcurso.
 - La medición de rendimiento en `--bench` utiliza semillas fijas para garantizar la repetibilidad de los resultados.
+- El mapa conocido del jugador (niebla de guerra) todavía no existe en el programa. Cuando la capacidad de niebla de guerra esté disponible, el resumen de FR-404 deberá incluirlo; hasta entonces no se exige y no se inventa su contenido.
