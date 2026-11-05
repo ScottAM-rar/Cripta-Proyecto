@@ -33,3 +33,4 @@
 
 - Todas las clarificaciones han sido resueltas en la sesión de `/speckit-clarify` del 2026-11-04 (límite inclusivo en t para FR-403 y reporte exhaustivo para FR-404). La especificación está lista para la fase de planificación (`/speckit-plan`).
 - Corregida el 2026-11-04 tras el análisis de consistencia: regla del instante `t` según el enunciado §3.6 (la decisión del jugador en `t` no se ejecuta), FR-404 con estadísticas y efectos activos (mapa conocido diferido), FR-405 estricto, SC-003 por conteo de eventos y propiedad de prefijo en FR-411. Ver la sesión de corrección en `spec.md`.
+- Verificación Constitucional (Principio I - T001): Se revisaron `plan.md` y `tasks.md`. No se introducen `dict` ni `set` como índice/caché, ni `heapq`, `bisect`, `collections` (`deque`, `defaultdict`), `networkx`. Solo se utilizan tipos autorizados (`list`, `tuple`, `dataclass`) y el montículo propio de `RelojVirtual`. Conforme.

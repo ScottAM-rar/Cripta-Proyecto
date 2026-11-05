@@ -39,3 +39,22 @@ Por capacidad: enlace a su especificación y a su plan, si la decisión final co
 | SC-004 se verifica por conteo y la razón de tiempos solo informa | **Cambió respecto de la especificación original**, que usaba una razón de tiempos (≤ 2×) | `/speckit-analyze` (A1): el tiempo de operaciones de decenas de µs es frágil. Medido: la razón fue 0,99× |
 | FR-513: una salida hacia una sala que no existe se ignora | **Agregado a la especificación tras `/speckit-analyze` (S1)**; el plan ya lo suponía | `TestOrigenYSalasInexistentes` y la equivalencia con la referencia |
 | `ServicioCripta.salas_vecinas` no se modifica | Sí | Medido como referencia: con límite 5 en 40 000 salas tarda 11,75 ms frente a 0,02 ms del recorrido nuevo, porque busca cada sala con un recorrido lineal. Reemplazarlo le toca a la capacidad que adopte el recorrido |
+
+
+## 008 · Reproducción acotada hasta un instante dado (replay-hasta)
+
+- Especificación: [`specs/008-replay-hasta/spec.md`](specs/008-replay-hasta/spec.md) (FR-401 a FR-413)
+- Plan: [`specs/008-replay-hasta/plan.md`](specs/008-replay-hasta/plan.md), con [`research.md`](specs/008-replay-hasta/research.md)
+- Mediciones: [`specs/008-replay-hasta/mediciones.md`](specs/008-replay-hasta/mediciones.md)
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| **Opción b ratificada**: tope de tiempo en `_avanzarHastaProximoTurno`; ciclo de eventos se interrumpe antes de desapilar cualquier evento con `tiempo_ejecucion > tope` | Sí | `--bench replay` Sección A: razón de eventos = **0.500** en las tres escalas (250, 1 000 y 4 000 acciones), ≤ 0.55 (SC-003). **CUMPLE** |
+| Opción a descartada (corte solo entre acciones del jugador): `_avanzarHastaProximoTurno` sin tope procesa todos los eventos de enemigos hasta el próximo turno del jugador | Sí (descarte previsto en `research.md`) | `--bench replay` Sección B (t = 50 001 en 1 000 acciones): la opción a termina con el reloj en 50 100 > t y procesa 1503 eventos frente a 1500 de la opción b, que termina en 50 000; falla FR-402 |
+| Opción c descartada (reproducción total y recorte de salida): el log se lee completo antes de responder | Sí (descarte previsto en `research.md`) | `--bench replay` Sección B: Opción c procesa **el 100 %** de eventos independientemente de t (3 000 frente a 1 500 en 1 000 acciones); falla FR-412 |
+| Decisión del jugador en `t` no se ejecuta; `repetirPartida` comprueba `reloj.tiempo_actual < hasta` antes de cada registro del log | Sí | FR-403, FR-406; `TestTruncamientoTemporal.test_FR403_decision_jugador_en_tope_no_se_ejecuta` |
+| `_completarInstante(hasta)` ejecuta los eventos de otros actores con tiempo == `hasta` y número de secuencia posterior al `TURNO_JUGADOR` | Sí | FR-403; `TestTruncamientoTemporal.test_FR403_completar_instante_ejecuta_eventos_de_otros_actores_en_tope` |
+| Con `t=0` no se ejecuta ninguna acción sin regla especial; la misma comprobación `reloj.tiempo_actual < hasta` lo resuelve | Sí | FR-406; `TestCasosLimite.test_FR406_hasta_cero_no_ejecuta_ninguna_accion` |
+| `ResultadoReplayHastaDTO` como DTO puro; la lógica no escribe en `stdout` | Sí | Principio IV; `TestAislamientoReplay`: sin vista, sin log nuevo, sin puntajes |
+| `--hasta` sin `--replay` termina con código 2 antes de crear `EstadoJuegoServicio` | Sí | FR-408, SC-004; `TestArgumentosCLI.test_SC004_latencia_rechazo_menor_a_100ms`: latencia < 0.1 s |
+| Propiedad de prefijo verificada: estado en `t` con reproducción acotada == estado en `t` de la partida completa | Sí | FR-411; `TestDeterminismoReplay.test_FR411_propiedad_de_prefijo` |

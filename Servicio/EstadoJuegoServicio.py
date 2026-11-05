@@ -72,14 +72,14 @@ class EstadoJuegoServicio:
         """Nombre del archivo donde se está grabando la partida (para mostrarlo o usarlo con --replay)."""
         return None if self._almacenLog is None else self._almacenLog.nombre
 
-    def repetirPartida(self, archivo: str) -> list[ResultadoEventoDTO]:
+    def repetirPartida(self, archivo: str, hasta: int | None = None) -> list[ResultadoEventoDTO] | ResultadoReplayHastaDTO:
         """Reproduce un log. La reproducción no graba un log nuevo."""
         log = AlmacenLogTexto.leer(archivo)
         self._asegurarServicio()
         self._estadoJuegoLogica.registrador_log = None
         self._almacenLog = None
         self._esRepeticion = True       # una repetición no es una partida nueva: no entra a la tabla de puntajes
-        return self._estadoJuegoLogica.repetirPartida(log)
+        return self._estadoJuegoLogica.repetirPartida(log, hasta=hasta)
 
     def guardarPartida(self, nombre_archivo: str) -> None:
         """Guarda la partida en un archivo binario. El modelo solo entrega su estado; el archivo lo escribe el adaptador."""

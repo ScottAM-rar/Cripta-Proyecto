@@ -3,6 +3,8 @@ from DTO.SalaDTO import *
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import JugadorDTO, EnemigoDTO
 from DTO.FinPartidaDTO import FinPartidaDTO
+from DTO.Objeto import Llave
+from DTO.ResultadoReplayHastaDTO import ResultadoReplayHastaDTO
 from Logica.GestorEventos import GestorEventos, PERIODO_REGENERACION
 from Logica.ActorLogica import ActorLogica
 from Logica.JugadorLogica import JugadorLogica
@@ -125,7 +127,7 @@ class EstadoJuegoLogica:
             raise ValueError("El juego no ha sido iniciado")
         return self.logEventos.a_dto()
 
-    def repetirPartida(self, log: LogPartidaDTO) -> list[ResultadoEventoDTO]:
+    def repetirPartida(self, log: LogPartidaDTO, hasta: int | None = None) -> list[ResultadoEventoDTO] | ResultadoReplayHastaDTO:
         log_original = LogEventos.desde_dto(log)
 
         if log_original.id_cripta is None:
@@ -141,20 +143,111 @@ class EstadoJuegoLogica:
             raise
         self.ingresarEnSala(self.estadoJuego.jugador.id_sala_actual)
 
-        resultados = []
+        if hasta is None:
+            resultados = []
+            for registro in log_original.obtener_registros_cronologicos():
+                if registro.tipo_accion in TIPOS_CURSOR_INVENTARIO:
+                    self._repetirMovimientoDeCursor(registro.tipo_accion)
+                    continue
+                evento = self._crear_evento_repeticion(registro)
+                resultado = self.accionJugador(evento)
+                if resultado.exito is False:     # el log solo guarda acciones aceptadas: si ahora se rechaza, ya no es fiel
+                    raise ValueError(
+                        f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
+                    )
+                resultados.append(resultado)
+            return resultados
+
+        # Caso con hasta is not None (FR-401 a FR-406)
+        reloj = self.estadoJuego.reloj
+        acciones_reproducidas = 0
+        log_agotado = False
+
         for registro in log_original.obtener_registros_cronologicos():
+            if self.fin or reloj.tiempo_actual >= hasta:
+                break
             if registro.tipo_accion in TIPOS_CURSOR_INVENTARIO:
                 self._repetirMovimientoDeCursor(registro.tipo_accion)
                 continue
             evento = self._crear_evento_repeticion(registro)
-            resultado = self.accionJugador(evento)
+            resultado = self.accionJugador(evento, tope=hasta)
             if resultado.exito is False:     # el log solo guarda acciones aceptadas: si ahora se rechaza, ya no es fiel
                 raise ValueError(
                     f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
                 )
-            resultados.append(resultado)
+            acciones_reproducidas += 1
+            if self.fin:
+                break
+            sig = reloj.siguiente()
+            if (sig is not None and sig.tiempo_ejecucion > hasta) or reloj.tiempo_actual >= hasta:
+                break
+        else:
+            if not self.fin and reloj.tiempo_actual < hasta:
+                log_agotado = True
 
-        return resultados
+        if not self.fin and reloj.tiempo_actual == hasta:
+            self._completarInstante(hasta)
+
+        return self._armarResultadoReplayHasta(hasta, acciones_reproducidas, log_agotado)
+
+    def _armarResultadoReplayHasta(
+        self, hasta: int, acciones_reproducidas: int, log_agotado: bool
+    ) -> ResultadoReplayHastaDTO:
+        jugador = self.estadoJuego.jugador
+        reloj = self.estadoJuego.reloj
+
+        id_sala = jugador.id_sala_actual
+        vida = jugador.vida_actual
+        ataque = ActorLogica.ataque_efectivo(jugador)
+        defensa = ActorLogica.defensa_efectiva(jugador)
+        velocidad = ActorLogica.velocidad_efectiva(jugador)
+
+        inventario_llaves: list[str] = []
+        inventario_objetos: list[str] = []
+        if getattr(jugador, "inventario", None) is not None:
+            nodo = jugador.inventario.cabeza
+            while nodo is not None:
+                obj = nodo.objeto
+                if isinstance(obj, Llave):
+                    inventario_llaves.append(obj.id_catalogo)
+                else:
+                    inventario_objetos.append(obj.nombre)
+                nodo = nodo.siguiente
+
+        efectos_activos: list[str] = []
+        if getattr(jugador, "veneno", False):
+            efectos_activos.append("veneno")
+        if getattr(jugador, "modificador_velocidad", 0) != 0:
+            efectos_activos.append("velocidad temporal")
+        if getattr(jugador, "antorcha_encendida", False):
+            efectos_activos.append("antorcha encendida")
+
+        enemigos_sala: list[tuple[str, str, int]] = []
+        if id_sala < len(self.estadoJuego.salas):
+            sala = self.estadoJuego.salas[id_sala]
+            if sala is not None and getattr(sala, "enemigos", None):
+                for e in sala.enemigos:
+                    if e.vida_actual > 0:
+                        enemigos_sala.append((e.id_instancia, e.nombre, e.vida_actual))
+                enemigos_sala.sort(key=lambda t: t[0])
+
+        return ResultadoReplayHastaDTO(
+            instante_pedido=hasta,
+            instante_alcanzado=reloj.tiempo_actual,
+            acciones_reproducidas=acciones_reproducidas,
+            id_sala_jugador=id_sala,
+            vida_jugador=vida,
+            ataque_jugador=ataque,
+            defensa_jugador=defensa,
+            velocidad_jugador=velocidad,
+            inventario_llaves=inventario_llaves,
+            inventario_objetos=inventario_objetos,
+            efectos_activos=efectos_activos,
+            enemigos_sala=enemigos_sala,
+            partida_terminada=self.fin,
+            motivo_terminacion=self.motivoFin if self.fin else None,
+            log_agotado=log_agotado,
+        )
 
     def _verificarVersionesReplay(self, log: LogEventos) -> None:
         """Solo se reproduce si cripta y catálogo son exactamente los del log (§4.11)."""
@@ -419,7 +512,34 @@ class EstadoJuegoLogica:
             raise ValueError("El juego no ha sido iniciado")
         return self.jugadorLogica.tiene_llave(id_llave)
 
-    def _avanzarHastaProximoTurno(self) -> None:
+    def _procesarEventoReloj(self, evento) -> None:
+        jugador = self.estadoJuego.jugador
+        reloj = self.estadoJuego.reloj
+        velocidad_antes = ActorLogica.velocidad_efectiva(jugador)
+        accion = self.gestorEventos.procesar_evento(evento)
+        # Si un efecto (el vencimiento de una poción) cambió la velocidad del jugador, su turno ya programado
+        # conserva el progreso realizado (§2.3).
+        velocidad_despues = ActorLogica.velocidad_efectiva(jugador)
+        if velocidad_despues != velocidad_antes:
+            reloj.reajustar_velocidad(jugador, velocidad_antes, velocidad_despues)
+        if accion.mensaje:              # los eventos silenciosos (p. ej. regenerar con la vida llena) no ensucian la bitácora
+            self._registrarEnBitacora(accion)
+        self._comprobarFinal()
+        if not self.fin and accion.eventoResultado is not None:
+            self.cargarEvento(accion.eventoResultado)
+
+    def _completarInstante(self, hasta: int) -> None:
+        reloj = self.estadoJuego.reloj
+        while not self.fin:
+            siguiente = reloj.siguiente()
+            if siguiente is None or siguiente.tiempo_ejecucion > hasta:
+                break
+            if siguiente.tipo_accion == "TURNO_JUGADOR":
+                break
+            evento = reloj.desencolar()
+            self._procesarEventoReloj(evento)
+
+    def _avanzarHastaProximoTurno(self, tope: int | None = None) -> None:
         """Ejecuta, en orden, los eventos que ocurren mientras el jugador espera su próximo turno (§2.3, §2.5).
         Termina sacando el evento TURNO_JUGADOR: el reloj queda en el instante en que el jugador vuelve a decidir.
         Si la partida termina por el camino (el jugador muere), se corta ahí: el reloj se queda en ese instante y el
@@ -430,22 +550,13 @@ class EstadoJuegoLogica:
             siguiente = reloj.siguiente()
             if siguiente is None:
                 break
+            if tope is not None and siguiente.tiempo_ejecucion > tope:
+                break
             if siguiente.tipo_accion == "TURNO_JUGADOR":
                 reloj.desencolar()
                 return
             evento = reloj.desencolar()
-            velocidad_antes = ActorLogica.velocidad_efectiva(jugador)
-            accion = self.gestorEventos.procesar_evento(evento)
-            # Si un efecto (el vencimiento de una poción) cambió la velocidad del jugador, su turno ya programado
-            # conserva el progreso realizado (§2.3).
-            velocidad_despues = ActorLogica.velocidad_efectiva(jugador)
-            if velocidad_despues != velocidad_antes:
-                reloj.reajustar_velocidad(jugador, velocidad_antes, velocidad_despues)
-            if accion.mensaje:              # los eventos silenciosos (p. ej. regenerar con la vida llena) no ensucian la bitácora
-                self._registrarEnBitacora(accion)
-            self._comprobarFinal()
-            if not self.fin and accion.eventoResultado is not None:
-                self.cargarEvento(accion.eventoResultado)
+            self._procesarEventoReloj(evento)
 
     def _registrarEnBitacora(self, accion: ResultadoEventoDTO):
         descartado = self.logEventosJuego.agregar_evento(accion)
@@ -514,7 +625,7 @@ class EstadoJuegoLogica:
             raise ValueError("El juego no ha sido iniciado")
         return self.estadoJuego.reloj.encolar(self._intervalo(evento),evento.actor,evento.tipo_accion,evento.datos_extra)
 
-    def accionJugador(self, evento: EventoDTO):
+    def accionJugador(self, evento: EventoDTO, tope: int | None = None):
         """El jugador decide en el instante actual del reloj y su acción ocurre AHORA (§2.3). El costo (que viene en
         evento.tiempo_ejecucion) solo sirve para programar su próximo turno. Después se ejecuta todo lo que pasa antes
         de ese turno. Una acción rechazada no cambia nada ni consume tiempo (Apéndice B)."""
@@ -561,7 +672,7 @@ class EstadoJuegoLogica:
             # El próximo turno usa la velocidad con que el jugador termina esta acción (p. ej. la que dio una poción)
             intervalo = RelojVirtual.intervalo_por_velocidad(costo, ActorLogica.velocidad_efectiva(jugador))
             reloj.programar(intervalo, jugador, "TURNO_JUGADOR", [])
-            self._avanzarHastaProximoTurno()
+            self._avanzarHastaProximoTurno(tope=tope)
         self.tiempoMovimientoJugador = reloj.tiempo_actual
         self._registrarAccionEnLog(evento)
         self._actualizarFichasEnUso()

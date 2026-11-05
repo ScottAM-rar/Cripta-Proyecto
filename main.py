@@ -19,6 +19,16 @@ def _tamano_de_cache(texto: str) -> int:
     return valor
 
 
+def _instante_hasta(texto: str) -> int:
+    try:
+        valor = int(texto)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"{texto!r} no es un número entero")
+    if valor < 0:
+        raise argparse.ArgumentTypeError("el instante virtual debe ser mayor o igual que 0")
+    return valor
+
+
 def leer_argumentos(argv=None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(prog="main.py", description="Cripta: juego de mazmorra dirigido por eventos.")
     parser.add_argument("--offline", action="store_true",
@@ -27,23 +37,67 @@ def leer_argumentos(argv=None) -> argparse.Namespace:
                         help=f"cantidad de fichas del catálogo que se mantienen en memoria (por defecto {TAMANO_CACHE})")
     parser.add_argument("--bench", nargs="?", const="todo", metavar="BLOQUES",
                         help="mide el rendimiento con cargas sintéticas, sin red ni vista (todos los bloques, o una lista "
-                             "separada por comas: agenda, cache, inventario, retroceso, ordenamiento, guardado, bitacora, ciclo)")
+                             "separada por comas: agenda, cache, inventario, retroceso, ordenamiento, guardado, bitacora, ciclo, terreno, recorrido, replay)")
     parser.add_argument("--bench-csv", metavar="ARCHIVO.csv", help="con --bench, guarda además los resultados en un CSV")
     parser.add_argument("--replay", metavar="PARTIDA.log",
                         help=f"reproduce una partida grabada, sin pedir nada al usuario (el log debe estar en {CARPETA_LOGS}/)")
+    parser.add_argument("--hasta", type=_instante_hasta, metavar="T",
+                        help="instante del reloj virtual en el que se detiene la reproducción acotada")
     return parser.parse_args(argv)
 
 
-def reproducir(servicio: EstadoJuegoServicio, archivo: str) -> int:
-    """--replay: reproduce el log completo sin vista ni interacción."""
+def reproducir(servicio: EstadoJuegoServicio, archivo: str, hasta: int | None = None) -> int:
+    """--replay: reproduce el log completo o acotado hasta t sin vista ni interacción."""
     carpeta, nombre = os.path.split(archivo)
     if carpeta and os.path.abspath(carpeta) != os.path.abspath(CARPETA_LOGS):
         print(f"El log debe estar en la carpeta {CARPETA_LOGS}/ (se indicó {archivo!r}).", file=sys.stderr)
         return 1
-    resultados = servicio.repetirPartida(nombre)
-    print(f"\nReproducción terminada: {len(resultados)} acciones del jugador.")
-    terminado, motivo = servicio.terminado()
-    print(f"Estado final: {motivo}" if terminado else "La partida no había terminado al acabarse el log.")
+
+    if hasta is None:
+        resultados = servicio.repetirPartida(nombre)
+        print(f"\nReproducción terminada: {len(resultados)} acciones del jugador.")
+        terminado, motivo = servicio.terminado()
+        print(f"Estado final: {motivo}" if terminado else "La partida no había terminado al acabarse el log.")
+        return 0
+
+    dto = servicio.repetirPartida(nombre, hasta=hasta)
+
+    if dto.log_agotado:
+        print(f"Aviso: el log terminó en el instante {dto.instante_alcanzado} antes de alcanzar t={dto.instante_pedido}.\n")
+
+    lista_efectos = ", ".join(dto.efectos_activos) if dto.efectos_activos else "(ninguno)"
+    lista_llaves = ", ".join(dto.inventario_llaves) if dto.inventario_llaves else "(ninguna)"
+    lista_objetos = ", ".join(dto.inventario_objetos) if dto.inventario_objetos else "(ninguno)"
+
+    if dto.enemigos_sala:
+        lineas_enemigos = "\n".join(f"  - {nom} ({i_id}): {vida} PV" for i_id, nom, vida in dto.enemigos_sala)
+    else:
+        lineas_enemigos = "  (ninguno)"
+
+    print(f"Reproducción hasta t={dto.instante_pedido} terminada.")
+    print(f"Instante virtual alcanzado: {dto.instante_alcanzado}")
+    print(f"Acciones del jugador reproducidas: {dto.acciones_reproducidas}")
+    print("Estado del jugador:")
+    print(f"  Sala actual: {dto.id_sala_jugador}")
+    print(f"  Puntos de vida: {dto.vida_jugador}")
+    print(f"  Estadísticas: ataque {dto.ataque_jugador}, defensa {dto.defensa_jugador}, velocidad {dto.velocidad_jugador}")
+    print(f"  Efectos activos: {lista_efectos}")
+    print(f"  Llaves: {lista_llaves}")
+    print(f"  Objetos: {lista_objetos}")
+    print("Enemigos en la sala:")
+    print(lineas_enemigos)
+
+    if dto.log_agotado:
+        print("Estado de la partida: En curso (el log no contenía más acciones).")
+    elif dto.partida_terminada:
+        if dto.instante_alcanzado < dto.instante_pedido:
+            print(f"Estado de la partida: Terminada antes de alcanzar t={dto.instante_pedido}.")
+        else:
+            print(f"Estado de la partida: Terminada en t={dto.instante_pedido}.")
+        print(f"  Motivo: {dto.motivo_terminacion}")
+    else:
+        print("Estado de la partida: En curso (no ha terminado).")
+
     return 0
 
 
@@ -65,6 +119,9 @@ def ajustar_recolector_de_basura() -> None:
 
 def main(argv=None) -> int:
     args = leer_argumentos(argv)
+    if args.hasta is not None and not args.replay:
+        print("Error: el argumento --hasta requiere especificar una partida con --replay.", file=sys.stderr)
+        return 2
     ajustar_recolector_de_basura()           # vale para el juego, --replay y --bench
     if args.bench is not None:               # --bench no usa la red ni crea la vista interactiva
         from bench import ejecutar as ejecutar_bench
@@ -77,7 +134,7 @@ def main(argv=None) -> int:
         comunicacion = crear_servicio(offline=args.offline, cache_size=args.cache_size)
         servicio = EstadoJuegoServicio(comunicacion=comunicacion, offline=args.offline)
         if args.replay:
-            return reproducir(servicio, args.replay)     # no se crea la vista
+            return reproducir(servicio, args.replay, hasta=args.hasta)     # no se crea la vista
         print("Inicializando Cripta...")
         ControladorJuego(servicio).iniciar()
         return 0
