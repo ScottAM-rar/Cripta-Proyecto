@@ -127,7 +127,7 @@ def exportar(logica) -> EstadoGuardadoDTO:
             nombre=sala.nombre,
             ultimo_paso=sala.ultimo_paso,
             salidas=[
-                SalidaGuardadaDTO(s.direccion, s.sala_destino, s.cerrada, s.llave, s.cierre_automatico)
+                SalidaGuardadaDTO(s.direccion, s.sala_destino, s.cerrada, s.llave, s.cierre_automatico, s.costo)
                 for s in sala.salidas
             ],
             enemigos=[tablas.enemigo(e) for e in sala.enemigos],
@@ -183,7 +183,7 @@ def exportar(logica) -> EstadoGuardadoDTO:
     enemigos = [
         EnemigoGuardadoDTO(
             e.id_instancia, e.tipo, e.nombre, e.comportamiento, e.vida_actual, e.vida_max, e.ataque,
-            e.defensa, e.velocidad, e.id_sala_actual, list(e.suelta), e.activo, e.regeneracion,
+            e.defensa, e.velocidad, e.id_sala_actual, list(e.suelta), e.activo, e.regeneracion, e.rango,
         )
         for e in tablas.enemigos
     ]
@@ -262,7 +262,7 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
             vida_actual=g.vida_actual, vida_max=g.vida_max, ataque=g.ataque, defensa=g.defensa,
             velocidad=g.velocidad, id_sala_actual=g.id_sala_actual, id_instancia=g.id_instancia, tipo=g.tipo,
             nombre=g.nombre, comportamiento=g.comportamiento, suelta=list(g.suelta), regeneracion=g.regeneracion,
-            activo=g.activo,
+            activo=g.activo, rango=g.rango,
         )
         for g in estado.enemigos
     ]
@@ -277,7 +277,7 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
             raise ValueError(f"La sala guardada {g.id} no cabe en la cripta")
         sala = SalaDTO(id=g.id, nombre=g.nombre)
         sala.salidas = deque(
-            [SalidaDTO(s.direccion, s.sala_destino, s.cerrada, s.llave, s.cierre_automatico) for s in g.salidas],
+            [SalidaDTO(s.direccion, s.sala_destino, s.cerrada, s.llave, s.cierre_automatico, s.costo) for s in g.salidas],
             maxlen=4,
         )
         sala.enemigos = [enemigos[i] for i in g.enemigos]
@@ -334,6 +334,7 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     gestor = GestorEventos(salas, jugador, logica.ingresarEnSala, estado.semilla,
                            obtener_botin=logica.comunicacion.objetos_que_suelta)
     gestor.reloj = reloj
+    gestor.campo_de_costos = logica._crearCampoDeCostos(estado.id_cripta, salas, jugador)
     gestor.azar.setstate((estado.estado_azar[0], tuple(estado.estado_azar[1]), estado.estado_azar[2]))
 
     bitacora = BitacoraLogica()

@@ -95,6 +95,14 @@ class InventarioLogica:
         else:
             raise ValueError("El segundo objeto del inventario no es un arma o armadura")
 
+    def equipar_objeto(self, objeto: Objeto):
+        """Equipa el objeto indicado, esté donde esté el cursor. El cursor queda sobre él, igual que en equipar_objeto_actual."""
+        nodo = self.buscar_objeto(objeto)
+        if nodo is None:
+            raise ValueError("El objeto no se encuentra en el inventario")
+        self.actual = nodo
+        return self.equipar_objeto_actual()
+
     def equipar_objeto_actual(self):
         """Mueve el objeto actual al principio de la lista, indicando que esta equipado"""
         if self.actual is None:
@@ -140,16 +148,21 @@ class InventarioLogica:
         else:
             self._reenlazar_nodo(nodo, nodo_destino.anterior, nodo_destino)
 
+    def listar_objetos(self) -> list:
+        """Los objetos en el orden real del inventario, en una lista aparte (no deja salir la lista enlazada)."""
+        objetos = []
+        nodo_actual = self.cabeza
+        while nodo_actual is not None:
+            objetos.append(nodo_actual.objeto)
+            nodo_actual = nodo_actual.siguiente
+        return objetos
+
     def obtener_vista_ordenada(self, criterio: str):
         """Devuelve una lista de objetos ordenados segun el criterio dado"""
         if criterio not in CRITERIOS_VALIDOS:
             raise ValueError(f"Criterio invalido. Los criterios son: {CRITERIOS_VALIDOS}")
         
-        objetos = [] #Se crea una lista vacia para poder almacenar los objetos de forma que el metodo de ordenamiento no conozca la lista enlazada, solo ordene.
-        nodo_actual = self.cabeza
-        while nodo_actual is not None:
-            objetos.append(nodo_actual.objeto)
-            nodo_actual = nodo_actual.siguiente
+        objetos = self.listar_objetos() # Lista aparte: el metodo de ordenamiento no conoce la lista enlazada, solo ordena.
         return ordenar_adaptativo(objetos, key=lambda obj: getattr(obj, criterio))  # Ordena la lista de objetos segun el criterio dado
         
     def el_inventario_esta_lleno(self):

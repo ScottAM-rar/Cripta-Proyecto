@@ -30,6 +30,7 @@ class GestorEventos:
         self.salas = salas
         self.cargar_sala = cargar_sala
         self.obtener_botin = obtener_botin      # lo que suelta un enemigo al morir (§2.6); lo entrega quien arma el juego
+        self._campo_de_costos = None
         self.reloj = None     # lo asigna quien arma la partida: de aquí sale "el instante actual" de cada acción
         # Inyección de dependencias de la capa de lógica
         # Un único generador por partida, compartido por jugador y enemigos: así la secuencia de tiradas es reproducible
@@ -38,10 +39,28 @@ class GestorEventos:
         self.pergamino_logica = PergaminoLogica(
             self.jugador_logica.retroceso,
             salas,
+            avisar_puerta=self._puerta_cambio,
         )
         self.objeto_logica = ObjetoLogica(jugador, self.pergamino_logica)
-        self.salas_logica = SalaLogica(None)
+        self.salas_logica = SalaLogica(None, avisar_puerta=self._puerta_cambio)
         self.enemigo_logica = EnemigoLogica(None,semilla,self.azar)
+
+    @property
+    def campo_de_costos(self):
+        """Lo asigna quien arma la partida: lo usa el cazador para decidir (FR-111)."""
+        return self._campo_de_costos
+
+    @campo_de_costos.setter
+    def campo_de_costos(self, campo) -> None:
+        self._campo_de_costos = campo
+        mapa = campo.mapa if campo is not None else None      # los cambios de puerta suben la versión de ese mapa
+        self.pergamino_logica.mapa_puertas = mapa
+        self.salas_logica.mapa_puertas = mapa
+
+    def _puerta_cambio(self, salida) -> None:
+        """Una puerta cambió de estado: el campo de costos de los cazadores decide si lo que guardó sigue valiendo."""
+        if self.campo_de_costos is not None:
+            self.campo_de_costos.puerta_cambio(salida.sala_destino)
 
     @staticmethod
     def es_uso_de_pergamino(evento: EventoDTO) -> bool:
@@ -145,6 +164,7 @@ class GestorEventos:
                 )
                 if res.exito == True:
                     self.cargar_sala(jugador.id_sala_actual)
+                    self._dejar_rastro_en_destino(self._ahora(evento))
                 return res 
             
             case "RECOGER_OBJETO":
@@ -166,7 +186,13 @@ class GestorEventos:
                 if sala is None:
                     raise ValueError("La sala actual del jugador no está cargada")
 
-                return self.jugador_logica.soltarObjeto(sala)
+                # Datos extra: [] (suelta el del cursor) o [objeto] (suelta ese)
+                if len(evento.datos_extra) > 1:
+                    raise ValueError("La acción SOLTAR_OBJETO acepta cero o un dato extra")
+                objeto_a_soltar = evento.datos_extra[0] if evento.datos_extra else None
+                if objeto_a_soltar is not None and not isinstance(objeto_a_soltar, Objeto):
+                    raise TypeError("El objeto a soltar debe ser una instancia de Objeto")
+                return self.jugador_logica.soltarObjeto(sala, objeto_a_soltar)
             case "ATACAR":
                 # Datos extra: [objetivo]
                 self._validar_cantidad_datos(evento, 1)
@@ -250,7 +276,7 @@ class GestorEventos:
                 vida_enemigo_anterior = evento.actor.vida_actual
                 sala_anterior = evento.actor.id_sala_actual
                 self.enemigo_logica.setEnemigo(evento.actor)
-                res =  self.enemigo_logica.decidirAccion(jugador,self.salas,evento.tiempo_ejecucion)
+                res =  self.enemigo_logica.decidirAccion(jugador,self.salas,evento.tiempo_ejecucion,self.campo_de_costos)
                 if evento.actor.id_sala_actual != sala_enemigo:
                     self.cargar_sala(evento.actor.id_sala_actual).enemigos.append(evento.actor)
                 cambios = []
@@ -438,6 +464,24 @@ class GestorEventos:
 
             case _:
                 raise ValueError(f"Tipo de acción no soportado: {evento.tipo_accion}")
+
+    def _dejar_rastro_en_destino(self, tiempo: int) -> None:
+        """§2.9: al completar un movimiento, la sala destino recibe el tiempo actual como rastro. Se hace aquí y no
+        al inicio de la siguiente acción, para que un rastreador que actúe antes ya vea el rastro fresco.
+        El cambio queda en el historial de la acción para que el pergamino lo deshaga."""
+        destino = self.salas[self.jugador_logica.jugador.id_sala_actual]
+        if destino is None:
+            return
+        anterior = destino.ultimo_paso
+        self.salas_logica.sala = destino
+        self.salas_logica.actualizarTiempo(tiempo)
+        if destino.ultimo_paso != anterior:
+            self.jugador_logica.retroceso.registrar_cambio([CambioDTO(
+                tipo_accion="ULTIMO_PASO",
+                objeto_afectado=destino,
+                valor_anterior=anterior,
+                valor_nuevo=destino.ultimo_paso,
+            )])
 
     def _resolver_muertes(self, vidas_anteriores: list, cambios: list) -> str:
         """Cualquier evento que pueda herir enemigos pasa por aquí: los que tenían vida y ahora no, mueren (botín y contador).
