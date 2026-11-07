@@ -18,6 +18,14 @@ Además, los demás integrantes necesitan probar el juego sin red y sin gastar s
 
 **Fuera de alcance**: la verificación de resolubilidad en sí (003), el formato de partida v6 (010), niebla de guerra e «ir a» (002), línea de tiempo (004). Cambiar la regla de precarga: si la medición de esta capacidad indica que conviene, será una especificación aparte.
 
+## Clarificaciones
+
+### Sesión 2026-11-06
+
+- Q: Si no se pueden obtener las llaves de una cripta, ¿qué hace el programa después del mensaje? → A: La partida continúa con aviso; `--verificar` y todo uso explícito de la verificación terminan con error claro.
+- Q: ¿Cómo se comprueba que el enemigo que suelta una llave inicia en la sala indicada, si el esqueleto no trae enemigos? → A: Solo si el contenido de esa sala ya está guardado; si no hay contradicción visible, se acepta.
+- Q: Si la consulta de llaves trae el mismo id de llave en dos salas distintas, ¿la respuesta es válida? → A: Válida; cada aparición es una ubicación distinta. Solo es inválida una entrada idéntica repetida (misma llave, sala y enemigo).
+
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
 ### Historia 1 — Conocer la ubicación de las llaves con una sola solicitud (Prioridad: P1)
@@ -34,6 +42,7 @@ Al jugar una cripta, el juego obtiene del servicio, una sola vez, la lista de ll
 2. **Dado** una cripta donde la llave `L` la suelta el enemigo `E`, que inicia en la sala 7, **cuando** el juego obtiene las llaves, **entonces** `L` aparece asociada a `E` y a la sala 7. *(FR-302)*
 3. **Dado** una cripta donde la llave `M` está en el suelo de la sala 3, **cuando** el juego obtiene las llaves, **entonces** `M` aparece en la sala 3 sin enemigo asociado. *(FR-302)*
 4. **Dado** una partida en curso que ya obtuvo las llaves, **cuando** se vuelve a necesitar la ubicación de las llaves en esa misma partida, **entonces** no se hace ninguna solicitud nueva. *(FR-301)*
+5. **Dado** una cripta donde la llave `B` está en el suelo de la sala 3 y otra copia de `B` en la sala 9, **cuando** el juego obtiene las llaves, **entonces** `B` aparece con ambas ubicaciones y la respuesta es válida. *(FR-302, FR-311)*
 
 ---
 
@@ -64,8 +73,8 @@ Si el servicio no responde, si la respuesta de la consulta de llaves es inválid
 **Escenarios de aceptación**:
 
 1. **Dado** que el servicio no responde a la consulta de llaves, **cuando** el juego la intenta, **entonces** muestra un mensaje claro que indica que no pudo obtener las llaves de esa cripta, y no guarda nada. *(FR-309, FR-310)*
-2. **Dado** una respuesta de llaves inválida (por ejemplo, una llave sin sala, una sala que no existe en el esqueleto o un enemigo que no inicia en la sala indicada), **cuando** el juego la recibe, **entonces** la rechaza completa con un mensaje claro y no la guarda. *(FR-309, FR-310, FR-311)*
-3. **Dado** el modo `--offline` y una cripta guardada sin llaves, **cuando** se inicia la partida, **entonces** el juego muestra un mensaje claro de que faltan las llaves de esa cripta, no hace solicitudes y [NEEDS CLARIFICATION: ¿la partida continúa sin verificación de resolubilidad, o el programa termina? — misma decisión que FR-312]. *(FR-312, FR-313)*
+2. **Dado** una respuesta de llaves inválida (por ejemplo, una llave sin sala, una sala que no existe en el esqueleto, o un enemigo ausente del contenido ya guardado de la sala indicada), **cuando** el juego la recibe, **entonces** la rechaza completa con un mensaje claro y no la guarda. *(FR-309, FR-310, FR-311)*
+3. **Dado** el modo `--offline` y una cripta guardada sin llaves, **cuando** se inicia la partida, **entonces** el juego muestra un mensaje claro de que faltan las llaves de esa cripta, no hace solicitudes y la partida continúa con aviso; si se pidió `--verificar`, termina con un error claro. *(FR-312, FR-313)*
 4. **Dado** el modo `--offline` y una cripta guardada con llaves, **cuando** se inicia la partida, **entonces** las llaves se leen de disco y el contador de solicitudes queda en 0. *(FR-312)*
 
 ---
@@ -123,10 +132,12 @@ Se mide cuántas solicitudes extra provoca un cazador que cruza salas cuyo conte
 
 - La cripta no tiene ninguna llave: la respuesta vacía es válida, se guarda y no se vuelve a consultar con la misma versión.
 - El presupuesto de solicitudes ya está agotado cuando hay que consultar las llaves: se trata como fallo del servicio (FR-309), sin exceder el presupuesto.
-- Una llave aparece dos veces en la respuesta: la respuesta es inválida (FR-311).
+- El mismo id de llave aparece en salas distintas o con enemigos distintos: válido; son ubicaciones distintas de la misma llave y todas se conservan (FR-302).
+- Una entrada aparece dos veces idéntica (misma llave, sala y enemigo): la respuesta es inválida (FR-311).
 - Un enemigo suelta más de una llave: válido; cada llave aparece por separado con el mismo enemigo y la misma sala.
 - La llave de salida de la cripta figura en la lista como cualquier otra llave.
 - La versión de la cripta cambia durante una partida: no se vuelve a consultar en esa partida; la invalidación ocurre al iniciar la siguiente.
+- Llave soltada por un enemigo en una sala cuyo contenido aún no se descargó: se acepta; la comprobación del enemigo se omite sin solicitudes (FR-311).
 - Fallo a medio guardar: lo guardado a medias no debe tomarse como válido en la partida siguiente.
 
 ## Requisitos *(obligatorio)*
@@ -136,7 +147,7 @@ Se mide cuántas solicitudes extra provoca un cazador que cruza salas cuyo conte
 **Consulta de llaves**
 
 - **FR-301**: El juego DEBE obtener la ubicación de las llaves de una cripta mediante la consulta de llaves del servicio, como máximo una vez por cripta mientras la versión no cambie, y no repetirla dentro de una misma partida.
-- **FR-302**: Cada llave obtenida DEBE tener su id y una sala. Si la llave la suelta un enemigo, DEBE indicar además la instancia del enemigo, y la sala DEBE ser la sala donde ese enemigo inicia. Si no hay enemigo, la sala es donde la llave está.
+- **FR-302**: Una misma llave (mismo id) PUEDE tener varias ubicaciones; el juego DEBE conservarlas todas. Cada ubicación DEBE tener su id y una sala. Si la llave la suelta un enemigo, DEBE indicar además la instancia del enemigo, y la sala DEBE ser la sala donde ese enemigo inicia. Si no hay enemigo, la sala es donde la llave está.
 - **FR-303**: La consulta de llaves DEBE funcionar igual con el cliente real, con `--offline` (leyendo lo guardado) y con la API falsa v2, y las tres DEBEN entregar la misma lista para los mismos datos.
 - **FR-304**: La consulta de llaves DEBE contar como una solicitud dentro del presupuesto de solicitudes de la cripta y DEBE aparecer en el reporte final de solicitudes.
 
@@ -151,9 +162,9 @@ Se mide cuántas solicitudes extra provoca un cazador que cruza salas cuyo conte
 
 - **FR-309**: Si el servicio no responde a la consulta de llaves, o no queda presupuesto para hacerla, el juego DEBE mostrar un mensaje claro que indique que no se pudieron obtener las llaves y de qué cripta.
 - **FR-310**: Una respuesta fallida o inválida NO DEBE guardarse ni usarse parcialmente.
-- **FR-311**: Una respuesta de llaves DEBE considerarse inválida si alguna llave no tiene id o sala, si una llave se repite, si la sala no existe en el esqueleto, o si el enemigo indicado no inicia en la sala indicada.
+- **FR-311**: Una respuesta de llaves DEBE considerarse inválida si alguna llave no tiene id o sala, si una entrada se repite idéntica (misma llave, misma sala y mismo enemigo o ausencia de enemigo), o si la sala no existe en el esqueleto. Además, si el contenido de la sala indicada para una llave soltada por un enemigo ya está guardado y ese enemigo no figura en él, la respuesta DEBE considerarse inválida; si el contenido no está guardado, la asociación se acepta sin hacer solicitudes.
 - **FR-312**: En `--offline`, las llaves DEBEN leerse solo de lo guardado; si faltan, el juego DEBE mostrar un mensaje claro y no hacer solicitudes.
-- **FR-313**: Ante cualquier fallo de FR-309 a FR-312, [NEEDS CLARIFICATION: ¿se puede jugar sin verificación de resolubilidad (la partida continúa con aviso) o el programa termina sin iniciar la partida?].
+- **FR-313**: Ante cualquier fallo de FR-309 a FR-312, la partida DEBE poder jugarse: el juego DEBE avisar que la verificación de resolubilidad no está disponible para esa cripta. Si se pidió `--verificar` o cualquier uso explícito de la verificación, el programa DEBE terminar con un error claro que nombre la cripta, sin dar un resultado de verificación.
 
 **Lectura solo local**
 
@@ -200,6 +211,6 @@ Se mide cuántas solicitudes extra provoca un cazador que cruza salas cuyo conte
 - La versión de la cripta que valida la lista de llaves es la misma que ya valida el resto de los datos guardados.
 - La consulta de llaves se hace al iniciar la partida, junto con la descarga del esqueleto, para que la información esté disponible antes de cualquier verificación.
 - Si no queda presupuesto para la consulta de llaves, se trata igual que un servicio que no responde.
-- La validación de la respuesta (FR-311) usa el esqueleto y la posición inicial de los enemigos ya descargados; no hace solicitudes adicionales.
+- La validación de la respuesta (FR-311) usa el esqueleto y, si ya está guardado, el contenido de las salas indicadas; nunca hace solicitudes adicionales.
 - La medición de la precarga usa las criptas sintéticas deterministas ya existentes en el proyecto, ampliadas con cazadores si hace falta.
 - La API falsa v2 sustituye a la de la Parte I en las pruebas nuevas; las pruebas de la Parte I pueden seguir usando la suya.
