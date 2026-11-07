@@ -2,7 +2,12 @@
 from adaptadores.AlmacenDisco import AlmacenDisco
 from adaptadores.cache import CacheLRU
 from adaptadores.cliente_persistente import ClientePersistente
+from adaptadores.llaves import LlavesInvalidas
 from adaptadores.servicioCripta import ServicioCripta
+ 
+# Llaves de la cripta de 3 salas de HttpFalso (capacidad 009): una en el suelo de la sala 1 y la llave de salida,
+# que la suelta e-301 en la sala 3. Es la lista ya extraída, como la entrega el HTTP real después de leer_llaves.
+LLAVES_FALSAS = [{"id": "itm_llave_bronce", "sala": 1}, {"id": "itm_llave_negra", "sala": 3, "enemigo": "e-301"}]
  
  
 class HttpFalso:
@@ -94,6 +99,11 @@ class HttpFalso:
                 devueltas.append(ficha)
         return devueltas
  
+    def obtener_llaves(self, cripta_id):
+        """GET /criptas/<id>/llaves (capacidad 009). Cuenta como una solicitud."""
+        self.llamadas.append(("llaves", cripta_id))
+        return [dict(llave) for llave in LLAVES_FALSAS]
+ 
  
 class HttpConfigurable(HttpFalso):
     """HttpFalso con la cripta definida por la prueba: esqueleto, enemigos por sala y fichas extra.
@@ -101,11 +111,18 @@ class HttpConfigurable(HttpFalso):
     `salas`: lista de salas del esqueleto, como las entrega la API (cada salida admite "costo").
     `enemigos`: lista de tuplas (sala, instancia, tipo, vida o None).
     `fichas`: fichas de catálogo adicionales (p. ej. un cazador con "rango").
+    `llaves`: lista de tuplas (id, sala, enemigo o None); con None se usan las de HttpFalso (capacidad 009).
+    `fallo_llaves`: None, "sin_respuesta" (ErrorSinConexion) o "invalida" (LlavesInvalidas). La llamada se
+    registra igual en los dos fallos.
     """
 
     def __init__(self, salas, enemigos=None, fichas=None, sala_inicial=1, sala_salida=None, vida_jugador=5000,
-                 **versiones):
+                 llaves=None, fallo_llaves=None, **versiones):
         super().__init__(**versiones)
+        if fallo_llaves not in (None, "sin_respuesta", "invalida"):
+            raise ValueError(f"fallo_llaves desconocido: {fallo_llaves!r}")
+        self.llaves = llaves
+        self.fallo_llaves = fallo_llaves
         self.salas = salas
         self.enemigos = [] if enemigos is None else enemigos
         self.fichas = [] if fichas is None else fichas
@@ -146,6 +163,24 @@ class HttpConfigurable(HttpFalso):
             if ficha["id"] in ids:
                 devueltas.append(ficha)
         return devueltas
+
+    def obtener_llaves(self, cripta_id):
+        self.llamadas.append(("llaves", cripta_id))
+        if self.fallo_llaves == "sin_respuesta":
+            # Import diferido, como en fabrica: cliente_http importa requests y la API falsa no debe exigirlo.
+            from adaptadores.cliente_http import ErrorSinConexion
+            raise ErrorSinConexion(f"No se pudo conectar para pedir las llaves de la cripta {cripta_id}")
+        if self.fallo_llaves == "invalida":
+            raise LlavesInvalidas("respuesta sin llaves")
+        if self.llaves is None:
+            return [dict(llave) for llave in LLAVES_FALSAS]
+        lista = []
+        for id_llave, sala, enemigo in self.llaves:
+            entrada = {"id": id_llave, "sala": sala}
+            if enemigo is not None:
+                entrada["enemigo"] = enemigo
+            lista.append(entrada)
+        return lista
 
 
 def nueva_ejecucion(carpeta, **versiones):

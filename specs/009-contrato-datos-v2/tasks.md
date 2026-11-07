@@ -65,13 +65,13 @@
     4. Si hay `enemigo` y `contenido_guardado(sala)` no es `None`, el enemigo debe estar entre las `instancia` de `contenido["enemigos"]`.
 
     Debe hacer pasar T005. (FR-302, FR-310, FR-311)
-- [ ] T007 [P] En `adaptadores/AlmacenDisco.py` agregar `guardar_llaves(cripta_id, llaves: list[dict])` (clave `"llaves"` del archivo de la cripta) y `leer_llaves(cripta_id) -> list[dict] | None`. `None` significa clave ausente y `[]` significa cripta sin llaves. Agregar al laboratorio `tests_labs/prueba_almacen_disco.py` tres casos:
+- [X] T007 [P] En `adaptadores/AlmacenDisco.py` agregar `guardar_llaves(cripta_id, llaves: list[dict])` (clave `"llaves"` del archivo de la cripta) y `leer_llaves(cripta_id) -> list[dict] | None`. `None` significa clave ausente y `[]` significa cripta sin llaves. Agregar al laboratorio `tests_labs/prueba_almacen_disco.py` tres casos:
   - Se guarda y se lee la lista de llaves.
   - Se guarda `[]` y se lee `[]`, distinto de `None`.
   - Tras `validar_cripta` con otra versión, `leer_llaves` devuelve `None`.
 
   (FR-305, FR-307)
-- [ ] T008 [P] Ampliar `tests_labs/api_falsa.py` (sin cambiar lo que ya existe):
+- [X] T008 [P] Ampliar `tests_labs/api_falsa.py` (sin cambiar lo que ya existe):
   - `HttpFalso.obtener_llaves(cripta_id)` registra `("llaves", cripta_id)` en `llamadas` y devuelve `[{"id": "itm_llave_bronce", "sala": 1}, {"id": "itm_llave_negra", "sala": 3, "enemigo": "e-301"}]`, la **lista** ya extraída, como hace el HTTP real tras `leer_llaves`.
   - `HttpConfigurable.__init__` acepta `llaves=None` (lista de `(id, sala, enemigo o None)`) y `fallo_llaves=None`. Con `"sin_respuesta"` lanza `ErrorSinConexion`, importada de `adaptadores/cliente_http.py`. Con `"invalida"` lanza `LlavesInvalidas("respuesta sin llaves")`, que es lo que daría `leer_llaves` sobre `{"sin_llaves": []}`.
   - La llamada se registra en ambos casos de fallo.

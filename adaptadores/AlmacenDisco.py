@@ -83,6 +83,15 @@ class AlmacenDisco:
     def leer_salas(self, cripta_id: str) -> list[dict] | None:
         return self._archivo_cripta(cripta_id).leer("salas")
  
+    def guardar_llaves(self, cripta_id: str, llaves: list[dict]) -> None:
+        """Guarda la lista cruda de llaves, ya validada (capacidad 009). Vale mientras la versión de la cripta
+        coincida: validar_cripta con otra versión vacía el archivo completo, llaves incluidas."""
+        self._archivo_cripta(cripta_id).escribir("llaves", llaves)
+ 
+    def leer_llaves(self, cripta_id: str) -> list[dict] | None:
+        """None si la clave no está (nunca se guardaron o se invalidaron); [] si la cripta no tiene llaves."""
+        return self._archivo_cripta(cripta_id).leer("llaves")
+ 
     def guardar_contenido(self, cripta_id: str, numeros: list[int], contenidos: list[dict]) -> None:
         """Guarda el contenido de varias salas. contenidos[i] es el de numeros[i]."""
         if len(numeros) != len(contenidos):
