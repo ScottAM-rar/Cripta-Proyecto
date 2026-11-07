@@ -57,7 +57,7 @@ El enfoque, justificado en [research.md](research.md):
 | VI. Presupuesto y versiones | La consulta cuenta en `solicitudes_realizadas`. Con el presupuesto agotado no se hace. La invalidación usa `_validar` y nunca se borra a mano | Pasa |
 | VII. Rendimiento medido | Bloque `llaves` con las alternativas descartadas en A, B y C. Sección D con criterio de salida | Pasa |
 | VIII. Especificación primero | No se agregan reglas. El reparto de capas está en este plan | Pasa |
-| IX. Trazabilidad | Matriz FR → escenario → prueba en [quickstart.md](quickstart.md). **FR-320 bloqueado** hasta transcribir el Apéndice B | **Pasa con bloqueo R2** |
+| IX. Trazabilidad | Matriz FR → escenario → prueba en [quickstart.md](quickstart.md). Los 23 casos del Apéndice B quedaron transcritos (R2 mitigado) | Pasa |
 | X. Cambios de especificación | Si `/llaves` real difiere (R1) y eso cambia una regla, primero se corrige la especificación en una confirmación aparte | Pasa |
 | XI. Uso de LLM | Registrar en `PROMPTS_LLM.md` este `/speckit-plan`, el `/speckit-specify` y el `/speckit-clarify` | Acción del grupo |
 
@@ -82,7 +82,7 @@ specs/009-contrato-datos-v2/
 ├── contracts/
 │   ├── consulta-llaves.md     # forma de /llaves y reglas de validación
 │   ├── interfaz-clientes.md   # clientes, servicio, fuente solo local, fábrica
-│   ├── api-falsa-v2.md        # API falsa v2 y casos del Apéndice B (pendientes)
+│   ├── api-falsa-v2.md        # API falsa v2 y casos del Apéndice B (transcritos)
 │   └── bench-llaves.md        # secciones y criterios de --bench llaves
 ├── checklists/requirements.md
 ├── mediciones.md           # lo llena la implementación

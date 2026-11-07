@@ -55,7 +55,7 @@ No debe encontrar nada. El `deque` existente en `servicioCripta.py` es de la Par
 | FR-317 | H4-3 | `test_fuente_solo_local` |
 | FR-318 | H5-1 | `test_api_falsa_v2` |
 | FR-319 | H5-2 | `test_api_falsa_v2` (`cripta_v2`) |
-| FR-320 | H5-3 | `test_api_falsa_v2` (un caso por fila de `CASOS_APENDICE_B`; **bloqueado** hasta transcribir el Apéndice B) |
+| FR-320 | H5-3 | `test_api_falsa_v2` (un caso por código B-T, B-N, B-R y B-L de `CASOS_APENDICE_B`; 23 casos) |
 | FR-321 | H5-4 | `test_api_falsa_v2` |
 | FR-322, FR-323 | H6-1 | `--bench llaves`, sección A |
 | FR-324 | H6-2 | `mediciones.md`; revisión de que `precargar_vecinas` no cambió |

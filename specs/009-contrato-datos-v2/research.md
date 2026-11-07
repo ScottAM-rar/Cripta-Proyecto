@@ -126,7 +126,7 @@ Cada sección sigue el formato **Decisión / Motivo / Alternativas descartadas**
 
 **Determinismo**: sin `random` global ni hora. Las criptas sintéticas usan `random.Random(semilla)`, como `cripta_sintetica.py`.
 
-**Bloqueo detectado**: **el texto del Apéndice B no está en el repositorio.** Solo hay referencias sueltas, como «una acción rechazada no consume tiempo», citada en `GestorEventos.py` y `EstadoJuegoLogica.py`. El grupo debe transcribir los casos en [contracts/api-falsa-v2.md](contracts/api-falsa-v2.md) antes de `/speckit-tasks`. Mientras tanto, el contrato deja la tabla con los casos que se pueden deducir del código y marca los demás como pendientes.
+**Apéndice B**: el texto no estaba en el repositorio y se transcribió el 2026-11-06 en [contracts/api-falsa-v2.md](contracts/api-falsa-v2.md): 23 casos con códigos B-T1 a B-T7, B-N1 a B-N6, B-R1 a B-R4 y B-L1 a B-L6. `CASOS_APENDICE_B` tiene una entrada por código.
 
 ## 8. Medición: cazador que cruza salas sin cargar, precarga por saltos frente a por costo (FR-322 a FR-324)
 
@@ -151,6 +151,6 @@ Cada sección sigue el formato **Decisión / Motivo / Alternativas descartadas**
 | # | Riesgo | Mitigación |
 |---|---|---|
 | R1 | La forma real de `/llaves` es distinta de la asumida | **Mitigado**: la forma se confirmó con el Swagger (`LlavesResponse` / `KeyLocation`) el 2026-11-06. Se mantiene un único lector (§1) y la comprobación con una llamada real queda opcional |
-| R2 | Casos del Apéndice B no transcritos | Bloqueo para `tasks` (§7) |
+| R2 | Casos del Apéndice B no transcritos | **Mitigado**: transcritos el 2026-11-06 (§7) |
 | R3 | `adaptadores/servicioCripta.py` ya importa `collections.deque` (Parte I, `salas_vecinas` y `_armar_salidas`), lo que viola el principio I | Esta capacidad **no** agrega usos nuevos. Ya se registró en la capacidad 005 (observación 2); retirarlo corresponde a la capacidad que adopte el recorrido por niveles en la precarga |
 | R4 | `--replay` llama a `iniciarJuego`: con red pediría las llaves | Con el persistente, las llaves ya están en disco y la reproducción no gasta nada. En `--offline` sin llaves se emite el aviso y la reproducción sigue (FR-313), así que el `partida.log` no cambia |

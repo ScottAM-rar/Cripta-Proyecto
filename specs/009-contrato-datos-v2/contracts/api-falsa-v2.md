@@ -17,9 +17,47 @@ Es infraestructura de pruebas, no forma parte del juego. Es determinista y no us
 
 ## Casos del Apéndice B
 
-> **BLOQUEO**: el texto del Apéndice B no está en el repositorio. El grupo debe completar esta tabla antes de `/speckit-tasks`. Cada fila se vuelve un escenario de aceptación con una prueba que cita su código (principio IX).
+Transcritos del enunciado de la Parte II (Apéndice B, «Casos que deben tener un resultado definido») el 2026-11-06. Cada fila se vuelve un escenario de aceptación con una prueba que cita su código y el requisito (principio IX). «P1 §x» remite al enunciado de la primera parte. El dueño es quien escribe el escenario en su especificación; esta API falsa solo ofrece la situación reproducible (FR-320).
 
-| Código | Caso | Estado |
-|---|---|---|
-| B-? | Una acción rechazada no cambia nada ni consume tiempo (citado en `GestorEventos.py` y `EstadoJuegoLogica.py`) | Deducido del código; confirmar el número |
-| B-? | … | Pendiente de transcribir |
+### Terreno y cazador (dueño: Cesar, capacidad 001)
+
+| Código | Caso |
+|---|---|
+| B-T1 | Un cazador no tiene ruta abierta hacia el jugador: espera con costo 100. |
+| B-T2 | La ruta más barata del cazador cuesta más que su `rango`: espera con costo 100. |
+| B-T3 | Existe una ruta de menos salas pero mayor costo y otra de más salas y menor costo: el cazador sigue la de menor costo. |
+| B-T4 | Dos vecinas inician rutas de costo mínimo: el cazador va a la de menor id. |
+| B-T5 | Una puerta de la ruta del cazador se cierra entre dos de sus turnos: en el turno siguiente decide como si calculara desde cero. |
+| B-T6 | Un actor de velocidad alta atraviesa una salida de costo 1: el intervalo es al menos 1. |
+| B-T7 | Cambia la velocidad de un actor que atraviesa una salida costosa: el tiempo restante se escala según P1 §2.3. |
+
+### Niebla de guerra e «ir a» (dueña: Fernanda, capacidad 002)
+
+| Código | Caso |
+|---|---|
+| B-N1 | `ir a` hacia una sala no explorada: se rechaza y no consume tiempo. |
+| B-N2 | El mapa recuerda abierta una puerta que en realidad está cerrada: al observarla, el mapa se actualiza y la ruta se recalcula; si no queda ruta, el viaje se detiene sin consumir tiempo adicional. |
+| B-N3 | `ir a` entra a una sala con enemigos dormidos: los enemigos se activan según P1 §2.4 y el viaje se detiene. |
+| B-N4 | Con la antorcha encendida, entrar a una sala explora sus vecinas sin activar sus enemigos ni sus trampas. |
+| B-N5 | Un pergamino revierte una entrada con antorcha encendida: las salas exploradas por la antorcha vuelven a su estado anterior. |
+| B-N6 | Un pergamino durante un viaje: revierte solo el último paso y el viaje no continúa. |
+
+### Resolubilidad (dueño: Scott, capacidad 003)
+
+| Código | Caso |
+|---|---|
+| B-R1 | `llave_salida` está detrás de la única puerta que ella misma abre: no resoluble; el reporte señala el ciclo. |
+| B-R2 | Una llave está en el campo `suelta` de un enemigo errante: la verificación la ubica en la sala inicial del enemigo. |
+| B-R3 | Existen varios órdenes válidos de obtención de llaves: dos ejecuciones producen el mismo orden. |
+| B-R4 | Cripta no resoluble sin `--forzar`: la partida no inicia y se muestra el reporte. |
+
+### Línea de tiempo (dueño: JP, capacidad 004)
+
+| Código | Caso |
+|---|---|
+| B-L1 | `historia <t>` con `t` mayor que el reloj actual: se rechaza. |
+| B-L2 | `historia` después de usar un pergamino: no muestra las acciones revertidas. |
+| B-L3 | Varios eventos ocurren en el mismo instante `t`: `historia <t>` muestra el estado después de todos ellos. |
+| B-L4 | `historia` no consume tiempo virtual, no se registra en `partida.log` y no modifica el historial de retroceso. |
+| B-L5 | `--replay partida.log --hasta t` con `t` posterior al final de la partida: muestra el estado final e indica que la partida terminó antes. |
+| B-L6 | Se carga un archivo de partida de la primera parte: se reporta la incompatibilidad de formato o se migra explícitamente; nunca se carga en silencio (caso compartido con Scott, capacidad 010). |
