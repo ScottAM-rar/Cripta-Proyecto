@@ -73,6 +73,22 @@ class ClienteOffline(ClienteInterfaz):
             resultado.append(contenido)
         return resultado
  
+    def contenido_en_disco(self, cripta_id: str, sala: int) -> dict | None:
+        """Contenido guardado de una sala, o None. Lo usa validar_llaves; nunca hace solicitudes."""
+        return self.almacen.leer_contenido(cripta_id, sala)
+ 
+    # ------------------------------------------------------------------
+    # Llaves (capacidad 009)
+    # ------------------------------------------------------------------
+    def obtener_llaves(self, cripta_id: str, solo_guardadas: bool = False,
+                       limite_solicitudes: int | None = None) -> list[dict]:
+        """Lo guardado, ya validado. Sin red: solo_guardadas y limite_solicitudes no cambian nada.
+        Una cripta sin llaves guardadas sigue siendo jugable (FR-313): quien llama muestra el aviso."""
+        llaves = self.almacen.leer_llaves(cripta_id)
+        if llaves is None:
+            raise ErrorOffline(f"Faltan las llaves de la cripta {cripta_id}. Juega una vez con conexión.")
+        return llaves
+ 
     # ------------------------------------------------------------------
     # Catálogo
     # ------------------------------------------------------------------

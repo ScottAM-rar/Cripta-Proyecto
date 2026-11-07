@@ -77,18 +77,18 @@
   - La llamada se registra en ambos casos de fallo.
 
   Comprobar que los laboratorios existentes de la línea base (T002) siguen igual. (FR-318, FR-321)
-- [ ] T009 En `adaptadores/Interfaz.py` agregar a `ClienteInterfaz` el método abstracto `obtener_llaves(self, cripta_id: str, solo_guardadas: bool = False, limite_solicitudes: int | None = None) -> list[dict]`, con la docstring de `contracts/interfaz-clientes.md`. En el mismo cambio, implementarlo en `adaptadores/cliente_http.py` (`ClienteCripta`):
+- [X] T009 En `adaptadores/Interfaz.py` agregar a `ClienteInterfaz` el método abstracto `obtener_llaves(self, cripta_id: str, solo_guardadas: bool = False, limite_solicitudes: int | None = None) -> list[dict]`, con la docstring de `contracts/interfaz-clientes.md`. En el mismo cambio, implementarlo en `adaptadores/cliente_http.py` (`ClienteCripta`):
   - Con `solo_guardadas=True` lanza `LlavesNoDisponibles` (de `Logica/FuenteCripta.py`) con el texto «no queda presupuesto y no hay llaves guardadas de la cripta X», sin hacer la solicitud.
   - Si no, devuelve `leer_llaves(self._solicitar(f"/criptas/{cripta_id}/llaves", max_reintentos_429=…))`. El conteo ya lo hace `_solicitar`.
   - **429 con el presupuesto al límite** (decisión tras el analyze): agregar a `_solicitar` el parámetro `max_reintentos_429: int = MAX_REINTENTOS_429`, sin cambiar su comportamiento por defecto. `obtener_llaves` pasa `limite_solicitudes - 1` si hay límite. Con `limite_solicitudes == 1`, el primer 429 **no se reintenta** (tampoco se espera `reintentar_en`): lanza `RuntimeError("429 sin presupuesto para reintentar …")`, que el servicio convierte en el aviso de FR-313. Lo prueba T048.
 
   (FR-301, FR-304, FR-309, SC-005)
-- [ ] T010 En `adaptadores/cliente_offline.py` (`ClienteOffline`) implementar:
+- [X] T010 En `adaptadores/cliente_offline.py` (`ClienteOffline`) implementar:
   - `obtener_llaves(cripta_id, solo_guardadas=False)`: devuelve `almacen.leer_llaves(cripta_id)`; si es `None`, lanza `ErrorOffline(f"Faltan las llaves de la cripta {cripta_id}. Juega una vez con conexión.")`.
   - `contenido_en_disco(cripta_id, sala) -> dict | None`, que devuelve `almacen.leer_contenido`.
 
   No cambiar `cripta_disponible`: una cripta sin llaves sigue siendo jugable (FR-313). (FR-303, FR-312)
-- [ ] T011 En `adaptadores/cliente_persistente.py` (`ClientePersistente`) implementar `obtener_llaves(cripta_id, solo_guardadas=False)`:
+- [X] T011 En `adaptadores/cliente_persistente.py` (`ClientePersistente`) implementar `obtener_llaves(cripta_id, solo_guardadas=False)`:
   1. `self._asegurar_cripta(cripta_id)`.
   2. Si `almacen.leer_llaves` no es `None`, devolverlo sin red.
   3. Si `solo_guardadas`, lanzar `LlavesNoDisponibles` («sin presupuesto»).

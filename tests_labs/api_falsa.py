@@ -99,7 +99,7 @@ class HttpFalso:
                 devueltas.append(ficha)
         return devueltas
  
-    def obtener_llaves(self, cripta_id):
+    def obtener_llaves(self, cripta_id, limite_solicitudes=None):
         """GET /criptas/<id>/llaves (capacidad 009). Cuenta como una solicitud."""
         self.llamadas.append(("llaves", cripta_id))
         return [dict(llave) for llave in LLAVES_FALSAS]
@@ -164,7 +164,7 @@ class HttpConfigurable(HttpFalso):
                 devueltas.append(ficha)
         return devueltas
 
-    def obtener_llaves(self, cripta_id):
+    def obtener_llaves(self, cripta_id, limite_solicitudes=None):
         self.llamadas.append(("llaves", cripta_id))
         if self.fallo_llaves == "sin_respuesta":
             # Import diferido, como en fabrica: cliente_http importa requests y la API falsa no debe exigirlo.
