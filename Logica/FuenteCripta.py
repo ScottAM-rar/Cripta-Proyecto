@@ -6,8 +6,20 @@ from __future__ import annotations
 from typing import Protocol
 
 from DTO.ActorDTO import EnemigoDTO, JugadorDTO
+from DTO.LlavesDTO import UbicacionLlavesDTO
 from DTO.MapaDTO import MapaDTO
 from DTO.SalaDTO import SalaDTO
+
+
+class LlavesNoDisponibles(RuntimeError):
+    """No se pudo obtener la ubicación de las llaves: el servicio no respondió, la respuesta era inválida, no quedaba
+    presupuesto o faltan en disco en --offline (FR-309 a FR-312). El mensaje nombra la cripta. La partida sigue
+    (FR-313)."""
+
+
+class DatoLocalFaltante(RuntimeError):
+    """La lectura solo local no encontró un dato en disco o lo encontró con otra versión (FR-315, FR-317).
+    El mensaje nombra el dato y la cripta."""
 
 
 class FuenteCripta(Protocol):
@@ -38,3 +50,7 @@ class FuenteCripta(Protocol):
     def reporte(self, cripta_id: str) -> object: ...
 
     def fijar_fichas_en_uso(self, ids_catalogo: list[str]) -> None: ...
+
+    def esqueleto(self, cripta_id: str) -> MapaDTO: ...
+
+    def ubicacion_llaves(self, cripta_id: str) -> UbicacionLlavesDTO: ...

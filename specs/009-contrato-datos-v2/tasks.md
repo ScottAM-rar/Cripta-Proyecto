@@ -41,21 +41,21 @@
 
 **Propósito**: contrato de errores, DTO, lector y validador, guardado y la consulta en la interfaz común. Como `obtener_llaves` es abstracto, los tres clientes lo implementan aquí; si no, ninguno se podría instanciar.
 
-- [ ] T003 [P] En `Logica/FuenteCripta.py` agregar `class LlavesNoDisponibles(RuntimeError)` y `class DatoLocalFaltante(RuntimeError)`, y al `Protocol` `FuenteCripta` los métodos `esqueleto(self, cripta_id: str) -> MapaDTO` y `ubicacion_llaves(self, cripta_id: str) -> UbicacionLlavesDTO`. Sin importar adaptadores. (FR-309, FR-313, FR-315, IV)
-- [ ] T004 [P] Crear `DTO/LlavesDTO.py` con `UbicacionLlavesDTO(cripta_id: str, version: str | None, ids: list[str], salas: list[int], enemigos: list[str | None])`:
+- [X] T003 [P] En `Logica/FuenteCripta.py` agregar `class LlavesNoDisponibles(RuntimeError)` y `class DatoLocalFaltante(RuntimeError)`, y al `Protocol` `FuenteCripta` los métodos `esqueleto(self, cripta_id: str) -> MapaDTO` y `ubicacion_llaves(self, cripta_id: str) -> UbicacionLlavesDTO`. Sin importar adaptadores. (FR-309, FR-313, FR-315, IV)
+- [X] T004 [P] Crear `DTO/LlavesDTO.py` con `UbicacionLlavesDTO(cripta_id: str, version: str | None, ids: list[str], salas: list[int], enemigos: list[str | None])`:
   - Valida en el constructor la invariante «`len(ids) == len(salas) == len(enemigos)`» y lanza `ValueError` si no se cumple.
   - `cantidad()` es O(1).
   - `ubicaciones_de(id_llave) -> list[int]` devuelve, en O(k), las **posiciones** donde aparece la llave, en el orden de la respuesta.
   - Una lista vacía es válida («la cripta no tiene llaves»).
   - Sin `dict` ni `set`. (FR-302)
-- [ ] T005 [P] Crear `test_llaves_validacion.py` con:
+- [X] T005 [P] Crear `test_llaves_validacion.py` con:
   - Las 9 filas de la tabla «Casos de validación» de `contracts/consulta-llaves.md`, una prueba por fila, con un nombre que cite FR-311 o FR-302.
   - Pruebas de `leer_llaves`: respuesta sin `llaves`, con `llaves` que no es lista y con `llaves: []`.
   - El caso «enemigo presente y contenido no guardado»: comprobar con un `contenido_guardado` espía que solo se consultó la sala indicada y que no hubo solicitudes.
   - Comprobar que el orden de la respuesta se conserva.
 
   Deben fallar porque `adaptadores/llaves.py` aún no existe. (FR-302, FR-311)
-- [ ] T006 Crear `adaptadores/llaves.py`:
+- [X] T006 Crear `adaptadores/llaves.py`:
   - `class LlavesInvalidas(ValueError)` con un atributo `motivo`.
   - `leer_llaves(respuesta: dict) -> list[dict]`: devuelve `respuesta["llaves"]`; si falta o no es lista, lanza `LlavesInvalidas`.
   - `validar_llaves(crudas: list[dict], existe: list[bool], contenido_guardado) -> tuple[list[str], list[int], list[str | None]]`, en el orden de research.md §5:
