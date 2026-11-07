@@ -11,7 +11,7 @@ Es infraestructura de pruebas, no forma parte del juego. Es determinista y no us
 | Pieza | Comportamiento |
 |---|---|
 | `HttpFalso.obtener_llaves(cripta_id)` | Registra `("llaves", cripta_id)` y devuelve `[{"id": "itm_llave_bronce", "sala": 1}, {"id": "itm_llave_negra", "sala": 3, "enemigo": "e-301"}]` |
-| `HttpConfigurable(..., llaves=None, fallo_llaves=None)` | `llaves`: lista de `(id, sala, enemigo o None)`; con `None` se usan las de `HttpFalso`. `fallo_llaves`: `None`, `"sin_respuesta"` (lanza `ErrorSinConexion`) o `"invalida"` (devuelve `{"sin_llaves": []}`). Las respuestas inválidas más finas se arman pasando `llaves` malas |
+| `HttpConfigurable(..., llaves=None, fallo_llaves=None)` | `llaves`: lista de `(id, sala, enemigo o None)`; con `None` se usan las de `HttpFalso`. `fallo_llaves`: `None`, `"sin_respuesta"` (lanza `ErrorSinConexion`) o `"invalida"` (lanza `LlavesInvalidas("respuesta sin llaves")`, lo mismo que daría `leer_llaves` sobre una respuesta sin la clave `llaves`; la API falsa entrega la lista ya extraída, como el HTTP real después de `leer_llaves`). Las respuestas que FR-311 rechaza por su contenido se arman pasando `llaves` malas. En los dos fallos la llamada se registra igual |
 | `cripta_v2(semilla=0)` | Devuelve un `HttpConfigurable` con una rejilla de 5×5 (`costo_max=9`), un cazador `ent_cazador` de rango 600 en la sala más lejana, la llave de salida soltada por el cazador, una llave en el suelo y la misma llave en dos salas (FR-319) |
 | `CASOS_APENDICE_B` | Lista de `(código, descripción, constructor)`. Cada constructor devuelve una cripta configurada y, si hace falta, un guion (FR-320) |
 

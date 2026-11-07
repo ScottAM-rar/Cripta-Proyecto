@@ -2,7 +2,7 @@
 
 **Rama**: `009-contrato-datos-v2` | **Fecha**: 2026-11-06 | **Especificación**: [spec.md](spec.md)
 
-**Entrada**: `specs/009-contrato-datos-v2/spec.md` (FR-301 a FR-324, con las 3 clarificaciones de la sesión 2026-11-06)
+**Entrada**: `specs/009-contrato-datos-v2/spec.md` (FR-301 a FR-325, con las 4 clarificaciones de la sesión 2026-11-06; la cuarta y la corrección de FR-313 son de después del `/speckit-analyze`)
 
 ## Resumen
 
@@ -16,9 +16,10 @@ El enfoque, justificado en [research.md](research.md):
    - Offline: solo disco, con `ErrorOffline` si falta.
 2. **Guardado en el mismo archivo de la cripta** (clave `llaves` en `cripta_<id>.bin`). La validación de versión existente vacía el archivo completo, así que las llaves de otra versión o de la Parte I desaparecen sin borrar nada a mano. Se compara con un archivo aparte y con meterlas en `datos` (research.md §4).
 3. **`ServicioCripta.ubicacion_llaves()`** decide si queda presupuesto, valida contra el esqueleto (y contra el contenido solo si ya está guardado), convierte a `UbicacionLlavesDTO` (listas paralelas `ids`, `salas`, `enemigos`) y memoriza el resultado por sesión. **`esqueleto()`** es el nombre público del esqueleto normalizado.
-4. **Fallo sin cortar la partida**: todo fallo se traduce a `LlavesNoDisponibles`, un error del contrato del modelo. `iniciarJuego` lo captura, guarda el aviso y sigue (FR-313).
-5. **`FuenteSoloLocal`**: envuelve un `ServicioCripta` sobre `ClienteOffline`, compara la versión vigente y nunca escribe ni pide nada.
-6. **API falsa v2** en `tests_labs/api_falsa.py` y **bloque `llaves` de `--bench`**: precarga por saltos frente a precarga por costo, que solo existe dentro del bench.
+4. **Fallo sin cortar la partida**: todo fallo se traduce a `LlavesNoDisponibles`, un error del contrato del modelo. La lógica lo captura, guarda el aviso y sigue (FR-313). Con el presupuesto al límite, un 429 **no se reintenta**: se trata como fallo (SC-005).
+5. **Llaves bajo demanda**: `EstadoJuegoLogica.obtenerLlaves()` es el único punto por el que el modelo pide las llaves. En una partida nueva, `iniciarJuego` lo llama enseguida; al cargar una partida guardada no se llama, y la primera vez que alguien lo usa entrega lo guardado o hace la única consulta si queda presupuesto (FR-325). `llaves` y `avisoLlaves` se inicializan en `__init__` y se reinician al restaurar.
+6. **`FuenteSoloLocal`**: envuelve un `ServicioCripta` sobre `ClienteOffline`, compara la versión vigente y nunca escribe ni pide nada.
+7. **API falsa v2** en `tests_labs/api_falsa.py` y **bloque `llaves` de `--bench`**: precarga por saltos frente a precarga por costo, que solo existe dentro del bench.
 
 ## Contexto técnico
 
@@ -67,7 +68,8 @@ El enfoque, justificado en [research.md](research.md):
 2. **El HTTP no puede validar contra el contenido.** Por eso la validación es una función pura que recibe quién lee el contenido guardado. El persistente valida **antes** de guardar (FR-310).
 3. **`validar_cripta` vacía el archivo** si la versión no coincide. La lectura solo local no debe llamarlo, porque destruiría datos que la consulta histórica podría necesitar después.
 4. **`--replay` pasa por `iniciarJuego`**: con las llaves guardadas no gasta nada. Sin llaves, solo emite el aviso. El log no cambia.
-5. **El `--verificar` de FR-313 lo implementa la capacidad 003.** Aquí solo quedan `llaves is None` y `avisoLlaves` listos para usar.
+5. **`--verificar` no es de esta capacidad**: qué hace cuando faltan las llaves lo especifica e implementa la capacidad 003 (FR-330 en adelante). Aquí solo quedan `obtenerLlaves()`, `llaves` y `avisoLlaves`.
+6. **Partida cargada** (FR-325): la restauración no pasa por `iniciarJuego`; por eso `llaves` y `avisoLlaves` se inicializan en `__init__` y la restauración los reinicia a `None`, para no arrastrar las llaves de otra cripta.
 
 ## Estructura del proyecto
 
@@ -106,8 +108,9 @@ adaptadores/
 
 DTO/LlavesDTO.py             # NUEVO: UbicacionLlavesDTO
 Logica/FuenteCripta.py       # MODIFICADO: esqueleto, ubicacion_llaves, LlavesNoDisponibles, DatoLocalFaltante
-Logica/EstadoJuegoLogica.py  # MODIFICADO: llaves y avisoLlaves en iniciarJuego
-Controlador/ (vista)         # MODIFICADO mínimo: muestra avisoLlaves al iniciar
+Logica/EstadoJuegoLogica.py  # MODIFICADO: llaves y avisoLlaves en __init__, obtenerLlaves() bajo demanda, llamada en iniciarJuego
+Logica/EstadoGuardadoLogica.py # MODIFICADO mínimo: la restauración reinicia llaves y avisoLlaves (FR-325)
+Controlador/ (vista)         # MODIFICADO mínimo: muestra avisoLlaves cuando aparece
 
 bench/llaves.py              # NUEVO: bloque "llaves" (secciones A–D)
 bench/__init__.py            # registra el bloque
@@ -120,6 +123,7 @@ test_llaves_presupuesto.py   # NUEVO
 test_llaves_version.py       # NUEVO
 test_llaves_fallos.py        # NUEVO
 test_fuente_solo_local.py    # NUEVO
+test_llaves_partida_cargada.py # NUEVO (FR-325)
 test_api_falsa_v2.py         # NUEVO
 ```
 
@@ -147,6 +151,7 @@ No hay violaciones de la constitución que justificar.
 
 | Decisión que podría parecer compleja | Por qué se necesita | Alternativa más simple descartada |
 |---|---|---|
+| Parámetro `limite_solicitudes` en la interfaz | SC-005 con 429: con el presupuesto al límite, el HTTP no debe reintentar | Reintentar siempre: un 429 con 1 solicitud restante excedería el presupuesto |
 | Parámetro `solo_guardadas` en la interfaz | Hacer cumplir el presupuesto sin que el HTTP conozca reglas del juego, y sin gastar nada si las llaves ya están en disco | Que el servicio compruebe el presupuesto y no llame: no podría aprovechar lo guardado cuando no queda presupuesto |
 | Validar en el persistente **y** en el servicio | El persistente debe validar antes de guardar (FR-310); el servicio cubre los caminos sin persistente (HTTP directo en pruebas, offline) | Validar solo en el servicio: guardaría respuestas inválidas |
 | `FuenteSoloLocal` como envoltorio | FR-317 (versión vigente) y la garantía estructural de 0 solicitudes | Reusar `--offline`: acepta cualquier versión guardada |

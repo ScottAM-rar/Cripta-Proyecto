@@ -29,9 +29,9 @@ Cada sección sigue el formato **Decisión / Motivo / Alternativas descartadas**
 
 `enemigo` ausente o `null` significa que la llave está en el suelo. Toda la lectura del JSON queda en una sola función (`leer_llaves`, contrato en [contracts/consulta-llaves.md](contracts/consulta-llaves.md)): si los nombres reales son otros, se cambia solo esa función.
 
-**Motivo**: el repositorio no tiene ninguna respuesta real de `/llaves` (`api_completa.txt` es anterior a la consulta). La forma elegida sigue la convención de `/contenido` (`instancia` para enemigos, ids de catálogo para objetos).
+**Motivo**: el Swagger del servicio define esta forma (`LlavesResponse` / `KeyLocation`). Coincide con la convención de `/contenido` (`instancia` para enemigos, ids de catálogo para objetos). `api_completa.txt` es anterior a la consulta y no la incluye.
 
-**Pendiente** (como el pendiente 10 de `DOCUMENTACION_API.md`): confirmar la forma con una llamada real antes de cerrar la implementación del cliente HTTP. Es la tarea con el riesgo más alto de retrabajo y debe ir primero en `tasks.md`.
+**Pendiente**: ninguno. R1 está mitigado por el Swagger (§9). La comprobación con una llamada real es opcional (paso 0 de `quickstart.md`); si la respuesta real difiriera, se corrige solo `leer_llaves` y este contrato.
 
 **Alternativas descartadas**: un lector tolerante que acepta varios nombres de campo. Esconde errores del servicio y contradice FR-311 (una respuesta mal formada debe rechazarse).
 
@@ -47,7 +47,9 @@ Cada sección sigue el formato **Decisión / Motivo / Alternativas descartadas**
 | `ClienteOffline` | Lee `llaves` del disco; si falta, lanza `ErrorOffline` con «Faltan las llaves de la cripta X» |
 | `ServicioCripta.ubicacion_llaves(cripta_id) -> UbicacionLlavesDTO` | Decide `solo_guardadas` según el presupuesto (§3), valida (§5), convierte a listas paralelas y lo memoriza por cripta para la sesión (FR-301). Traduce `ErrorOffline`, `ErrorSinConexion`, `RuntimeError` HTTP y `LlavesInvalidas` a `LlavesNoDisponibles` con un mensaje que nombra la cripta |
 | `ServicioCripta.esqueleto(cripta_id) -> MapaDTO` | Nombre público del esqueleto normalizado. `obtener_mapa` pasa a delegar en él (se conserva por compatibilidad con la capacidad 001) |
-| `EstadoJuegoLogica.iniciarJuego` | Llama a `ubicacion_llaves` una vez. Si recibe `LlavesNoDisponibles`, guarda el aviso, deja `llaves = None` y la partida sigue (FR-313) |
+| `EstadoJuegoLogica.obtenerLlaves()` | Único punto por el que el modelo pide las llaves. Si `llaves` ya está, la devuelve. Si no, llama a `ubicacion_llaves`; con `LlavesNoDisponibles` guarda el aviso, deja `llaves = None` y la partida sigue (FR-313). No memoriza el fallo |
+| `EstadoJuegoLogica.iniciarJuego` | En una partida nueva llama a `obtenerLlaves()` enseguida |
+| Restauración de una partida guardada | No pide nada: reinicia `llaves` y `avisoLlaves` a `None`; las llaves llegan la primera vez que alguien llama a `obtenerLlaves()` (FR-325) |
 
 `LlavesNoDisponibles` y `DatoLocalFaltante` se definen en `Logica/FuenteCripta.py`, el contrato del modelo. Así el modelo captura un error suyo sin importar adaptadores (principio IV).
 
@@ -55,7 +57,8 @@ Cada sección sigue el formato **Decisión / Motivo / Alternativas descartadas**
 
 **Alternativas descartadas**:
 - *Validar solo en `ServicioCripta`*: el persistente ya habría guardado la respuesta antes de validarla, lo que viola FR-310 o exige un «deshacer guardado».
-- *Pedir las llaves de forma perezosa, en la primera verificación*: la capacidad 003 verifica al iniciar (`--verificar`, `--forzar`), así que no se ahorraría nada y el momento de la solicitud quedaría menos predecible.
+- *Pedir las llaves de forma perezosa también en la partida nueva*: la capacidad 003 verifica al iniciar, así que no se ahorraría nada y el momento de la solicitud quedaría menos predecible. En la partida **cargada** sí se piden bajo demanda (FR-325): al cargar no hay verificación, y pedirlas en ese momento gastaría una solicitud que quizá nadie use.
+- *Pedirlas al restaurar una partida guardada*: contradice FR-325 (al cargar no se consulta nada).
 
 ## 3. Presupuesto
 
@@ -63,7 +66,9 @@ Cada sección sigue el formato **Decisión / Motivo / Alternativas descartadas**
 
 **Efecto medido sobre la primera partida** (con `HttpFalso`): hoy, la primera vez que se juega una cripta se gastan 6 solicitudes (`DOCUMENTACION_API.md` §8); con esta capacidad son 7. Con la misma versión, la segunda partida suma 0 por las llaves (SC-001). Se verifica en `test_llaves_presupuesto.py`.
 
-**Alternativas descartadas**: que el cliente HTTP conozca el presupuesto. Mezcla una regla de juego con el transporte, y el presupuesto llega en los datos generales, que el HTTP no interpreta.
+**429 con el presupuesto al límite** (decisión tras el analyze): `ServicioCripta` pasa además `limite_solicitudes = restante`. El HTTP reintenta un 429 solo mientras el total de solicitudes de **esta** consulta no llegue a ese límite; con `restante == 1`, un 429 **no se reintenta**: lanza `RuntimeError` («429 sin presupuesto para reintentar»), que el servicio convierte en `LlavesNoDisponibles` (aviso de FR-313). Así la consulta de llaves nunca hace que la partida supere el presupuesto (SC-005). Sin límite (`None`), el HTTP conserva su regla actual (`MAX_REINTENTOS_429`).
+
+**Alternativas descartadas**: que el cliente HTTP conozca el presupuesto. Mezcla una regla de juego con el transporte, y el presupuesto llega en los datos generales, que el HTTP no interpreta. El límite que recibe es solo un número de solicitudes para esa llamada, no la regla de juego.
 
 **Hallazgo**: hoy el presupuesto solo se **reporta**, no se hace cumplir. Esta capacidad lo hace cumplir **únicamente** para la consulta de llaves (FR-309, SC-005). Hacerlo cumplir para el contenido de las salas queda fuera de alcance.
 
@@ -120,7 +125,7 @@ Cada sección sigue el formato **Decisión / Motivo / Alternativas descartadas**
 **Decisión**: se amplía `tests_labs/api_falsa.py` sin romper a quienes la usan hoy:
 
 - `HttpFalso.obtener_llaves(cripta_id)`: llaves de su cripta de 3 salas. Una en el suelo de la sala 1 y `itm_llave_negra` soltada por `e-301` en la sala 3. Se registra en `llamadas` como `("llaves", cripta_id)`, así que cuenta en `solicitudes_realizadas`.
-- `HttpConfigurable(..., llaves=None, fallo_llaves=None)`: `llaves` es una lista de `(id, sala, enemigo o None)`. `fallo_llaves` vale `"sin_respuesta"` (lanza `ErrorSinConexion`), `"invalida"` (devuelve una respuesta que FR-311 rechaza; el caso exacto se elige con `llaves`) o `None`.
+- `HttpConfigurable(..., llaves=None, fallo_llaves=None)`: `llaves` es una lista de `(id, sala, enemigo o None)`. `fallo_llaves` vale `"sin_respuesta"` (lanza `ErrorSinConexion`), `"invalida"` (lanza `LlavesInvalidas("respuesta sin llaves")`, lo mismo que daría `leer_llaves` sobre una respuesta sin la clave `llaves`, porque la API falsa entrega la lista ya extraída) o `None`. Las respuestas que FR-311 rechaza por su contenido se arman pasando `llaves` malas.
 - `cripta_v2(semilla)`: cripta de referencia con costos distintos de 100, un cazador con rango, una llave en el suelo, una soltada por un enemigo y una llave repetida en dos salas.
 - `CASOS_APENDICE_B`: lista de `(código, descripción, constructor)`, uno por caso del Apéndice B.
 
@@ -153,4 +158,5 @@ Cada sección sigue el formato **Decisión / Motivo / Alternativas descartadas**
 | R1 | La forma real de `/llaves` es distinta de la asumida | **Mitigado**: la forma se confirmó con el Swagger (`LlavesResponse` / `KeyLocation`) el 2026-11-06. Se mantiene un único lector (§1) y la comprobación con una llamada real queda opcional |
 | R2 | Casos del Apéndice B no transcritos | **Mitigado**: transcritos el 2026-11-06 (§7) |
 | R3 | `adaptadores/servicioCripta.py` ya importa `collections.deque` (Parte I, `salas_vecinas` y `_armar_salidas`), lo que viola el principio I | Esta capacidad **no** agrega usos nuevos. Ya se registró en la capacidad 005 (observación 2); retirarlo corresponde a la capacidad que adopte el recorrido por niveles en la precarga |
+| R5 | Una partida restaurada sobre una lógica que ya jugó otra cripta arrastra sus llaves | La restauración reinicia `llaves` y `avisoLlaves` a `None` (FR-325); lo prueba `test_llaves_partida_cargada` |
 | R4 | `--replay` llama a `iniciarJuego`: con red pediría las llaves | Con el persistente, las llaves ya están en disco y la reproducción no gasta nada. En `--offline` sin llaves se emite el aviso y la reproducción sigue (FR-313), así que el `partida.log` no cambia |

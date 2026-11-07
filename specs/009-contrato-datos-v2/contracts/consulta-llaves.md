@@ -4,6 +4,8 @@
 
 `GET /criptas/<id>/llaves`, con el encabezado `X-Cripta-Client-Id` igual que el resto. **Cuenta como una solicitud** en `solicitudes_realizadas`, y cada 429 reintentado también cuenta, como en las demás consultas.
 
+**429 con el presupuesto al límite**: la consulta recibe `limite_solicitudes` (las que quedan del presupuesto). Un 429 solo se reintenta mientras las solicitudes de esta consulta no lleguen a ese límite. Con 1 restante, el primer 429 **no se reintenta**: es un fallo (`RuntimeError` en el HTTP → `LlavesNoDisponibles` → aviso de FR-313). Sin límite se mantiene `MAX_REINTENTOS_429`. Así la consulta de llaves nunca supera el presupuesto (SC-005).
+
 ## Respuesta 200 (forma confirmada con el Swagger, esquemas `LlavesResponse` y `KeyLocation`, 2026-11-06; research.md §1)
 
 ```json

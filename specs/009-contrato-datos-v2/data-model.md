@@ -78,8 +78,20 @@ Un archivo de la Parte I no tiene la clave: está en el estado «ausente». No h
 
 | Campo | Tipo | Regla |
 |---|---|---|
-| `llaves` | `UbicacionLlavesDTO \| None` | Se obtiene una vez en `iniciarJuego`. `None` si hubo `LlavesNoDisponibles` |
-| `avisoLlaves` | `str \| None` | Mensaje del error, para mostrarlo al iniciar (FR-313) |
+| `llaves` | `UbicacionLlavesDTO \| None` | `None` en `__init__` y al restaurar una partida guardada. Lo llena `obtenerLlaves()`: en una partida nueva, desde `iniciarJuego`; en una partida cargada, la primera vez que se necesita (FR-325). Sigue en `None` si hubo `LlavesNoDisponibles` |
+| `avisoLlaves` | `str \| None` | `None` en `__init__` y al restaurar. Mensaje del último `LlavesNoDisponibles`, para mostrarlo (FR-313) |
+
+**Operación**: `obtenerLlaves() -> UbicacionLlavesDTO | None`. Si `llaves` no es `None`, la devuelve sin pedir nada. Si no, pide `ubicacion_llaves(idCripta)` a la fuente (buscada con `getattr` por compatibilidad con fuentes de prueba antiguas; sin el método devuelve `None` sin aviso). Ante `LlavesNoDisponibles` guarda el aviso y devuelve `None`. El fallo no se memoriza: otra llamada vuelve a pedir, y la fuente decide con lo guardado y el presupuesto si hace la solicitud.
+
+**Ciclo de vida en la partida**:
+
+```text
+__init__ / restaurar ─▶ llaves=None, aviso=None
+iniciarJuego (nueva) ──▶ obtenerLlaves()
+obtenerLlaves() ──(guardadas, misma versión)──▶ llaves (0 solicitudes)
+obtenerLlaves() ──(faltan, queda presupuesto)──▶ llaves (1 solicitud, la única de la cripta)
+obtenerLlaves() ──(faltan, sin presupuesto o fallo)──▶ llaves=None, aviso (FR-313)
+```
 
 **No forman parte del estado guardado ni del `partida.log`**: se derivan de la cripta y su versión, que ya están en el encabezado. Así el formato de partida no cambia, ya que el v6 es de la capacidad 010, y el determinismo no depende de si había red.
 

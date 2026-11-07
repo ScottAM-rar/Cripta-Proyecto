@@ -2,7 +2,7 @@
 
 **Entrada**: documentos de diseño en `specs/009-contrato-datos-v2/` (`plan.md`, `spec.md`, `research.md`, `data-model.md`, `contracts/`, `quickstart.md`)
 
-**Prerrequisitos**: `spec.md` con las 3 clarificaciones de la sesión 2026-11-06; forma de `/llaves` confirmada con el Swagger (`LlavesResponse` / `KeyLocation`); 23 casos del Apéndice B transcritos en `contracts/api-falsa-v2.md`. Se apoya en código existente: `adaptadores/` (clientes, `AlmacenDisco`, `ServicioCripta`, `fabrica`), `Logica/ordenamiento.py`, `Logica/CampoDeCostos.py`, `tests_labs/api_falsa.py` y `tests_labs/cripta_sintetica.py`.
+**Prerrequisitos**: `spec.md` con las 4 clarificaciones de la sesión 2026-11-06 (FR-313 sin `--verificar` y FR-325, ambos tras el `/speckit-analyze`); forma de `/llaves` confirmada con el Swagger (`LlavesResponse` / `KeyLocation`); 23 casos del Apéndice B transcritos en `contracts/api-falsa-v2.md`. Se apoya en código existente: `adaptadores/` (clientes, `AlmacenDisco`, `ServicioCripta`, `fabrica`), `Logica/ordenamiento.py`, `Logica/CampoDeCostos.py`, `tests_labs/api_falsa.py` y `tests_labs/cripta_sintetica.py`.
 
 **Pruebas**: se incluyen en todas las historias porque la constitución (principio IX) exige una prueba automatizada por escenario de aceptación. Cada prueba se escribe **antes** del código que la hace pasar y debe fallar primero. Ninguna prueba usa red: el cliente HTTP se prueba sustituyendo `requests.get` con `unittest.mock.patch`.
 
@@ -33,7 +33,7 @@
 - [ ] T001 Revisar `plan.md`, `research.md` y este `tasks.md` contra la lista de prohibidos del principio I y anotar el resultado en la sección Notas de `specs/009-contrato-datos-v2/checklists/requirements.md`. Comprobar en especial que la detección de repetidos (`ordenar_adaptativo`), la lista `existe` de booleanos y la precarga por costo del bench (`CampoDeCostos`/`MonticuloMinimo`) no necesitan `dict`, `set` ni `collections`. (I)
 - [ ] T002 [P] Ejecutar `python -m unittest discover -p "test_*.py"` y los laboratorios `tests_labs/prueba_cliente_persistente.py`, `tests_labs/prueba_cliente_offline.py`, `tests_labs/prueba_fabrica.py` y `tests_labs/prueba_precarga_presupuesto.py`, y anotar la línea base (pruebas que pasan y fallan) en las Notas de `specs/009-contrato-datos-v2/checklists/requirements.md`. Así se detectan regresiones de la Parte I, la 001 y la 005. (IX)
 
-**Punto de control**: revisión anotada y línea base registrada.
+**Punto de control**: revisión anotada y línea base registrada (incluida la de `--bench cache`, T049).
 
 ---
 
@@ -77,11 +77,12 @@
   - La llamada se registra en ambos casos de fallo.
 
   Comprobar que los laboratorios existentes de la línea base (T002) siguen igual. (FR-318, FR-321)
-- [ ] T009 En `adaptadores/Interfaz.py` agregar a `ClienteInterfaz` el método abstracto `obtener_llaves(self, cripta_id: str, solo_guardadas: bool = False) -> list[dict]`, con la docstring de `contracts/interfaz-clientes.md`. En el mismo cambio, implementarlo en `adaptadores/cliente_http.py` (`ClienteCripta`):
+- [ ] T009 En `adaptadores/Interfaz.py` agregar a `ClienteInterfaz` el método abstracto `obtener_llaves(self, cripta_id: str, solo_guardadas: bool = False, limite_solicitudes: int | None = None) -> list[dict]`, con la docstring de `contracts/interfaz-clientes.md`. En el mismo cambio, implementarlo en `adaptadores/cliente_http.py` (`ClienteCripta`):
   - Con `solo_guardadas=True` lanza `LlavesNoDisponibles` (de `Logica/FuenteCripta.py`) con el texto «no queda presupuesto y no hay llaves guardadas de la cripta X», sin hacer la solicitud.
-  - Si no, devuelve `leer_llaves(self._solicitar(f"/criptas/{cripta_id}/llaves"))`. El conteo ya lo hace `_solicitar`.
+  - Si no, devuelve `leer_llaves(self._solicitar(f"/criptas/{cripta_id}/llaves", max_reintentos_429=…))`. El conteo ya lo hace `_solicitar`.
+  - **429 con el presupuesto al límite** (decisión tras el analyze): agregar a `_solicitar` el parámetro `max_reintentos_429: int = MAX_REINTENTOS_429`, sin cambiar su comportamiento por defecto. `obtener_llaves` pasa `limite_solicitudes - 1` si hay límite. Con `limite_solicitudes == 1`, el primer 429 **no se reintenta** (tampoco se espera `reintentar_en`): lanza `RuntimeError("429 sin presupuesto para reintentar …")`, que el servicio convierte en el aviso de FR-313. Lo prueba T048.
 
-  (FR-301, FR-304, FR-309)
+  (FR-301, FR-304, FR-309, SC-005)
 - [ ] T010 En `adaptadores/cliente_offline.py` (`ClienteOffline`) implementar:
   - `obtener_llaves(cripta_id, solo_guardadas=False)`: devuelve `almacen.leer_llaves(cripta_id)`; si es `None`, lanza `ErrorOffline(f"Faltan las llaves de la cripta {cripta_id}. Juega una vez con conexión.")`.
   - `contenido_en_disco(cripta_id, sala) -> dict | None`, que devuelve `almacen.leer_contenido`.
@@ -91,10 +92,10 @@
   1. `self._asegurar_cripta(cripta_id)`.
   2. Si `almacen.leer_llaves` no es `None`, devolverlo sin red.
   3. Si `solo_guardadas`, lanzar `LlavesNoDisponibles` («sin presupuesto»).
-  4. Si no, `crudas = self.cliente.obtener_llaves(cripta_id)`. Armar `existe` desde `self.obtener_salas(cripta_id)` (lista de booleanos de tamaño `mayor id + 1`) y llamar a `validar_llaves(crudas, existe, lambda s: self.almacen.leer_contenido(cripta_id, s))`.
+  4. Si no, `crudas = self.cliente.obtener_llaves(cripta_id, limite_solicitudes=limite_solicitudes)`. Armar `existe` desde `self.obtener_salas(cripta_id)` (lista de booleanos de tamaño `mayor id + 1`) y llamar a `validar_llaves(crudas, existe, lambda s: self.almacen.leer_contenido(cripta_id, s))`.
   5. **Solo si es válida**, `almacen.guardar_llaves(cripta_id, crudas)` y devolverla. Si `LlavesInvalidas`, se propaga sin guardar nada.
 
-  Agregar también `contenido_en_disco(cripta_id, sala)`. (FR-301, FR-305, FR-306, FR-310)
+  La firma es `obtener_llaves(cripta_id, solo_guardadas=False, limite_solicitudes=None)`. Agregar también `contenido_en_disco(cripta_id, sala)`. `ClienteOffline` (T010) acepta `limite_solicitudes` y lo ignora. (FR-301, FR-305, FR-306, FR-310)
 
 **Punto de control**: `python -m unittest test_llaves_validacion` pasa. Los laboratorios de la línea base siguen igual: los tres clientes se pueden instanciar.
 
@@ -117,7 +118,7 @@
 
   (FR-302, FR-303, FR-304)
 - [ ] T013 [P] [US1] Crear `test_llaves_presupuesto.py`:
-  - **(a)** H1-1: la primera partida en una carpeta vacía (con `nueva_ejecucion` o el equivalente con `HttpConfigurable`) hace exactamente un `("llaves", …)`, el contador sube en 1 respecto de la misma partida sin consulta de llaves (de 6 a 7 con `HttpFalso`, research.md §3), y `reporte(cid).texto()` refleja ese total.
+  - **(a)** H1-1: la primera partida en una carpeta vacía (con `nueva_ejecucion` o el equivalente con `HttpConfigurable`) hace **exactamente 1** llamada `("llaves", …)`. Las llamadas que **no** son de llaves (nombre y cantidad, con `HttpFalso.veces`) son **iguales a la línea base** de la misma partida medida en T002 antes de esta capacidad, y `reporte(cid).texto()` muestra el total (línea base + 1).
   - **(b)** H1-4: llamar dos veces a `ubicacion_llaves` en la misma sesión deja `veces("llaves") == 1`.
   - **(c)** SC-005: con el presupuesto agotado (`presupuesto_solicitudes` de los datos igual a las solicitudes ya hechas) y sin llaves guardadas, **no** se llama a `("llaves", …)` y se lanza `LlavesNoDisponibles`, cuyo mensaje nombra la cripta.
   - **(d)** Con el presupuesto agotado y llaves guardadas, las devuelve sin solicitudes.
@@ -129,14 +130,20 @@
 - [ ] T014 [US1] En `adaptadores/servicioCripta.py` agregar `esqueleto(cripta_id) -> MapaDTO`, moviendo ahí el cuerpo actual de `obtener_mapa`, y hacer que `obtener_mapa` devuelva `self.esqueleto(cripta_id)`. Las pruebas de la capacidad 001 (`test_terreno_costos.py`, `test_cazador.py`, `test_mapa_cripta.py`) deben seguir pasando. (FR-301; contrato de `contracts/interfaz-clientes.md`)
 - [ ] T015 [US1] En `adaptadores/servicioCripta.py` agregar `ubicacion_llaves(cripta_id) -> UbicacionLlavesDTO`, con los campos `_llaves_id` y `_llaves` para memorizar por sesión, como `_datos_id`/`_datos`:
   1. Si ya está memorizada para esa cripta, la devuelve.
-  2. `solo_guardadas = self.presupuesto_solicitudes(cripta_id) - self.solicitudes_realizadas < 1`.
-  3. `crudas = self.cliente.obtener_llaves(cripta_id, solo_guardadas)`.
+  2. `restante = self.presupuesto_solicitudes(cripta_id) - self.solicitudes_realizadas`; `solo_guardadas = restante < 1`.
+  3. `crudas = self.cliente.obtener_llaves(cripta_id, solo_guardadas, limite_solicitudes=restante)`.
   4. Arma `existe` desde `_cargar_esqueleto` y `contenido_guardado` con `getattr(self.cliente, "contenido_en_disco", None)`; si no existe, una función que devuelve `None`.
   5. `validar_llaves(...)`, construye `UbicacionLlavesDTO(cripta_id, self.version_cripta(cripta_id), ids, salas, enemigos)`, memoriza y devuelve.
 
   Debe hacer pasar T012 y T013 (b) y (d). (FR-301, FR-302, FR-303, FR-304)
 - [ ] T016 [US1] En `adaptadores/servicioCripta.py`, dentro de `ubicacion_llaves`, convertir `ErrorOffline`, `ErrorSinConexion`, `RuntimeError` del HTTP y `LlavesInvalidas` en `LlavesNoDisponibles(f"No se pudieron obtener las llaves de la cripta {cripta_id}: {motivo}. La verificación de resolubilidad no está disponible.")`. `LlavesNoDisponibles` se deja pasar tal cual. Tras un fallo **no** se memoriza nada. Debe hacer pasar T013 (c). (FR-309, FR-310)
-- [ ] T017 [US1] En `Logica/EstadoJuegoLogica.py`, en `iniciarJuego`, justo después de `cantSalas = self.comunicacion.total_salas(cripta)`, agregar `self.llaves = self.comunicacion.ubicacion_llaves(cripta)` y `self.avisoLlaves = None` dentro de un `try`. Con `except LlavesNoDisponibles as error`, poner `self.llaves = None` y `self.avisoLlaves = str(error)`; la partida sigue. Si la fuente no tiene `ubicacion_llaves` (se busca con `getattr`, como `obtener_mapa`), `llaves = None` sin aviso. No agregar nada al `logEventos` ni al estado guardado. (FR-301, FR-313, II, IV)
+- [ ] T017 [US1] En `Logica/EstadoJuegoLogica.py`:
+  - En `__init__`, inicializar `self.llaves = None` y `self.avisoLlaves = None`.
+  - Agregar `obtenerLlaves(self) -> UbicacionLlavesDTO | None`, el único punto por el que el modelo pide las llaves (contrato en `contracts/interfaz-clientes.md`). Si `self.llaves` no es `None`, la devuelve sin pedir nada. Si no, `obtener = getattr(self.comunicacion, "ubicacion_llaves", None)`: se busca con `getattr` **por compatibilidad con las fuentes de prueba antiguas** que no lo tienen (como `obtener_mapa`), y sin el método devuelve `None` sin aviso. Si lo tiene, `self.llaves = obtener(self.idCripta)` y `self.avisoLlaves = None` dentro de un `try`; con `except LlavesNoDisponibles as error`, `self.llaves = None` y `self.avisoLlaves = str(error)`, y la partida sigue. El fallo no se memoriza.
+  - En `iniciarJuego`, después de asignar `self.idCripta`, llamar a `self.obtenerLlaves()` (partida nueva: consulta enseguida).
+  - No agregar nada al `logEventos` ni al estado guardado.
+
+  `--verificar` no es de esta tarea ni de esta capacidad: lo especifica e implementa la capacidad 003. (FR-301, FR-313, FR-325, II, IV)
 
 **Punto de control**: `python -m unittest test_llaves_clientes test_llaves_presupuesto` pasa y la suite de la línea base sigue igual.
 
@@ -155,8 +162,9 @@
   - **(b)** H2-2: con `c2` se hace exactamente una consulta, `AlmacenDisco.version_cripta == "c2"` y `leer_llaves` tiene la lista nueva. Configurar `HttpConfigurable` con llaves distintas en `c2` para distinguirlas.
   - **(c)** H2-3: un `cripta_<id>.bin` con la forma de la Parte I (`version`, `datos`, `salas` y contenido, **sin** `llaves`), creado con `AlmacenDisco` en una carpeta temporal, se consulta una vez y después tiene `llaves`. La prueba no borra ni edita archivos a mano.
   - **(d)** Principio III: la lista reutilizada (de disco o memorizada) es igual a una consulta desde cero sobre una carpeta vacía con la misma versión.
+  - **(e)** Caso límite «la versión cambia durante una partida»: con las llaves ya obtenidas en la sesión, cambiar `http.version_cripta` a `"c2"` y volver a pedir `ubicacion_llaves` en la **misma** sesión da 0 consultas nuevas y la misma lista. La invalidación ocurre en la ejecución siguiente.
 
-  (FR-305, FR-306, FR-307, FR-308, III)
+  (FR-301, FR-305, FR-306, FR-307, FR-308, III)
 
 ### Implementación de la Historia 2
 
@@ -180,12 +188,13 @@
   - **(c)** H3-3 / FR-313: `EstadoJuegoLogica.iniciarJuego` sobre `crear_servicio(offline=True, carpeta=…)` con una cripta guardada sin llaves termina sin excepción, con `llaves is None`, `avisoLlaves` con el id de la cripta y `solicitudes_realizadas == 0`.
   - **(d)** H3-4: lo mismo con llaves guardadas da `llaves` no `None` y 0 solicitudes.
   - **(e)** Tras un fallo, una segunda llamada en la misma sesión vuelve a intentar: no se memorizó el fallo.
+  - **(f)** Caso límite «fallo a medio guardar»: con un `cripta_<id>.bin.tmp` sobrante (un corte a mitad de una escritura anterior), creado en la carpeta temporal **junto a** un `cripta_<id>.bin` válido sin `llaves`, la siguiente partida ignora el `.tmp`: lee el archivo válido, consulta las llaves una vez y las guarda.
 
   (FR-309, FR-310, FR-311, FR-312, FR-313)
 
 ### Implementación de la Historia 3
 
-- [ ] T021 [US3] En `Servicio/EstadoJuegoServicio.py` agregar `avisoLlaves(self) -> str | None`, que devuelve el `avisoLlaves` de la lógica, o `None` si no hay partida. En `Controlador/ControladorJuego.py`, justo después de iniciar una partida nueva, si `avisoLlaves()` no es `None`, imprimirlo con el formato de `_mostrar_advertencias_nuevas`. No mostrarlo en `--replay`, que no crea la vista. (FR-309, FR-312, FR-313, IV)
+- [ ] T021 [US3] En `Servicio/EstadoJuegoServicio.py` agregar `avisoLlaves(self) -> str | None`, que devuelve el `avisoLlaves` de la lógica, o `None` si no hay partida. En `Controlador/ControladorJuego.py`, justo después de iniciar una partida nueva, si `avisoLlaves()` no es `None`, imprimirlo con el formato de `_mostrar_advertencias_nuevas`. No mostrarlo en `--replay`, que no crea la vista. Solo se muestra el aviso: el comportamiento de `--verificar` es de la capacidad 003. (FR-309, FR-312, FR-313, IV)
 - [ ] T022 [US3] Ejecutar `test_llaves_fallos.py` y corregir lo que falle en `adaptadores/servicioCripta.py` (T016) o en `Logica/EstadoJuegoLogica.py` (T017), sin capturar excepciones más amplias de lo necesario. Comprobar a mano, con `python main.py --offline` sobre una carpeta de prueba sin llaves armada por un laboratorio, que el aviso aparece y que la partida se juega. (FR-312, FR-313)
 
 **Punto de control**: `python -m unittest test_llaves_fallos` pasa. Las historias 1 a 3 (todas P1) funcionan juntas.
@@ -259,7 +268,7 @@
   - B-R4: una cripta no resoluble.
 
   `/llaves` debe ser coherente con el contenido. (FR-320)
-- [ ] T031 [P] [US5] En `tests_labs/api_falsa.py` agregar las 6 entradas **B-L1 a B-L6**, con guiones que generan eventos simultáneos, uso de pergamino y una partida corta. Para B-L6, el constructor apunta a un archivo de partida de formato de la Parte I generado con el codec actual en una carpeta temporal. (FR-320)
+- [ ] T031 [P] [US5] En `tests_labs/api_falsa.py` agregar las 6 entradas **B-L1 a B-L6**, con guiones que generan eventos simultáneos, uso de pergamino y una partida corta. Para B-L6, el constructor **arma a mano** en una carpeta temporal un archivo de partida de la Parte I: la magia de `adaptadores/AlmacenPartidaBinario.py` seguida de un encabezado con **versión de formato 5**, empaquetado con `struct` y la misma estructura `_ENCABEZADO`, más un cuerpo mínimo. **No** usa el codec ni `AlmacenPartidaBinario` para escribir, porque solo escriben la versión 6. (FR-320)
 - [ ] T032 [US5] Ejecutar `test_api_falsa_v2.py` y corregir hasta que pase. Comprobar que las pruebas de la Parte I y de la 001 que usan `HttpFalso`/`HttpConfigurable` siguen igual que en la línea base (T002). (FR-318 a FR-321)
 
 **Punto de control**: `python -m unittest test_api_falsa_v2` pasa. Los dueños de 001 a 004 pueden usar `CASOS_APENDICE_B` en sus escenarios.
@@ -323,6 +332,32 @@
 
 ---
 
+## Fase 10: Tareas agregadas tras el `/speckit-analyze`
+
+**Propósito**: cubrir FR-325 (llaves al cargar una partida), el 429 con el presupuesto al límite (A2), la repetición de la medición de red de la Parte I (G1) y la suite sin red (G2). Se numeran al final para no renumerar; el orden real de ejecución está en «Dependencias».
+
+- [ ] T046 [US2] Crear `test_llaves_partida_cargada.py` (escribir primero; debe fallar). Usa `EstadoJuegoLogica`, el guardado y la restauración de partida existentes y `HttpConfigurable` en una carpeta temporal:
+  - **(a)** Al cargar una partida guardada no hay ninguna solicitud (las llamadas de `HttpConfigurable` no cambian durante la carga) y `llaves is None`, `avisoLlaves is None`.
+  - **(b)** H2-4: con las llaves guardadas con la misma versión, `obtenerLlaves()` las devuelve con 0 solicitudes.
+  - **(c)** H2-5: sin llaves guardadas y con presupuesto, la primera `obtenerLlaves()` hace exactamente un `("llaves", …)` y la segunda, ninguno.
+  - **(d)** H2-6: sin llaves guardadas y sin presupuesto (o con `fallo_llaves="sin_respuesta"`), `obtenerLlaves()` devuelve `None`, no hay solicitud de llaves en el caso sin presupuesto, `avisoLlaves` nombra la cripta y la partida sigue (se puede ejecutar una acción).
+  - **(e)** Restaurar una partida de la cripta B sobre una lógica que ya obtuvo las llaves de la cripta A deja `llaves is None` hasta que se piden, y lo que entrega después es de B.
+  - **(f)** `EstadoJuegoLogica()` recién creado tiene `llaves is None` y `avisoLlaves is None`.
+
+  (FR-325, FR-301, FR-313)
+- [ ] T047 [US2] En `Logica/EstadoGuardadoLogica.py`, en la restauración de una partida, poner `logica.llaves = None` y `logica.avisoLlaves = None` **sin** llamar a `obtenerLlaves()` ni a ninguna operación de la fuente que pida llaves. Las llaves se entregan bajo demanda con `obtenerLlaves()` (T017). Ni las llaves ni el aviso entran al estado guardado: el formato de partida no cambia. Si la partida cargada muestra el aviso, que sea cuando aparece (T021), no al cargar. Debe hacer pasar T046. (FR-325, II)
+- [ ] T048 [US1] Agregar a `test_llaves_presupuesto.py`, con `requests.get` sustituido por `unittest.mock.patch` y `reintentar_en: 0`:
+  - **(e)** Con 1 solicitud restante y una respuesta 429, `ServicioCripta.ubicacion_llaves` hace **exactamente 1** llamada a `requests.get`, no espera, lanza `LlavesNoDisponibles` (el mensaje nombra la cripta) y `solicitudes_realizadas` no supera el presupuesto.
+  - **(f)** Con 3 restantes y respuestas 429, 429, 200, hace 3 llamadas y devuelve las llaves.
+  - **(g)** Sin límite, `_solicitar` de otras consultas conserva `MAX_REINTENTOS_429`.
+
+  (SC-005, FR-309, FR-313)
+- [ ] T049 **Antes de cualquier cambio de código** (junto con T002), ejecutar `python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-antes.csv` y guardar en las Notas de `specs/009-contrato-datos-v2/checklists/requirements.md` la salida (solicitudes por estrategia y aciertos de caché). Es la línea base de la medición de red de la Parte I. (VII)
+- [ ] T050 Al terminar la capacidad (antes de T044), ejecutar `python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-despues.csv` y agregar a la sección 009 de `DECISIONES.md` una tabla antes/después por fila del bloque `cache`, con la diferencia y su causa (se espera +1 solicitud por cripta y versión por la consulta de llaves). Si una decisión de la Parte I deja de servir con la carga nueva, documentarlo y cambiarla en una tarea aparte. (VII, X)
+- [ ] T051 Ejecutar las 8 pruebas nuevas (`test_llaves_validacion`, `test_llaves_clientes`, `test_llaves_presupuesto`, `test_llaves_version`, `test_llaves_fallos`, `test_llaves_partida_cargada`, `test_fuente_solo_local`, `test_api_falsa_v2`) con `requests.get` bloqueado: una ayuda en `tests_labs/sin_red.py` que lo sustituye por una función que lanza `AssertionError("intento de red")` y un `python -m tests_labs.sin_red` que la activa y corre esas pruebas. Ejecutar dos veces y comparar que los resultados son idénticos. Las pruebas que usan `mock.patch` de `requests.get` siguen funcionando porque lo sustituyen dentro de su propio alcance. (SC-006, FR-318)
+
+---
+
 ## Dependencias y orden de ejecución
 
 ### Entre fases
@@ -341,6 +376,11 @@
 - **Fase 7 (US5)** depende de la Fase 2 (T008). T027 a T031 tocan el mismo archivo, `tests_labs/api_falsa.py`: si se hacen en paralelo, cada uno agrega su bloque en una sección distinta y se integran al final. B-R* y la prueba (c) de T026 necesitan `crear_servicio` con llaves (Fase 3).
 - **Fase 8 (US6)** depende de la Fase 3 (sección D) y de T027 (criptas con cazador). Es independiente de las Fases 4 a 7 en lo demás.
 - **Fase 9** al final.
+- **Fase 10** (tareas agregadas tras el analyze; numeradas al final para no renumerar):
+  - **T049 va en la Fase 1**, junto con T002 y **antes de cualquier cambio de código** (T003 en adelante), porque es la línea base.
+  - T046 y T047 van con la Fase 4 (US2), después de T017. T046 primero, que debe fallar.
+  - T048 va con la Fase 3 (US1), después de T009 y T015.
+  - T050 y T051 van con la Fase 9, antes de T044.
 
 ### Dentro de cada historia
 
@@ -367,8 +407,8 @@ T008 tests_labs/api_falsa.py      (obtener_llaves, fallo_llaves)
 ### Ejemplo: después del MVP
 
 ```text
-Integrante A: Fase 4 (T018–T019)  versión y Parte I
-Integrante B: Fase 5 (T020–T022)  fallos y aviso
+Integrante A: Fase 4 (T018–T019, T046–T047)  versión, Parte I y partida cargada
+Integrante B: Fase 5 (T020–T022)  fallos y aviso (más T048, con la Fase 3)
 Integrante C: Fase 6 (T023–T025)  fuente solo local
 Integrante D: Fase 7 (T026–T032)  API falsa v2 y Apéndice B
 ```
@@ -403,7 +443,7 @@ Cada incremento se confirma por separado. La especificación y el plan ya están
 | FR-310 | T006, T011, T016, T020 |
 | FR-311 | T005, T006, T020 |
 | FR-312 | T010, T020, T021, T022 |
-| FR-313 | T003, T017, T020, T021, T022 |
+| FR-313 | T003, T017, T020, T021, T022, T046 |
 | FR-314 | T023, T024, T025 |
 | FR-315 | T003, T023, T024 |
 | FR-316 | T023, T024 |
@@ -415,6 +455,10 @@ Cada incremento se confirma por separado. La especificación y el plan ya están
 | FR-322 | T034, T035, T036 |
 | FR-323 | T033, T034, T036 |
 | FR-324 | T036 |
+| FR-325 | T017, T046, T047 |
 | SC-001, SC-002 | T034, T035 |
 | SC-003 | T023 |
-| SC-005 | T013 |
+| SC-004 | T013, T020, T023 |
+| SC-005 | T009, T013, T048 |
+| SC-006 | T026, T051 |
+| SC-007 | T034, T036 |

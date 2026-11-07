@@ -9,7 +9,7 @@ La forma ya se confirmó con el Swagger (`LlavesResponse` / `KeyLocation`, 2026-
 ## 1. Pruebas de la capacidad
 
 ```text
-python -m unittest test_llaves_validacion test_llaves_clientes test_llaves_presupuesto test_llaves_version test_llaves_fallos test_fuente_solo_local test_api_falsa_v2
+python -m unittest test_llaves_validacion test_llaves_clientes test_llaves_presupuesto test_llaves_version test_llaves_fallos test_llaves_partida_cargada test_fuente_solo_local test_api_falsa_v2
 python -m unittest discover -p "test_*.py"      # la suite de la Parte I, la 001 y la 005 sigue pasando
 ```
 
@@ -49,7 +49,7 @@ No debe encontrar nada. El `deque` existente en `servicioCripta.py` es de la Par
 | FR-310 | H3-1, H3-2 | `test_llaves_fallos` (el archivo no tiene `llaves` después del fallo) |
 | FR-311 | H3-2, H1-5 | `test_llaves_validacion` (tabla de contracts/consulta-llaves.md) |
 | FR-312 | H3-3, H3-4 | `test_llaves_fallos`, `test_llaves_clientes` |
-| FR-313 | H3-3 | `test_llaves_fallos` (`iniciarJuego` sigue; `llaves is None`; `avisoLlaves` nombra la cripta) |
+| FR-313 | H3-3, H2-6 | `test_llaves_fallos` (`iniciarJuego` sigue; `llaves is None`; `avisoLlaves` nombra la cripta). La regla de `--verificar` es de la capacidad 003 |
 | FR-314, FR-316 | H4-2 | `test_fuente_solo_local` |
 | FR-315 | H4-1 | `test_fuente_solo_local` (espía HTTP sin llamadas; el archivo no cambia) |
 | FR-317 | H4-3 | `test_fuente_solo_local` |
@@ -59,5 +59,9 @@ No debe encontrar nada. El `deque` existente en `servicioCripta.py` es de la Par
 | FR-321 | H5-4 | `test_api_falsa_v2` |
 | FR-322, FR-323 | H6-1 | `--bench llaves`, sección A |
 | FR-324 | H6-2 | `mediciones.md`; revisión de que `precargar_vecinas` no cambió |
+| FR-325 | H2-4, H2-5, H2-6 | `test_llaves_partida_cargada` (0 solicitudes al cargar; guardadas → 0; faltan con presupuesto → 1; sin presupuesto → aviso; restaurar reinicia las llaves) |
 | SC-001, SC-002 | — | `--bench llaves`, sección D |
-| SC-005 | — | `test_llaves_presupuesto` (con el presupuesto agotado no hay solicitud) |
+| SC-004 | — | `test_llaves_presupuesto` (c), `test_llaves_fallos`, `test_fuente_solo_local` (los mensajes nombran la cripta) |
+| SC-005 | — | `test_llaves_presupuesto` (con el presupuesto agotado no hay solicitud; con 1 restante, un 429 no se reintenta) |
+| SC-006 | — | Las 8 pruebas nuevas con `requests.get` bloqueado (T051), dos veces con el mismo resultado |
+| SC-007 | — | `--bench llaves`, sección A (lados 10, 20 y 40) |
