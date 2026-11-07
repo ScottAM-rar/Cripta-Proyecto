@@ -1,9 +1,13 @@
 """API falsa y ayudas compartidas por las pruebas de persistencia y offline."""
+import random
+
 from adaptadores.AlmacenDisco import AlmacenDisco
 from adaptadores.cache import CacheLRU
 from adaptadores.cliente_persistente import ClientePersistente
 from adaptadores.llaves import LlavesInvalidas
 from adaptadores.servicioCripta import ServicioCripta
+from Logica.FuenteCripta import LlavesNoDisponibles
+from tests_labs.cripta_sintetica import esqueleto_rejilla, ficha_cazador
  
 # Llaves de la cripta de 3 salas de HttpFalso (capacidad 009): una en el suelo de la sala 1 y la llave de salida,
 # que la suelta e-301 en la sala 3. Es la lista ya extraída, como la entrega el HTTP real después de leer_llaves.
@@ -99,8 +103,11 @@ class HttpFalso:
                 devueltas.append(ficha)
         return devueltas
  
-    def obtener_llaves(self, cripta_id, limite_solicitudes=None):
-        """GET /criptas/<id>/llaves (capacidad 009). Cuenta como una solicitud."""
+    def obtener_llaves(self, cripta_id, solo_guardadas=False, limite_solicitudes=None):
+        """GET /criptas/<id>/llaves (capacidad 009). Cuenta como una solicitud. Con solo_guardadas imita al
+        ClienteCripta real, que no tiene disco: falla sin hacer (ni registrar) la solicitud."""
+        if solo_guardadas:
+            raise LlavesNoDisponibles(f"no queda presupuesto y no hay llaves guardadas de la cripta {cripta_id}")
         self.llamadas.append(("llaves", cripta_id))
         return [dict(llave) for llave in LLAVES_FALSAS]
  
@@ -114,11 +121,15 @@ class HttpConfigurable(HttpFalso):
     `llaves`: lista de tuplas (id, sala, enemigo o None); con None se usan las de HttpFalso (capacidad 009).
     `fallo_llaves`: None, "sin_respuesta" (ErrorSinConexion) o "invalida" (LlavesInvalidas). La llamada se
     registra igual en los dos fallos.
+    `llave_salida`: id de la llave de salida de los datos generales; con None se usa la de HttpFalso.
+    `objetos`: lista de tuplas (sala, id de catálogo) de objetos en el suelo; con None no hay objetos.
     """
 
     def __init__(self, salas, enemigos=None, fichas=None, sala_inicial=1, sala_salida=None, vida_jugador=5000,
-                 llaves=None, fallo_llaves=None, **versiones):
+                 llaves=None, fallo_llaves=None, llave_salida=None, objetos=None, **versiones):
         super().__init__(**versiones)
+        self.llave_salida = llave_salida
+        self.objetos = [] if objetos is None else objetos
         if fallo_llaves not in (None, "sin_respuesta", "invalida"):
             raise ValueError(f"fallo_llaves desconocido: {fallo_llaves!r}")
         self.llaves = llaves
@@ -140,6 +151,8 @@ class HttpConfigurable(HttpFalso):
         datos["sala_inicial"] = self.sala_inicial
         datos["sala_salida"] = self.sala_salida
         datos["jugador"]["vida_max"] = self.vida_jugador
+        if self.llave_salida is not None:
+            datos["llave_salida"] = self.llave_salida
         return datos
 
     def obtener_salas(self, cripta_id):
@@ -154,7 +167,11 @@ class HttpConfigurable(HttpFalso):
             for sala, instancia, tipo, vida in self.enemigos:
                 if sala == numero:
                     colocados.append({"instancia": instancia, "tipo": tipo, "vida": vida})
-            contenidos.append({"sala": numero, "enemigos": colocados, "objetos": [], "trampas": []})
+            en_el_suelo = []
+            for sala, id_objeto in self.objetos:
+                if sala == numero:
+                    en_el_suelo.append(id_objeto)
+            contenidos.append({"sala": numero, "enemigos": colocados, "objetos": en_el_suelo, "trampas": []})
         return contenidos
 
     def obtener_catalogo(self, ids):
@@ -164,7 +181,9 @@ class HttpConfigurable(HttpFalso):
                 devueltas.append(ficha)
         return devueltas
 
-    def obtener_llaves(self, cripta_id, limite_solicitudes=None):
+    def obtener_llaves(self, cripta_id, solo_guardadas=False, limite_solicitudes=None):
+        if solo_guardadas:
+            raise LlavesNoDisponibles(f"no queda presupuesto y no hay llaves guardadas de la cripta {cripta_id}")
         self.llamadas.append(("llaves", cripta_id))
         if self.fallo_llaves == "sin_respuesta":
             # Import diferido, como en fabrica: cliente_http importa requests y la API falsa no debe exigirlo.
@@ -197,3 +216,68 @@ def cargar_todo(servicio):
     cid = servicio.obtener_id_cripta(1)
     servicio.crear_jugador(cid)
     return servicio.construir_todas(cid)
+
+
+def _ficha_llave(id_llave):
+    return {"id": id_llave, "clase": "llave", "nombre": id_llave, "peso": 1, "valor": 0, "abre": ""}
+
+
+def _sala_mas_lejana(salas, origen=1):
+    """Sala a más salidas de distancia de `origen` (la de menor id si empatan). Recorrido por niveles con dos
+    listas (sin deque ni dict): `distancia[id]` es -1 mientras la sala no se alcanzó."""
+    mayor = 0
+    for sala in salas:
+        if sala["id"] > mayor:
+            mayor = sala["id"]
+    por_id = [None] * (mayor + 1)
+    for sala in salas:
+        por_id[sala["id"]] = sala
+    distancia = [-1] * (mayor + 1)
+    distancia[origen] = 0
+    nivel = [origen]
+    lejana = origen
+    while nivel:
+        siguiente = []
+        for numero in nivel:
+            for letra in ("N", "S", "E", "O"):
+                salida = por_id[numero]["salidas"].get(letra)
+                if salida is not None and distancia[salida["sala"]] < 0:
+                    distancia[salida["sala"]] = distancia[numero] + 1
+                    siguiente.append(salida["sala"])
+        if siguiente:
+            lejana = siguiente[0]
+            for numero in siguiente:
+                if numero < lejana:
+                    lejana = numero
+        nivel = siguiente
+    return lejana
+
+
+def cripta_v2(semilla: int = 0) -> HttpConfigurable:
+    """Cripta de prueba v2 (capacidad 009, FR-319): rejilla 5x5 con costos (costo_max=9), un cazador de rango 600 en
+    la sala más lejana de la 1, la llave de salida soltada por el cazador, una llave en el suelo y otra llave con el
+    mismo id en dos salas distintas. Todo sale de random.Random(semilla): la misma semilla da las mismas respuestas."""
+    azar = random.Random(semilla)
+    salas = esqueleto_rejilla(5, 5, semilla, costo_max=9)
+    lejana = _sala_mas_lejana(salas, 1)
+    llave_salida = "itm_llave_salida"
+    cazador = ficha_cazador(rango=600)
+    cazador["suelta"] = [llave_salida]
+
+    candidatas = []
+    for sala in salas:
+        if sala["id"] != 1 and sala["id"] != lejana:
+            candidatas.append(sala["id"])
+    elegidas = azar.sample(candidatas, 3)
+    sala_bronce = elegidas[0]
+    salas_plata = [elegidas[1], elegidas[2]]
+
+    llaves = [(llave_salida, lejana, "e-cazador"),
+              ("itm_llave_bronce", sala_bronce, None),
+              ("itm_llave_plata", salas_plata[0], None),
+              ("itm_llave_plata", salas_plata[1], None)]
+    objetos = [(sala_bronce, "itm_llave_bronce"), (salas_plata[0], "itm_llave_plata"),
+               (salas_plata[1], "itm_llave_plata")]
+    fichas = [cazador, _ficha_llave(llave_salida), _ficha_llave("itm_llave_bronce"), _ficha_llave("itm_llave_plata")]
+    return HttpConfigurable(salas, [(lejana, "e-cazador", "ent_cazador", None)], fichas, sala_inicial=1,
+                            sala_salida=lejana, llaves=llaves, llave_salida=llave_salida, objetos=objetos)

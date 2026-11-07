@@ -252,7 +252,7 @@
 
 ### Implementación de la Historia 5
 
-- [ ] T027 [US5] En `tests_labs/api_falsa.py` agregar `cripta_v2(semilla: int = 0) -> HttpConfigurable`:
+- [X] T027 [US5] En `tests_labs/api_falsa.py` agregar `cripta_v2(semilla: int = 0) -> HttpConfigurable`:
   - `esqueleto_rejilla(5, 5, semilla, costo_max=9)` de `tests_labs/cripta_sintetica.py` y `ficha_cazador(rango=600)` en la sala más lejana de la 1 por número de salidas.
   - `llave_salida` soltada por el cazador (`enemigo` igual a su instancia, `sala` igual a su sala inicial).
   - Una llave en el suelo y otra llave con el mismo id en dos salas distintas.

@@ -278,11 +278,7 @@ class ServicioCripta:
         try:
             restante = self.presupuesto_solicitudes(cripta_id) - self.solicitudes_realizadas
             solo_guardadas = restante < 1
-            if solo_guardadas:
-                crudas = self.cliente.obtener_llaves(cripta_id, True, limite_solicitudes=restante)
-            else:
-                # Sin solo_guardadas (vale False por defecto): así también sirven los clientes de prueba que no lo aceptan.
-                crudas = self.cliente.obtener_llaves(cripta_id, limite_solicitudes=restante)
+            crudas = self.cliente.obtener_llaves(cripta_id, solo_guardadas, limite_solicitudes=restante)
 
             esqueleto = self._cargar_esqueleto(cripta_id)
             mayor = -1
