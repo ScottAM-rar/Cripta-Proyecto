@@ -241,7 +241,7 @@
 
 ### Pruebas de la Historia 5 (escribir primero; deben fallar)
 
-- [ ] T026 [P] [US5] Crear `test_api_falsa_v2.py`:
+- [X] T026 [P] [US5] Crear `test_api_falsa_v2.py`:
   - **(a)** H5-1: dos instancias de `cripta_v2(semilla=0)` dan respuestas idénticas en `obtener_salas`, `obtener_contenido`, `obtener_catalogo` y `obtener_llaves`. Con otra semilla cambia al menos una.
   - **(b)** H5-2: `cripta_v2` tiene al menos una salida con `costo != 100`, una ficha con `comportamiento == "cazador"` y `rango`, una llave sin enemigo, una con enemigo y una llave en dos salas. La llave de salida (`llave_salida` de los datos generales) la suelta el cazador.
   - **(c)** H5-3: `CASOS_APENDICE_B` tiene exactamente los 23 códigos B-T1…B-T7, B-N1…B-N6, B-R1…B-R4 y B-L1…B-L6, sin repetidos, y cada constructor devuelve una cripta jugable con `crear_servicio(cliente_http=…)`.
@@ -259,17 +259,17 @@
   - Si hace falta, `HttpConfigurable` acepta `llave_salida` y `objetos` por sala para que el contenido sea coherente con `/llaves`.
 
   Todo derivado de `random.Random(semilla)`. (FR-318, FR-319)
-- [ ] T028 [P] [US5] En `tests_labs/api_falsa.py` agregar a `CASOS_APENDICE_B` las 7 entradas **B-T1 a B-T7** de `contracts/api-falsa-v2.md`. Cada una es `(código, descripción literal de la tabla, constructor)` y el constructor devuelve `(HttpConfigurable, guion)`, con `guion` una lista de `("mover", dirección)` o `("esperar", veces)` como en `tests_labs/escenarios_terreno.py`. Para B-T5, el guion cierra la puerta entre dos turnos; para B-T7, cambia la velocidad durante el cruce. Reutilizar los esqueletos de `tests_labs/escenarios_terreno.py` cuando ya exista uno equivalente. (FR-320)
-- [ ] T029 [P] [US5] En `tests_labs/api_falsa.py` agregar las 6 entradas **B-N1 a B-N6**. Cada constructor da la cripta y un guion con la situación (sala no explorada, puerta recordada abierta pero cerrada, sala con enemigos dormidos, antorcha, pergamino tras entrar con antorcha, pergamino durante un viaje). Las acciones que dependen de la capacidad 002 (`ir a`, antorcha) se escriben como pasos del guion con nombre (`("ir_a", sala)`); esta capacidad no las ejecuta. (FR-320)
-- [ ] T030 [P] [US5] En `tests_labs/api_falsa.py` agregar las 4 entradas **B-R1 a B-R4**:
+- [X] T028 [P] [US5] En `tests_labs/api_falsa.py` agregar a `CASOS_APENDICE_B` las 7 entradas **B-T1 a B-T7** de `contracts/api-falsa-v2.md`. Cada una es `(código, descripción literal de la tabla, constructor)` y el constructor devuelve `(HttpConfigurable, guion)`, con `guion` una lista de `("mover", dirección)` o `("esperar", veces)` como en `tests_labs/escenarios_terreno.py`. Para B-T5, el guion cierra la puerta entre dos turnos; para B-T7, cambia la velocidad durante el cruce. Reutilizar los esqueletos de `tests_labs/escenarios_terreno.py` cuando ya exista uno equivalente. (FR-320)
+- [X] T029 [P] [US5] En `tests_labs/api_falsa.py` agregar las 6 entradas **B-N1 a B-N6**. Cada constructor da la cripta y un guion con la situación (sala no explorada, puerta recordada abierta pero cerrada, sala con enemigos dormidos, antorcha, pergamino tras entrar con antorcha, pergamino durante un viaje). Las acciones que dependen de la capacidad 002 (`ir a`, antorcha) se escriben como pasos del guion con nombre (`("ir_a", sala)`); esta capacidad no las ejecuta. (FR-320)
+- [X] T030 [P] [US5] En `tests_labs/api_falsa.py` agregar las 4 entradas **B-R1 a B-R4**:
   - B-R1: `llave_salida` detrás de la única puerta que abre.
   - B-R2: la llave en el `suelta` de un enemigo errante, con `/llaves` que la ubica en la sala inicial del enemigo.
   - B-R3: dos órdenes válidos de obtención.
   - B-R4: una cripta no resoluble.
 
   `/llaves` debe ser coherente con el contenido. (FR-320)
-- [ ] T031 [P] [US5] En `tests_labs/api_falsa.py` agregar las 6 entradas **B-L1 a B-L6**, con guiones que generan eventos simultáneos, uso de pergamino y una partida corta. Para B-L6, el constructor **arma a mano** en una carpeta temporal un archivo de partida de la Parte I: la magia de `adaptadores/AlmacenPartidaBinario.py` seguida de un encabezado con **versión de formato 5**, empaquetado con `struct` y la misma estructura `_ENCABEZADO`, más un cuerpo mínimo. **No** usa el codec ni `AlmacenPartidaBinario` para escribir, porque solo escriben la versión 6. (FR-320)
-- [ ] T032 [US5] Ejecutar `test_api_falsa_v2.py` y corregir hasta que pase. Comprobar que las pruebas de la Parte I y de la 001 que usan `HttpFalso`/`HttpConfigurable` siguen igual que en la línea base (T002). (FR-318 a FR-321)
+- [X] T031 [P] [US5] En `tests_labs/api_falsa.py` agregar las 6 entradas **B-L1 a B-L6**, con guiones que generan eventos simultáneos, uso de pergamino y una partida corta. Para B-L6, el constructor **arma a mano** en una carpeta temporal un archivo de partida de la Parte I: la magia de `adaptadores/AlmacenPartidaBinario.py` seguida de un encabezado con **versión de formato 5**, empaquetado con `struct` y la misma estructura `_ENCABEZADO`, más un cuerpo mínimo. **No** usa el codec ni `AlmacenPartidaBinario` para escribir, porque solo escriben la versión 6. (FR-320)
+- [X] T032 [US5] Ejecutar `test_api_falsa_v2.py` y corregir hasta que pase. Comprobar que las pruebas de la Parte I y de la 001 que usan `HttpFalso`/`HttpConfigurable` siguen igual que en la línea base (T002). (FR-318 a FR-321)
 
 **Punto de control**: `python -m unittest test_api_falsa_v2` pasa. Los dueños de 001 a 004 pueden usar `CASOS_APENDICE_B` en sus escenarios.
 
