@@ -22,9 +22,10 @@ Además, los demás integrantes necesitan probar el juego sin red y sin gastar s
 
 ### Sesión 2026-11-06
 
-- Q: Si no se pueden obtener las llaves de una cripta, ¿qué hace el programa después del mensaje? → A: La partida continúa con aviso; `--verificar` y todo uso explícito de la verificación terminan con error claro.
+- Q: Si no se pueden obtener las llaves de una cripta, ¿qué hace el programa después del mensaje? → A: La partida continúa con aviso; `--verificar` y todo uso explícito de la verificación terminan con error claro. *(Actualizado tras el analyze: la parte de `--verificar` pasa a la capacidad 003.)*
 - Q: ¿Cómo se comprueba que el enemigo que suelta una llave inicia en la sala indicada, si el esqueleto no trae enemigos? → A: Solo si el contenido de esa sala ya está guardado; si no hay contradicción visible, se acepta.
 - Q: Si la consulta de llaves trae el mismo id de llave en dos salas distintas, ¿la respuesta es válida? → A: Válida; cada aparición es una ubicación distinta. Solo es inválida una entrada idéntica repetida (misma llave, sala y enemigo).
+- Q (tras el analyze): ¿Qué pasa con las llaves al cargar una partida guardada? → A: Al cargar no se consulta nada; las llaves se entregan bajo demanda: si están guardadas con la misma versión de la cripta se usan sin solicitudes; si faltan y queda presupuesto, se hace la única consulta de llaves de esa cripta; si faltan y no queda presupuesto o el servicio falla, se aplica el aviso de FR-313.
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
@@ -38,7 +39,7 @@ Al jugar una cripta, el juego obtiene del servicio, una sola vez, la lista de ll
 
 **Escenarios de aceptación**:
 
-1. **Dado** una cripta sin datos de llaves guardados, **cuando** el juego obtiene las llaves, **entonces** hace exactamente una consulta de llaves, el contador de solicitudes sube en 1 y el reporte final de solicitudes la muestra. *(FR-301, FR-303, FR-304)*
+1. **Dado** una cripta sin datos de llaves guardados, **cuando** el juego obtiene las llaves, **entonces** hace exactamente una consulta de llaves, el contador de solicitudes sube en 1 y el reporte final de solicitudes la muestra. *(FR-301, FR-304)*
 2. **Dado** una cripta donde la llave `L` la suelta el enemigo `E`, que inicia en la sala 7, **cuando** el juego obtiene las llaves, **entonces** `L` aparece asociada a `E` y a la sala 7. *(FR-302)*
 3. **Dado** una cripta donde la llave `M` está en el suelo de la sala 3, **cuando** el juego obtiene las llaves, **entonces** `M` aparece en la sala 3 sin enemigo asociado. *(FR-302)*
 4. **Dado** una partida en curso que ya obtuvo las llaves, **cuando** se vuelve a necesitar la ubicación de las llaves en esa misma partida, **entonces** no se hace ninguna solicitud nueva. *(FR-301)*
@@ -59,6 +60,9 @@ La lista de llaves se guarda junto con los demás datos de la cripta. En una par
 1. **Dado** que una partida anterior guardó las llaves de la cripta con la versión `v1`, **cuando** se inicia otra partida y el servicio sigue publicando `v1`, **entonces** las llaves se leen de disco y no se hace consulta de llaves. *(FR-305, FR-306)*
 2. **Dado** llaves guardadas con la versión `v1`, **cuando** se inicia una partida y el servicio publica `v2`, **entonces** lo guardado se invalida, se hace una nueva consulta de llaves y se guarda el resultado con `v2`. *(FR-306, FR-307)*
 3. **Dado** datos de la cripta guardados por la Parte I (sin llaves), **cuando** se inicia una partida con esta capacidad, **entonces** el juego no falla, se consultan las llaves una vez y nadie tuvo que borrar archivos a mano. *(FR-307, FR-308)*
+4. **Dado** una partida guardada de una cripta cuyas llaves están guardadas con la misma versión, **cuando** se carga la partida y después se necesitan las llaves, **entonces** al cargar no se hace ninguna solicitud y las llaves se entregan desde lo guardado, sin solicitudes. *(FR-325)*
+5. **Dado** una partida guardada de una cripta sin llaves guardadas y con presupuesto disponible, **cuando** se carga la partida, **entonces** al cargar no se hace ninguna solicitud, y la primera vez que se necesitan las llaves se hace una única consulta de llaves para esa cripta. *(FR-325, FR-301)*
+6. **Dado** una partida guardada de una cripta sin llaves guardadas y sin presupuesto disponible (o con el servicio sin responder), **cuando** se necesitan las llaves, **entonces** el juego muestra el aviso de FR-313 que nombra la cripta y la partida continúa. *(FR-325, FR-313)*
 
 ---
 
@@ -74,7 +78,7 @@ Si el servicio no responde, si la respuesta de la consulta de llaves es inválid
 
 1. **Dado** que el servicio no responde a la consulta de llaves, **cuando** el juego la intenta, **entonces** muestra un mensaje claro que indica que no pudo obtener las llaves de esa cripta, y no guarda nada. *(FR-309, FR-310)*
 2. **Dado** una respuesta de llaves inválida (por ejemplo, una llave sin sala, una sala que no existe en el esqueleto, o un enemigo ausente del contenido ya guardado de la sala indicada), **cuando** el juego la recibe, **entonces** la rechaza completa con un mensaje claro y no la guarda. *(FR-309, FR-310, FR-311)*
-3. **Dado** el modo `--offline` y una cripta guardada sin llaves, **cuando** se inicia la partida, **entonces** el juego muestra un mensaje claro de que faltan las llaves de esa cripta, no hace solicitudes y la partida continúa con aviso; si se pidió `--verificar`, termina con un error claro. *(FR-312, FR-313)*
+3. **Dado** el modo `--offline` y una cripta guardada sin llaves, **cuando** se inicia la partida, **entonces** el juego muestra un mensaje claro de que faltan las llaves de esa cripta, no hace solicitudes y la partida continúa con aviso. *(FR-312, FR-313)*
 4. **Dado** el modo `--offline` y una cripta guardada con llaves, **cuando** se inicia la partida, **entonces** las llaves se leen de disco y el contador de solicitudes queda en 0. *(FR-312)*
 
 ---
@@ -164,7 +168,12 @@ Se mide cuántas solicitudes extra provoca un cazador que cruza salas cuyo conte
 - **FR-310**: Una respuesta fallida o inválida NO DEBE guardarse ni usarse parcialmente.
 - **FR-311**: Una respuesta de llaves DEBE considerarse inválida si alguna llave no tiene id o sala, si una entrada se repite idéntica (misma llave, misma sala y mismo enemigo o ausencia de enemigo), o si la sala no existe en el esqueleto. Además, si el contenido de la sala indicada para una llave soltada por un enemigo ya está guardado y ese enemigo no figura en él, la respuesta DEBE considerarse inválida; si el contenido no está guardado, la asociación se acepta sin hacer solicitudes.
 - **FR-312**: En `--offline`, las llaves DEBEN leerse solo de lo guardado; si faltan, el juego DEBE mostrar un mensaje claro y no hacer solicitudes.
-- **FR-313**: Ante cualquier fallo de FR-309 a FR-312, la partida DEBE poder jugarse: el juego DEBE avisar que la verificación de resolubilidad no está disponible para esa cripta. Si se pidió `--verificar` o cualquier uso explícito de la verificación, el programa DEBE terminar con un error claro que nombre la cripta, sin dar un resultado de verificación.
+- **FR-313**: Si no se pueden obtener las llaves (cualquier fallo de FR-309 a FR-312), el programa DEBE mostrar un mensaje que nombre la cripta y la partida DEBE continuar con un aviso de que la verificación de resolubilidad no está disponible para esa cripta.
+  *Nota*: qué hacen `--verificar` y todo uso explícito de la verificación cuando faltan las llaves lo especifica la capacidad 003 (FR-330 en adelante); esta capacidad no lo define.
+
+**Partida guardada**
+
+- **FR-325**: Al cargar una partida guardada NO DEBE hacerse ninguna consulta. Las llaves DEBEN entregarse cuando se necesiten por primera vez en esa partida: si están guardadas con la misma versión de la cripta, DEBEN usarse sin solicitudes; si faltan y queda presupuesto, DEBE hacerse la única consulta de llaves de esa cripta (FR-301); si faltan y no queda presupuesto o el servicio falla, DEBE aplicarse FR-313.
 
 **Lectura solo local**
 
@@ -209,7 +218,7 @@ Se mide cuántas solicitudes extra provoca un cazador que cruza salas cuyo conte
 
 - La consulta de llaves del servicio responde con todas las llaves de la cripta en una sola respuesta, sin paginación.
 - La versión de la cripta que valida la lista de llaves es la misma que ya valida el resto de los datos guardados.
-- La consulta de llaves se hace al iniciar la partida, junto con la descarga del esqueleto, para que la información esté disponible antes de cualquier verificación.
+- En una partida nueva, la consulta de llaves se hace al iniciar, junto con la descarga del esqueleto, para que la información esté disponible antes de cualquier verificación. En una partida cargada, se hace bajo demanda (FR-325).
 - Si no queda presupuesto para la consulta de llaves, se trata igual que un servicio que no responde.
 - La validación de la respuesta (FR-311) usa el esqueleto y, si ya está guardado, el contenido de las salas indicadas; nunca hace solicitudes adicionales.
 - La medición de la precarga usa las criptas sintéticas deterministas ya existentes en el proyecto, ampliadas con cazadores si hace falta.
