@@ -9,7 +9,7 @@ La forma ya se confirmó con el Swagger (`LlavesResponse` / `KeyLocation`, 2026-
 ## 1. Pruebas de la capacidad
 
 ```text
-python -m unittest test_llaves_validacion test_llaves_clientes test_llaves_presupuesto test_llaves_version test_llaves_fallos test_llaves_partida_cargada test_fuente_solo_local test_api_falsa_v2
+python -m unittest test_llaves_validacion test_llaves_dto test_llaves_clientes test_llaves_presupuesto test_llaves_version test_llaves_fallos test_llaves_partida_cargada test_fuente_solo_local test_api_falsa_v2
 python -m unittest discover -p "test_*.py"      # la suite de la Parte I, la 001 y la 005 sigue pasando
 ```
 
@@ -39,7 +39,7 @@ No debe encontrar nada. El `deque` existente en `servicioCripta.py` es de la Par
 | Requisito | Escenario | Prueba |
 |---|---|---|
 | FR-301 | H1-1, H1-4 | `test_llaves_presupuesto` (una sola llamada `("llaves", …)` por sesión) |
-| FR-302 | H1-2, H1-3, H1-5 | `test_llaves_validacion`, `test_llaves_clientes` |
+| FR-302 | H1-2, H1-3, H1-5 | `test_llaves_validacion`, `test_llaves_clientes`, `test_llaves_dto` (T052) |
 | FR-303 | H5-5 | `test_llaves_clientes` (misma lista con el HTTP simulado, el persistente y el offline) |
 | FR-304 | H1-1 | `test_llaves_presupuesto` (contador y `reporte().texto()`) |
 | FR-305, FR-306 | H2-1 | `test_llaves_version` |
@@ -63,5 +63,5 @@ No debe encontrar nada. El `deque` existente en `servicioCripta.py` es de la Par
 | SC-001, SC-002 | — | `--bench llaves`, sección D |
 | SC-004 | — | `test_llaves_presupuesto` (c), `test_llaves_fallos`, `test_fuente_solo_local` (los mensajes nombran la cripta) |
 | SC-005 | — | `test_llaves_presupuesto` (con el presupuesto agotado no hay solicitud; con 1 restante, un 429 no se reintenta) |
-| SC-006 | — | Las 8 pruebas nuevas con `requests.get` bloqueado (T051), dos veces con el mismo resultado |
+| SC-006 | — | Las 9 pruebas nuevas con `requests.get` bloqueado (T051), dos veces con el mismo resultado |
 | SC-007 | — | `--bench llaves`, sección A (lados 10, 20 y 40) |

@@ -309,7 +309,7 @@
 
 ## Fase 9: Cierre y transversales
 
-- [ ] T038 [P] Completar la matriz de trazabilidad de `specs/009-contrato-datos-v2/quickstart.md` con los nombres reales de las pruebas (`clase.método`). Comprobar que ningún FR-301 a FR-324 queda sin prueba o medición y que cada escenario H1-1 a H6-2 tiene al menos una. (IX)
+- [ ] T038 [P] Completar la matriz de trazabilidad de `specs/009-contrato-datos-v2/quickstart.md` con los nombres reales de las pruebas (`clase.método`). Comprobar que ningún FR-301 a FR-325 queda sin prueba o medición y que cada escenario H1-1 a H6-2 tiene al menos una. (IX)
 - [ ] T039 [P] Actualizar `DOCUMENTACION_API.md`:
   - `obtener_llaves` en la tabla de métodos del cliente (§3) y `ubicacion_llaves`/`esqueleto` en la del servicio.
   - La clave `llaves` en el esquema del archivo de cripta (§7).
@@ -354,7 +354,15 @@
   (SC-005, FR-309, FR-313)
 - [X] T049 **Antes de cualquier cambio de código** (junto con T002), ejecutar `python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-antes.csv` y guardar en las Notas de `specs/009-contrato-datos-v2/checklists/requirements.md` la salida (solicitudes por estrategia y aciertos de caché). Es la línea base de la medición de red de la Parte I. (VII)
 - [ ] T050 Al terminar la capacidad (antes de T044), ejecutar `python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-despues.csv` y agregar a la sección 009 de `DECISIONES.md` una tabla antes/después por fila del bloque `cache`, con la diferencia y su causa (se espera +1 solicitud por cripta y versión por la consulta de llaves). Si una decisión de la Parte I deja de servir con la carga nueva, documentarlo y cambiarla en una tarea aparte. (VII, X)
-- [ ] T051 Ejecutar las 8 pruebas nuevas (`test_llaves_validacion`, `test_llaves_clientes`, `test_llaves_presupuesto`, `test_llaves_version`, `test_llaves_fallos`, `test_llaves_partida_cargada`, `test_fuente_solo_local`, `test_api_falsa_v2`) con `requests.get` bloqueado: una ayuda en `tests_labs/sin_red.py` que lo sustituye por una función que lanza `AssertionError("intento de red")` y un `python -m tests_labs.sin_red` que la activa y corre esas pruebas. Ejecutar dos veces y comparar que los resultados son idénticos. Las pruebas que usan `mock.patch` de `requests.get` siguen funcionando porque lo sustituyen dentro de su propio alcance. (SC-006, FR-318)
+- [ ] T051 Ejecutar las 9 pruebas nuevas (`test_llaves_validacion`, `test_llaves_dto`, `test_llaves_clientes`, `test_llaves_presupuesto`, `test_llaves_version`, `test_llaves_fallos`, `test_llaves_partida_cargada`, `test_fuente_solo_local`, `test_api_falsa_v2`) con `requests.get` bloqueado: una ayuda en `tests_labs/sin_red.py` que lo sustituye por una función que lanza `AssertionError("intento de red")` y un `python -m tests_labs.sin_red` que la activa y corre esas pruebas. Ejecutar dos veces y comparar que los resultados son idénticos. Las pruebas que usan `mock.patch` de `requests.get` siguen funcionando porque lo sustituyen dentro de su propio alcance. (SC-006, FR-318)
+- [ ] T052 [US1] Crear `test_llaves_dto.py` (sin red, solo `DTO/LlavesDTO.py`) con una prueba por comportamiento, con nombre que cite FR-302:
+  - **(a)** Listas de largo distinto lanzan `ValueError` y el mensaje nombra la cripta.
+  - **(b)** Listas vacías son válidas y `cantidad()` es 0.
+  - **(c)** `cantidad()` es igual al largo de las listas.
+  - **(d)** `ubicaciones_de` devuelve, en el orden de la respuesta, las posiciones donde aparece una llave repetida (por ejemplo, la misma llave en las salas 3 y 9), y una lista vacía si la llave no existe.
+  - **(e)** Los atributos `ids`, `salas` y `enemigos` conservan el orden recibido.
+
+  Va después de T004. (FR-302, IX)
 
 ---
 
@@ -381,6 +389,7 @@
   - T046 y T047 van con la Fase 4 (US2), después de T017. T046 primero, que debe fallar.
   - T048 va con la Fase 3 (US1), después de T009 y T015.
   - T050 y T051 van con la Fase 9, antes de T044.
+  - T052 va con la Fase 2, después de T004, y puede hacerse en paralelo con T005.
 
 ### Dentro de cada historia
 
@@ -432,7 +441,7 @@ Cada incremento se confirma por separado. La especificación y el plan ya están
 | Requisito | Tareas |
 |---|---|
 | FR-301 | T009, T011, T013, T015, T017 |
-| FR-302 | T004, T005, T006, T012, T015 |
+| FR-302 | T004, T005, T006, T012, T015, T052 |
 | FR-303 | T010, T012, T015 |
 | FR-304 | T009, T012, T013, T015 |
 | FR-305 | T007, T011, T018 |
