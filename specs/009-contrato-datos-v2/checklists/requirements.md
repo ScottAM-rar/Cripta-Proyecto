@@ -31,9 +31,9 @@
 
 ## Notes
 
-- Pendiente 1 marcador (FR-313, citado también en Historia 3 escenario 3): ¿se juega sin verificación ante fallo de llaves?
+- Pendiente 1 marcador (FR-313, citado también en Historia 3 escenario 3): ¿se juega sin verificación ante fallo de llaves? — resuelto en la clarificación y la corrección post-analyze; ahora FR-301 a FR-325
 - La ruta del servicio (`GET /criptas/<id>/llaves`) y `--offline` se nombran en la entrada del usuario; en la spec se habla de «consulta de llaves» y del modo `--offline` como opción de juego ya existente, no como detalle de implementación.
-- Cobertura: FR-301 a FR-324 citados por al menos un escenario.
+- Cobertura: FR-301 a FR-324 citados por al menos un escenario. — resuelto en la clarificación y la corrección post-analyze; ahora FR-301 a FR-325
 
 ### Implementación, grupo A (2026-11-07, código sin cambios, rama Scott-Persona3, `d0968c1`)
 

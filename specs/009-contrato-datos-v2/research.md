@@ -41,7 +41,7 @@ Cada sección sigue el formato **Decisión / Motivo / Alternativas descartadas**
 
 | Capa | Responsabilidad |
 |---|---|
-| `ClienteInterfaz.obtener_llaves(cripta_id, solo_guardadas=False) -> list[dict]` | Devuelve la lista cruda (lo que trae `"llaves"`). Igual que el resto de la interfaz, que devuelve JSON crudo |
+| `ClienteInterfaz.obtener_llaves(cripta_id, solo_guardadas=False, limite_solicitudes: int \| None = None) -> list[dict]` | Devuelve la lista cruda (lo que trae `"llaves"`). Igual que el resto de la interfaz, que devuelve JSON crudo |
 | `ClienteCripta` | Una solicitud `GET /criptas/<id>/llaves`. Con `solo_guardadas=True` no hace la solicitud y lanza `LlavesNoDisponibles` (no tiene disco) |
 | `ClientePersistente` | Si `llaves` está en `cripta_<id>.bin` (ya validado por versión), lo devuelve sin red. Si falta y `solo_guardadas`, lanza `LlavesNoDisponibles` («sin presupuesto»). Si no, pide al HTTP, **valida** (§5) y solo después guarda |
 | `ClienteOffline` | Lee `llaves` del disco; si falta, lanza `ErrorOffline` con «Faltan las llaves de la cripta X» |

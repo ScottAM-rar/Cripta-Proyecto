@@ -46,7 +46,7 @@ ubicacion_llaves(cripta_id) -> UbicacionLlavesDTO # NUEVO; lanza LlavesNoDisponi
 ## ClienteInterfaz (`adaptadores/Interfaz.py`, AMPLIADO)
 
 ```text
-obtener_llaves(cripta_id: str, solo_guardadas: bool = False) -> list[dict]
+obtener_llaves(cripta_id: str, solo_guardadas: bool = False, limite_solicitudes: int | None = None) -> list[dict]
 ```
 
 Devuelve la lista cruda de la respuesta (cada elemento con `id`, `sala` y opcionalmente `enemigo`). Detalle por implementación en [contracts/interfaz-clientes.md](contracts/interfaz-clientes.md).

@@ -31,7 +31,7 @@
 **Propósito**: línea base y revisión de la constitución.
 
 - [X] T001 Revisar `plan.md`, `research.md` y este `tasks.md` contra la lista de prohibidos del principio I y anotar el resultado en la sección Notas de `specs/009-contrato-datos-v2/checklists/requirements.md`. Comprobar en especial que la detección de repetidos (`ordenar_adaptativo`), la lista `existe` de booleanos y la precarga por costo del bench (`CampoDeCostos`/`MonticuloMinimo`) no necesitan `dict`, `set` ni `collections`. (I)
-- [X] T002 [P] Ejecutar `python -m unittest discover -p "test_*.py"` y los laboratorios `tests_labs/prueba_cliente_persistente.py`, `tests_labs/prueba_cliente_offline.py`, `tests_labs/prueba_fabrica.py` y `tests_labs/prueba_precarga_presupuesto.py`, y anotar la línea base (pruebas que pasan y fallan) en las Notas de `specs/009-contrato-datos-v2/checklists/requirements.md`. Así se detectan regresiones de la Parte I, la 001 y la 005. (IX)
+- [X] T002 [P] Ejecutar `python -m unittest discover -p "test_*.py"` y los laboratorios con `python -m tests_labs.<nombre>` (`python -m tests_labs.prueba_cliente_persistente`, `python -m tests_labs.prueba_cliente_offline`, `python -m tests_labs.prueba_fabrica` y `python -m tests_labs.prueba_precarga_presupuesto`), y anotar la línea base (pruebas que pasan y fallan, y las llamadas por nombre y cantidad de la primera y la segunda partida, que T013 (a) usa como línea base) en las Notas de `specs/009-contrato-datos-v2/checklists/requirements.md`. Así se detectan regresiones de la Parte I, la 001 y la 005. (IX)
 
 **Punto de control**: revisión anotada y línea base registrada (incluida la de `--bench cache`, T049).
 
@@ -327,7 +327,7 @@
   - No agregan usos de `deque`.
 
   Comprobar que `Logica/` no importa nada de `adaptadores/`. (I, IV, V)
-- [ ] T044 Ejecutar todas las pruebas (`python -m unittest discover -p "test_*.py"`), los laboratorios de la línea base (T002) y `python main.py --bench`. Comparar con la línea base y registrar cualquier fallo sin ocultarlo. (IX)
+- [ ] T044 Ejecutar todas las pruebas (`python -m unittest discover -p "test_*.py"`), los laboratorios de la línea base (T002) con `python -m tests_labs.<nombre>` y `python main.py --bench`. Comparar con la línea base y registrar cualquier fallo sin ocultarlo. (IX)
 - [ ] T045 Comparar `spec.md` con el programa entregado y corregir cualquier desajuste primero en la especificación, en un commit aparte del código. (X)
 
 ---
