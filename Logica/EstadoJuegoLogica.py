@@ -14,6 +14,8 @@ from Logica.RetrocesoLogica import RetrocesoLogica
 from DTO.CambioDTO import CambioDTO
 from DTO.ResultadoEventoDTO import ResultadoEventoDTO
 from Logica.FuenteCripta import FuenteCripta
+from Logica.FuenteCripta import LlavesNoDisponibles
+from DTO.LlavesDTO import UbicacionLlavesDTO
 from Logica.CampoDeCostos import CampoDeCostos
 from Logica.MapaCripta import MapaCripta
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
@@ -32,6 +34,8 @@ class EstadoJuegoLogica:
         self.idCripta = None           # se fija al iniciar o restaurar una partida; None = todavía no hay cripta elegida
         self.precargaInicialHecha = False
         self.registrador_log = None    # opcional: algo con agregar(linea); el modelo solo le avisa cada acción
+        self.llaves = None             # UbicacionLlavesDTO de la cripta, o None si no se pidió o no se pudo (capacidad 009)
+        self.avisoLlaves = None        # mensaje del último LlavesNoDisponibles, para mostrarlo (FR-313)
         
         if(cripta is not None):
             self.iniciarJuego(cripta)
@@ -83,6 +87,7 @@ class EstadoJuegoLogica:
         self.jugadorLogica = JugadorLogica(jugador,self.semilla,self.gestorEventos.azar)
         self.logEventos.vaciar()
         self.idCripta = cripta
+        self.obtenerLlaves()           # partida nueva: la ubicación de las llaves se pide enseguida (FR-301)
         self.iniciado = True
         self.registrador_log = None
         self.fin = False
@@ -95,6 +100,25 @@ class EstadoJuegoLogica:
         if obtener is None:
             return None
         return CampoDeCostos(MapaCripta(obtener(cripta)), jugador, salas)
+
+    def obtenerLlaves(self) -> UbicacionLlavesDTO | None:
+        """Único punto por el que el modelo pide la ubicación de las llaves (capacidad 009). Si ya la tiene, no pide
+        nada. Si la fuente no puede darla, guarda el aviso en avisoLlaves y la partida sigue (FR-313). El fallo no se
+        memoriza: otra llamada vuelve a pedir, y la fuente decide con lo guardado y el presupuesto si hace la solicitud.
+        Las llaves y el aviso no entran al log ni al estado guardado."""
+        if self.llaves is not None:
+            return self.llaves
+        # Con getattr, por compatibilidad con las fuentes de prueba antiguas que no lo tienen (como obtener_mapa).
+        obtener = getattr(self.comunicacion, "ubicacion_llaves", None)
+        if obtener is None:
+            return None
+        try:
+            self.llaves = obtener(self.idCripta)
+            self.avisoLlaves = None
+        except LlavesNoDisponibles as error:
+            self.llaves = None
+            self.avisoLlaves = str(error)
+        return self.llaves
 
     def _comprobarFinal(self):
         if self.jugadorLogica.esta_muerto():

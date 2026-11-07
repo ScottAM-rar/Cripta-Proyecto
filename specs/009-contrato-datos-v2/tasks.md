@@ -109,7 +109,7 @@
 
 ### Pruebas de la Historia 1 (escribir primero; deben fallar)
 
-- [ ] T012 [P] [US1] Crear `test_llaves_clientes.py`:
+- [X] T012 [P] [US1] Crear `test_llaves_clientes.py`:
   - **(a)** `ClienteCripta.obtener_llaves` con `requests.get` sustituido por `unittest.mock.patch`, que devuelve 200 con `{"llaves": [...]}`. Comprobar la URL `…/criptas/<id>/llaves`, el encabezado `X-Cripta-Client-Id` y `solicitudes_realizadas == 1`. Con `solo_guardadas=True` no hay llamada.
   - **(b)** H1-2: llave `L` soltada por `E`, que inicia en la sala 7, devuelve `ids=[L]`, `salas=[7]`, `enemigos=[E]` en el DTO de `ServicioCripta.ubicacion_llaves`.
   - **(c)** H1-3: llave `M` en el suelo de la sala 3 devuelve `enemigos=[None]`.
@@ -117,7 +117,7 @@
   - **(e)** H5-5 / FR-303: la misma cripta guardada da **la misma** lista por el HTTP simulado, por el persistente y por el offline.
 
   (FR-302, FR-303, FR-304)
-- [ ] T013 [P] [US1] Crear `test_llaves_presupuesto.py`:
+- [X] T013 [P] [US1] Crear `test_llaves_presupuesto.py`:
   - **(a)** H1-1: la primera partida en una carpeta vacía (con `nueva_ejecucion` o el equivalente con `HttpConfigurable`) hace **exactamente 1** llamada `("llaves", …)`. Las llamadas que **no** son de llaves (nombre y cantidad, con `HttpFalso.veces`) son **iguales a la línea base** de la misma partida medida en T002 antes de esta capacidad, y `reporte(cid).texto()` muestra el total (línea base + 1).
   - **(b)** H1-4: llamar dos veces a `ubicacion_llaves` en la misma sesión deja `veces("llaves") == 1`.
   - **(c)** SC-005: con el presupuesto agotado (`presupuesto_solicitudes` de los datos igual a las solicitudes ya hechas) y sin llaves guardadas, **no** se llama a `("llaves", …)` y se lanza `LlavesNoDisponibles`, cuyo mensaje nombra la cripta.
@@ -127,8 +127,8 @@
 
 ### Implementación de la Historia 1
 
-- [ ] T014 [US1] En `adaptadores/servicioCripta.py` agregar `esqueleto(cripta_id) -> MapaDTO`, moviendo ahí el cuerpo actual de `obtener_mapa`, y hacer que `obtener_mapa` devuelva `self.esqueleto(cripta_id)`. Las pruebas de la capacidad 001 (`test_terreno_costos.py`, `test_cazador.py`, `test_mapa_cripta.py`) deben seguir pasando. (FR-301; contrato de `contracts/interfaz-clientes.md`)
-- [ ] T015 [US1] En `adaptadores/servicioCripta.py` agregar `ubicacion_llaves(cripta_id) -> UbicacionLlavesDTO`, con los campos `_llaves_id` y `_llaves` para memorizar por sesión, como `_datos_id`/`_datos`:
+- [X] T014 [US1] En `adaptadores/servicioCripta.py` agregar `esqueleto(cripta_id) -> MapaDTO`, moviendo ahí el cuerpo actual de `obtener_mapa`, y hacer que `obtener_mapa` devuelva `self.esqueleto(cripta_id)`. Las pruebas de la capacidad 001 (`test_terreno_costos.py`, `test_cazador.py`, `test_mapa_cripta.py`) deben seguir pasando. (FR-301; contrato de `contracts/interfaz-clientes.md`)
+- [X] T015 [US1] En `adaptadores/servicioCripta.py` agregar `ubicacion_llaves(cripta_id) -> UbicacionLlavesDTO`, con los campos `_llaves_id` y `_llaves` para memorizar por sesión, como `_datos_id`/`_datos`:
   1. Si ya está memorizada para esa cripta, la devuelve.
   2. `restante = self.presupuesto_solicitudes(cripta_id) - self.solicitudes_realizadas`; `solo_guardadas = restante < 1`.
   3. `crudas = self.cliente.obtener_llaves(cripta_id, solo_guardadas, limite_solicitudes=restante)`.
@@ -136,8 +136,8 @@
   5. `validar_llaves(...)`, construye `UbicacionLlavesDTO(cripta_id, self.version_cripta(cripta_id), ids, salas, enemigos)`, memoriza y devuelve.
 
   Debe hacer pasar T012 y T013 (b) y (d). (FR-301, FR-302, FR-303, FR-304)
-- [ ] T016 [US1] En `adaptadores/servicioCripta.py`, dentro de `ubicacion_llaves`, convertir `ErrorOffline`, `ErrorSinConexion`, `RuntimeError` del HTTP y `LlavesInvalidas` en `LlavesNoDisponibles(f"No se pudieron obtener las llaves de la cripta {cripta_id}: {motivo}. La verificación de resolubilidad no está disponible.")`. `LlavesNoDisponibles` se deja pasar tal cual. Tras un fallo **no** se memoriza nada. Debe hacer pasar T013 (c). (FR-309, FR-310)
-- [ ] T017 [US1] En `Logica/EstadoJuegoLogica.py`:
+- [X] T016 [US1] En `adaptadores/servicioCripta.py`, dentro de `ubicacion_llaves`, convertir `ErrorOffline`, `ErrorSinConexion`, `RuntimeError` del HTTP y `LlavesInvalidas` en `LlavesNoDisponibles(f"No se pudieron obtener las llaves de la cripta {cripta_id}: {motivo}. La verificación de resolubilidad no está disponible.")`. `LlavesNoDisponibles` se deja pasar tal cual. Tras un fallo **no** se memoriza nada. Debe hacer pasar T013 (c). (FR-309, FR-310)
+- [X] T017 [US1] En `Logica/EstadoJuegoLogica.py`:
   - En `__init__`, inicializar `self.llaves = None` y `self.avisoLlaves = None`.
   - Agregar `obtenerLlaves(self) -> UbicacionLlavesDTO | None`, el único punto por el que el modelo pide las llaves (contrato en `contracts/interfaz-clientes.md`). Si `self.llaves` no es `None`, la devuelve sin pedir nada. Si no, `obtener = getattr(self.comunicacion, "ubicacion_llaves", None)`: se busca con `getattr` **por compatibilidad con las fuentes de prueba antiguas** que no lo tienen (como `obtener_mapa`), y sin el método devuelve `None` sin aviso. Si lo tiene, `self.llaves = obtener(self.idCripta)` y `self.avisoLlaves = None` dentro de un `try`; con `except LlavesNoDisponibles as error`, `self.llaves = None` y `self.avisoLlaves = str(error)`, y la partida sigue. El fallo no se memoriza.
   - En `iniciarJuego`, después de asignar `self.idCripta`, llamar a `self.obtenerLlaves()` (partida nueva: consulta enseguida).
@@ -346,7 +346,7 @@
 
   (FR-325, FR-301, FR-313)
 - [ ] T047 [US2] En `Logica/EstadoGuardadoLogica.py`, en la restauración de una partida, poner `logica.llaves = None` y `logica.avisoLlaves = None` **sin** llamar a `obtenerLlaves()` ni a ninguna operación de la fuente que pida llaves. Las llaves se entregan bajo demanda con `obtenerLlaves()` (T017). Ni las llaves ni el aviso entran al estado guardado: el formato de partida no cambia. Si la partida cargada muestra el aviso, que sea cuando aparece (T021), no al cargar. Debe hacer pasar T046. (FR-325, II)
-- [ ] T048 [US1] Agregar a `test_llaves_presupuesto.py`, con `requests.get` sustituido por `unittest.mock.patch` y `reintentar_en: 0`:
+- [X] T048 [US1] Agregar a `test_llaves_presupuesto.py`, con `requests.get` sustituido por `unittest.mock.patch` y `reintentar_en: 0`:
   - **(e)** Con 1 solicitud restante y una respuesta 429, `ServicioCripta.ubicacion_llaves` hace **exactamente 1** llamada a `requests.get`, no espera, lanza `LlavesNoDisponibles` (el mensaje nombra la cripta) y `solicitudes_realizadas` no supera el presupuesto.
   - **(f)** Con 3 restantes y respuestas 429, 429, 200, hace 3 llamadas y devuelve las llaves.
   - **(g)** Sin límite, `_solicitar` de otras consultas conserva `MAX_REINTENTOS_429`.
