@@ -304,7 +304,7 @@ class ServicioCripta:
         except (RuntimeError, LlavesInvalidas) as error:
             # RuntimeError cubre ErrorOffline, ErrorSinConexion y los demás errores del HTTP, que heredan de él.
             raise LlavesNoDisponibles(
-                f"No se pudieron obtener las llaves de la cripta {cripta_id}: {error}. "
+                f"No se pudieron obtener las llaves de la cripta {cripta_id}: {str(error).rstrip('.')}. "
                 "La verificación de resolubilidad no está disponible."
             ) from error
         self._llaves_id = cripta_id
