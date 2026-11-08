@@ -18,16 +18,15 @@ La consulta de estados pasados (capacidad 004) necesita mostrar el estado de la 
 
 ## Clarificaciones
 
-Los siguientes aspectos quedan abiertos hasta que el grupo los decida:
+### Sesión 2026-11-07
 
-- **(a)** ¿El uso del pergamino de retroceso y las acciones rechazadas por el juego cuentan como acción del jugador para efectos del contador K? [NEEDS CLARIFICATION: impacto directo en cuándo se toma cada punto de control y en la reproducibilidad]
-- **(b)** ¿El estado inicial de la partida (antes de cualquier acción) cuenta automáticamente como un punto de control número 0? [NEEDS CLARIFICATION: afecta el primer instante desde el que la historia #k puede arrancar sin reproducir desde cero]
-- **(c)** ¿El punto de control se toma justo antes de que el jugador ejecute la acción número n×K, o justo después de que esa acción surta efecto, considerando que historia #k muestra el estado justo antes de la acción k? [NEEDS CLARIFICATION: determina el estado exacto que se guarda y la coherencia con historia #k]
-- **(d)** Cuando el pergamino hace volver a un estado anterior, ¿qué ocurre con los puntos de control tomados después de ese estado? ¿Se descartan, se conservan, o se mantienen pero se marcan como inaccesibles? [NEEDS CLARIFICATION: interacción directa con la capacidad 004]
-- **(e)** Si se carga una partida guardada que fue jugada con un valor de K distinto al K de la ejecución actual, ¿se usa el K del archivo, el K de la invocación actual, o se rechaza la carga? [NEEDS CLARIFICATION: afecta la compatibilidad de archivos entre sesiones]
-- **(f)** Si K es mayor que el número total de acciones de la partida, ¿el programa informa que no existe ningún punto de control, o simplemente no toma ninguno sin avisar? [NEEDS CLARIFICATION: afecta la experiencia cuando la partida es más corta que K]
+- Q: ¿Qué eventos provocados por el usuario se contabilizan exactamente como una acción del jugador para el avance del contador K? (FR-418) → A: Cuentan solo las acciones del jugador aceptadas y ejecutadas (las rechazadas no cuentan). El contador es el número de acciones de la línea de tiempo vigente: si el pergamino revierte m acciones, el contador disminuye en m. El uso del pergamino en sí no cuenta como acción.
+- Q: ¿El estado inicial de la partida (antes de que el jugador ejecute su primera acción) debe registrarse automáticamente como un punto de control? (FR-418) → A: Sí, el estado inicial de la partida siempre se registra automáticamente como punto de control 0.
+- Q: ¿En qué instante preciso del ciclo de turno se captura el punto de control correspondiente a un múltiplo n×K de acciones? (FR-418) → A: El punto de control n se toma cuando, completada la acción n×K, llega el turno del jugador: es el estado justo antes de su decisión n×K+1 (con el reloj ya avanzado y todos los eventos anteriores aplicados). Si la acción n×K termina la partida, no se toma.
+- Q: ¿Qué sucede con los puntos de control que se hayan registrado con posterioridad a un estado temporal al que el pergamino de retroceso hace regresar? (FR-418) → A: Se descartan permanentemente todos los puntos de control tomados con posterioridad al estado al que se retrocedió.
+- Q: ¿Qué valor del intervalo K rige la partida si se carga un archivo guardado con un intervalo de control distinto al especificado en la línea de comandos actual? (FR-414, FR-424) → A: Si se pasa `--checkpoint-cada`, prevalece el nuevo K para acciones futuras; si se omite, se conserva el K del archivo. Los puntos existentes se preservan.
 
-> **Nota de gobernanza (Principio VIII)**: estas clarificaciones NO deben resolverse suponiendo; deben responderse explícitamente antes de pasar a la fase de plan.
+*(Todas las ambigüedades identificadas en la especificación fueron resueltas durante la sesión).*
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
@@ -120,12 +119,12 @@ Tomar un punto de control no introduce ninguna pausa perceptible en el ciclo de 
 - Valor negativo de K: se rechaza con mensaje claro. *(FR-417)*
 - Valor decimal (p. ej. `2.5`): se rechaza con mensaje claro. *(FR-417)*
 - Valor no numérico (p. ej. `abc`): se rechaza con mensaje claro. *(FR-417)*
-- K mayor que el número total de acciones de la partida: [NEEDS CLARIFICATION: ver punto (f)]
-- Estado inicial de la partida: [NEEDS CLARIFICATION: ver punto (b)]
-- Instante exacto del punto de control dentro de la acción n×K: [NEEDS CLARIFICATION: ver punto (c)]
-- Acciones rechazadas / uso del pergamino: [NEEDS CLARIFICATION: ver punto (a)]
-- Puntos de control tras retroceso con pergamino: [NEEDS CLARIFICATION: ver punto (d)]
-- Carga de partida guardada con K distinto: [NEEDS CLARIFICATION: ver punto (e)]
+- K mayor que el número total de acciones de la partida: existe el punto de control 0 inicial y no se genera ningún punto periódico adicional (⌊N/K⌋ = 0); no se emite ninguna advertencia ni error y la partida procede con normalidad.
+- Estado inicial de la partida: se registra automáticamente como el punto de control 0 antes de procesar la primera acción del jugador.
+- Instante exacto del punto de control n: se toma cuando, completada la acción n×K, llega el turno del jugador (estado justo antes de su decisión n×K + 1, con reloj avanzado y eventos aplicados). Si la acción n×K termina la partida, no se toma.
+- Acciones rechazadas y uso del pergamino: las acciones rechazadas no incrementan el contador K. El uso del pergamino no cuenta como acción y, al revertir m acciones de la línea de tiempo vigente, el contador K disminuye en m.
+- Puntos de control tras retroceso con pergamino: se descartan permanentemente todos los puntos de control tomados con posterioridad al estado al que se retrocedió.
+- Carga de partida guardada con K distinto: si la invocación actual especifica `--checkpoint-cada K`, dicho valor prevalece para las acciones futuras; si se omite, se conserva el valor de K guardado en el archivo. En ambos casos se preservan todos los puntos de control existentes.
 
 ## Requisitos *(obligatorio)*
 
@@ -140,7 +139,7 @@ Tomar un punto de control no introduce ninguna pausa perceptible en el ciclo de 
 
 **Toma de puntos de control**
 
-- **FR-418**: Durante la partida, el programa DEBE tomar un punto de control cada K acciones del jugador. El número de puntos de control tomados entre las acciones 1 y N (inclusive) DEBE ser exactamente ⌊N/K⌋. No se toman puntos de control adicionales fuera de los múltiplos de K.
+- **FR-418**: Al iniciar la partida, el estado inicial (antes de la primera acción del jugador) DEBE registrarse automáticamente como el punto de control 0. Durante la partida, el programa DEBE tomar un punto de control cada K acciones del jugador. Cuentan solo las acciones aceptadas y ejecutadas por el juego; las acciones rechazadas no incrementan el contador. El contador de acciones corresponde al número de acciones de la línea de tiempo vigente: si el pergamino de retroceso revierte m acciones, el contador disminuye en m y todos los puntos de control registrados con posterioridad a dicho estado DEBEN descartarse permanentemente. El uso del pergamino en sí no cuenta como acción. Cada punto de control periódico n DEBE tomarse cuando, completada la acción n×K, llega el turno del jugador (estado justo antes de su decisión n×K + 1, con el reloj avanzado y todos los eventos anteriores aplicados). Si la acción n×K termina la partida, no se toma dicho punto de control. El número de puntos de control periódicos tomados entre las acciones 1 y N (inclusive) de la línea de tiempo vigente DEBE ser exactamente ⌊N/K⌋ si la partida continúa tras la acción N. No se toman puntos de control adicionales fuera del inicial y los múltiplos de K.
 - **FR-419**: No DEBE tomarse más de un punto de control cada K acciones del jugador. El programa DEBE contabilizar exactamente K acciones entre dos puntos de control consecutivos.
 - **FR-420**: Tomar un punto de control DEBE ser transparente para el jugador: no DEBE producir ningún mensaje, pausa ni cambio visible en la interfaz.
 - **FR-421**: Un punto de control DEBE ser una copia completa del estado de la partida en el instante en que se toma. El estado DEBE incluir, como mínimo: el reloj virtual y la agenda de eventos, la posición e inventario del jugador, el estado de cada enemigo activo, las salas ya cargadas, el estado de las puertas, la bitácora de la partida (`partida.log` hasta ese instante), el estado del generador aleatorio y, cuando la capacidad de niebla de guerra esté activa, lo que el jugador conoce del mapa hasta ese instante. La lista detallada de campos y el número de versión del formato de archivo los define quien mantiene el formato, no esta especificación.
@@ -152,7 +151,7 @@ Tomar un punto de control no introduce ninguna pausa perceptible en el ciclo de 
 
 **Persistencia**
 
-- **FR-424**: Al guardar la partida, DEBEN guardarse también todos los puntos de control tomados hasta ese momento. Al cargar la partida en una sesión posterior, esos puntos de control DEBEN estar disponibles y ser reproducibles.
+- **FR-424**: Al guardar la partida, DEBEN guardarse también todos los puntos de control tomados hasta ese momento y el valor vigente de K. Al cargar la partida en una sesión posterior, esos puntos de control DEBEN estar disponibles y ser reproducibles. Si en la sesión de carga se especifica explícitamente `--checkpoint-cada K`, dicho nuevo valor de K DEBE regir la toma de puntos de control para las acciones futuras; si se omite la bandera, DEBE mantenerse el K guardado en el archivo. En ambos casos, todos los puntos de control previamente registrados DEBEN preservarse.
 - **FR-425**: Un archivo de partida generado con una versión anterior del programa DEBE detectarse como incompatible y rechazarse con un mensaje claro, o migrarse de forma explícita con aviso al jugador. NUNCA DEBE cargarse en silencio como si fuera compatible con la versión actual (Principio VI, Apéndice B).
 
 **Rendimiento**
@@ -164,7 +163,7 @@ Tomar un punto de control no introduce ninguna pausa perceptible en el ciclo de 
 - **Punto de control**: copia completa e instantánea del estado de la partida en un instante determinado. Permite reanudar la partida desde ese instante con garantía de reproducibilidad. Se toma cada K acciones del jugador.
 - **K (intervalo de punto de control)**: entero ≥ 1 que fija cuántas acciones del jugador deben transcurrir entre dos puntos de control consecutivos. Se configura con `--checkpoint-cada` o toma un valor por defecto.
 - **Estado de la partida**: conjunto de toda la información necesaria para reproducir la partida desde ese instante: reloj, posición del jugador, inventario, enemigos, salas, puertas, bitácora y generador aleatorio (y mapa conocido cuando aplique).
-- **Acción del jugador**: [NEEDS CLARIFICATION: ver punto (a)] decisión tomada por el jugador que avanza la partida; el contador K se incrementa con cada una.
+- **Acción del jugador**: decisión aceptada y ejecutada por el juego que avanza la partida y la línea de tiempo vigente. Las órdenes rechazadas y el uso del pergamino no cuentan como acción; al revertir m acciones con el pergamino, el contador se reduce en m.
 
 ## Criterios de éxito *(obligatorio)*
 
@@ -179,8 +178,8 @@ Tomar un punto de control no introduce ninguna pausa perceptible en el ciclo de 
 
 ## Supuestos
 
-- El contador de acciones del jugador comienza en 0 al inicio de la partida. El primer punto de control se toma en la acción número K.
-- «Acción del jugador» excluye las acciones internas del programa (como mover enemigos o actualizar el reloj), que no son decisiones del jugador. Qué acciones exactas incrementan el contador queda abierto (ver clarificación a).
+- El contador de acciones del jugador comienza en 0 al inicio de la partida (donde se registra el punto de control 0). El siguiente punto de control se toma al alcanzar K acciones del jugador.
+- «Acción del jugador» incluye únicamente decisiones aceptadas y ejecutadas por el juego. Excluye órdenes inválidas/rechazadas, comandos de consulta, el uso del pergamino en sí y las acciones internas del programa (como mover enemigos o actualizar el reloj).
 - El valor por defecto de K existe y es un entero ≥ 1; su cifra concreta se decide en la fase de plan con mediciones de rendimiento, siguiendo el Principio VII.
 - Los puntos de control se almacenan dentro del mismo archivo de partida que el guardado normal; no se crean archivos separados por punto de control.
 - El estado del generador aleatorio es parte del estado de la partida y, por tanto, parte de cada punto de control, como exige el Principio II.

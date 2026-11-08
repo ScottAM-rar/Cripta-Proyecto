@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain — **6 clarificaciones abiertas (a–f); deben resolverse antes de `/speckit-plan`**
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,5 +31,5 @@
 
 ## Notes
 
-- Los 6 marcadores [NEEDS CLARIFICATION] (puntos a–f) son preguntas de alcance con múltiples interpretaciones razonables e impacto directo en el comportamiento del juego. No pueden resolverse con valores por defecto; requieren decisión explícita del grupo antes de `/speckit-clarify` o `/speckit-plan`.
-- Todos los demás ítems pasan. La spec está completa en estructura y contenido; solo falta resolver las 6 ambigüedades abiertas.
+- Todas las clarificaciones fueron resueltas e integradas en `spec.md` durante la sesión interactiva de clarificación.
+- Todos los 16 ítems pasan. La especificación está completa, sin ambigüedades y lista para `/speckit-plan`.
