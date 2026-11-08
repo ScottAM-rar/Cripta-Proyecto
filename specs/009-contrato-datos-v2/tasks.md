@@ -157,7 +157,7 @@
 
 ### Pruebas de la Historia 2 (escribir primero; deben fallar donde falte código)
 
-- [ ] T018 [US2] Crear `test_llaves_version.py`:
+- [X] T018 [US2] Crear `test_llaves_version.py`:
   - **(a)** H2-1: la segunda ejecución con `c1` no hace `("llaves", …)` y la lista es igual a la de la primera.
   - **(b)** H2-2: con `c2` se hace exactamente una consulta, `AlmacenDisco.version_cripta == "c2"` y `leer_llaves` tiene la lista nueva. Configurar `HttpConfigurable` con llaves distintas en `c2` para distinguirlas.
   - **(c)** H2-3: un `cripta_<id>.bin` con la forma de la Parte I (`version`, `datos`, `salas` y contenido, **sin** `llaves`), creado con `AlmacenDisco` en una carpeta temporal, se consulta una vez y después tiene `llaves`. La prueba no borra ni edita archivos a mano.
@@ -168,7 +168,7 @@
 
 ### Implementación de la Historia 2
 
-- [ ] T019 [US2] Ejecutar `test_llaves_version.py`. Si (b) o (c) fallan, corregir **solo** `adaptadores/cliente_persistente.py` (`obtener_llaves`, `_asegurar_cripta`) o `adaptadores/AlmacenDisco.py` sin tocar `_validar`. Si la decisión A de research.md §4 resultara insuficiente, documentarlo antes de cambiarla. (FR-306, FR-307, FR-308, VI)
+- [X] T019 [US2] Ejecutar `test_llaves_version.py`. Si (b) o (c) fallan, corregir **solo** `adaptadores/cliente_persistente.py` (`obtener_llaves`, `_asegurar_cripta`) o `adaptadores/AlmacenDisco.py` sin tocar `_validar`. Si la decisión A de research.md §4 resultara insuficiente, documentarlo antes de cambiarla. (FR-306, FR-307, FR-308, VI)
 
 **Punto de control**: `python -m unittest test_llaves_version` pasa.
 
