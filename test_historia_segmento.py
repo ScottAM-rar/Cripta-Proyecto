@@ -156,6 +156,47 @@ class TestHistoriaSegmento(unittest.TestCase):
         # En el segmento [2..5): A3 (2) fue revertida por P (3), queda solo A3' (4)
         self.assertEqual(vigentes, [4])
 
+    def test_pergamino_no_aplicable_lanza_value_error(self):
+        """Paso 0 (a): Si un pergamino en el log falla en la reproducción (ej. nada que deshacer),
+        _planificarSegmento lanza ValueError indicando que la reproducción no es fiel."""
+        pergamino = PergaminoRetroceso("perg_invalido", "Pergamino", peso=0, valor=0)
+        self.juego.estadoJuego.jugador.inventario.agregar_objeto(pergamino)
+        ev = EventoDTO(
+            tiempo_ejecucion=100,
+            id_secuencia=0,
+            actor=self.juego.estadoJuego.jugador,
+            tipo_accion="USAR_OBJETO",
+            datos_extra=[pergamino],
+        )
+        # Registramos directamente en el log un uso de pergamino sin acción previa en ese estado
+        self.juego._asegurarPuntoControlInicial()
+        self.juego.logEventos.registrar_evento(ev)
+        with self.assertRaises(ValueError) as cm:
+            self.juego._planificarSegmento(self.juego.puntos_control[0])
+        self.assertIn("La reproducción no es fiel", str(cm.exception))
+
+    def test_log_eventos_obtener_registros_rango(self):
+        """Paso 0 (b): obtener_registros_rango solo deserializa los nodos en el rango [inicio, fin)."""
+        from unittest.mock import patch
+        import json
+
+        # Generar 10 acciones en el log
+        for _ in range(10):
+            self._esperar(50)
+
+        self.assertEqual(self.juego.logEventos.cantidad, 10)
+
+        # Solicitar rango [3, 7) (longitud 4)
+        with patch("json.loads", wraps=json.loads) as mock_json:
+            regs = self.juego.logEventos.obtener_registros_rango(3, 7)
+            self.assertEqual(len(regs), 4)
+            # Solo debe haber parseado 4 veces, no 10
+            self.assertEqual(mock_json.call_count, 4)
+
+        # Probar límites fuera de rango o vacíos
+        self.assertEqual(self.juego.logEventos.obtener_registros_rango(5, 5), [])
+        self.assertEqual(self.juego.logEventos.obtener_registros_rango(8, 2), [])
+
 
 if __name__ == "__main__":
     unittest.main()

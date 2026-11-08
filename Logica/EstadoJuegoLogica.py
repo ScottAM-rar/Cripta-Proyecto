@@ -229,8 +229,6 @@ class EstadoJuegoLogica:
         más el reloj antes de aplicarlo. Una pila local (push por acción, pop por pergamino)
         da la lista de índices de acciones vigentes (E[0..m-1]).
         """
-        todos_los_registros = self.logEventos.obtener_registros_cronologicos()
-
         # 1. Resolver el punto base (PuntoControlDTO) y el inicio del segmento
         if punto_base is None:
             if not self.puntos_control:
@@ -253,8 +251,9 @@ class EstadoJuegoLogica:
                 base_dto = self.puntos_control[0] if self.puntos_control else None
 
         # 2. Resolver el fin del segmento
+        total_log = self.logEventos.cantidad
         if fin_log is None:
-            fin_log = len(todos_los_registros)
+            fin_log = total_log
             if base_dto is not None:
                 for i in range(len(self.puntos_control)):
                     if self.puntos_control[i] is base_dto:
@@ -262,7 +261,7 @@ class EstadoJuegoLogica:
                             fin_log = self.puntos_control[i + 1].longitud_acciones_log
                         break
 
-        tope_fin = min(fin_log, len(todos_los_registros))
+        tope_fin = min(fin_log, total_log)
         if inicio_log >= tope_fin or base_dto is None:
             return []
 
@@ -281,10 +280,11 @@ class EstadoJuegoLogica:
             aislada.puntos_control = []
             aislada._actualizarFichasEnUso = lambda: None
 
+            registros_segmento = self.logEventos.obtener_registros_rango(inicio_log, tope_fin)
             marcas: list[tuple[int, str, int]] = []
 
-            for idx in range(inicio_log, tope_fin):
-                reg = todos_los_registros[idx]
+            for offset, reg in enumerate(registros_segmento):
+                idx = inicio_log + offset
                 reloj_antes = aislada.estadoJuego.reloj.tiempo_actual
 
                 if reg.tipo_accion in TIPOS_CURSOR_INVENTARIO:
@@ -295,16 +295,15 @@ class EstadoJuegoLogica:
                 evento = aislada._crear_evento_repeticion(reg)
                 es_pergamino = GestorEventos.es_uso_de_pergamino(evento)
 
+                resultado = aislada.accionJugador(evento)
+                if resultado.exito is False:
+                    raise ValueError(
+                        f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
+                    )
+
                 if es_pergamino:
-                    if aislada.jugadorLogica.retroceso.hay_algo_para_deshacer():
-                        aislada.accionJugador(evento)
                     marcas.append((idx, "pergamino", reloj_antes))
                 else:
-                    resultado = aislada.accionJugador(evento)
-                    if resultado.exito is False:
-                        raise ValueError(
-                            f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
-                        )
                     marcas.append((idx, "accion", reloj_antes))
 
             # 4. Pila local que produce los índices vigentes
@@ -319,6 +318,105 @@ class EstadoJuegoLogica:
                     pila.append(idx)
 
             return pila
+        finally:
+            self._restaurarSingletonRetroceso(snapshot, reloj_retro_ref)
+
+    # ------------------------------------------------------------------ T008
+    def _reconstruirHastaInstante(self, t: int) -> ResumenEstadoDTO:
+        """Reconstruye el estado de la partida en el instante virtual t (0 <= t <= reloj_actual)
+        mediante una reproducción acotada y aislada desde el punto de control previo más cercano (plan.md §3).
+        No altera en absoluto la partida viva ni consume tiempo ni recursos de red.
+        """
+        reloj_vivo = self.estadoJuego.reloj.tiempo_actual
+        if t > reloj_vivo:
+            raise ValueError(f"El instante pedido ({t}) es futuro respecto al reloj actual ({reloj_vivo})")
+        if t == reloj_vivo:
+            return self._extraerResumenEstadoActual(t, self.acciones_linea_tiempo)
+
+        punto_base = self._buscarPuntoPorInstante(t)
+        if punto_base is None:
+            if not self.puntos_control:
+                self._asegurarPuntoControlInicial()
+            punto_base = self.puntos_control[0] if self.puntos_control else None
+            if punto_base is None:
+                raise ValueError("No hay un punto de control disponible para la reconstrucción")
+
+        # Fin del segmento: longitud_acciones_log del punto siguiente, o final del log
+        fin_log = self.logEventos.cantidad
+        for i in range(len(self.puntos_control)):
+            if self.puntos_control[i] is punto_base:
+                if i + 1 < len(self.puntos_control):
+                    fin_log = self.puntos_control[i + 1].longitud_acciones_log
+                break
+
+        # Pasada 1: Clasificación de registros vigentes en el segmento
+        indices_vigentes = self._planificarSegmento(punto_base, fin_log)
+
+        # Pasada 2: Reproducción fiel en una nueva instancia aislada
+        snapshot, reloj_retro_ref = self._guardarSingletonRetroceso()
+        try:
+            aislada = EstadoJuegoLogica(comunicacion=self.comunicacion)
+            aislada._es_repeticion = True
+            aislada.registrador_log = None
+            aislada._actualizarFichasEnUso = lambda: None
+
+            EstadoGuardadoLogica.restaurar(aislada, punto_base.estado)
+            aislada.acciones_linea_tiempo = punto_base.acciones_linea_tiempo
+            aislada._es_repeticion = True
+            aislada.registrador_log = None
+            aislada.puntos_control = []
+            aislada._actualizarFichasEnUso = lambda: None
+
+            inicio_log = punto_base.longitud_acciones_log
+            tope_fin = min(fin_log, self.logEventos.cantidad)
+            registros = self.logEventos.obtener_registros_rango(inicio_log, tope_fin)
+
+            p_vigente = 0
+
+            for offset, reg in enumerate(registros):
+                idx = inicio_log + offset
+                if aislada.fin or aislada.estadoJuego.reloj.tiempo_actual > t:
+                    break
+
+                if reg.tipo_accion in TIPOS_CURSOR_INVENTARIO:
+                    aislada._repetirMovimientoDeCursor(reg.tipo_accion)
+                    continue
+
+                evento = aislada._crear_evento_repeticion(reg)
+
+                es_vigente = (p_vigente < len(indices_vigentes) and indices_vigentes[p_vigente] == idx)
+                if es_vigente:
+                    p_vigente += 1
+                    # FR-428: si en t hay decisión del jugador, mostrar estado justo antes de esa decisión
+                    if aislada.estadoJuego.reloj.tiempo_actual >= t:
+                        break
+
+                    resultado = aislada.accionJugador(evento, tope=t)
+                    if resultado.exito is False:
+                        raise ValueError(
+                            f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
+                        )
+
+                    if aislada.fin:
+                        break
+
+                    sig = aislada.estadoJuego.reloj.siguiente()
+                    if (sig is not None and sig.tiempo_ejecucion > t) or aislada.estadoJuego.reloj.tiempo_actual >= t:
+                        break
+                else:
+                    # Acción revertida o pergamino: aplicar sin tope para fidelidad de azar y estado
+                    resultado = aislada.accionJugador(evento)
+                    if resultado.exito is False:
+                        raise ValueError(
+                            f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
+                        )
+                    if aislada.fin:
+                        break
+
+            if not aislada.fin and aislada.estadoJuego.reloj.tiempo_actual <= t:
+                aislada._completarInstante(t)
+
+            return aislada._extraerResumenEstadoActual(t, aislada.acciones_linea_tiempo)
         finally:
             self._restaurarSingletonRetroceso(snapshot, reloj_retro_ref)
 

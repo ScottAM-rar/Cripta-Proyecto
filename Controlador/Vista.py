@@ -1,4 +1,10 @@
 
+from __future__ import annotations
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from DTO.ResumenEstadoDTO import ResumenEstadoDTO
+
+
 class VistaConsola:
 
    def mostrar_advertencias(self, advertencias):
@@ -110,3 +116,30 @@ class VistaConsola:
             puesto = registros.index(resaltar) + 1
             print(f"  ...\n{puesto:>3}  {resaltar.nombre:<15}  (tu puesto)")
         print("=" * 78)
+
+   def mostrar_historia(self, resumen: ResumenEstadoDTO) -> None:
+        """Presenta el estado histórico de forma estructurada según FR-431 y el contrato CLI."""
+        print("\n" + "=" * 50)
+        print(f"ESTADO HISTÓRICO: Instante <{resumen.instante}> | Acción #{resumen.acciones_jugador}")
+        print("=" * 50)
+        print(f"SALA: {resumen.id_sala_jugador}")
+        print(f"VIDA: {resumen.vida_jugador}")
+        print(f"ESTADÍSTICAS: Ataque: {resumen.ataque_jugador} | Defensa: {resumen.defensa_jugador} | Velocidad: {resumen.velocidad_jugador}")
+
+        print("\n--- INVENTARIO ---")
+        llaves_txt = ", ".join(resumen.inventario_llaves) if resumen.inventario_llaves else "Ninguna"
+        objetos_txt = ", ".join(resumen.inventario_objetos) if resumen.inventario_objetos else "Ninguno"
+        print(f"  Llaves: {llaves_txt}")
+        print(f"  Objetos: {objetos_txt}")
+
+        print("\n--- EFECTOS ACTIVOS ---")
+        efectos_txt = ", ".join(resumen.efectos_activos) if resumen.efectos_activos else "Ninguno"
+        print(f"  {efectos_txt}")
+
+        print("\n--- ENEMIGOS EN LA SALA ---")
+        if resumen.enemigos_sala:
+            for inst_id, nombre, vida in resumen.enemigos_sala:
+                print(f"  - {nombre} (ID: {inst_id}, Vida: {vida})")
+        else:
+            print("  No había enemigos en esta sala")
+        print("=" * 50)

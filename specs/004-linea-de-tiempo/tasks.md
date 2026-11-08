@@ -42,14 +42,14 @@
 **Criterio de prueba independiente**: Iniciar una partida, avanzar varias acciones con eventos simultáneos, consultar `historia <t>` y verificar que retorna el estado exacto tras todos los eventos con tiempo $\le t$ (excluyendo la decisión del jugador en $t$, FR-428), y que $t = 0$ devuelve el estado inicial (FR-430). Rechazar instantes futuros $t > T$ (FR-433) y formatos inválidos (FR-437).
 
 ### Pruebas para User Story 1
-- [ ] T007 [P] [US1] Crear pruebas unitarias para consulta por instante de reloj en `test_historia_tiempo.py` cubriendo FR-427, FR-428, FR-430, FR-433 y FR-437 (incluyendo corte en $t$ y desempate determinista)
+- [X] T007 [P] [US1] Crear pruebas unitarias para consulta por instante de reloj en `test_historia_tiempo.py` cubriendo FR-427, FR-428, FR-430, FR-433 y FR-437 (incluyendo corte en $t$ y desempate determinista)
 
 ### Implementación para User Story 1
-- [ ] T008 [US1] Implementar `_reconstruirHastaInstante(self, t: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py`: `t ==` reloj vivo devuelve el estado vivo; si no, punto base con `_buscarPuntoPorInstante(t)`, pasada 2 fiel en la instancia aislada (revertidas y pergamino sin tope; vigentes con `tope=t`), parada evaluada solo tras acciones vigentes y luego `_completarInstante(t)`
-- [ ] T009 [US1] Conectar `consultarHistoria(instante=t)` en `Servicio/EstadoJuegoServicio.py`: validar `t >= 0`, rechazar bool y no enteros, y delegar a la lógica. Si la partida no está iniciada lanzar `ValueError("El juego no ha sido iniciado")` (no devolver datos de prueba) y actualizar `test_historia_firma.py` para iniciar una partida antes de consultar
-- [ ] T010 [P] [US1] Implementar el método de visualización `mostrar_historia(self, resumen: ResumenEstadoDTO)` en `Controlador/Vista.py` mostrando sala, vida, estadísticas, llaves, objetos, efectos y enemigos con vida, omitiendo el mapa si es `None` (FR-431)
-- [ ] T011 [US1] Incorporar la interpretación de `historia <t>` e `historia t` en `Controlador/ControladorJuego.py` antes de `_mapear_entrada_a_evento`, manejando mensajes de error descriptivos sin alterar el estado de la partida
-- [ ] T012 [US1] Habilitar la consulta de `historia <t>` en el bucle post-partida concluida (victoria o derrota) en `Controlador/ControladorJuego.py` (FR-427)
+- [X] T008 [US1] Implementar `_reconstruirHastaInstante(self, t: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py`: `t ==` reloj vivo devuelve el estado vivo; si no, punto base con `_buscarPuntoPorInstante(t)`, pasada 2 fiel en la instancia aislada (revertidas y pergamino sin tope; vigentes con `tope=t`), parada evaluada solo tras acciones vigentes y luego `_completarInstante(t)`
+- [X] T009 [US1] Conectar `consultarHistoria(instante=t)` en `Servicio/EstadoJuegoServicio.py`: validar `t >= 0`, rechazar bool y no enteros, y delegar a la lógica. Si la partida no está iniciada lanzar `ValueError("El juego no ha sido iniciado")` (no devolver datos de prueba) y actualizar `test_historia_firma.py` para iniciar una partida antes de consultar
+- [X] T010 [P] [US1] Implementar el método de visualización `mostrar_historia(self, resumen: ResumenEstadoDTO)` en `Controlador/Vista.py` mostrando sala, vida, estadísticas, llaves, objetos, efectos y enemigos con vida, omitiendo el mapa si es `None` (FR-431)
+- [X] T011 [US1] Incorporar la interpretación de `historia <t>` e `historia t` en `Controlador/ControladorJuego.py` antes de `_mapear_entrada_a_evento`, manejando mensajes de error descriptivos sin alterar el estado de la partida
+- [X] T012 [US1] Habilitar la consulta de `historia <t>` en el bucle post-partida concluida (victoria o derrota) en `Controlador/ControladorJuego.py` (FR-427)
 
 **Punto de control**: US1 es plenamente funcional de forma interactiva y en pruebas automatizadas.
 

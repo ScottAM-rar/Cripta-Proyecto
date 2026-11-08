@@ -152,9 +152,22 @@ class LogEventos:
 
     def obtener_registros_cronologicos(self) -> list[RegistroEvento]:
         """Devuelve los eventos completos en el orden en que ocurrieron."""
+        return self.obtener_registros_rango(0, self.cantidad)
+
+    def obtener_registros_rango(self, inicio: int, fin: int) -> list[RegistroEvento]:
+        """Devuelve los RegistroEvento en el rango semiabierto [inicio, fin).
+        Recorre la lista enlazada y solo parsea JSON de los nodos dentro del rango."""
+        if inicio < 0:
+            inicio = 0
+        if fin <= inicio:
+            return []
         registros: list[RegistroEvento] = []
         actual = self.cabeza
-        while actual is not None:
+        idx = 0
+        while actual is not None and idx < inicio:
+            actual = actual.siguiente
+            idx += 1
+        while actual is not None and idx < fin:
             try:
                 datos = json.loads(actual.accion)
             except json.JSONDecodeError as error:
@@ -173,6 +186,7 @@ class LogEventos:
                 )
             )
             actual = actual.siguiente
+            idx += 1
         return registros
 
     @staticmethod

@@ -127,16 +127,36 @@ class ControladorJuego:
                     print("=" * 50)
                 except Exception as e:
                     print(f"Error al obtener el resumen: {e}")
+
+                # Bucle interactivo post-partida (FR-427, plan.md §6)
+                print("\nPartida concluida. Puedes consultar la historia ('historia <t>', 'historia #k') o escribir 'salir'.")
+                while True:
+                    try:
+                        linea_post = input("\n[Post-partida] historia <t> / historia #k / salir: ").strip()
+                    except (EOFError, KeyboardInterrupt):
+                        break
+                    if linea_post.lower() == "salir":
+                        break
+                    if not self._procesar_comando_historia(linea_post):
+                        print("Comando no reconocido. Usa 'historia <t>', 'historia #k' o 'salir'.")
                 break
                 
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
             
             self.vista.mostrar_juego(jugador, sala_actual, self.servicio.objetoActualInventario(), self.servicio.ultimosMensajes())
 
-            accion = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
-            "\n usar[objeto actual],siguiente[objeto],anterior[objeto]," \
-            "\n soltar, atacar, esperar, abrir[puerta], cerrar[puerta]," \
-            "\n inventario[peso/valor/nombre], salir: ").strip().lower()
+            try:
+                entrada_usuario = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
+                "\n usar[objeto actual],siguiente[objeto],anterior[objeto]," \
+                "\n soltar, atacar, esperar, abrir[puerta], cerrar[puerta]," \
+                "\n inventario[peso/valor/nombre], salir: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                break
+
+            if self._procesar_comando_historia(entrada_usuario):
+                continue
+
+            accion = entrada_usuario.lower()
 
             if accion == "salir":
                 guardar = input("¿Deseas guardar la partida antes de salir? (s/n): ").strip().lower()
@@ -158,6 +178,94 @@ class ControladorJuego:
                 self.servicio.accionJugador(evento)
             else:
                 print("Acción no reconocida o comando inválido.")
+
+    def _procesar_comando_historia(self, comando: str) -> bool:
+        """Interpreta comandos 'historia <t>', 'historia t', 'historia #k'.
+        Retorna True si fue un comando de historia (procesado o con error formateado),
+        o False si la entrada no es un comando de historia.
+        """
+        linea = comando.strip()
+        partes = linea.split(maxsplit=1)
+        if not partes or partes[0].lower() != "historia":
+            return False
+
+        if len(partes) == 1:
+            print("Error: Parámetro de historia no reconocido. Usa 'historia <t>' o 'historia #k'.")
+            return True
+
+        param = partes[1].strip()
+
+        # Caso historia #k o historia # k
+        if param.startswith("#"):
+            resto = param[1:].strip()
+            if "." in resto:
+                try:
+                    float(resto)
+                    print("Error: El parámetro debe ser un número entero.")
+                    return True
+                except ValueError:
+                    pass
+            try:
+                k = int(resto)
+            except ValueError:
+                print("Error: Parámetro de historia no reconocido. Usa 'historia <t>' o 'historia #k'.")
+                return True
+
+            if k < 0:
+                print("Error: El instante o número de acción no puede ser negativo.")
+                return True
+            if k == 0:
+                print("Error: El número de acción debe ser mayor o igual que 1.")
+                return True
+
+            N = self.servicio._estadoJuegoLogica.acciones_linea_tiempo
+            if k > N + 1:
+                print(f"Error: La acción #{k} aún no ha ocurrido (acciones vigentes: {N}).")
+                return True
+
+            try:
+                resumen = self.servicio.consultarHistoria(accion=k)
+                if self.vista is not None:
+                    self.vista.mostrar_historia(resumen)
+            except Exception as e:
+                print(f"Error: {e}")
+            return True
+
+        # Caso historia <t> o historia t
+        token = param
+        if token.startswith("<") and token.endswith(">"):
+            token = token[1:-1].strip()
+
+        if "." in token:
+            try:
+                float(token)
+                print("Error: El parámetro debe ser un número entero.")
+                return True
+            except ValueError:
+                pass
+
+        try:
+            t = int(token)
+        except ValueError:
+            print("Error: Parámetro de historia no reconocido. Usa 'historia <t>' o 'historia #k'.")
+            return True
+
+        if t < 0:
+            print("Error: El instante o número de acción no puede ser negativo.")
+            return True
+
+        reloj_actual = self.servicio._estadoJuegoLogica.estadoJuego.reloj.tiempo_actual
+        if t > reloj_actual:
+            print(f"Error: El instante {t} aún no ha ocurrido (reloj actual: {reloj_actual}).")
+            return True
+
+        try:
+            resumen = self.servicio.consultarHistoria(instante=t)
+            if self.vista is not None:
+                self.vista.mostrar_historia(resumen)
+        except Exception as e:
+            print(f"Error: {e}")
+        return True
 
     def _registrar_puntaje(self):
         """Pide el nombre del jugador y registra la partida terminada en la tabla de puntajes (§2.12)."""

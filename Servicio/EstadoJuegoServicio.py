@@ -93,24 +93,41 @@ class EstadoJuegoServicio:
         return self._estadoJuegoLogica.repetirPartida(log, hasta=hasta)
 
     def consultarHistoria(self, instante: int | None = None, accion: int | None = None) -> ResumenEstadoDTO:
-        """PROVISIONAL (capacidad 004, aún sin lógica): firma publicada para quien programa contra ella.
+        """Consulta el estado de la partida en un instante virtual o acción pasados (capacidad 004).
+        No altera en absoluto la partida en curso.
 
-        `historia <t>` se pide con `instante=t` y `historia #k` con `accion=k`; hay que dar exactamente uno de los dos.
-        Los valores que devuelve son de PRUEBA y no reflejan la partida. Cuando exista la capacidad 004 este cuerpo
-        se reemplaza por la reconstrucción real, sin cambiar la firma ni ResumenEstadoDTO.
-        Lanza ValueError si faltan o sobran argumentos, o si alguno es negativo o no es entero."""
+        Lanza ValueError si:
+        - El juego no ha sido iniciado ("El juego no ha sido iniciado").
+        - No se indica exactamente uno de los dos parámetros.
+        - instante o accion es bool o no es entero.
+        - instante < 0 o instante > reloj.tiempo_actual.
+        - accion < 1 o accion > N + 1.
+        """
+        if not self._estadoJuegoLogica.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+
         if (instante is None) == (accion is None):
             raise ValueError("Indica exactamente uno: instante (historia <t>) o accion (historia #k)")
-        valor = instante if instante is not None else accion
-        if isinstance(valor, bool) or not isinstance(valor, int) or valor < 0:
-            raise ValueError("El instante o el número de acción debe ser un entero mayor o igual que 0")
-        return ResumenEstadoDTO(
-            instante=valor if instante is not None else 0,
-            acciones_jugador=valor if accion is not None else 0,
-            id_sala_jugador=1, vida_jugador=10, ataque_jugador=1, defensa_jugador=1, velocidad_jugador=100,
-            inventario_llaves=[], inventario_objetos=["Antorcha"], efectos_activos=[],
-            enemigos_sala=[("e-1", "Esbirro", 5)],
-        )
+
+        if instante is not None:
+            if isinstance(instante, bool) or not isinstance(instante, int) or instante < 0:
+                raise ValueError("El instante debe ser un entero mayor o igual que 0")
+            reloj_actual = self._estadoJuegoLogica.estadoJuego.reloj.tiempo_actual
+            if instante > reloj_actual:
+                raise ValueError(f"El instante pedido ({instante}) es futuro respecto al reloj actual ({reloj_actual})")
+            return self._estadoJuegoLogica._reconstruirHastaInstante(instante)
+
+        if accion is not None:
+            if isinstance(accion, bool) or not isinstance(accion, int) or accion < 1:
+                raise ValueError("El número de acción debe ser un entero mayor o igual que 1")
+            N = self._estadoJuegoLogica.acciones_linea_tiempo
+            if accion > N + 1:
+                raise ValueError(f"La acción pedida (#{accion}) supera el máximo permitido (#{N + 1})")
+            if accion == N + 1:
+                return self._estadoJuegoLogica._extraerResumenEstadoActual(
+                    self._estadoJuegoLogica.estadoJuego.reloj.tiempo_actual, N
+                )
+            raise NotImplementedError("La reconstrucción por número de acción se implementa en la Fase 4")
 
     def guardarPartida(self, nombre_archivo: str) -> None:
         """Guarda la partida en un archivo binario. El modelo solo entrega su estado; el archivo lo escribe el adaptador."""
