@@ -27,11 +27,11 @@ Capacidades (cada una en `specs/<NNN-nombre>/`): `001-terreno-y-cazador` (costo 
 
 **Compatibilidad de partidas guardadas**: el formato binario subió de la versión 5 a la 6 (costo por salida y rango por enemigo). Un archivo de una versión anterior se rechaza con un mensaje que indica la versión encontrada y la esperada; no se migra.
 
-Para la Parte II se usa **GitHub Spec Kit** con el agente **Claude Code**.
+Para la Parte II se usa **GitHub Spec Kit** con los agentes **Claude Code** y **Antigravity**.
 
 | Herramienta | Versión |
 |---|---|
-| Spec Kit (`specify-cli`) | **1.2.3** |
+| Spec Kit (`specify-cli`) | **1.2.3 o superior** |
 | Agente | Claude Code |
 | Python | 3.11+ |
 
