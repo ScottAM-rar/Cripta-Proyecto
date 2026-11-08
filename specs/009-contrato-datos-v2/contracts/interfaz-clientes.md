@@ -46,10 +46,10 @@ La vista muestra `avisoLlaves` cuando aparece. Qué hace `--verificar` si faltan
 ## `FuenteSoloLocal` (`adaptadores/fuente_solo_local.py`)
 
 ```text
-FuenteSoloLocal(fuente: ServicioCripta, almacen: AlmacenDisco, version_vigente: str)
+FuenteSoloLocal(fuente: ServicioCripta, almacen: AlmacenDisco, version_vigente: str | None, version_catalogo_vigente: str | None = None)
 ```
 
-- Cada operación primero comprueba `almacen.version_cripta(id) == version_vigente`; si no coincide, lanza `DatoLocalFaltante`.
+- Cada operación con `cripta_id` primero comprueba `almacen.version_cripta(id) == version_vigente`; si no coincide, lanza `DatoLocalFaltante`. Excepciones, pedidas por la capacidad 004: `existe_cripta` solo mira existencia (sin lista de criptas en disco lanza `DatoLocalFaltante`); `version_catalogo()` compara con `version_catalogo_vigente`; `objetos_que_suelta(enemigo)` usa la última cripta consultada y una ficha ausente sale como `DatoLocalFaltante`. Operaciones: `esqueleto`, `obtener_mapa`, `construir_sala`, `ubicacion_llaves`, `datos_cripta`, `crear_jugador`, `version_cripta`, `obtener_sala_salida`, `total_salas`, `existe_cripta`, `version_catalogo`, `objetos_que_suelta`, `fijar_fichas_en_uso`, `precargar_vecinas` (0) y `reporte`.
 - `ErrorOffline` y `LlavesNoDisponibles` del interior se convierten en `DatoLocalFaltante(dato, cripta)`.
 - Nunca llama a `validar_cripta`, porque vaciaría el archivo, ni a ningún método de escritura.
 
@@ -57,8 +57,8 @@ FuenteSoloLocal(fuente: ServicioCripta, almacen: AlmacenDisco, version_vigente: 
 
 ```text
 crear_servicio(...)                                         # sin cambios de firma
-crear_fuente_solo_local(carpeta=CARPETA_DATOS, version_vigente=None) -> FuenteSoloLocal
-    # version_vigente None: se usa la versión guardada (útil para pruebas); la capacidad 004 pasa la del log.
+crear_fuente_solo_local(carpeta=CARPETA_DATOS, version_vigente=None, version_catalogo_vigente=None) -> FuenteSoloLocal
+    # version_vigente None: se usa la versión guardada (útil para pruebas); la capacidad 004 pasa la del log, y lo mismo con `version_catalogo_vigente`.
 ```
 
 ## `resolucion` (AJUSTE)

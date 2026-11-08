@@ -101,9 +101,17 @@ obtenerLlaves() ──(faltan, sin presupuesto o fallo)──▶ llaves=None, av
 |---|---|---|
 | `fuente` | `ServicioCripta` sobre `ClienteOffline` | Lo arma `fabrica.crear_fuente_solo_local` |
 | `almacen` | `AlmacenDisco` | Solo se lee |
-| `version_vigente` | `str` | Versión contra la que se compara lo guardado (FR-317) |
+| `version_vigente` | `str` o `None` | Versión de la cripta contra la que se compara lo guardado (FR-317); `None` = sirve la guardada |
+| `version_catalogo_vigente` | `str` o `None` | Versión del catálogo contra la que se compara lo guardado; `None` = sirve la guardada (la capacidad 004 pasa la del log) |
 
-Implementa las operaciones de `FuenteCripta` que lee la consulta histórica: `esqueleto`, `construir_sala`, `ubicacion_llaves`, `datos_cripta`, `crear_jugador`, `version_cripta` y `total_salas`. `precargar_vecinas` devuelve 0. `reporte()` muestra 0 solicitudes.
+Implementa las operaciones de `FuenteCripta` que lee la consulta histórica, que reconstruye estados con una instancia aparte de `EstadoJuegoLogica` (iniciarJuego, restaurar y las acciones):
+
+- Con `cripta_id`, todas comparan primero la versión de la cripta: `esqueleto`, `obtener_mapa` (igual que `esqueleto`), `construir_sala`, `ubicacion_llaves`, `datos_cripta`, `crear_jugador`, `version_cripta`, `obtener_sala_salida` y `total_salas`.
+- `existe_cripta(cripta_id)`: **no** compara versión, solo existencia. Si no hay lista de criptas en disco lanza `DatoLocalFaltante` (no devuelve `False`); si hay lista y la cripta no está, devuelve `False`.
+- `version_catalogo()`: no recibe cripta. Si no hay versión de catálogo guardada, o es distinta de `version_catalogo_vigente`, lanza `DatoLocalFaltante` nombrando las dos; con `version_catalogo_vigente` en `None` devuelve la guardada.
+- `objetos_que_suelta(enemigo)`: recibe el enemigo, no la cripta. Comprueba la versión de la **última cripta consultada** por esta fuente (la `cripta_id` de la última operación que la recibió); si todavía no se consultó ninguna, lanza `DatoLocalFaltante`. Una ficha ausente del catálogo guardado sale como `DatoLocalFaltante` con el id de la ficha y la cripta.
+- `fijar_fichas_en_uso(ids)`: delega en el servicio; solo toca la caché en memoria, no escribe en disco.
+- `precargar_vecinas` devuelve 0. `reporte()` muestra 0 solicitudes. `listar_criptas` y `obtener_id_cripta` no se exponen.
 
 ## Informe de medición (`bench/llaves.py` → `mediciones.md`)
 

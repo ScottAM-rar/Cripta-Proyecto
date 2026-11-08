@@ -363,6 +363,15 @@
   - **(e)** Los atributos `ids`, `salas` y `enemigos` conservan el orden recibido.
 
   Va después de T004. (FR-302, IX)
+- [ ] T053 [US4] Ampliar la fuente solo local con lo que pide la capacidad 004 (respuesta de JP del 2026-11-07). Primero las pruebas, agregadas a `test_fuente_solo_local.py` (deben fallar):
+  - **(a)** `existe_cripta`: con la lista de criptas guardada devuelve `True` o `False`; sin lista en disco lanza `DatoLocalFaltante`; no compara versión.
+  - **(b)** `version_catalogo`: con `version_catalogo_vigente` igual a la guardada devuelve la guardada; distinta, o sin versión guardada, lanza `DatoLocalFaltante` que nombra las dos; con `None` devuelve la guardada.
+  - **(c)** `objetos_que_suelta`: tras consultar una cripta devuelve lo mismo que la vía normal; con la última cripta consultada guardada con otra versión lanza `DatoLocalFaltante`; una ficha ausente lanza `DatoLocalFaltante` con el id de la ficha; sin ninguna cripta consultada lanza `DatoLocalFaltante`.
+  - **(d)** `obtener_sala_salida` y `obtener_mapa` dan lo mismo que la vía normal y, con otra versión, lanzan `DatoLocalFaltante`.
+  - **(e)** `fijar_fichas_en_uso` no escribe en disco ni hace solicitudes.
+  - **(f)** En todas: el `HttpFalso` espía queda con `llamadas == []` y los bytes de la carpeta no cambian (como T023(d)).
+
+  Después, en `adaptadores/fuente_solo_local.py`: implementar las operaciones nuevas y agregar `version_catalogo_vigente=None` a `FuenteSoloLocal` y a `crear_fuente_solo_local` (`adaptadores/fabrica.py`), con un caso nuevo en `tests_labs/prueba_fabrica.py`. Sigue `data-model.md` y `contracts/interfaz-clientes.md`. (FR-314, FR-315, FR-316, FR-317, SC-003)
 
 ---
 
