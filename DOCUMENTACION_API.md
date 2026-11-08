@@ -272,6 +272,13 @@ queda presupuesto. Después valida la lista contra el esqueleto (`adaptadores/ll
   queda en `None`, `avisoLlaves` guarda el mensaje y la partida sigue. `EstadoJuegoServicio.avisoLlaves()` lo entrega
   y `ControladorJuego` lo muestra como `AVISO: …` justo después de iniciar una partida nueva (no al cargar ni en
   `--replay`).
+- **Aviso sin presupuesto (T055)**: cuando no queda presupuesto y no hay llaves guardadas, el `LlavesNoDisponibles` del
+  cliente se vuelve a lanzar con la misma forma que los demás fallos: nombra la cripta una sola vez (no la repite si el
+  motivo ya la nombra), da el motivo sin punto final repetido y termina con «La verificación de resolubilidad no está
+  disponible.».
+- **Reproducción (T058)**: `repetirPartida` llama a `iniciarJuego(cripta, semilla, pedir_llaves=False)`, así que
+  `--replay` no consulta las llaves ni emite el aviso; si después hacen falta, se piden bajo demanda con
+  `obtenerLlaves()`. Lo mismo vale para `--hasta`, que todavía no existe en `main.py` (capacidad 007).
 - **Partida cargada (FR-325)**: restaurar una partida deja `llaves` y `avisoLlaves` en `None` sin pedir nada. Las
   llaves se piden la primera vez que hacen falta, con `obtenerLlaves()`. Ni las llaves ni el aviso se guardan en el
   archivo de partida.
@@ -402,7 +409,10 @@ Antes de cada operación que recibe una cripta (salvo `existe_cripta`) se compar
 `version_vigente`. Si no coincide: `DatoLocalFaltante("La cripta X está guardada con la versión v1; se necesita v2")`.
 Si no hay versión guardada: `DatoLocalFaltante("La cripta X no tiene versión guardada en disco (guardada: ninguna);
 se necesita …")`. `ErrorOffline` y `LlavesNoDisponibles` del interior salen como `DatoLocalFaltante("Falta en disco
-<dato> de la cripta X: <motivo>")`, con la excepción original como causa. `listar_criptas` y `obtener_id_cripta` no se
+<dato> de la cripta X: <motivo>")`, con la excepción original como causa. Desde T056, una cripta que no está en la
+lista de criptas guardada (el `ValueError("La cripta 'X' no existe")` del servicio) sale como
+`DatoLocalFaltante("La cripta X no está en la lista de criptas guardada en disco")`; los demás `ValueError` no se
+convierten, y `existe_cripta` sigue devolviendo `False` para esa cripta. `listar_criptas` y `obtener_id_cripta` no se
 exponen.
 
 ---

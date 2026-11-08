@@ -327,7 +327,7 @@
   - No agregan usos de `deque`.
 
   Comprobar que `Logica/` no importa nada de `adaptadores/`. (I, IV, V)
-- [ ] T044 Ejecutar todas las pruebas (`python -m unittest discover -p "test_*.py"`), los laboratorios de la línea base (T002) con `python -m tests_labs.<nombre>` y `python main.py --bench`. Comparar con la línea base y registrar cualquier fallo sin ocultarlo. (IX)
+- [X] T044 Ejecutar todas las pruebas (`python -m unittest discover -p "test_*.py"`), los laboratorios de la línea base (T002) con `python -m tests_labs.<nombre>` y `python main.py --bench`. Comparar con la línea base y registrar cualquier fallo sin ocultarlo. (IX)
 - [X] T045 Comparar `spec.md` con el programa entregado y corregir cualquier desajuste primero en la especificación, en un commit aparte del código. (X)
 
 ---

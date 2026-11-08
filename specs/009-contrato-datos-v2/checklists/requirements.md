@@ -110,3 +110,83 @@ llama a `obtenerLlaves()`. La consulta llega a `ClientePersistente.obtener_llave
 `self.cliente.obtener_llaves`, y el `AttributeError` resultante no es un `RuntimeError`, así que no se convierte en
 `LlavesNoDisponibles` y corta el bloque. `bench/juego.py`, `bench/guardado.py` y `bench/ciclo.py` no cambiaron en la 009,
 y en la base de la 009 `iniciarJuego` no pedía llaves: antes funcionaban. **T044 queda sin marcar** hasta corregirlo.
+
+### Implementación, cierre final (T044) (2026-11-08, rama Scott-Persona3, `7c885a9`)
+
+Python 3.12.10, Windows AMD64. Los mismos laboratorios del cierre anterior, uno por uno con `python -m tests_labs.<nombre>`;
+sin red: no se ejecutaron `prueba_cliente_http` ni `prueba_servicio`. Durante las mediciones había otro programa con
+mucho uso de CPU abierto en la máquina (un juego, `VALORANT-Win64-Shipping`), así que los tiempos de esta sesión son más
+altos que los del cierre anterior.
+
+`python main.py --bench` se ejecutó primero tres veces con la salida redirigida a un archivo: las tres terminaron con
+código 1 por `UnicodeEncodeError: 'charmap' codec can't encode character '→'`. Al redirigir, Python escribe en
+cp1252 y no puede codificar la flecha de la fila «cargar la partida completa [binario → DTO]» (`bench/guardado.py`,
+línea 93; el archivo no cambió en la 009, su último commit es `793b300`, de la 001). Es un efecto de la forma de capturar
+la salida y no un fallo del bench, así que las tres corridas que valen son las que siguen, con `PYTHONIOENCODING=utf-8`
+(no cambia el código).
+
+| Comando | Resultado | Línea base (T002 / T049) | Diferencia |
+|---|---|---|---|
+| `python -m unittest discover -p "test_*.py"` | 295 pruebas, OK | 197 pruebas, OK | +98 pruebas nuevas de la 009 (288 en el cierre anterior; +7 de T054 a T058); ninguna falla |
+| `python -m tests_labs.prueba_almacen_disco` | 40 de 40 | sin línea base en T002 (37 de 37 antes de T007) | igual al cierre anterior |
+| `python -m tests_labs.prueba_archivo_indexado` | 23 de 23 | sin línea base en T002 | igual al cierre anterior |
+| `python -m tests_labs.prueba_botin_enemigos` | 31 de 31 comprobaciones correctas | sin línea base en T002 | igual al cierre anterior |
+| `python -m tests_labs.prueba_cache` | código de salida 0; imprime una lista y no tiene comprobaciones | sin línea base en T002 | igual al cierre anterior |
+| `python -m tests_labs.prueba_cache_uso` | 13 de 13 | sin línea base en T002 | igual al cierre anterior |
+| `python -m tests_labs.prueba_cliente_http_errores` | 13 de 13 | sin línea base en T002 | igual al cierre anterior |
+| `python -m tests_labs.prueba_cliente_offline` | 13 de 13 | 13 de 13 | igual |
+| `python -m tests_labs.prueba_cliente_persistente` | 23 de 23 | 23 de 23 | igual |
+| `python -m tests_labs.prueba_fabrica` | 21 de 21 | 13 de 13 | +8 casos de T025 y T053 (igual al cierre anterior) |
+| `python -m tests_labs.prueba_persistencia_partida` | **FALLA** (código 1): `AttributeError: 'EstadoJuegoLogica' object has no attribute 'guardarPartida'` en la línea 134 | sin línea base en T002 | **Anterior a la 009** (`3fc1017`, 2026-10-16); igual al cierre anterior |
+| `python -m tests_labs.prueba_precarga_presupuesto` | 24 de 24 | 24 de 24 | igual |
+| `python -m tests_labs.prueba_reporte_solicitudes` | **FALLA** (código 1): `IndexError: pop from empty list` en la línea 37, durante `ControladorJuego.iniciar` (línea 53) | sin línea base en T002 | **Anterior a la 009**: la pregunta de la tabla de puntajes (`c315271`, 2026-10-16) no está en las respuestas del laboratorio; igual al cierre anterior |
+| `python -m tests_labs.prueba_vecinas_reporte` | 30 de 30 | sin línea base en T002 | igual al cierre anterior |
+| `python -m tests_labs.sin_red` | 95 pruebas, 0 fallos, 0 errores | — (nuevo, T051) | +7 respecto de las 88 del cierre anterior |
+| `python main.py --bench`, corrida 1 | **código 1**. Todos los bloques terminan (ya no hay `AttributeError` en `guardado` ni en `ciclo`). Bloque `ciclo`: «100 esbirros activos» NO CUMPLE (máx 20.11 ms); «300 esbirros activos» NO CUMPLE (mediana 22.31 ms, máx 42.61 ms). Bloque `llaves`, sección B: «guardar con A y 5000 salas ≤ 50 ms» NO CUMPLE (57.25 ms) | sin línea base completa (T049 midió solo `cache`) | ver abajo |
+| `python main.py --bench`, corrida 2 | **código 1**. Bloque `ciclo`: «300 esbirros activos» NO CUMPLE (mediana 21.19 ms, máx 37.38 ms); «50 cazadores persiguiendo» NO CUMPLE (máx 20.95 ms). Bloque `llaves`, B: NO CUMPLE (58.30 ms) | — | ver abajo |
+| `python main.py --bench`, corrida 3 | **código 1**. Bloque `ciclo`: «100 esbirros activos» NO CUMPLE (máx 25.52 ms); «300 esbirros activos» NO CUMPLE (mediana 21.17 ms, máx 39.38 ms). Bloque `llaves`, B: NO CUMPLE (50.12 ms) | — | ver abajo |
+| En las tres corridas | `recorrido`: CUMPLE; `llaves` D: 1 / 0 / 0, CUMPLE; verificaciones de B y C: OK; filas de `terreno` (cazadores con jugador quieto y en movimiento): CUMPLE. La fila de 1 000 esbirros no cumple en ninguna corrida, pero es una prueba de estrés y no decide el veredicto | — | — |
+| Diagnóstico: `python main.py --bench llaves` solo | código 1: guardar con A y 5000 salas 62.19 ms, NO CUMPLE | — | — |
+| Diagnóstico: `python main.py --bench ciclo` solo | código 1: «100 esbirros activos» máx 32.32 ms; «300 esbirros activos» mediana 15.73 ms, máx 29.39 ms | — | — |
+
+**Bloque `cache`, 9 filas de conteo** (iguales en las tres corridas):
+
+| Fila | T049 (antes) | Cierre final, corridas 1, 2 y 3 | Diferencia |
+|---|---|---|---|
+| sala por sala (sin precarga) | 63 solicitudes | 63 | igual |
+| actual + vecinas (prof. 2) | 61 | 61 | igual |
+| perezosa, prof. 2 | 33 | 33 | igual |
+| perezosa, por defecto (lote de 10) | 9 | 9 | igual |
+| caché, capacidad 5 | 82 / 938, 19 solicitudes | 82 / 938, 19 | igual |
+| caché, capacidad 10 | 316 / 704, 19 | 316 / 704, 19 | igual |
+| caché, capacidad 25 | 487 / 533, 19 | 487 / 533, 19 | igual |
+| caché, capacidad 100 | 950 / 70, 19 | 950 / 70, 19 | igual |
+| caché, capacidad 1000 | 950 / 70, 19 | 950 / 70, 19 | igual |
+
+**Fallos anotados**:
+
+- `prueba_persistencia_partida` y `prueba_reporte_solicitudes`: ya fallaban antes de la 009 (ver el cierre anterior).
+- Criterio de tiempo del bloque `ciclo` (límite de 20 ms para el peor de 30 ciclos): `bench/ciclo.py` no cambió en la 009
+  (su último commit es `793b300`, de la 001). En esta sesión, con la máquina cargada, la fila «300 esbirros activos» no
+  cumplió en ninguna corrida y su mediana también pasó de 20 ms (21.17 a 22.31 ms en las corridas completas, 15.73 ms en
+  la corrida aislada). Además fallaron por poco otras dos filas que el prompt del cierre no nombraba: «100 esbirros
+  activos» (corridas 1 y 3) y «50 cazadores persiguiendo» (corrida 2).
+- **Criterio de tiempo del bloque `llaves`, sección B** (guardar con la opción A y 5 000 salas ≤ 50 ms, `research.md`
+  §4): **no cumplió en ninguna de las cuatro mediciones** (57.25, 58.30, 50.12 y 62.19 ms). Es un criterio de la 009 y
+  no estaba entre los fallos admitidos. En el cierre anterior el bloque `llaves` terminó con código 0 y `DECISIONES.md`
+  registra 27.14 ms. Lo probable es la carga de la máquina, pero no se comprobó con la máquina libre.
+
+**T044 queda sin marcar**: además de los fallos admitidos, falla el criterio de 50 ms del bloque `llaves`.
+
+### Implementación, cierre final (T044): repetición con la máquina libre (2026-11-08, rama Scott-Persona3, `a122f53`)
+
+Las mediciones anteriores se tomaron con otro programa usando mucha CPU. Se repitieron en PowerShell con ese programa cerrado y `$env:PYTHONIOENCODING = "utf-8"`. De las cuatro ejecuciones pedidas (`--bench llaves` y tres `--bench` completos), la terminal conservó la salida de dos `python main.py --bench` completos; las otras dos no quedaron guardadas, así que no se anotan.
+
+| Corrida | Código de salida | «NO CUMPLE» | Llaves B: guardar con A y 5000 salas (≤ 50 ms) | Ciclo: 300 esbirros activos (peor de 30 ciclos < 20 ms) | Ciclo: 100 esbirros | Ciclo: 50 cazadores |
+|---|---|---|---|---|---|---|
+| `--bench` completo, corrida 1 | 0 | ninguno | CUMPLE, 14.37 ms | CUMPLE, mediana 3.85 ms, máx 5.76 ms | CUMPLE, máx 3.37 ms | CUMPLE, máx 1.19 ms |
+| `--bench` completo, corrida 2 | 0 | ninguno | CUMPLE, 14.80 ms | CUMPLE, mediana 3.82 ms, máx 5.71 ms | CUMPLE, máx 3.08 ms | CUMPLE, máx 1.54 ms |
+
+En ambas corridas: Llaves D da 1 / 0 / 0 (CUMPLE), «Llaves (SC-001, SC-002): CUMPLE.» y «Recorrido por niveles (SC-004, equivalencia y verificaciones previas): CUMPLE.». La fila de 1 000 esbirros (prueba de estrés, no decide el veredicto) dio máx 15.52 y 18.12 ms.
+
+**Conclusión:** con la máquina libre, el criterio de 50 ms de Llaves B y los de tiempo del bloque `ciclo` se cumplen con holgura (14.37 y 14.80 ms; peor ciclo de 5.76 y 5.71 ms). Los incumplimientos de la sección anterior (50.12 a 62.19 ms y 21 a 22 ms de mediana en 300 esbirros) se debieron a la carga de la máquina, no a la capacidad. Lo único que falla es lo anterior a la 009: `prueba_persistencia_partida` (`guardarPartida`) y `prueba_reporte_solicitudes` (pregunta de puntajes). T044 queda marcada.

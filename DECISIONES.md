@@ -52,8 +52,9 @@ Por capacidad: enlace a su especificación y a su plan, si la decisión final co
 | Entradas repetidas: ordenar las posiciones con `ordenar_adaptativo` y comparar vecinas, frente a comparar todas las parejas | Sí (`research.md` §5) | `--bench llaves` C: con k = 1 000, 3.91 ms (validación elegida completa) frente a 78.55 ms (todas las parejas). Las parejas solo ganan con k = 10 (9.6 µs frente a 13.1 µs), y `research.md` §5 ya admite que con k chica cualquiera sirve |
 | `solo_guardadas`: sin presupuesto no se consulta; el persistente devuelve lo guardado o lanza `LlavesNoDisponibles`, y el HTTP no hace la solicitud. `limite_solicitudes` hace que un 429 no se reintente si ya no queda presupuesto | Sí. La firma final es `obtener_llaves(cripta_id, solo_guardadas=False, limite_solicitudes=None)`: `limite_solicitudes` se agregó tras `/speckit-analyze` y ya estaba en el contrato y en T009 antes de implementar (el resumen de `plan.md` todavía muestra la firma con solo dos parámetros) | `test_llaves_presupuesto`: sin presupuesto y sin llaves guardadas, 0 consultas y aviso con la cripta; con llaves guardadas, 0 solicitudes; con 1 restante, un 429 no se reintenta (SC-005) |
 | Una consulta por cripta y por sesión, contada en el presupuesto (`ServicioCripta.ubicacion_llaves` la memoriza) | Sí | `--bench llaves` D: **1 / 0 / 0** (primera partida, segunda con la misma versión, `--offline`). `test_llaves_presupuesto`: la primera partida pasa de 6 a 7 solicitudes («Solicitudes a la API: 7 de 9») |
-| Aviso FR-313: si no se obtienen las llaves, `llaves` queda en `None`, `avisoLlaves` guarda el mensaje con la cripta y la partida sigue; el controlador lo muestra como `AVISO:` al iniciar una partida nueva | Sí | `test_llaves_fallos` (partes c, e y g) y comprobación manual con `ControladorJuego` en `--offline` (T022): el aviso aparece y la partida responde a las acciones |
+| Aviso FR-313: si no se obtienen las llaves, `llaves` queda en `None`, `avisoLlaves` guarda el mensaje con la cripta y la partida sigue; el controlador lo muestra como `AVISO:` al iniciar una partida nueva. Desde T055 el aviso es uniforme: nombra la cripta una sola vez, da el motivo y termina con «La verificación de resolubilidad no está disponible.», incluso sin presupuesto (cuando el `LlavesNoDisponibles` viene del cliente, `ServicioCripta.ubicacion_llaves` lo vuelve a lanzar con esa forma y no repite la cripta si el motivo ya la nombra) | Sí | `test_llaves_fallos` (partes c, e y g, y la clase `AvisoUniforme` de T055) y comprobación manual con `ControladorJuego` en `--offline` (T022): el aviso aparece y la partida responde a las acciones |
 | Restaurar una partida no pide llaves: `llaves` y `avisoLlaves` vuelven a `None` y se piden bajo demanda con `obtenerLlaves()` (FR-325) | Sí | `test_llaves_partida_cargada`: cargar no hace solicitudes; con llaves guardadas, 0; sin ellas, 1 la primera vez y 0 la segunda; restaurar otra cripta no arrastra las llaves anteriores |
+| La reproducción (`--replay`, `--hasta`) no pide las llaves: `repetirPartida` llama a `iniciarJuego(cripta, semilla, pedir_llaves=False)`, así que no hay consulta ni aviso; si después hacen falta, se piden bajo demanda con `obtenerLlaves()`, como en una partida cargada (FR-325). `--hasta` todavía no existe en `main.py`: es de la capacidad 007 y la regla está en el caso límite de `spec.md` | **Cambió respecto del plan**: `plan.md` §4 decía que `--replay` pedía las llaves al pasar por `iniciarJuego` y que no gastaba nada si estaban guardadas (T058) | Una reproducción no es una partida nueva y las llaves solo sirven para el aviso, así que no gasta presupuesto. `test_llaves_partida_cargada`, clase `Reproduccion` (T058): reproducir en carpeta vacía hace 0 consultas de llaves, `avisoLlaves` queda en `None` y el log no cambia; después, `obtenerLlaves()` pide una vez; una partida nueva sigue pidiendo las llaves al iniciar |
 | `FuenteSoloLocal`: envuelve `ServicioCripta` sobre `ClienteOffline`, compara la versión vigente y nunca escribe ni pide nada | **Cambió respecto del plan**: se amplió en T053 con lo que pidió la capacidad 004 (`existe_cripta`, `version_catalogo` con `version_catalogo_vigente`, `objetos_que_suelta` con la última cripta consultada, `obtener_sala_salida`, `obtener_mapa`, `fijar_fichas_en_uso`). Además, `construir_sala` comprueba en el almacén que el contenido de la sala esté antes de delegar, porque el modo sin red no ve las criptas incompletas (ver «Hallazgos y límites») | `test_fuente_solo_local`: 0 solicitudes (espía HTTP sin llamadas) y los archivos de la carpeta iguales byte a byte en todas las pruebas, incluidas las de dato faltante y versión distinta (SC-003) |
 | Precarga por saltos frente a precarga por costo (la regla por costo solo existe en el bench, `ServicioPrecargaPorCosto`) | Sí: se mantiene la precarga por saltos y no se modifica `precargar_vecinas` ni `salas_vecinas` (FR-324) | `--bench llaves` A: **inconclusiva**. Las dos reglas dieron los mismos totales de solicitudes en las 9 filas y en la variante `costo_max=300`, y casi no hubo solicitudes disparadas por un enemigo (0.2 de promedio en 2 de 9 filas). Recomendación de `mediciones.md`: mantener la precarga por saltos sin abrir una especificación aparte; es un límite del experimento (el guion no persigue a los cazadores), no una prueba de que el costo nunca sirva |
 
@@ -110,10 +111,16 @@ usa un `ClienteSintetico` propio, sin `obtener_llaves`, y llama directamente a `
    criptas completas y, si no hay ninguna, lanza `ErrorOffline("Ninguna cripta está guardada por completo. Juega una vez
    con conexión.")`. Por eso, en `FuenteSoloLocal`, solo `construir_sala` nombra la sala que falta («Falta en disco
    sala n de la cripta X»), porque comprueba `almacen.leer_contenido(cripta_id, numero_sala)` antes de delegar. Las demás
-   operaciones sobre esa cripta fallan con el mensaje genérico.
-2. **Un `ValueError` por cripta desconocida no se convierte en `DatoLocalFaltante`**: `ServicioCripta` lanza
-   `ValueError(f"La cripta '{cripta_id}' no existe")` y `FuenteSoloLocal._leer` solo convierte
-   `ErrorOffline` y `LlavesNoDisponibles`.
+   operaciones sobre esa cripta fallan con un mensaje que no nombra el dato que falta: si no hay ninguna cripta
+   completa, `DatoLocalFaltante` con el `ErrorOffline` de arriba como motivo; si hay otras completas, la incompleta no
+   está en la lista y, desde T056, sale `DatoLocalFaltante("La cripta X no está en la lista de criptas guardada en
+   disco")` (ver el punto 2).
+2. **Una cripta desconocida sale como `DatoLocalFaltante` (corregido en T056)**: `ServicioCripta` lanza
+   `ValueError(f"La cripta '{cripta_id}' no existe")`, y antes `FuenteSoloLocal._leer` solo convertía `ErrorOffline` y
+   `LlavesNoDisponibles`. Desde T056 convierte también ese `ValueError` (solo el de ese mensaje exacto; los demás
+   `ValueError` siguen saliendo tal cual) en `DatoLocalFaltante("La cripta X no está en la lista de criptas guardada en
+   disco")`. `existe_cripta` sigue devolviendo `False` para una cripta que no está en la lista
+   (`test_fuente_solo_local`, prueba de T056).
 3. **`FuenteSoloLocal` se amplió en T053** por lo que pidió la capacidad 004: `existe_cripta` (solo existencia, sin
    comparar versión; sin lista en disco lanza `DatoLocalFaltante`), `version_catalogo` con `version_catalogo_vigente`,
    `objetos_que_suelta` con la última cripta consultada, `obtener_sala_salida`, `obtener_mapa` y
@@ -128,3 +135,20 @@ usa un `ClienteSintetico` propio, sin `obtener_llaves`, y llama directamente a `
 6. **Descuadres que ya estaban en `DOCUMENTACION_API.md`**: la tabla de §9 habla de una «cripta de 6 salas», pero el 7
    de la primera partida sale de `test_llaves_presupuesto`, que usa una cripta de 3 salas de la API falsa; y §8.3 dice
    «Primera vez: 6» mientras que `prueba_cliente_persistente` cuenta 7 (dos solicitudes de catálogo, fichas y botín).
+7. **Regresión de `--bench guardado` y `--bench ciclo` que encontró T044**: desde T017, `EstadoJuegoLogica.iniciarJuego`
+   pide las llaves, y el cliente sintético del bench (`ClienteDeBatalla`, en `bench/juego.py`) no tenía
+   `obtener_llaves`. El `AttributeError` no es un `RuntimeError`, así que no se convertía en `LlavesNoDisponibles` y
+   cortaba los dos bloques y `python main.py --bench` completo. Se corrigió en T054 agregando a `ClienteDeBatalla` un
+   `obtener_llaves(cripta_id, solo_guardadas=False, limite_solicitudes=None)` que devuelve `[]` (cripta sin llaves).
+   En el cierre final (T044) los dos bloques terminan y las 9 filas de conteo del bloque `cache` siguen iguales a T049.
+8. **Criterio de tiempo intermitente del bloque `ciclo`**: el límite es de 20 ms para el peor de 30 ciclos. Es un
+   criterio de la 001, no de las llaves: `bench/ciclo.py` no cambió en la 009 (su último commit es `793b300`, de la 001)
+   y la partida del bench usa `ClienteDeBatalla`, sin llaves. En el cierre final (2026-11-08, con otro programa usando
+   mucha CPU en la máquina), la fila «300 esbirros activos» no cumplió en ninguna de las tres corridas completas:
+   mediana 22.31, 21.19 y 21.17 ms, y peor ciclo 42.61, 37.38 y 39.38 ms. En una corrida aislada de `--bench ciclo`
+   dio una mediana de 15.73 ms y un peor ciclo de 29.39 ms. En esas mismas corridas también fallaron por poco
+   «100 esbirros activos» (peor ciclo 20.11 y 25.52 ms en las corridas 1 y 3, y 32.32 ms en la aislada) y «50 cazadores
+   persiguiendo» (20.95 ms en la corrida 2). Con la máquina libre el criterio se cumple con holgura: en dos corridas completas de `--bench`, «300 esbirros activos»
+   dio mediana de 3.85 y 3.82 ms y peor ciclo de 5.76 y 5.71 ms, y el guardado A de Llaves B dio 14.37 y 14.80 ms (límite 50 ms), con código de salida 0 en las dos. Las cifras
+   dependen de la carga de la máquina, y la decisión del guardado A se mantiene; ambas mediciones están en
+   `specs/009-contrato-datos-v2/checklists/requirements.md`, «Implementación, cierre final (T044)».
