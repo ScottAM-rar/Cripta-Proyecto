@@ -13,7 +13,7 @@ import sys
 import tempfile
 from datetime import datetime
 
-from bench import agenda, bitacora, ciclo, guardado, inventario, ordenamiento, puntos_control, recorrido, replay, retroceso, salas, terreno
+from bench import agenda, bitacora, ciclo, guardado, historia, inventario, ordenamiento, puntos_control, recorrido, replay, retroceso, salas, terreno
 from bench import llaves
 from bench.datos import SEMILLA
 from bench.salida import escribir_csv, imprimir_tabla
@@ -48,6 +48,7 @@ BLOQUES = (
     ("replay", replay.ejecutar),
     ("puntos_control", puntos_control.ejecutar),
     ("llaves", llaves.ejecutar),
+    ("historia", historia.ejecutar),
 )
 
 
