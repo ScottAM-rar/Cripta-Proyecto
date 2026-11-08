@@ -28,7 +28,7 @@
 - [X] T003 Implementar la búsqueda binaria manual por acciones `_buscarPuntoPorAcciones(self, k: int) -> PuntoControlDTO | None` y refactorizar `obtenerPuntoControlReciente` en `Logica/EstadoJuegoLogica.py` sin usar bibliotecas prohibidas (Principio I)
 - [X] T004 [P] Implementar la búsqueda binaria manual por instante de reloj `_buscarPuntoPorInstante(self, t: int) -> PuntoControlDTO | None` en `Logica/EstadoJuegoLogica.py`
 - [X] T005 Extraer la rutina común de empaquetado `_extraerResumenEstadoActual(self, instante: int, acciones: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py` y refactorizar `_armarResultadoReplayHasta` para delegar en ella sin duplicar código
-- [ ] T005b Corregir `_planificarSegmento` en `Logica/EstadoJuegoLogica.py` (plan.md §3, pasada 1): hoy usa `obtener_acciones_cronologicas()` (cadenas JSON, no `RegistroEvento`) y detecta el pergamino con una heurística sobre el texto del id; debe clasificar con `GestorEventos.es_uso_de_pergamino` al construir cada evento en una instancia aislada y devolver los índices vigentes con la pila local; test unitario propio con `A1 A2 A3 P A3' A4`
+- [X] T005b Corregir `_planificarSegmento` en `Logica/EstadoJuegoLogica.py` (plan.md §3, pasada 1): hoy usa `obtener_acciones_cronologicas()` (cadenas JSON, no `RegistroEvento`) y detecta el pergamino con una heurística sobre el texto del id; debe clasificar con `GestorEventos.es_uso_de_pergamino` al construir cada evento en una instancia aislada y devolver los índices vigentes con la pila local; test unitario propio con `A1 A2 A3 P A3' A4`
 - [X] T006 Implementar el gestor de contexto / guarda en `Logica/EstadoJuegoLogica.py` para capturar y restituir los 8 atributos del singleton global `RetrocesoLogica` (`cabeza`, `cola`, `actual`, `reloj`, `cantidad_actual`, `cantidad_acciones`, `tiempo_evento`, `suspensiones`) y `reloj.retroceso` en un bloque `try ... finally`
 
 **Punto de control**: Búsqueda binaria $O(\log M)$, extracción común y guarda de singleton listas y verificadas.
@@ -115,10 +115,10 @@
 **Criterio de prueba independiente**: Jugar una partida con puntos de control periódicos, ejecutar consultas de historia, guardar con `guardarPartida()`, cargar con `cargarPartida()` en una nueva instancia y comprobar que las mismas consultas producen resultados idénticos (FR-441, Apéndice B Caso 6).
 
 ### Pruebas para User Story 5
-- [ ] T024 [P] [US5] Agregar pruebas de persistencia en `test_historia_aislamiento.py` verificando guardar/cargar en formato v7 y reproducibilidad exacta de consultas históricas
+- [X] T024 [P] [US5] Agregar pruebas de persistencia en `test_historia_aislamiento.py` verificando guardar/cargar en formato v7 y reproducibilidad exacta de consultas históricas
 
 ### Implementación para User Story 5
-- [ ] T025 [US5] Verificar en `Logica/EstadoJuegoLogica.py` y `Servicio/EstadoJuegoServicio.py` que `cargarPartida` reconstruye adecuadamente `puntos_control`, `acciones_linea_tiempo` y el historial cronológico del log necesario para `consultarHistoria`
+- [X] T025 [US5] Verificar en `Logica/EstadoJuegoLogica.py` y `Servicio/EstadoJuegoServicio.py` que `cargarPartida` reconstruye adecuadamente `puntos_control`, `acciones_linea_tiempo` y el historial cronológico del log necesario para `consultarHistoria`
 
 **Punto de control**: Persistencia v7 validada sin necesidad de modificar el formato binario de archivo.
 
@@ -131,10 +131,10 @@
 **Criterio de prueba independiente**: Ejecutar `python main.py --bench historia` sobre cripta sintética con 5 000 acciones y comprobar que el tiempo máximo es $\le 50$ ms, que el costo crece como máximo con $K-1$, y que la reconstrucción desde puntos es significativamente más rápida que la Alternativa C (desde el inicio).
 
 ### Implementación para User Story 6
-- [ ] T026 [P] [US6] Crear el módulo de benchmark `bench/historia.py` siguiendo las pautas de `bench/puntos_control.py` (con `gc.disable()` durante las mediciones), evaluando partidas de $\ge 5\,000$ acciones con $K \in \{10, 50, 100\}$ y midiendo el peor caso ($K-1$ acciones desde el punto)
-- [ ] T027 [US6] Incluir en `bench/historia.py` la medición de la Alternativa C descartada (reconstrucción desde el inicio sin checkpoints) y el reporte comparativo del tiempo de búsqueda binaria vs. búsqueda lineal
-- [ ] T028 [US6] Registrar el bloque `("historia", historia.ejecutar)` en `bench/__init__.py` y verificar su integración con la opción `--bench historia` en `main.py`
-- [ ] T029 [P] [US6] Crear prueba automatizada para el benchmark en `bench/test_bench_historia.py` verificando que el módulo `bench/historia.py` ejecuta sin errores y cumple los límites
+- [X] T026 [P] [US6] Crear el módulo de benchmark `bench/historia.py` siguiendo las pautas de `bench/puntos_control.py` (con `gc.disable()` durante las mediciones), evaluando partidas de $\ge 5\,000$ acciones con $K \in \{10, 50, 100\}$ y midiendo el peor caso ($K-1$ acciones desde el punto)
+- [X] T027 [US6] Incluir en `bench/historia.py` la medición de la Alternativa C descartada (reconstrucción desde el inicio sin checkpoints) y el reporte comparativo del tiempo de búsqueda binaria vs. búsqueda lineal
+- [X] T028 [US6] Registrar el bloque `("historia", historia.ejecutar)` en `bench/__init__.py` y verificar su integración con la opción `--bench historia` en `main.py`
+- [X] T029 [P] [US6] Crear prueba automatizada para el benchmark en `bench/test_bench_historia.py` verificando que el módulo `bench/historia.py` ejecuta sin errores y cumple los límites
 
 **Punto de control**: Requisito de rendimiento FR-442 ($\le 50$ ms) y Principio VII respaldados con mediciones empíricas.
 
@@ -144,10 +144,10 @@
 
 **Propósito**: Consolidación final de calidad, pruebas de regresión completa y cumplimiento constitucional.
 
-- [ ] T030 Ejecutar la suite completa de pruebas unitarias de la raíz (`test_historia_firma.py`, `test_historia_tiempo.py`, `test_historia_aislamiento.py`, `test_puntos_control.py`, `test_replay_hasta.py`) y corregir cualquier regresión
-- [ ] T031 Ejecutar la validación interactiva manual siguiendo los pasos de `quickstart.md`
-- [ ] T033 Actualizar `DECISIONES.md` (sección 004: K por defecto con números medidos por `bench/historia.py`, búsqueda binaria vs lineal, reconstrucción hacia adelante vs hacia atrás), agregar las filas de `PROMPTS_LLM_JP.md` con herramienta y modelo reales, y confirmar a Fernanda que `consultarHistoria` ya no devuelve datos de prueba
-- [ ] T032 Verificar el cumplimiento estricto del Principio I de la Constitución (auditar que no existan importaciones de `bisect`, `dict`/`set` como índice ni `collections` en el código nuevo)
+- [X] T030 Ejecutar la suite completa de pruebas unitarias de la raíz (`test_historia_firma.py`, `test_historia_tiempo.py`, `test_historia_aislamiento.py`, `test_puntos_control.py`, `test_replay_hasta.py`) y corregir cualquier regresión
+- [X] T031 Ejecutar la validación interactiva manual siguiendo los pasos de `quickstart.md`
+- [X] T033 Actualizar `DECISIONES.md` (sección 004: K por defecto con números medidos por `bench/historia.py`, búsqueda binaria vs lineal, reconstrucción hacia adelante vs hacia atrás), agregar las filas de `PROMPTS_LLM_JP.md` con herramienta y modelo reales, y confirmar a Fernanda que `consultarHistoria` ya no devuelve datos de prueba
+- [X] T032 Verificar el cumplimiento estricto del Principio I de la Constitución (auditar que no existan importaciones de `bisect`, `dict`/`set` como índice ni `collections` en el código nuevo)
 
 ---
 
