@@ -43,6 +43,8 @@ class EstadoJuegoLogica:
         self.registrador_log = None    # opcional: algo con agregar(linea); el modelo solo le avisa cada acción
         self.llaves = None             # UbicacionLlavesDTO de la cripta, o None si no se pidió o no se pudo (capacidad 009)
         self.avisoLlaves = None        # mensaje del último LlavesNoDisponibles, para mostrarlo (FR-313)
+        self._es_aislada = False       # True si es una instancia aislada para consultas historia (T019/T020)
+        self._es_repeticion = False
         
         if(cripta is not None):
             self.iniciarJuego(cripta)
@@ -107,6 +109,12 @@ class EstadoJuegoLogica:
             self.puntos_control.append(punto)
 
     def _podarPuntosControlPosteriores(self, limite_acciones: int) -> None:
+        """Poda los puntos de control con acciones_linea_tiempo > limite_acciones.
+        Invariante plan.md §4 (T022): La poda asegura que los puntos de control supervivientes
+        nunca tengan por delante acciones revertidas que ocurrieron antes de ellos.
+        Cualquier acción revertida por el pergamino ocurrió estrictamente después del último punto superviviente,
+        garantizando que la reconstrucción desde dicho punto base sea siempre coherente con la
+        línea de tiempo vigente."""
         while self.puntos_control and self.puntos_control[-1].acciones_linea_tiempo > limite_acciones:
             self.puntos_control.pop()
 
@@ -115,39 +123,49 @@ class EstadoJuegoLogica:
         Delega en la búsqueda binaria (T003)."""
         return self._buscarPuntoPorAcciones(k)
 
-    # ------------------------------------------------------------------ T003
-    def _buscarPuntoPorAcciones(self, k: int) -> 'PuntoControlDTO | None':
-        """Búsqueda binaria manual (sin bisect) del último punto con acciones_linea_tiempo <= k.
-        La lista puntos_control está ordenada de forma no decreciente por acciones_linea_tiempo
-        (invariante mantenido por _podarPuntosControlPosteriores y el orden de inserción).
+    # ------------------------------------------------------------------ T003 / PASO 0
+    def _indicePuntoPorAcciones(self, k: int) -> int:
+        """Búsqueda binaria manual (sin bisect) del índice del último punto con acciones_linea_tiempo <= k.
+        Retorna -1 si no hay ningún punto que cumpla la condición.
+        La lista puntos_control está ordenada de forma no decreciente por acciones_linea_tiempo.
         O(log M) donde M = len(puntos_control)."""
         izq, der = 0, len(self.puntos_control) - 1
-        candidato = None
+        candidato = -1
         while izq <= der:
             medio = (izq + der) // 2
             if self.puntos_control[medio].acciones_linea_tiempo <= k:
-                candidato = self.puntos_control[medio]
+                candidato = medio
                 izq = medio + 1
             else:
                 der = medio - 1
         return candidato
 
-    # ------------------------------------------------------------------ T004
-    def _buscarPuntoPorInstante(self, t: int) -> 'PuntoControlDTO | None':
-        """Búsqueda binaria manual (sin bisect) del último punto con instante_reloj <= t.
-        La lista puntos_control está ordenada de forma no decreciente por instante_reloj
-        (monotonía garantizada: acciones vigentes y reloj son co-monótonos tras la poda).
+    def _buscarPuntoPorAcciones(self, k: int) -> 'PuntoControlDTO | None':
+        """Retorna el último punto de control con acciones_linea_tiempo <= k, o None."""
+        idx = self._indicePuntoPorAcciones(k)
+        return self.puntos_control[idx] if idx >= 0 else None
+
+    # ------------------------------------------------------------------ T004 / PASO 0
+    def _indicePuntoPorInstante(self, t: int) -> int:
+        """Búsqueda binaria manual (sin bisect) del índice del último punto con instante_reloj <= t.
+        Retorna -1 si no hay ningún punto que cumpla la condición.
+        La lista puntos_control está ordenada de forma no decreciente por instante_reloj.
         O(log M) donde M = len(puntos_control)."""
         izq, der = 0, len(self.puntos_control) - 1
-        candidato = None
+        candidato = -1
         while izq <= der:
             medio = (izq + der) // 2
             if self.puntos_control[medio].instante_reloj <= t:
-                candidato = self.puntos_control[medio]
+                candidato = medio
                 izq = medio + 1
             else:
                 der = medio - 1
         return candidato
+
+    def _buscarPuntoPorInstante(self, t: int) -> 'PuntoControlDTO | None':
+        """Retorna el último punto de control con instante_reloj <= t, o None."""
+        idx = self._indicePuntoPorInstante(t)
+        return self.puntos_control[idx] if idx >= 0 else None
 
     # ------------------------------------------------------------------ T005
     def _extraerResumenEstadoActual(self, instante: int, acciones: int) -> ResumenEstadoDTO:
@@ -255,11 +273,9 @@ class EstadoJuegoLogica:
         if fin_log is None:
             fin_log = total_log
             if base_dto is not None:
-                for i in range(len(self.puntos_control)):
-                    if self.puntos_control[i] is base_dto:
-                        if i + 1 < len(self.puntos_control):
-                            fin_log = self.puntos_control[i + 1].longitud_acciones_log
-                        break
+                idx_base = self._indicePuntoPorAcciones(base_dto.acciones_linea_tiempo)
+                if idx_base >= 0 and idx_base + 1 < len(self.puntos_control):
+                    fin_log = self.puntos_control[idx_base + 1].longitud_acciones_log
 
         tope_fin = min(fin_log, total_log)
         if inicio_log >= tope_fin or base_dto is None:
@@ -268,17 +284,7 @@ class EstadoJuegoLogica:
         # 3. Pasada 1: Clasificación mediante instancia aislada hidratada
         snapshot, reloj_retro_ref = self._guardarSingletonRetroceso()
         try:
-            aislada = EstadoJuegoLogica(comunicacion=self.comunicacion)
-            aislada._es_repeticion = True
-            aislada.registrador_log = None
-            aislada._actualizarFichasEnUso = lambda: None
-
-            EstadoGuardadoLogica.restaurar(aislada, base_dto.estado)
-            aislada.acciones_linea_tiempo = base_dto.acciones_linea_tiempo
-            aislada._es_repeticion = True
-            aislada.registrador_log = None
-            aislada.puntos_control = []
-            aislada._actualizarFichasEnUso = lambda: None
+            aislada = self._hidratarInstanciaAislada(base_dto)
 
             registros_segmento = self.logEventos.obtener_registros_rango(inicio_log, tope_fin)
             marcas: list[tuple[int, str, int]] = []
@@ -321,94 +327,115 @@ class EstadoJuegoLogica:
         finally:
             self._restaurarSingletonRetroceso(snapshot, reloj_retro_ref)
 
-    # ------------------------------------------------------------------ T014 helper
+    # ------------------------------------------------------------------ T014 / PASO 0 helper
     def _hidratarInstanciaAislada(self, punto_base: PuntoControlDTO) -> 'EstadoJuegoLogica':
         """Crea e hidrata una instancia aislada desde un punto de control.
         Código compartido entre _reconstruirHastaInstante y _reconstruirHastaAccion
-        para evitar duplicación (plan.md §3)."""
+        para evitar duplicación (plan.md §3).
+        Configura _es_aislada = True para inhibir llamadas a la red/caché (T019/T020)."""
         aislada = EstadoJuegoLogica(comunicacion=self.comunicacion)
+        aislada._es_aislada = True
         aislada._es_repeticion = True
         aislada.registrador_log = None
-        aislada._actualizarFichasEnUso = lambda: None
 
         EstadoGuardadoLogica.restaurar(aislada, punto_base.estado)
         aislada.acciones_linea_tiempo = punto_base.acciones_linea_tiempo
+        aislada._es_aislada = True
         aislada._es_repeticion = True
         aislada.registrador_log = None
         aislada.puntos_control = []
-        aislada._actualizarFichasEnUso = lambda: None
         return aislada
 
-    def _resolverPuntoBaseYFinLog(self, punto_base: PuntoControlDTO) -> tuple[int, int]:
-        """Devuelve (inicio_log, fin_log) del segmento delimitado por punto_base
-        y el siguiente punto de control. Código compartido."""
-        inicio_log = punto_base.longitud_acciones_log
-        fin_log = self.logEventos.cantidad
-        for i in range(len(self.puntos_control)):
-            if self.puntos_control[i] is punto_base:
-                if i + 1 < len(self.puntos_control):
-                    fin_log = self.puntos_control[i + 1].longitud_acciones_log
-                break
-        return inicio_log, fin_log
-
-    # ------------------------------------------------------------------ T014
-    def _reconstruirHastaAccion(self, k: int) -> ResumenEstadoDTO:
-        """Reconstruye el estado de la partida justo antes de la acción número k
-        (1 <= k <= N) de la línea de tiempo vigente, mediante reproducción
-        acotada y aislada desde el punto de control previo más cercano (plan.md §3).
-        No altera en absoluto la partida viva.
-        """
-        # El estado justo antes de la acción k es aquel con k-1 acciones vigentes completadas.
-        punto_base = self._buscarPuntoPorAcciones(k - 1)
-        if punto_base is None:
+    def _resolverSegmentoPorIndice(self, idx: int) -> tuple[PuntoControlDTO, int, int]:
+        """Devuelve (punto_base, inicio_log, fin_log) del segmento delimitado por puntos_control[idx]
+        y el siguiente punto de control (idx + 1), sin ningún recorrido lineal (O(1))."""
+        if idx < 0:
             if not self.puntos_control:
                 self._asegurarPuntoControlInicial()
-            punto_base = self.puntos_control[0] if self.puntos_control else None
-            if punto_base is None:
+            idx = 0 if self.puntos_control else -1
+            if idx < 0:
                 raise ValueError("No hay un punto de control disponible para la reconstrucción")
+        punto_base = self.puntos_control[idx]
+        inicio_log = punto_base.longitud_acciones_log
+        if idx + 1 < len(self.puntos_control):
+            fin_log = self.puntos_control[idx + 1].longitud_acciones_log
+        else:
+            fin_log = self.logEventos.cantidad
+        return punto_base, inicio_log, fin_log
 
-        inicio_log, fin_log = self._resolverPuntoBaseYFinLog(punto_base)
+    def _resolverPuntoBaseYFinLog(self, punto_base: PuntoControlDTO) -> tuple[int, int]:
+        """Mantiene compatibilidad con la firma anterior devolviendo (inicio_log, fin_log)."""
+        idx = self._indicePuntoPorAcciones(punto_base.acciones_linea_tiempo)
+        if idx >= 0 and self.puntos_control[idx] is punto_base:
+            _, inicio, fin = self._resolverSegmentoPorIndice(idx)
+            return inicio, fin
+        inicio_log = punto_base.longitud_acciones_log
+        fin_log = self.logEventos.cantidad
+        return inicio_log, fin_log
 
-        # Pasada 1: Clasificación de registros vigentes en el segmento
-        indices_vigentes = self._planificarSegmento(punto_base, fin_log)
-
-        # j = (k-1) - c : número de acciones vigentes a aplicar desde el punto base
-        c = punto_base.acciones_linea_tiempo
-        j = (k - 1) - c  # parar justo ANTES de aplicar la acción vigente E[j]
-
-        # Pasada 2: Reproducción fiel en una nueva instancia aislada
+    def _ejecutarPasada2(
+        self,
+        punto_base: PuntoControlDTO,
+        inicio_log: int,
+        fin_log: int,
+        indices_vigentes: list[int],
+        *,
+        tope_instante: int | None = None,
+        tope_vigente: int | None = None,
+    ) -> 'EstadoJuegoLogica':
+        """Ejecuta la pasada 2 fiel en una instancia aislada sobre el segmento [inicio_log, fin_log).
+        Cuerpo común compartido entre _reconstruirHastaAccion y _reconstruirHastaInstante (PASO 0).
+        Protege y restaura los 8 atributos del singleton global RetrocesoLogica y reloj.retroceso
+        de forma determinista en un bloque try...finally."""
         snapshot, reloj_retro_ref = self._guardarSingletonRetroceso()
         try:
             aislada = self._hidratarInstanciaAislada(punto_base)
-
             tope_fin = min(fin_log, self.logEventos.cantidad)
             registros = self.logEventos.obtener_registros_rango(inicio_log, tope_fin)
-
             p_vigente = 0
 
             for offset, reg in enumerate(registros):
                 idx = inicio_log + offset
+                if aislada.fin:
+                    break
 
                 if reg.tipo_accion in TIPOS_CURSOR_INVENTARIO:
                     aislada._repetirMovimientoDeCursor(reg.tipo_accion)
                     continue
 
                 evento = aislada._crear_evento_repeticion(reg)
-
                 es_vigente = (p_vigente < len(indices_vigentes) and indices_vigentes[p_vigente] == idx)
+
                 if es_vigente:
-                    # Parar justo ANTES de aplicar la acción vigente E[j]
-                    if p_vigente >= j:
+                    if tope_vigente is not None and p_vigente >= tope_vigente:
                         break
                     p_vigente += 1
 
-                    resultado = aislada.accionJugador(evento)
-                    if resultado.exito is False:
-                        raise ValueError(
-                            f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
-                        )
-                    if aislada.fin:
-                        break
+                    if tope_instante is not None:
+                        if aislada.estadoJuego.reloj.tiempo_actual >= tope_instante:
+                            break
+                        resultado = aislada.accionJugador(evento, tope=tope_instante)
+                        if resultado.exito is False:
+                            raise ValueError(
+                                f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
+                            )
+                        if aislada.fin:
+                            break
+                        # Si el turno del jugador sigue pendiente en la agenda, su decisión es posterior a t: ya
+                        # está todo lo que ocurre hasta t. Si ya salió de la agenda, el jugador decide en el reloj
+                        # actual (<= t): se sigue leyendo el log, porque lo que viene antes de la próxima acción
+                        # vigente (acciones revertidas y pergaminos de esa misma decisión) también es parte del
+                        # estado en ese instante. La próxima acción vigente se detiene sola si reloj >= t.
+                        if any(e.tipo_accion == "TURNO_JUGADOR" for e in aislada.estadoJuego.reloj.heap):
+                            break
+                    else:
+                        resultado = aislada.accionJugador(evento)
+                        if resultado.exito is False:
+                            raise ValueError(
+                                f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
+                            )
+                        if aislada.fin:
+                            break
                 else:
                     # Acción revertida o pergamino: aplicar sin tope para fidelidad de azar y estado
                     resultado = aislada.accionJugador(evento)
@@ -419,10 +446,35 @@ class EstadoJuegoLogica:
                     if aislada.fin:
                         break
 
-            instante_aislada = aislada.estadoJuego.reloj.tiempo_actual
-            return aislada._extraerResumenEstadoActual(instante_aislada, k - 1)
+            if tope_instante is not None and not aislada.fin and aislada.estadoJuego.reloj.tiempo_actual <= tope_instante:
+                aislada._completarInstante(tope_instante)
+
+            return aislada
         finally:
             self._restaurarSingletonRetroceso(snapshot, reloj_retro_ref)
+
+    # ------------------------------------------------------------------ T014
+    def _reconstruirHastaAccion(self, k: int) -> ResumenEstadoDTO:
+        """Reconstruye el estado de la partida justo antes de la acción número k
+        (1 <= k <= N) de la línea de tiempo vigente, mediante reproducción
+        acotada y aislada desde el punto de control previo más cercano (plan.md §3).
+        No altera en absoluto la partida viva.
+        """
+        # El estado justo antes de la acción k es aquel con k-1 acciones vigentes completadas.
+        idx = self._indicePuntoPorAcciones(k - 1)
+        punto_base, inicio_log, fin_log = self._resolverSegmentoPorIndice(idx)
+
+        # Pasada 1: Clasificación de registros vigentes en el segmento
+        indices_vigentes = self._planificarSegmento(punto_base, fin_log)
+
+        # j = (k-1) - c : número de acciones vigentes a aplicar desde el punto base
+        c = punto_base.acciones_linea_tiempo
+        j = (k - 1) - c  # parar justo ANTES de aplicar la acción vigente E[j]
+
+        # Pasada 2: Reproducción fiel en una nueva instancia aislada
+        aislada = self._ejecutarPasada2(punto_base, inicio_log, fin_log, indices_vigentes, tope_vigente=j)
+        instante_aislada = aislada.estadoJuego.reloj.tiempo_actual
+        return aislada._extraerResumenEstadoActual(instante_aislada, k - 1)
 
     # ------------------------------------------------------------------ T008
     def _reconstruirHastaInstante(self, t: int) -> ResumenEstadoDTO:
@@ -436,75 +488,15 @@ class EstadoJuegoLogica:
         if t == reloj_vivo:
             return self._extraerResumenEstadoActual(t, self.acciones_linea_tiempo)
 
-        punto_base = self._buscarPuntoPorInstante(t)
-        if punto_base is None:
-            if not self.puntos_control:
-                self._asegurarPuntoControlInicial()
-            punto_base = self.puntos_control[0] if self.puntos_control else None
-            if punto_base is None:
-                raise ValueError("No hay un punto de control disponible para la reconstrucción")
-
-        inicio_log, fin_log = self._resolverPuntoBaseYFinLog(punto_base)
+        idx = self._indicePuntoPorInstante(t)
+        punto_base, inicio_log, fin_log = self._resolverSegmentoPorIndice(idx)
 
         # Pasada 1: Clasificación de registros vigentes en el segmento
         indices_vigentes = self._planificarSegmento(punto_base, fin_log)
 
         # Pasada 2: Reproducción fiel en una nueva instancia aislada
-        snapshot, reloj_retro_ref = self._guardarSingletonRetroceso()
-        try:
-            aislada = self._hidratarInstanciaAislada(punto_base)
-
-            tope_fin = min(fin_log, self.logEventos.cantidad)
-            registros = self.logEventos.obtener_registros_rango(inicio_log, tope_fin)
-
-            p_vigente = 0
-
-            for offset, reg in enumerate(registros):
-                idx = inicio_log + offset
-                if aislada.fin or aislada.estadoJuego.reloj.tiempo_actual > t:
-                    break
-
-                if reg.tipo_accion in TIPOS_CURSOR_INVENTARIO:
-                    aislada._repetirMovimientoDeCursor(reg.tipo_accion)
-                    continue
-
-                evento = aislada._crear_evento_repeticion(reg)
-
-                es_vigente = (p_vigente < len(indices_vigentes) and indices_vigentes[p_vigente] == idx)
-                if es_vigente:
-                    p_vigente += 1
-                    # FR-428: si en t hay decisión del jugador, mostrar estado justo antes de esa decisión
-                    if aislada.estadoJuego.reloj.tiempo_actual >= t:
-                        break
-
-                    resultado = aislada.accionJugador(evento, tope=t)
-                    if resultado.exito is False:
-                        raise ValueError(
-                            f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
-                        )
-
-                    if aislada.fin:
-                        break
-
-                    sig = aislada.estadoJuego.reloj.siguiente()
-                    if (sig is not None and sig.tiempo_ejecucion > t) or aislada.estadoJuego.reloj.tiempo_actual >= t:
-                        break
-                else:
-                    # Acción revertida o pergamino: aplicar sin tope para fidelidad de azar y estado
-                    resultado = aislada.accionJugador(evento)
-                    if resultado.exito is False:
-                        raise ValueError(
-                            f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
-                        )
-                    if aislada.fin:
-                        break
-
-            if not aislada.fin and aislada.estadoJuego.reloj.tiempo_actual <= t:
-                aislada._completarInstante(t)
-
-            return aislada._extraerResumenEstadoActual(t, aislada.acciones_linea_tiempo)
-        finally:
-            self._restaurarSingletonRetroceso(snapshot, reloj_retro_ref)
+        aislada = self._ejecutarPasada2(punto_base, inicio_log, fin_log, indices_vigentes, tope_instante=t)
+        return aislada._extraerResumenEstadoActual(t, aislada.acciones_linea_tiempo)
 
     # ------------------------------------------------------------------ T006
     def _guardarSingletonRetroceso(self):
@@ -528,7 +520,10 @@ class EstadoJuegoLogica:
 
     def _restaurarSingletonRetroceso(self, snapshot, reloj_retro_ref) -> None:
         """Reestablece el singleton RetrocesoLogica y el puntero reloj.retroceso de la partida
-        viva a los valores capturados antes de la reconstrucción aislada."""
+        viva a los valores capturados antes de la reconstrucción aislada.
+        Invariante plan.md §1 y §4 (T023): Conservar íntegro el puntero reloj.retroceso y los 8
+        atributos de RetrocesoLogica garantiza que los usos subsecuentes del pergamino de
+        retroceso desapilen correctamente sin corrupción tras cualquier consulta historia."""
         retro = RetrocesoLogica()
         (
             retro.cabeza,
@@ -980,7 +975,10 @@ class EstadoJuegoLogica:
         return ids
 
     def _actualizarFichasEnUso(self) -> None:
-        """Le dice a la fuente qué fichas no puede liberar. El modelo no conoce la caché."""
+        """Le dice a la fuente qué fichas no puede liberar. El modelo no conoce la caché.
+        Inhibido solo en instancias aisladas de consulta histórica (T019/T020): el --replay real sí lo usa."""
+        if getattr(self, "_es_aislada", False):
+            return
         fijar = getattr(self.comunicacion, "fijar_fichas_en_uso", None)
         if fijar is not None:
             fijar(self.fichasEnUso())
@@ -991,7 +989,9 @@ class EstadoJuegoLogica:
         # Una sola vez, al inicio, se precarga profundo (3); después el entorno cercano (profundidad 2),
         # y precargar_vecinas únicamente pide las salas que todavía no estaban guardadas. Si la sala la carga un enemigo
         # al desplazarse (no es la del jugador) no se precarga nada para no gastar presupuesto.
-        if sala == self.estadoJuego.jugador.id_sala_actual:
+        # En instancias aisladas (consulta histórica) se inhibe la precarga para no alterar el reporte de red (T020).
+        # El --replay real NO se inhibe: precarga en lotes como en la partida original.
+        if sala == self.estadoJuego.jugador.id_sala_actual and not getattr(self, "_es_aislada", False):
             if getattr(self, "precargaInicialHecha", False):
                 self.comunicacion.precargar_vecinas(self.idCripta, sala, 2)
             else:

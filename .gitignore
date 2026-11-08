@@ -20,3 +20,4 @@ datos_cripta/
 
 # Logs generados por las pruebas y los benchmarks (criptas sintéticas)
 logs/sintetica_*.log
+logs/test_*.log

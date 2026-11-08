@@ -81,11 +81,11 @@
 **Criterio de prueba independiente**: Medir `reloj.tiempo_actual`, `acciones_linea_tiempo`, longitud de bitácora, longitud de log, estado de `azar.getstate()`, solicitudes de red y cambios en `RetrocesoLogica` antes y después de múltiples consultas intercaladas, verificando que son idénticos bit a bit (FR-432, FR-440, SC-005).
 
 ### Pruebas para User Story 3
-- [ ] T018 [P] [US3] Crear archivo de pruebas de aislamiento `test_historia_aislamiento.py` con pruebas para invariancia de reloj, bitácora, log en disco, solicitudes de red y estado del generador de azar (FR-432, FR-440, Apéndice B Caso 4)
+- [X] T018 [P] [US3] Crear archivo de pruebas de aislamiento `test_historia_aislamiento.py` con pruebas para invariancia de reloj, bitácora, log en disco, solicitudes de red y estado del generador de azar (FR-432, FR-440, Apéndice B Caso 4)
 
 ### Implementación para User Story 3
-- [ ] T019 [US3] Asegurar en `Logica/EstadoJuegoLogica.py` que la instancia aislada opere con `registrador_log = None` y `_es_repeticion = True`, inhibiendo capturas de checkpoint y registros de puntaje
-- [ ] T020 [US3] Verificar en `Logica/EstadoJuegoLogica.py` que la instancia aislada no realice peticiones a la red pasando `pedir_llaves=False` y apoyándose en la caché ya precargada del adaptador `comunicacion`
+- [X] T019 [US3] Asegurar en `Logica/EstadoJuegoLogica.py` que la instancia aislada opere con `registrador_log = None` y `_es_repeticion = True`, inhibiendo capturas de checkpoint y registros de puntaje
+- [X] T020 [US3] Verificar en `Logica/EstadoJuegoLogica.py` que la instancia aislada no realice peticiones a la red pasando `pedir_llaves=False` y apoyándose en la caché ya precargada del adaptador `comunicacion`
 
 **Punto de control**: Aislamiento validado: cero efectos colaterales en la partida viva.
 
@@ -98,11 +98,11 @@
 **Criterio de prueba independiente**: Jugar 10 acciones, revertir 3 con el pergamino, consultar `historia #k` y `historia <t>`, comprobar que las acciones revertidas no aparecen (FR-434, Apéndice B Caso 2), y verificar que usar otro pergamino posterior desapila correctamente sin corrupción de `RetrocesoLogica`.
 
 ### Pruebas para User Story 4
-- [ ] T021 [P] [US4] Agregar pruebas de coherencia con pergamino en `test_historia_aislamiento.py` cubriendo poda de puntos de control, invisibilidad de ramas revertidas y uso de pergamino inmediatamente después de una consulta `historia`
+- [X] T021 [P] [US4] Agregar pruebas de coherencia con pergamino en `test_historia_pergamino.py` cubriendo poda de puntos de control, invisibilidad de ramas revertidas y uso de pergamino inmediatamente después de una consulta `historia`
 
 ### Implementación para User Story 4
-- [ ] T022 [US4] Probar en `test_historia_aislamiento.py` el caso `A1 A2 A3 P A3' A4` (consulta `#4` = estado tras `A3'`, no tras `A3`), pergamino justo después de un punto de control, y que el azar de la partida viva sigue idéntico: el log NO se trunca, la línea vigente sale de la pila de `_planificarSegmento`
-- [ ] T023 [US4] Asegurar que la restitución de atributos de `RetrocesoLogica` en `Logica/EstadoJuegoLogica.py` conserve íntegro el puntero `reloj.retroceso` de la partida viva para usos subsecuentes del pergamino
+- [X] T022 [US4] Probar en `test_historia_pergamino.py` el caso `A1 A2 A3 P A3' A4` (consulta `#4` = estado tras `A3'`, no tras `A3`), pergamino justo después de un punto de control, y que el azar de la partida viva sigue idéntico: el log NO se trunca, la línea vigente sale de la pila de `_planificarSegmento`
+- [X] T023 [US4] Asegurar que la restitución de atributos de `RetrocesoLogica` en `Logica/EstadoJuegoLogica.py` conserve íntegro el puntero `reloj.retroceso` de la partida viva para usos subsecuentes del pergamino
 
 **Punto de control**: Coherencia y compatibilidad total con el pergamino de retroceso confirmada.
 
