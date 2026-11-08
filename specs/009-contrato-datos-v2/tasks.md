@@ -309,8 +309,8 @@
 
 ## Fase 9: Cierre y transversales
 
-- [ ] T038 [P] Completar la matriz de trazabilidad de `specs/009-contrato-datos-v2/quickstart.md` con los nombres reales de las pruebas (`clase.método`). Comprobar que ningún FR-301 a FR-325 queda sin prueba o medición y que cada escenario H1-1 a H6-2 tiene al menos una. (IX)
-- [ ] T039 [P] Actualizar `DOCUMENTACION_API.md`:
+- [X] T038 [P] Completar la matriz de trazabilidad de `specs/009-contrato-datos-v2/quickstart.md` con los nombres reales de las pruebas (`clase.método`). Comprobar que ningún FR-301 a FR-325 queda sin prueba o medición y que cada escenario H1-1 a H6-2 tiene al menos una. (IX)
+- [X] T039 [P] Actualizar `DOCUMENTACION_API.md`:
   - `obtener_llaves` en la tabla de métodos del cliente (§3) y `ubicacion_llaves`/`esqueleto` en la del servicio.
   - La clave `llaves` en el esquema del archivo de cripta (§7).
   - En la tabla de solicitudes (§8), la primera vez pasa de 6 a 7.
@@ -319,7 +319,7 @@
   (VI)
 - [ ] T040 [P] Agregar la sección 009 a `DECISIONES.md` con enlaces a `spec.md` y `plan.md`, e indicar si cada decisión (guardado A, validación ordenando, `solo_guardadas`, fuente solo local) coincide con el plan y qué medición lo respalda. (X)
 - [ ] T041 [P] Registrar en `PROMPTS_LLM.md` los comandos `/speckit-specify`, `/speckit-clarify`, `/speckit-plan`, `/speckit-tasks` y `/speckit-implement` de esta capacidad con texto propio, con herramienta y modelo. (XI)
-- [ ] T042 [P] Actualizar `README.md` con una línea sobre la capacidad 009, `python main.py --bench llaves` y la consulta de llaves en el conteo de solicitudes. (VII)
+- [X] T042 [P] Actualizar `README.md` con una línea sobre la capacidad 009, `python main.py --bench llaves` y la consulta de llaves en el conteo de solicitudes. (VII)
 - [ ] T043 Comprobar con búsqueda que `adaptadores/llaves.py`, `adaptadores/fuente_solo_local.py`, `DTO/LlavesDTO.py`, `bench/llaves.py` y los cambios en los clientes, `AlmacenDisco`, `servicioCripta.py` y `EstadoJuegoLogica.py`:
   - No importan `heapq`, `bisect`, `collections` ni `networkx`.
   - No usan `dict`/`set` como índice ni `sorted()`/`list.sort()`.
