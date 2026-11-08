@@ -72,6 +72,10 @@ class ControladorJuego:
 
             # 5. Inicializamos el juego pasando la cripta y la semilla
             self.servicio.iniciarJuego(id_cripta, semilla)
+            # Partida nueva: si no se pudo obtener la ubicación de las llaves, se avisa y la partida sigue (FR-313).
+            aviso_llaves = self.servicio.avisoLlaves()
+            if aviso_llaves is not None:
+                self.vista.mostrar_advertencias([aviso_llaves])
 
         # 6. Entramos al bucle principal del juego...
         while True:

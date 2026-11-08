@@ -182,7 +182,7 @@
 
 ### Pruebas de la Historia 3 (escribir primero; deben fallar donde falte código)
 
-- [ ] T020 [US3] Crear `test_llaves_fallos.py`:
+- [X] T020 [US3] Crear `test_llaves_fallos.py`:
   - **(a)** H3-1: con `fallo_llaves="sin_respuesta"`, `ubicacion_llaves` lanza `LlavesNoDisponibles`, el mensaje contiene el id de la cripta y `leer_llaves` sigue en `None`.
   - **(b)** H3-2: con una sala inexistente, con una entrada idéntica repetida y con un enemigo ausente del contenido **guardado** (precargar esa sala antes), el resultado es `LlavesNoDisponibles` y no se guarda nada.
   - **(c)** H3-3 / FR-313: `EstadoJuegoLogica.iniciarJuego` sobre `crear_servicio(offline=True, carpeta=…)` con una cripta guardada sin llaves termina sin excepción, con `llaves is None`, `avisoLlaves` con el id de la cripta y `solicitudes_realizadas == 0`.
@@ -194,8 +194,8 @@
 
 ### Implementación de la Historia 3
 
-- [ ] T021 [US3] En `Servicio/EstadoJuegoServicio.py` agregar `avisoLlaves(self) -> str | None`, que devuelve el `avisoLlaves` de la lógica, o `None` si no hay partida. En `Controlador/ControladorJuego.py`, justo después de iniciar una partida nueva, si `avisoLlaves()` no es `None`, imprimirlo con el formato de `_mostrar_advertencias_nuevas`. No mostrarlo en `--replay`, que no crea la vista. Solo se muestra el aviso: el comportamiento de `--verificar` es de la capacidad 003. (FR-309, FR-312, FR-313, IV)
-- [ ] T022 [US3] Ejecutar `test_llaves_fallos.py` y corregir lo que falle en `adaptadores/servicioCripta.py` (T016) o en `Logica/EstadoJuegoLogica.py` (T017), sin capturar excepciones más amplias de lo necesario. Comprobar a mano, con `python main.py --offline` sobre una carpeta de prueba sin llaves armada por un laboratorio, que el aviso aparece y que la partida se juega. (FR-312, FR-313)
+- [X] T021 [US3] En `Servicio/EstadoJuegoServicio.py` agregar `avisoLlaves(self) -> str | None`, que devuelve el `avisoLlaves` de la lógica, o `None` si no hay partida. En `Controlador/ControladorJuego.py`, justo después de iniciar una partida nueva, si `avisoLlaves()` no es `None`, imprimirlo con el formato de `_mostrar_advertencias_nuevas`. No mostrarlo en `--replay`, que no crea la vista. Solo se muestra el aviso: el comportamiento de `--verificar` es de la capacidad 003. (FR-309, FR-312, FR-313, IV)
+- [X] T022 [US3] Ejecutar `test_llaves_fallos.py` y corregir lo que falle en `adaptadores/servicioCripta.py` (T016) o en `Logica/EstadoJuegoLogica.py` (T017), sin capturar excepciones más amplias de lo necesario. Comprobar a mano, con `python main.py --offline` sobre una carpeta de prueba sin llaves armada por un laboratorio, que el aviso aparece y que la partida se juega. (FR-312, FR-313)
 
 **Punto de control**: `python -m unittest test_llaves_fallos` pasa. Las historias 1 a 3 (todas P1) funcionan juntas.
 
