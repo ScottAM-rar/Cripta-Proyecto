@@ -58,3 +58,21 @@ Por capacidad: enlace a su especificación y a su plan, si la decisión final co
 | `ResultadoReplayHastaDTO` como DTO puro; la lógica no escribe en `stdout` | Sí | Principio IV; `TestAislamientoReplay`: sin vista, sin log nuevo, sin puntajes |
 | `--hasta` sin `--replay` termina con código 2 antes de crear `EstadoJuegoServicio` | Sí | FR-408, SC-004; `TestArgumentosCLI.test_SC004_latencia_rechazo_menor_a_100ms`: latencia < 0.1 s |
 | Propiedad de prefijo verificada: estado en `t` con reproducción acotada == estado en `t` de la partida completa | Sí | FR-411; `TestDeterminismoReplay.test_FR411_propiedad_de_prefijo` |
+
+
+## 007 – Puntos de control de la partida
+
+- Especificación: [`specs/007-puntos-de-control/spec.md`](specs/007-puntos-de-control/spec.md) (FR-414 a FR-426)
+- Plan: [`specs/007-puntos-de-control/plan.md`](specs/007-puntos-de-control/plan.md), con [`research.md`](specs/007-puntos-de-control/research.md)
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| **Alternativa B ratificada**: instantánea de estado con marca de longitud en bitácora y log de acciones | Sí | `--bench puntos_control`: memoria a 5 000 acciones lineal $O(N)$ (~600 KB con $K=10$; ~6 MB con $K=1$). Tiempo neto de captura mediana 268.8 µs (0.27 ms) |
+| Alternativa A descartada: copia completa exhaustiva de bitácora y log en cada punto | Sí (descarte previsto en `research.md` §3) | Memoria a 5 000 acciones cuadrática $O(N^2)$: requeriría $\approx 12.5$ millones de entradas de log (>300 MB con $K=1$) degradando el ciclo |
+| Alternativa C descartada: sin puntos de control (reproducir siempre desde cero) | Sí (descarte previsto en `research.md` §7) | Distancia de recuperación hasta una acción $k$ arbitraria es $O(k)$ (hasta 5 000 pasos de repetición) |
+| Fijar $K=10$ como valor por defecto | Sí | Medido: distancia máxima 9 pasos (<10), memoria < 1 MB a 5 000 acciones, ciclo con punto 1.57 ms |
+| Límite de ciclo de eventos con $K=1 \le 20$ ms (FR-426) | Sí | `--bench puntos_control`: ciclo con captura $K=1$ en cripta sintética representativa (50 esbirros) dio mediana **1.57 ms** (máximo **1.75 ms** < 20 ms). **CUMPLE** |
+| Contador `acciones_linea_tiempo` independiente de `accionesJugador` | Sí | `self.accionesJugador` permanece intacto para puntaje acumulado (§2.12); `acciones_linea_tiempo` mide la línea de tiempo activa y retrocede con el pergamino (FR-418) |
+| Poda por retroceso mediante truncado con `pop()` en lista contigua | Sí | Principio I: sin `dict`, `set`, `heapq`, `bisect` ni `collections`. Complejidad $O(m)$ donde $m \le 5$ |
+| `repetirPartida` (`--replay`, `--hasta`) no toma puntos de control | Sí | Invarianza y aislamiento (Principio IV); suites `test_replay_hasta`, `test_determinismo_replay` y `test_rendimiento_replay` se preservan sin sobrecosto |
+| Formato de guardado v7 en `AlmacenPartidaBinario.py` (T021 a T024) | Pendiente de confirmación | Pruebas de contrato v7 preparadas en `test_persistencia_v7.py` (T020). T021 a T024 no se implementan por falta de confirmación de Scott, de acuerdo con la regla de coordinación |

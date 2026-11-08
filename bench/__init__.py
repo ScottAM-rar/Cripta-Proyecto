@@ -13,7 +13,7 @@ import sys
 import tempfile
 from datetime import datetime
 
-from bench import agenda, bitacora, ciclo, guardado, inventario, ordenamiento, recorrido, replay, retroceso, salas, terreno
+from bench import agenda, bitacora, ciclo, guardado, inventario, ordenamiento, puntos_control, recorrido, replay, retroceso, salas, terreno
 from bench.datos import SEMILLA
 from bench.salida import escribir_csv, imprimir_tabla
 
@@ -45,6 +45,7 @@ BLOQUES = (
     ("terreno", terreno.ejecutar),
     ("recorrido", recorrido.ejecutar),
     ("replay", replay.ejecutar),
+    ("puntos_control", puntos_control.ejecutar),
 )
 
 
@@ -70,7 +71,7 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
             continue
         imprimir(f"... midiendo {nombre}")
         resultado = funcion(filas)
-        if nombre in ("ciclo", "terreno", "replay") and resultado is False:
+        if nombre in ("ciclo", "terreno", "replay", "puntos_control") and resultado is False:
             cumple = False
         if nombre == "recorrido" and resultado is False:
             cumple_recorrido = False
@@ -82,6 +83,9 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
         imprimir("\n§5.2: " + ("el ciclo de eventos CUMPLE el límite de 20 ms." if cumple else "el ciclo de eventos NO cumple el límite de 20 ms."))
     if "replay" in pedidos:
         imprimir("\n§3.6 Replay acotado (SC-003, proporcionalidad temporal por conteo de eventos): "
+                 + ("CUMPLE." if cumple else "NO CUMPLE."))
+    if "puntos_control" in pedidos:
+        imprimir("\n§3.6 Puntos de control (FR-426, límite de 20 ms en captura y ciclo): "
                  + ("CUMPLE." if cumple else "NO CUMPLE."))
     if "recorrido" in pedidos:
         imprimir("\nRecorrido por niveles (SC-004, equivalencia y verificaciones previas): "

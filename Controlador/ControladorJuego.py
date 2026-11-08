@@ -73,6 +73,8 @@ class ControladorJuego:
             # 5. Inicializamos el juego pasando la cripta y la semilla
             self.servicio.iniciarJuego(id_cripta, semilla)
 
+        # 6. Reportar intervalo de puntos de control e iniciar bucle principal
+        print(f"Puntos de control cada: {self.servicio.k_checkpoint} acciones")
         # 6. Entramos al bucle principal del juego...
         while True:
             jugador = self.servicio.getJudador()

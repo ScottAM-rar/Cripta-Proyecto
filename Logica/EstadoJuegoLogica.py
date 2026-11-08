@@ -19,12 +19,16 @@ from Logica.FuenteCripta import FuenteCripta
 from Logica.CampoDeCostos import CampoDeCostos
 from Logica.MapaCripta import MapaCripta
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
+from DTO.PuntoControlDTO import PuntoControlDTO
 from Logica import EstadoGuardadoLogica
 
 class EstadoJuegoLogica:
     def __init__(self,semilla: int = None, cripta: str = None, comunicacion: FuenteCripta | None = None):
         self.tiempoMovimientoJugador = 0
         self.accionesJugador = 0       # acciones del jugador que consumieron tiempo virtual (§2.12)
+        self.acciones_linea_tiempo = 0  # acciones en la línea de tiempo vigente (reducido por pergamino)
+        self.k_checkpoint = 10          # intervalo configurable de puntos de control (FR-414, FR-416)
+        self.puntos_control: list[PuntoControlDTO] = []  # lista contigua ordenada de puntos de control (Principio I)
         # Quien arma el juego entrega el servicio de criptas ya listo; al modelo no le importa de dónde saca los datos.
         self.comunicacion = comunicacion
         
@@ -40,7 +44,93 @@ class EstadoJuegoLogica:
 
     def exportar_estado(self) -> EstadoGuardadoDTO:
         """Instantánea de la partida en datos simples; no toca archivos ni red."""
+        self._asegurarPuntoControlInicial()
         return EstadoGuardadoLogica.exportar(self)
+
+    def _asegurarPuntoControlInicial(self) -> None:
+        if getattr(self, "_es_repeticion", False):
+            return
+        if not self.puntos_control and self.iniciado and self.estadoJuego is not None:
+            estado_dto = EstadoGuardadoLogica.exportar(self)
+            long_bitacora = len(estado_dto.bitacora)
+            long_log = len(estado_dto.acciones_log)
+            estado_dto.bitacora = []
+            estado_dto.acciones_log = []
+            reloj = getattr(self.estadoJuego, 'reloj', None)
+            tiempo_reloj = reloj.tiempo_actual if reloj is not None else 0
+            p0 = PuntoControlDTO(
+                numero_punto=0,
+                acciones_linea_tiempo=0,
+                instante_reloj=tiempo_reloj,
+                estado=estado_dto,
+                longitud_bitacora=long_bitacora,
+                longitud_acciones_log=long_log,
+            )
+            self.puntos_control.append(p0)
+
+    def _verificarYCapturarPuntoControl(self) -> None:
+        if self.fin or getattr(self, "_es_repeticion", False):
+            return
+        if not self.puntos_control:
+            self._asegurarPuntoControlInicial()
+        if not self.puntos_control:
+            return
+        ultimo_punto = self.puntos_control[-1]
+        if self.acciones_linea_tiempo - ultimo_punto.acciones_linea_tiempo >= self.k_checkpoint:
+            numero_punto = len(self.puntos_control)
+            estado_dto = EstadoGuardadoLogica.exportar(self)
+            long_bitacora = len(estado_dto.bitacora)
+            long_log = len(estado_dto.acciones_log)
+            estado_dto.bitacora = []
+            estado_dto.acciones_log = []
+            reloj = getattr(self.estadoJuego, 'reloj', None)
+            tiempo_reloj = reloj.tiempo_actual if reloj is not None else 0
+            punto = PuntoControlDTO(
+                numero_punto=numero_punto,
+                acciones_linea_tiempo=self.acciones_linea_tiempo,
+                instante_reloj=tiempo_reloj,
+                estado=estado_dto,
+                longitud_bitacora=long_bitacora,
+                longitud_acciones_log=long_log,
+            )
+            self.puntos_control.append(punto)
+
+    def _podarPuntosControlPosteriores(self, limite_acciones: int) -> None:
+        while self.puntos_control and self.puntos_control[-1].acciones_linea_tiempo > limite_acciones:
+            self.puntos_control.pop()
+
+    def obtenerPuntoControlReciente(self, k: int) -> PuntoControlDTO | None:
+        """Retorna el punto de control más reciente con acciones_linea_tiempo <= k."""
+        for punto in reversed(self.puntos_control):
+            if punto.acciones_linea_tiempo <= k:
+                return punto
+        return None
+
+    def restaurarDesdePuntoControl(self, punto: PuntoControlDTO) -> None:
+        """Restaura el estado completo del juego a partir de un punto de control y preserva los puntos hasta él."""
+        self._exigirServicio()
+        self._podarPuntosControlPosteriores(punto.acciones_linea_tiempo)
+
+        bitacora_prefijo = []
+        if getattr(self, "logEventosJuego", None) is not None:
+            bitacora_prefijo = self.logEventosJuego.obtener_eventos()[:punto.longitud_bitacora]
+
+        acciones_prefijo = []
+        if getattr(self, "logEventos", None) is not None:
+            acciones_prefijo = self.logEventos.obtener_acciones_cronologicas()[:punto.longitud_acciones_log]
+
+        EstadoGuardadoLogica.restaurar(self, punto.estado)
+        self.acciones_linea_tiempo = punto.acciones_linea_tiempo
+        self._actualizarFichasEnUso()
+
+        if bitacora_prefijo and not punto.estado.bitacora:
+            self.logEventosJuego = BitacoraLogica()
+            for ev in bitacora_prefijo:
+                self.logEventosJuego.agregar_evento(ev)
+
+        if acciones_prefijo and not punto.estado.acciones_log:
+            for acc in acciones_prefijo:
+                self.logEventos.agregar(acc)
 
     def restaurar_estado(self, estado: EstadoGuardadoDTO) -> None:
         """Deja la partida como estaba cuando se exportó `estado`. El historial del pergamino empieza vacío."""
@@ -128,6 +218,13 @@ class EstadoJuegoLogica:
         return self.logEventos.a_dto()
 
     def repetirPartida(self, log: LogPartidaDTO, hasta: int | None = None) -> list[ResultadoEventoDTO] | ResultadoReplayHastaDTO:
+        self._es_repeticion = True
+        try:
+            return self._repetirPartidaInterno(log, hasta=hasta)
+        finally:
+            self._es_repeticion = False
+
+    def _repetirPartidaInterno(self, log: LogPartidaDTO, hasta: int | None = None) -> list[ResultadoEventoDTO] | ResultadoReplayHastaDTO:
         log_original = LogEventos.desde_dto(log)
 
         if log_original.id_cripta is None:
@@ -633,6 +730,7 @@ class EstadoJuegoLogica:
             raise ValueError("El juego no ha sido iniciado")
         if self.fin:
             raise ValueError("El juego ha finalizado, no se generan más acciones")
+        self._asegurarPuntoControlInicial()
         costo = evento.tiempo_ejecucion
         if not isinstance(costo, int) or isinstance(costo, bool) or costo <= 0:
             raise ValueError("El costo de la acción del jugador debe ser un entero positivo")
@@ -645,6 +743,8 @@ class EstadoJuegoLogica:
             return accion                       # rechazada: sin tiempo, sin historial y fuera del log
         if GestorEventos.es_uso_de_pergamino(evento):
             self._registrarAccionEnLog(evento)  # el retroceso no consume tiempo, pero sí es parte de la partida
+            self.acciones_linea_tiempo = max(0, self.acciones_linea_tiempo - 1)
+            self._podarPuntosControlPosteriores(self.acciones_linea_tiempo)
             self.tiempoMovimientoJugador = reloj.tiempo_actual
             self._actualizarFichasEnUso()
             return accion
@@ -661,6 +761,7 @@ class EstadoJuegoLogica:
                 respuesta = ResultadoEventoDTO(accion.exito, f"{accion.mensaje}\n{mensajes}", accion.eventoResultado, accion.puntaje)
 
         self.accionesJugador += 1
+        self.acciones_linea_tiempo += 1
         self._sumarPuntaje(accion.puntaje)
         self._comprobarFinal()
         if not self.fin:
@@ -676,6 +777,7 @@ class EstadoJuegoLogica:
         self.tiempoMovimientoJugador = reloj.tiempo_actual
         self._registrarAccionEnLog(evento)
         self._actualizarFichasEnUso()
+        self._verificarYCapturarPuntoControl()
         return respuesta
 
     def vistaInventario(self, criterio: str | None = None) -> list:

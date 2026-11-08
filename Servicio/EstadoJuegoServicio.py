@@ -12,17 +12,27 @@ from adaptadores.extension import ruta_archivo, EXTENSION_PARTIDA, CARPETA_PARTI
 class EstadoJuegoServicio:
     MAX_NOMBRE_JUGADOR = MAX_NOMBRE      # largo máximo del nombre en la tabla de puntajes
 
-    def __init__(self, semilla: int = None, cripta: str = None, comunicacion=None, offline: bool = False):
+    def __init__(self, semilla: int = None, cripta: str = None, comunicacion=None, offline: bool = False, k_checkpoint: int | None = None):
         self._offline = offline
         if cripta is not None and comunicacion is None:
             comunicacion = crear_servicio(offline=offline)
         self._estadoJuegoLogica = EstadoJuegoLogica(semilla, cripta, comunicacion)
+        if k_checkpoint is not None:
+            self._estadoJuegoLogica.k_checkpoint = k_checkpoint
         self._almacenLog: AlmacenLogTexto | None = None
         self.almacenPuntajes = AlmacenPuntajes()       # reemplazable (p. ej. para pruebas con otra ruta)
         self._puntajeRegistrado = False
         self._esRepeticion = False
         if self._estadoJuegoLogica.iniciado:
             self._abrirLog(None)
+
+    @property
+    def k_checkpoint(self) -> int:
+        return self._estadoJuegoLogica.k_checkpoint
+
+    @k_checkpoint.setter
+    def k_checkpoint(self, valor: int) -> None:
+        self._estadoJuegoLogica.k_checkpoint = valor
 
     def _asegurarServicio(self, offline: bool | None = None) -> None:
         """Arma el servicio de criptas (red o disco) si todavía no hay uno. El modelo solo recibe el resultado.
@@ -89,6 +99,14 @@ class EstadoJuegoServicio:
             raise ValueError("No se puede guardar una partida que ya terminó")
         ruta = ruta_archivo(nombre_archivo, EXTENSION_PARTIDA, CARPETA_PARTIDAS, crear_carpeta=True)
         AlmacenPartidaBinario(ruta).guardar(estado)
+
+    def obtenerPuntoControlReciente(self, k: int) -> PuntoControlDTO | None:
+        """Obtiene el punto de control más reciente con acciones <= k."""
+        return self._estadoJuegoLogica.obtenerPuntoControlReciente(k)
+
+    def restaurarDesdePuntoControl(self, punto: PuntoControlDTO) -> None:
+        """Restaura la partida desde un punto de control."""
+        self._estadoJuegoLogica.restaurarDesdePuntoControl(punto)
 
     def cargarPartida(self, nombre_archivo: str) -> None:
         """Carga una partida guardada. Un archivo inválido se rechaza antes de tocar la partida actual."""

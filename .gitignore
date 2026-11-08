@@ -14,3 +14,6 @@ env/
 
 # Datos guardados en disco por el juego (caché y modo offline)
 datos_cripta/
+
+# Benchmarks
+*.csv
