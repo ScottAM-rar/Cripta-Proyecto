@@ -34,11 +34,9 @@ Generado automáticamente el 2026-11-08 a partir de `spec.md`.
 
 ## Ambigüedades pendientes de resolución
 
-- [ ] **Q1** (FR-436): ¿`historia #k` con k = acciones_realizadas + 1 se acepta como estado actual o se rechaza?
-- [ ] **Q2** (FR-427): ¿La consulta `historia` en una partida terminada (victoria/derrota) se acepta o se rechaza?
-- [ ] **Q3** (FR-431 ítem 7): ¿Cómo se muestra (o se omite) el mapa conocido mientras la capacidad 002 no está integrada?
-
-Una vez resueltas Q1–Q3, actualizar los FR correspondientes (FR-436, FR-427 / nota en FR-431) y marcar estos ítems como `[x]`.
+- [x] **Q1** (FR-436): `historia #k` con k = acciones_vigentes + 1 → se acepta y devuelve el estado actual; con k > acciones_vigentes + 1 → se rechaza.
+- [x] **Q2** (FR-427, FR-429): `historia` en partida terminada → se acepta y muestra el estado histórico pedido.
+- [x] **Q3** (FR-431 ítem 7): el campo «mapa conocido» se omite completamente de la salida hasta que la capacidad 002 esté integrada.
 
 ## Cobertura de requisitos por historia
 

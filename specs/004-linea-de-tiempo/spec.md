@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-08
 
-**Estado**: Borrador
+**Estado**: Aprobado
 
 **Entrada**: Capacidad de la línea de tiempo (Parte II, §3.6 y §5.5): los comandos `historia <t>` e `historia #k` para consultar el estado del juego en un instante pasado. Requisitos con prefijo FR-4xx, continuando desde FR-427.
 
@@ -22,13 +22,11 @@ Los comandos `historia <t>` e `historia #k` resuelven esto: el jugador escribe u
 
 ### Sesión 2026-11-08
 
-[NEEDS CLARIFICATION – Q1]: ¿`historia #k` con k igual al número de acciones realizadas más uno (es decir, el estado actual del juego) se acepta y devuelve el estado presente, o también se rechaza como instante futuro? Impacto: define el límite superior de k válido.
+- Q: ¿`historia #k` con k igual al número de acciones realizadas más uno (el estado actual del juego) se acepta o se rechaza como instante futuro? → A: Se acepta y devuelve el estado actual de la partida (equivalente a consultar el estado presente sin alterar nada).
+- Q: ¿La consulta `historia` en una partida ya terminada (victoria o derrota) se acepta o se rechaza? → A: Se acepta y muestra el estado histórico pedido; la línea de tiempo sigue siendo válida aunque la partida haya concluido.
+- Q: Mientras la capacidad de niebla de guerra (002) no esté integrada, ¿cómo se presenta el campo «mapa conocido» en la salida de `historia`? → A: El campo se omite completamente de la salida; no aparece ninguna línea de mapa hasta que la capacidad 002 esté integrada.
 
-[NEEDS CLARIFICATION – Q2]: ¿La consulta `historia` en una partida ya terminada (victoria o derrota) se acepta y muestra el estado final histórico, o se rechaza porque ya no hay partida en curso?
-
-[NEEDS CLARIFICATION – Q3]: Mientras la capacidad de niebla de guerra (002) no esté integrada, ¿el campo «mapa conocido» se omite de la salida, se muestra vacío, o se muestra un literal como «(pendiente de integración)»?
-
-*(Las demás ambigüedades se resolvieron con las decisiones del enunciado y las decisiones heredadas de 007).*
+*(Todas las ambigüedades identificadas en la especificación fueron resueltas durante la sesión).*
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
@@ -74,7 +72,7 @@ El jugador escribe `historia #k` donde k es un número entero que identifica una
 
 3. **Dado** una partida en curso, **cuando** el jugador escribe `historia #0`, **entonces** el juego rechaza la consulta con un mensaje claro que indica que el número de acción debe ser mayor o igual que 1. *(FR-435)*
 
-4. **Dado** una partida con N acciones realizadas, **cuando** el jugador escribe `historia #k` con k > N + 1 (o k > N según resolución de Q1), **entonces** el juego rechaza la consulta con un mensaje claro indicando que esa acción aún no ha ocurrido. *(FR-436)*
+4. **Dado** una partida con N acciones realizadas, **cuando** el jugador escribe `historia #k` con k = N + 1, **entonces** el juego acepta la consulta y devuelve el estado actual de la partida (equivalente a no haber escrito ningún `historia`). Si k > N + 1, el juego rechaza la consulta con un mensaje claro indicando que esa acción aún no ha ocurrido. *(FR-436)*
 
 5. **Dado** una partida en la que el jugador usó un pergamino de retroceso y revirtió m acciones, dejando la línea de tiempo con N' acciones vigentes, **cuando** el jugador escribe `historia #k` para un k ≤ N', **entonces** el estado mostrado corresponde a la línea de tiempo vigente; las acciones revertidas no forman parte de la historia. *(FR-434, Apéndice B: caso 2)*
 
@@ -153,8 +151,8 @@ La consulta `historia` responde en un tiempo proporcional a la distancia entre e
 - `t` o `k` decimales (p. ej. `historia 2.5` o `historia #3.0`): se rechazan con mensaje claro. *(FR-437)*
 - Valor no numérico (p. ej. `historia abc`): se rechazado con mensaje claro. *(FR-437)*
 - Partida sin ninguna acción: `historia <0>` y `historia #1` devuelven el estado inicial; cualquier `t` > 0 y `k` > 1 se rechazan. *(FR-438)*
-- `historia #k` con k = acciones_realizadas + 1: pendiente de Q1 (ver clarificaciones). *(FR-436)*
-- `historia` en una partida terminada: pendiente de Q2 (ver clarificaciones). *(FR-427)*
+- `historia` en una partida terminada (victoria o derrota): se acepta y muestra el estado histórico pedido; la terminación de la partida no invalida la línea de tiempo. *(FR-427, FR-429)*
+- `historia #k` con k = acciones_realizadas + 1: se acepta y devuelve el estado actual de la partida. Con k > acciones_realizadas + 1 se rechaza con mensaje claro. *(FR-436)*
 - Múltiples eventos en el mismo instante t: se muestran tras aplicar todos, respetando el orden determinista del reloj virtual. *(FR-427, Apéndice B: caso 3)*
 - Reconstrucción necesita más de K acciones: imposible por FR-439; el programa informa un error claro sin dejar la partida a medias. *(FR-439, FR-440)*
 - K mayor que el número total de acciones: solo existe el punto de control 0; `historia` puede consultar cualquier instante reproduciendo desde 0. *(FR-439)*
@@ -167,12 +165,12 @@ La consulta `historia` responde en un tiempo proporcional a la distancia entre e
 
 **Consulta por instante de reloj**
 
-- **FR-427**: El juego DEBE aceptar el comando `historia <t>` durante la partida interactiva, donde `t` es un entero no negativo que representa un instante del reloj virtual. El estado devuelto DEBE ser el estado después de ejecutar todos los eventos con tiempo virtual menor o igual que `t`.
+- **FR-427**: El juego DEBE aceptar el comando `historia <t>` durante la partida interactiva y también una vez que la partida ha concluido (victoria o derrota), donde `t` es un entero no negativo que representa un instante del reloj virtual. El estado devuelto DEBE ser el estado después de ejecutar todos los eventos con tiempo virtual menor o igual que `t`. La consulta se acepta siempre que `t` ≤ reloj actual; la terminación de la partida no invalida la línea de tiempo.
 - **FR-428**: Si al instante `t` le corresponde una decisión del jugador, el estado devuelto por `historia <t>` DEBE ser el estado justo antes de que el jugador tomara esa decisión (misma regla que la capacidad 008 en `--replay --hasta t`). Los eventos de los demás actores programados exactamente en `t` se incluyen en el estado; la decisión del jugador programada en `t` no se incluye.
 
 **Consulta por número de acción**
 
-- **FR-429**: El juego DEBE aceptar el comando `historia #k` durante la partida interactiva, donde k es un entero ≥ 1. El estado devuelto DEBE ser el estado justo antes de que el jugador tomara la acción número k de la línea de tiempo vigente.
+- **FR-429**: El juego DEBE aceptar el comando `historia #k` durante la partida interactiva y también una vez que la partida ha concluido (victoria o derrota), donde k es un entero ≥ 1. El estado devuelto DEBE ser el estado justo antes de que el jugador tomara la acción número k de la línea de tiempo vigente. La terminación de la partida no invalida la línea de tiempo.
 - **FR-430**: `historia #1` DEBE devolver el estado inicial de la partida (punto de control 0: el estado antes de que el jugador tomara su primera decisión). Esto es equivalente a `historia <0>` cuando la primera acción del jugador ocurre en el instante 0.
 
 **Contenido mínimo del estado mostrado**
@@ -184,7 +182,7 @@ La consulta `historia` responde en un tiempo proporcional a la distancia entre e
   4. El inventario del jugador (llaves y objetos).
   5. Los efectos activos sobre el jugador en ese instante.
   6. Los enemigos presentes en esa sala con su vida respectiva.
-  7. El mapa conocido por el jugador en ese instante (pendiente de la capacidad 002; ver Supuestos).
+  7. El mapa conocido por el jugador en ese instante: este campo se **omite** de la salida mientras la capacidad de niebla de guerra (002) no esté integrada; cuando lo esté, DEBE incluirse.
 
 **La consulta no altera la partida**
 
@@ -194,7 +192,7 @@ La consulta `historia` responde en un tiempo proporcional a la distancia entre e
 
 - **FR-433**: Si el instante `t` proporcionado es estrictamente mayor que el reloj actual de la partida en curso, el juego DEBE rechazar la consulta con un mensaje claro que indique que ese instante no ha ocurrido todavía. No DEBE mostrarse ningún estado y la partida NO DEBE verse alterada.
 - **FR-435**: Si el número de acción k es 0 o negativo, el juego DEBE rechazar la consulta con un mensaje claro que indique que el número de acción debe ser mayor o igual que 1.
-- **FR-436**: Si el número de acción k supera el número de acciones realizadas en la línea de tiempo vigente (más el margen que se defina al resolver Q1), el juego DEBE rechazar la consulta con un mensaje claro que indique que esa acción aún no ha ocurrido.
+- **FR-436**: Si el número de acción k es mayor que el número de acciones realizadas en la línea de tiempo vigente más uno (k > acciones_vigentes + 1), el juego DEBE rechazar la consulta con un mensaje claro que indique que esa acción aún no ha ocurrido. Si k = acciones_vigentes + 1, el juego DEBE aceptar la consulta y devolver el estado actual de la partida, sin alterar ningún estado en curso.
 - **FR-437**: Si el valor de `t` o de `k` es negativo, decimal o no numérico, el juego DEBE rechazar la consulta con un mensaje claro y descriptivo, sin mostrar ningún estado y sin alterar la partida.
 
 **Coherencia con el pergamino de retroceso**
@@ -244,7 +242,7 @@ La consulta `historia` responde en un tiempo proporcional a la distancia entre e
 
 ## Supuestos
 
-- El mapa conocido del jugador (FR-431, ítem 7) queda diferido hasta que la capacidad de niebla de guerra (002) se integre. Mientras tanto, ese campo no se muestra o se indica como no disponible (pendiente de resolución de Q3).
+- El mapa conocido del jugador (FR-431, ítem 7) se omite de la salida hasta que la capacidad de niebla de guerra (002) se integre. No se muestra ninguna línea de mapa ni ningún literal de «pendiente»; el campo sencillamente no aparece.
 - La numeración de acciones en `#k` es 1-based: la primera acción aceptada es la acción 1 y el estado inicial es el que muestra `historia #1`.
 - La línea de tiempo que `historia` describe es exactamente la que forman los puntos de control de la capacidad 007 y los eventos registrados entre ellos.
 - La reconstrucción del estado histórico usa los puntos de control de la capacidad 007; esta especificación no describe su mecanismo interno.
