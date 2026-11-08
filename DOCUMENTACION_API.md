@@ -560,3 +560,19 @@ apropiada hacia varios miles de fichas (cientos de µs por consulta); entonces c
 **Recuperar una ficha liberada desde disco:** 0.03 ms con 25 fichas, 0.09 ms con 200 y 0.37 ms con 1000, contra
 ~400 ms de una solicitud de red. **Guardar 10 fichas** (reescribe el archivo completo): 1.7 a 2.9 ms.
 **Planear la vecindad** en una cripta de 1000 salas: 25 µs (1 paso) a 59 µs (2 pasos); si no falta nada, 38 µs.
+
+---
+
+## 15. Consulta histórica (capacidad 004: `historia <t>` e `historia #k`)
+
+`EstadoJuegoServicio.consultarHistoria(instante=None, accion=None) -> ResumenEstadoDTO`
+
+- Exactamente uno de los dos argumentos. `instante=t` es el estado en el instante virtual `t` (después de todos los eventos con tiempo `<= t`; si el jugador tenía que decidir en `t`, justo antes de esa decisión). `accion=k` es el estado justo antes de la acción `k` de la línea de tiempo vigente (`k = 1` es el inicio; `k = N + 1`, con `N` acciones vigentes, es el estado actual).
+- **No es una acción**: no consume tiempo, no entra al log ni a la bitácora, no toca el azar, el historial del pergamino ni la red. Se puede pedir con la partida en curso o ya terminada.
+- **Errores** (`ValueError`): partida no iniciada; faltan o sobran argumentos; valor `bool` o no entero; `instante < 0`; `accion < 1`; `instante` mayor que el reloj actual ("El instante N aún no ha ocurrido (reloj actual: T)."); `accion > N + 1` ("La acción #N aún no ha ocurrido (acciones vigentes: M).").
+- **`ResumenEstadoDTO`** (`DTO/ResumenEstadoDTO.py`): `instante`, `acciones_jugador`, `id_sala_jugador`, `vida_jugador`, `ataque_jugador`, `defensa_jugador`, `velocidad_jugador`, `inventario_llaves`, `inventario_objetos`, `efectos_activos`, `enemigos_sala` (`(id, nombre, vida)` ordenados por id, solo vivos), `partida_terminada`, `motivo_terminacion` y `mapa_conocido`. `mapa_conocido` es `None` hasta que se integre la capacidad 002 (niebla de guerra); el gancho está en `EstadoJuegoLogica._extraerResumenEstadoActual`.
+- **Cómo se calcula**: se busca por bisección (escrita a mano) el último punto de control con `acciones_linea_tiempo <= k - 1` o `instante_reloj <= t`, se hidrata una instancia aislada de `EstadoJuegoLogica` y se reproduce el tramo de log hasta el punto de control siguiente. El log no se trunca con el pergamino (conserva las acciones revertidas y el uso del pergamino, que no restaura el azar), así que una pasada previa con una pila local decide cuáles acciones siguen vigentes y la reproducción es fiel. El singleton `RetrocesoLogica` se guarda y se restituye en `try/finally`.
+- **Casos de borde**: si la última acción termina la partida, `historia <t>` en ese instante muestra el estado final y `historia #N` el estado previo. Las acciones revertidas por un pergamino no aparecen; un instante que solo existió en la parte revertida es futuro y se rechaza.
+- **Formato de partida**: sin cambios (v7 / estado 4). La línea de tiempo viaja en los puntos de control y en el log ya guardados.
+- **Para quien amplíe el estado** (por ejemplo la niebla de guerra): lo que se agregue al estado del juego debe entrar en `EstadoGuardadoLogica` y, por tanto, en los puntos de control; su lógica corre dentro de la instancia aislada, así que no puede tocar la fuente de datos ni estado global fuera de ella y debe ser determinista.
+- Pruebas: `test_historia_*.py` en la raíz; medición: `python main.py --bench historia`.
