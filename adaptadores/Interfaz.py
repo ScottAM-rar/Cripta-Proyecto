@@ -32,6 +32,17 @@ class ClienteInterfaz(ABC):
     def obtener_version_catalogo(self) -> str:
         ...
 
+    @abstractmethod
+    def obtener_llaves(self, cripta_id: str, solo_guardadas: bool = False,
+                       limite_solicitudes: int | None = None) -> list[dict]:
+        """Ubicación de las llaves de la cripta (GET /criptas/<id>/llaves): la lista cruda, cada elemento con `id`,
+        `sala` y opcionalmente `enemigo` (capacidad 009).
+
+        `solo_guardadas`: no hacer la solicitud; devolver solo lo guardado o fallar (no queda presupuesto).
+        `limite_solicitudes`: máximo de solicitudes (incluidos los reintentos por 429) que puede gastar esta
+        consulta; `None` = sin límite propio. El persistente lo pasa tal cual al HTTP; el offline lo ignora."""
+        ...
+
     @property
     @abstractmethod
     def solicitudes_realizadas(self) -> int:

@@ -360,3 +360,6 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     logica.tiempoMovimientoJugador = estado.tiempo_movimiento_jugador
     logica.accionesJugador = estado.acciones_jugador
     logica.iniciado = True
+    # Las llaves no se guardan ni se piden al cargar (FR-325): se piden bajo demanda con obtenerLlaves().
+    logica.llaves = None
+    logica.avisoLlaves = None

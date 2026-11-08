@@ -1,0 +1,378 @@
+
+########################################################################
+CRIPTA cripta-01
+########################################################################
+En la lista de criptas: {"id": "cripta-01", "nombre": "Osario menor", "salas": 6, "dificultad": 1}
+Datos generales: {"id": "cripta-01", "version": "fd58f7743b9e", "salas_total": 6, "paginas": 1, "salas_por_pagina": 50, "sala_inicial": 1, "sala_salida": 6, "llave_salida": "itm_llave_negra", "presupuesto_solicitudes": 9, "inventario_max": 10, "jugador": {"vida_max": 30, "ataque": 6, "defensa": 2, "velocidad": 100}}
+Version de la cripta: 'fd58f7743b9e'
+
+Esqueleto: 6 salas
+  {"id": 1, "nombre": "Entrada derruida", "salidas": {"N": {"sala": 2}}}
+  {"id": 2, "nombre": "Pasillo de las urnas", "salidas": {"S": {"sala": 1}, "N": {"sala": 3}, "E": {"sala": 5, "cerrada": true, "llave": "itm_llave_bronce", "cierre_automatico": 500}}}
+  {"id": 3, "nombre": "Cripta baja", "salidas": {"S": {"sala": 2}, "N": {"sala": 4}}}
+  {"id": 4, "nombre": "Osario profundo", "salidas": {"S": {"sala": 3}, "E": {"sala": 6, "cerrada": true, "llave": "itm_llave_negra"}}}
+  {"id": 5, "nombre": "Nicho sellado", "salidas": {"O": {"sala": 2}}}
+  {"id": 6, "nombre": "Salida", "salidas": {"O": {"sala": 4}}}
+
+Contenido: 6 salas
+  {"sala": 1, "enemigos": [], "objetos": ["itm_antorcha"], "trampas": []}
+  {"sala": 2, "enemigos": [{"instancia": "e-201", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-202", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": ["itm_daga_oxidada"], "trampas": [{"instancia": "t-17", "tipo": "trp_dardos"}]}
+  {"sala": 3, "enemigos": [], "objetos": ["itm_llave_bronce", "itm_coraza_cuero"], "trampas": []}
+  {"sala": 4, "enemigos": [{"instancia": "e-401", "tipo": "ent_guardian_oseo"}], "objetos": ["itm_llave_negra", "itm_pocion_menor"], "trampas": []}
+  {"sala": 5, "enemigos": [], "objetos": ["itm_pergamino_retroceso", "itm_antidoto"], "trampas": []}
+  {"sala": 6, "enemigos": [], "objetos": [], "trampas": []}
+
+Ids de catalogo que aparecen en cripta-01 (11): itm_llave_negra, itm_llave_bronce, itm_antorcha, ent_rata_gigante, itm_daga_oxidada, trp_dardos, itm_coraza_cuero, ent_guardian_oseo, itm_pocion_menor, itm_pergamino_retroceso, itm_antidoto
+
+########################################################################
+CRIPTA cripta-02
+########################################################################
+En la lista de criptas: {"id": "cripta-02", "nombre": "Catacumbas menores", "salas": 20, "dificultad": 2}
+Datos generales: {"id": "cripta-02", "version": "8091a5cd8b7c", "salas_total": 20, "paginas": 1, "salas_por_pagina": 50, "sala_inicial": 1, "sala_salida": 18, "llave_salida": "itm_llave_negra", "presupuesto_solicitudes": 23, "inventario_max": 10, "jugador": {"vida_max": 30, "ataque": 6, "defensa": 2, "velocidad": 100}}
+Version de la cripta: '8091a5cd8b7c'
+
+Esqueleto: 20 salas
+  {"id": 1, "nombre": "Sala 1", "salidas": {"N": {"sala": 2}}}
+  {"id": 2, "nombre": "Sala 2", "salidas": {"S": {"sala": 1}, "N": {"sala": 3}}}
+  {"id": 3, "nombre": "Sala 3", "salidas": {"S": {"sala": 2}, "N": {"sala": 4}}}
+  {"id": 4, "nombre": "Sala 4", "salidas": {"S": {"sala": 3}, "N": {"sala": 5}}}
+  {"id": 5, "nombre": "Sala 5", "salidas": {"S": {"sala": 4}, "N": {"sala": 6}, "E": {"sala": 19, "cerrada": true, "llave": "itm_llave_bronce", "cierre_automatico": 500}}}
+  {"id": 6, "nombre": "Sala 6", "salidas": {"S": {"sala": 5}, "N": {"sala": 7}}}
+  {"id": 7, "nombre": "Sala 7", "salidas": {"S": {"sala": 6}, "N": {"sala": 8}}}
+  {"id": 8, "nombre": "Sala 8", "salidas": {"S": {"sala": 7}, "N": {"sala": 9}}}
+  {"id": 9, "nombre": "Sala 9", "salidas": {"S": {"sala": 8}, "N": {"sala": 10}}}
+  {"id": 10, "nombre": "Sala 10", "salidas": {"S": {"sala": 9}, "N": {"sala": 11}}}
+  {"id": 11, "nombre": "Sala 11", "salidas": {"S": {"sala": 10}, "N": {"sala": 12}}}
+  {"id": 12, "nombre": "Sala 12", "salidas": {"S": {"sala": 11}, "N": {"sala": 13}}}
+  {"id": 13, "nombre": "Sala 13", "salidas": {"S": {"sala": 12}, "N": {"sala": 14}}}
+  {"id": 14, "nombre": "Sala 14", "salidas": {"S": {"sala": 13}, "N": {"sala": 15}}}
+  {"id": 15, "nombre": "Sala 15", "salidas": {"S": {"sala": 14}, "N": {"sala": 16}}}
+  {"id": 16, "nombre": "Sala 16", "salidas": {"S": {"sala": 15}, "N": {"sala": 17}}}
+  {"id": 17, "nombre": "Sala 17", "salidas": {"S": {"sala": 16}, "N": {"sala": 18, "cerrada": true, "llave": "itm_llave_negra"}}}
+  {"id": 18, "nombre": "Sala 18", "salidas": {"S": {"sala": 17}}}
+  {"id": 19, "nombre": "Cámara oculta 19", "salidas": {"O": {"sala": 5}, "N": {"sala": 20}}}
+  {"id": 20, "nombre": "Cámara oculta 20", "salidas": {"O": {"sala": 19}}}
+
+Contenido: 20 salas
+  {"sala": 1, "enemigos": [], "objetos": ["itm_antorcha"], "trampas": []}
+  {"sala": 2, "enemigos": [], "objetos": ["itm_daga_oxidada", "itm_llave_bronce"], "trampas": []}
+  {"sala": 3, "enemigos": [], "objetos": ["itm_coraza_cuero"], "trampas": []}
+  {"sala": 4, "enemigos": [], "objetos": ["itm_llave_negra"], "trampas": []}
+  {"sala": 5, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 6, "enemigos": [], "objetos": ["itm_antidoto"], "trampas": []}
+  {"sala": 7, "enemigos": [{"instancia": "e-rata-cripta-02-1", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 8, "enemigos": [], "objetos": ["itm_pergamino_retroceso"], "trampas": []}
+  {"sala": 9, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 10, "enemigos": [{"instancia": "e-rata-cripta-02-2", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": [{"instancia": "t-cripta-02-3", "tipo": "trp_dardos"}]}
+  {"sala": 11, "enemigos": [{"instancia": "e-rata-cripta-02-4", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-rata-cripta-02-5", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 12, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 13, "enemigos": [{"instancia": "e-guard-cripta-02-6", "tipo": "ent_guardian_oseo"}], "objetos": [], "trampas": []}
+  {"sala": 14, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 15, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 16, "enemigos": [{"instancia": "e-rata-cripta-02-7", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 17, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 18, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 19, "enemigos": [], "objetos": ["itm_antorcha"], "trampas": []}
+  {"sala": 20, "enemigos": [], "objetos": ["itm_pergamino_retroceso", "itm_antidoto"], "trampas": []}
+
+Ids de catalogo que aparecen en cripta-02 (11): itm_llave_negra, itm_llave_bronce, itm_antorcha, itm_daga_oxidada, itm_coraza_cuero, itm_antidoto, ent_rata_gigante, itm_pergamino_retroceso, itm_pocion_menor, trp_dardos, ent_guardian_oseo
+
+########################################################################
+CRIPTA cripta-03
+########################################################################
+En la lista de criptas: {"id": "cripta-03", "nombre": "Catacumbas medias", "salas": 40, "dificultad": 3}
+Datos generales: {"id": "cripta-03", "version": "24d301ed6e9f", "salas_total": 40, "paginas": 1, "salas_por_pagina": 50, "sala_inicial": 1, "sala_salida": 34, "llave_salida": "itm_llave_negra", "presupuesto_solicitudes": 42, "inventario_max": 10, "jugador": {"vida_max": 30, "ataque": 6, "defensa": 2, "velocidad": 100}}
+Version de la cripta: '24d301ed6e9f'
+
+Esqueleto: 40 salas
+  {"id": 1, "nombre": "Sala 1", "salidas": {"N": {"sala": 2}}}
+  {"id": 2, "nombre": "Sala 2", "salidas": {"S": {"sala": 1}, "N": {"sala": 3}}}
+  {"id": 3, "nombre": "Sala 3", "salidas": {"S": {"sala": 2}, "N": {"sala": 4}}}
+  {"id": 4, "nombre": "Sala 4", "salidas": {"S": {"sala": 3}, "N": {"sala": 5}}}
+  {"id": 5, "nombre": "Sala 5", "salidas": {"S": {"sala": 4}, "N": {"sala": 6}, "E": {"sala": 35, "cerrada": true, "llave": "itm_llave_bronce", "cierre_automatico": 500}}}
+  {"id": 6, "nombre": "Sala 6", "salidas": {"S": {"sala": 5}, "N": {"sala": 7}}}
+  {"id": 7, "nombre": "Sala 7", "salidas": {"S": {"sala": 6}, "N": {"sala": 8}, "E": {"sala": 38, "cerrada": true, "llave": "itm_llave_bronce", "cierre_automatico": 500}}}
+  {"id": 8, "nombre": "Sala 8", "salidas": {"S": {"sala": 7}, "N": {"sala": 9}}}
+  {"id": 9, "nombre": "Sala 9", "salidas": {"S": {"sala": 8}, "N": {"sala": 10}}}
+  {"id": 10, "nombre": "Sala 10", "salidas": {"S": {"sala": 9}, "N": {"sala": 11}}}
+  {"id": 11, "nombre": "Sala 11", "salidas": {"S": {"sala": 10}, "N": {"sala": 12}}}
+  {"id": 12, "nombre": "Sala 12", "salidas": {"S": {"sala": 11}, "N": {"sala": 13}}}
+  {"id": 13, "nombre": "Sala 13", "salidas": {"S": {"sala": 12}, "N": {"sala": 14}}}
+  {"id": 14, "nombre": "Sala 14", "salidas": {"S": {"sala": 13}, "N": {"sala": 15}}}
+  {"id": 15, "nombre": "Sala 15", "salidas": {"S": {"sala": 14}, "N": {"sala": 16}}}
+  {"id": 16, "nombre": "Sala 16", "salidas": {"S": {"sala": 15}, "N": {"sala": 17}}}
+  {"id": 17, "nombre": "Sala 17", "salidas": {"S": {"sala": 16}, "N": {"sala": 18}}}
+  {"id": 18, "nombre": "Sala 18", "salidas": {"S": {"sala": 17}, "N": {"sala": 19}}}
+  {"id": 19, "nombre": "Sala 19", "salidas": {"S": {"sala": 18}, "N": {"sala": 20}}}
+  {"id": 20, "nombre": "Sala 20", "salidas": {"S": {"sala": 19}, "N": {"sala": 21}}}
+  {"id": 21, "nombre": "Sala 21", "salidas": {"S": {"sala": 20}, "N": {"sala": 22}}}
+  {"id": 22, "nombre": "Sala 22", "salidas": {"S": {"sala": 21}, "N": {"sala": 23}}}
+  {"id": 23, "nombre": "Sala 23", "salidas": {"S": {"sala": 22}, "N": {"sala": 24}}}
+  {"id": 24, "nombre": "Sala 24", "salidas": {"S": {"sala": 23}, "N": {"sala": 25}}}
+  {"id": 25, "nombre": "Sala 25", "salidas": {"S": {"sala": 24}, "N": {"sala": 26}}}
+  {"id": 26, "nombre": "Sala 26", "salidas": {"S": {"sala": 25}, "N": {"sala": 27}}}
+  {"id": 27, "nombre": "Sala 27", "salidas": {"S": {"sala": 26}, "N": {"sala": 28}}}
+  {"id": 28, "nombre": "Sala 28", "salidas": {"S": {"sala": 27}, "N": {"sala": 29}}}
+  {"id": 29, "nombre": "Sala 29", "salidas": {"S": {"sala": 28}, "N": {"sala": 30}}}
+  {"id": 30, "nombre": "Sala 30", "salidas": {"S": {"sala": 29}, "N": {"sala": 31}}}
+  {"id": 31, "nombre": "Sala 31", "salidas": {"S": {"sala": 30}, "N": {"sala": 32}}}
+  {"id": 32, "nombre": "Sala 32", "salidas": {"S": {"sala": 31}, "N": {"sala": 33}}}
+  {"id": 33, "nombre": "Sala 33", "salidas": {"S": {"sala": 32}, "N": {"sala": 34, "cerrada": true, "llave": "itm_llave_negra"}}}
+  {"id": 34, "nombre": "Sala 34", "salidas": {"S": {"sala": 33}}}
+  {"id": 35, "nombre": "Cámara oculta 35", "salidas": {"O": {"sala": 5}, "N": {"sala": 36}}}
+  {"id": 36, "nombre": "Cámara oculta 36", "salidas": {"O": {"sala": 35}, "N": {"sala": 37}}}
+  {"id": 37, "nombre": "Cámara oculta 37", "salidas": {"O": {"sala": 36}}}
+  {"id": 38, "nombre": "Cámara oculta 38", "salidas": {"O": {"sala": 7}, "N": {"sala": 39}}}
+  {"id": 39, "nombre": "Cámara oculta 39", "salidas": {"O": {"sala": 38}, "N": {"sala": 40}}}
+  {"id": 40, "nombre": "Cámara oculta 40", "salidas": {"O": {"sala": 39}}}
+
+Contenido: 40 salas
+  {"sala": 1, "enemigos": [], "objetos": ["itm_antorcha"], "trampas": []}
+  {"sala": 2, "enemigos": [], "objetos": ["itm_daga_oxidada", "itm_llave_bronce"], "trampas": []}
+  {"sala": 3, "enemigos": [], "objetos": ["itm_coraza_cuero"], "trampas": []}
+  {"sala": 4, "enemigos": [], "objetos": ["itm_llave_negra"], "trampas": []}
+  {"sala": 5, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 6, "enemigos": [], "objetos": ["itm_antidoto"], "trampas": []}
+  {"sala": 7, "enemigos": [{"instancia": "e-rata-cripta-03-1", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 8, "enemigos": [], "objetos": ["itm_pergamino_retroceso"], "trampas": []}
+  {"sala": 9, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 10, "enemigos": [{"instancia": "e-rata-cripta-03-2", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": [{"instancia": "t-cripta-03-3", "tipo": "trp_dardos"}]}
+  {"sala": 11, "enemigos": [{"instancia": "e-rata-cripta-03-4", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-rata-cripta-03-5", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 12, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 13, "enemigos": [{"instancia": "e-guard-cripta-03-6", "tipo": "ent_guardian_oseo"}], "objetos": [], "trampas": []}
+  {"sala": 14, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 15, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 16, "enemigos": [{"instancia": "e-rata-cripta-03-7", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 17, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 18, "enemigos": [{"instancia": "e-rata-cripta-03-8", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-rata-cripta-03-9", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 19, "enemigos": [{"instancia": "e-rata-cripta-03-10", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 20, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 21, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 22, "enemigos": [{"instancia": "e-guard-cripta-03-11", "tipo": "ent_guardian_oseo"}], "objetos": [], "trampas": []}
+  {"sala": 23, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 24, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 25, "enemigos": [{"instancia": "e-rata-cripta-03-12", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-rata-cripta-03-13", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 26, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 27, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 28, "enemigos": [{"instancia": "e-rata-cripta-03-14", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 29, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 30, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 31, "enemigos": [{"instancia": "e-rata-cripta-03-15", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 32, "enemigos": [{"instancia": "e-rata-cripta-03-16", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-rata-cripta-03-17", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 33, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 34, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 35, "enemigos": [], "objetos": ["itm_antorcha"], "trampas": []}
+  {"sala": 36, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 37, "enemigos": [], "objetos": ["itm_pergamino_retroceso", "itm_antidoto"], "trampas": []}
+  {"sala": 38, "enemigos": [], "objetos": ["itm_antorcha"], "trampas": []}
+  {"sala": 39, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 40, "enemigos": [], "objetos": ["itm_pergamino_retroceso", "itm_antidoto"], "trampas": []}
+
+Ids de catalogo que aparecen en cripta-03 (11): itm_llave_negra, itm_llave_bronce, itm_antorcha, itm_daga_oxidada, itm_coraza_cuero, itm_antidoto, ent_rata_gigante, itm_pergamino_retroceso, itm_pocion_menor, trp_dardos, ent_guardian_oseo
+
+########################################################################
+CRIPTA cripta-04
+########################################################################
+En la lista de criptas: {"id": "cripta-04", "nombre": "Catacumbas profundas", "salas": 50, "dificultad": 4}
+Datos generales: {"id": "cripta-04", "version": "d6727c7f4950", "salas_total": 50, "paginas": 1, "salas_por_pagina": 50, "sala_inicial": 1, "sala_salida": 42, "llave_salida": "itm_llave_negra", "presupuesto_solicitudes": 52, "inventario_max": 10, "jugador": {"vida_max": 30, "ataque": 6, "defensa": 2, "velocidad": 100}}
+Version de la cripta: 'd6727c7f4950'
+
+Esqueleto: 50 salas
+  {"id": 1, "nombre": "Sala 1", "salidas": {"N": {"sala": 2}}}
+  {"id": 2, "nombre": "Sala 2", "salidas": {"S": {"sala": 1}, "N": {"sala": 3}}}
+  {"id": 3, "nombre": "Sala 3", "salidas": {"S": {"sala": 2}, "N": {"sala": 4}}}
+  {"id": 4, "nombre": "Sala 4", "salidas": {"S": {"sala": 3}, "N": {"sala": 5}}}
+  {"id": 5, "nombre": "Sala 5", "salidas": {"S": {"sala": 4}, "N": {"sala": 6}, "E": {"sala": 43, "cerrada": true, "llave": "itm_llave_bronce", "cierre_automatico": 500}}}
+  {"id": 6, "nombre": "Sala 6", "salidas": {"S": {"sala": 5}, "N": {"sala": 7}}}
+  {"id": 7, "nombre": "Sala 7", "salidas": {"S": {"sala": 6}, "N": {"sala": 8}, "E": {"sala": 47, "cerrada": true, "llave": "itm_llave_bronce", "cierre_automatico": 500}}}
+  {"id": 8, "nombre": "Sala 8", "salidas": {"S": {"sala": 7}, "N": {"sala": 9}}}
+  {"id": 9, "nombre": "Sala 9", "salidas": {"S": {"sala": 8}, "N": {"sala": 10}}}
+  {"id": 10, "nombre": "Sala 10", "salidas": {"S": {"sala": 9}, "N": {"sala": 11}}}
+  {"id": 11, "nombre": "Sala 11", "salidas": {"S": {"sala": 10}, "N": {"sala": 12}}}
+  {"id": 12, "nombre": "Sala 12", "salidas": {"S": {"sala": 11}, "N": {"sala": 13}}}
+  {"id": 13, "nombre": "Sala 13", "salidas": {"S": {"sala": 12}, "N": {"sala": 14}}}
+  {"id": 14, "nombre": "Sala 14", "salidas": {"S": {"sala": 13}, "N": {"sala": 15}}}
+  {"id": 15, "nombre": "Sala 15", "salidas": {"S": {"sala": 14}, "N": {"sala": 16}}}
+  {"id": 16, "nombre": "Sala 16", "salidas": {"S": {"sala": 15}, "N": {"sala": 17}}}
+  {"id": 17, "nombre": "Sala 17", "salidas": {"S": {"sala": 16}, "N": {"sala": 18}}}
+  {"id": 18, "nombre": "Sala 18", "salidas": {"S": {"sala": 17}, "N": {"sala": 19}}}
+  {"id": 19, "nombre": "Sala 19", "salidas": {"S": {"sala": 18}, "N": {"sala": 20}}}
+  {"id": 20, "nombre": "Sala 20", "salidas": {"S": {"sala": 19}, "N": {"sala": 21}}}
+  {"id": 21, "nombre": "Sala 21", "salidas": {"S": {"sala": 20}, "N": {"sala": 22}}}
+  {"id": 22, "nombre": "Sala 22", "salidas": {"S": {"sala": 21}, "N": {"sala": 23}}}
+  {"id": 23, "nombre": "Sala 23", "salidas": {"S": {"sala": 22}, "N": {"sala": 24}}}
+  {"id": 24, "nombre": "Sala 24", "salidas": {"S": {"sala": 23}, "N": {"sala": 25}}}
+  {"id": 25, "nombre": "Sala 25", "salidas": {"S": {"sala": 24}, "N": {"sala": 26}}}
+  {"id": 26, "nombre": "Sala 26", "salidas": {"S": {"sala": 25}, "N": {"sala": 27}}}
+  {"id": 27, "nombre": "Sala 27", "salidas": {"S": {"sala": 26}, "N": {"sala": 28}}}
+  {"id": 28, "nombre": "Sala 28", "salidas": {"S": {"sala": 27}, "N": {"sala": 29}}}
+  {"id": 29, "nombre": "Sala 29", "salidas": {"S": {"sala": 28}, "N": {"sala": 30}}}
+  {"id": 30, "nombre": "Sala 30", "salidas": {"S": {"sala": 29}, "N": {"sala": 31}}}
+  {"id": 31, "nombre": "Sala 31", "salidas": {"S": {"sala": 30}, "N": {"sala": 32}}}
+  {"id": 32, "nombre": "Sala 32", "salidas": {"S": {"sala": 31}, "N": {"sala": 33}}}
+  {"id": 33, "nombre": "Sala 33", "salidas": {"S": {"sala": 32}, "N": {"sala": 34}}}
+  {"id": 34, "nombre": "Sala 34", "salidas": {"S": {"sala": 33}, "N": {"sala": 35}}}
+  {"id": 35, "nombre": "Sala 35", "salidas": {"S": {"sala": 34}, "N": {"sala": 36}}}
+  {"id": 36, "nombre": "Sala 36", "salidas": {"S": {"sala": 35}, "N": {"sala": 37}}}
+  {"id": 37, "nombre": "Sala 37", "salidas": {"S": {"sala": 36}, "N": {"sala": 38}}}
+  {"id": 38, "nombre": "Sala 38", "salidas": {"S": {"sala": 37}, "N": {"sala": 39}}}
+  {"id": 39, "nombre": "Sala 39", "salidas": {"S": {"sala": 38}, "N": {"sala": 40}}}
+  {"id": 40, "nombre": "Sala 40", "salidas": {"S": {"sala": 39}, "N": {"sala": 41}}}
+  {"id": 41, "nombre": "Sala 41", "salidas": {"S": {"sala": 40}, "N": {"sala": 42, "cerrada": true, "llave": "itm_llave_negra"}}}
+  {"id": 42, "nombre": "Sala 42", "salidas": {"S": {"sala": 41}}}
+  {"id": 43, "nombre": "Cámara oculta 43", "salidas": {"O": {"sala": 5}, "N": {"sala": 44}}}
+  {"id": 44, "nombre": "Cámara oculta 44", "salidas": {"O": {"sala": 43}, "N": {"sala": 45}}}
+  {"id": 45, "nombre": "Cámara oculta 45", "salidas": {"O": {"sala": 44}, "N": {"sala": 46}}}
+  {"id": 46, "nombre": "Cámara oculta 46", "salidas": {"O": {"sala": 45}}}
+  {"id": 47, "nombre": "Cámara oculta 47", "salidas": {"O": {"sala": 7}, "N": {"sala": 48}}}
+  {"id": 48, "nombre": "Cámara oculta 48", "salidas": {"O": {"sala": 47}, "N": {"sala": 49}}}
+  {"id": 49, "nombre": "Cámara oculta 49", "salidas": {"O": {"sala": 48}, "N": {"sala": 50}}}
+  {"id": 50, "nombre": "Cámara oculta 50", "salidas": {"O": {"sala": 49}}}
+
+Contenido: 50 salas
+  {"sala": 1, "enemigos": [], "objetos": ["itm_antorcha"], "trampas": []}
+  {"sala": 2, "enemigos": [], "objetos": ["itm_daga_oxidada", "itm_llave_bronce"], "trampas": []}
+  {"sala": 3, "enemigos": [], "objetos": ["itm_coraza_cuero"], "trampas": []}
+  {"sala": 4, "enemigos": [], "objetos": ["itm_llave_negra"], "trampas": []}
+  {"sala": 5, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 6, "enemigos": [], "objetos": ["itm_antidoto"], "trampas": []}
+  {"sala": 7, "enemigos": [{"instancia": "e-rata-cripta-04-1", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 8, "enemigos": [], "objetos": ["itm_pergamino_retroceso"], "trampas": []}
+  {"sala": 9, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 10, "enemigos": [{"instancia": "e-rata-cripta-04-2", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": [{"instancia": "t-cripta-04-3", "tipo": "trp_dardos"}]}
+  {"sala": 11, "enemigos": [{"instancia": "e-rata-cripta-04-4", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-rata-cripta-04-5", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 12, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 13, "enemigos": [{"instancia": "e-guard-cripta-04-6", "tipo": "ent_guardian_oseo"}], "objetos": [], "trampas": []}
+  {"sala": 14, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 15, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 16, "enemigos": [{"instancia": "e-rata-cripta-04-7", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 17, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 18, "enemigos": [{"instancia": "e-rata-cripta-04-8", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-rata-cripta-04-9", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 19, "enemigos": [{"instancia": "e-rata-cripta-04-10", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 20, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 21, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 22, "enemigos": [{"instancia": "e-guard-cripta-04-11", "tipo": "ent_guardian_oseo"}], "objetos": [], "trampas": []}
+  {"sala": 23, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 24, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 25, "enemigos": [{"instancia": "e-rata-cripta-04-12", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-rata-cripta-04-13", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 26, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 27, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 28, "enemigos": [{"instancia": "e-rata-cripta-04-14", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 29, "enemigos": [], "objetos": ["itm_pocion_menor"], "trampas": []}
+  {"sala": 30, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 31, "enemigos": [{"instancia": "e-rata-cripta-04-15", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 32, "enemigos": [{"instancia": "e-rata-cripta-04-16", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-rata-cripta-04-17", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 33, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 34, "enemigos": [{"instancia": "e-rata-cripta-04-18", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 35, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 36, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 37, "enemigos": [{"instancia": "e-rata-cripta-04-19", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 38, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 39, "enemigos": [{"instancia": "e-rata-cripta-04-20", "tipo": "ent_rata_gigante", "vida": 12}, {"instancia": "e-rata-cripta-04-21", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 40, "enemigos": [{"instancia": "e-rata-cripta-04-22", "tipo": "ent_rata_gigante", "vida": 12}], "objetos": [], "trampas": []}
+  {"sala": 41, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 42, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 43, "enemigos": [], "objetos": ["itm_antorcha"], "trampas": []}
+  {"sala": 44, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 45, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 46, "enemigos": [], "objetos": ["itm_pergamino_retroceso", "itm_antidoto"], "trampas": []}
+  {"sala": 47, "enemigos": [], "objetos": ["itm_antorcha"], "trampas": []}
+  {"sala": 48, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 49, "enemigos": [], "objetos": [], "trampas": []}
+  {"sala": 50, "enemigos": [], "objetos": ["itm_pergamino_retroceso", "itm_antidoto"], "trampas": []}
+
+Ids de catalogo que aparecen en cripta-04 (11): itm_llave_negra, itm_llave_bronce, itm_antorcha, itm_daga_oxidada, itm_coraza_cuero, itm_antidoto, ent_rata_gigante, itm_pergamino_retroceso, itm_pocion_menor, trp_dardos, ent_guardian_oseo
+
+========================================================================
+CATALOGO (union de todas las criptas): 11 fichas
+========================================================================
+
+--- clase antidoto (1) ---
+  itm_antidoto   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "itm_antidoto", "nombre": "Antídoto", "clase": "antidoto", "peso": 1, "valor": 12}
+
+--- clase antorcha (1) ---
+  itm_antorcha   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "itm_antorcha", "nombre": "Antorcha", "clase": "antorcha", "peso": 1, "valor": 5, "duracion": 2000}
+
+--- clase arma (1) ---
+  itm_daga_oxidada   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "itm_daga_oxidada", "nombre": "Daga oxidada", "clase": "arma", "peso": 2, "valor": 15, "ataque_bonus": 3}
+
+--- clase armadura (1) ---
+  itm_coraza_cuero   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "itm_coraza_cuero", "nombre": "Coraza de cuero", "clase": "armadura", "peso": 4, "valor": 20, "defensa_bonus": 2}
+
+--- clase enemigo (2) ---
+  ent_rata_gigante   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "ent_rata_gigante", "nombre": "Rata gigante", "clase": "enemigo", "vida_max": 12, "ataque": 5, "defensa": 1, "velocidad": 150, "comportamiento": "rastreador", "suelta": ["itm_pocion_menor"]}
+  ent_guardian_oseo   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "ent_guardian_oseo", "nombre": "Guardián óseo", "clase": "enemigo", "vida_max": 20, "ataque": 7, "defensa": 3, "velocidad": 90, "comportamiento": "guardián"}
+
+--- clase llave (2) ---
+  itm_llave_negra   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "itm_llave_negra", "nombre": "Llave negra", "clase": "llave", "peso": 1, "valor": 0, "abre": "puerta_salida"}
+  itm_llave_bronce   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "itm_llave_bronce", "nombre": "Llave de bronce", "clase": "llave", "peso": 1, "valor": 0, "abre": "puerta_2_7"}
+
+--- clase pergamino_retroceso (1) ---
+  itm_pergamino_retroceso   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "itm_pergamino_retroceso", "nombre": "Pergamino de retroceso", "clase": "pergamino_retroceso", "peso": 1, "valor": 40}
+
+--- clase pocion (1) ---
+  itm_pocion_menor   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "itm_pocion_menor", "nombre": "Poción menor", "clase": "pocion", "peso": 1, "valor": 10, "cura": 8}
+
+--- clase trampa (1) ---
+  trp_dardos   [en: cripta-01, cripta-02, cripta-03, cripta-04]
+    {"id": "trp_dardos", "nombre": "Dardos en la pared", "clase": "trampa", "daño": 4, "rearme": 300}
+
+========================================================================
+RESUMEN
+========================================================================
+Version del catalogo: 'be68d322d2f5'
+
+1) Criptas (4)
+   {"id": "cripta-01", "nombre": "Osario menor", "salas": 6, "dificultad": 1}
+   {"id": "cripta-02", "nombre": "Catacumbas menores", "salas": 20, "dificultad": 2}
+   {"id": "cripta-03", "nombre": "Catacumbas medias", "salas": 40, "dificultad": 3}
+   {"id": "cripta-04", "nombre": "Catacumbas profundas", "salas": 50, "dificultad": 4}
+
+2) Fichas del catalogo por clase (total 11)
+   antidoto (1): itm_antidoto
+   antorcha (1): itm_antorcha
+   arma (1): itm_daga_oxidada
+   armadura (1): itm_coraza_cuero
+   enemigo (2): ent_rata_gigante, ent_guardian_oseo
+   llave (2): itm_llave_negra, itm_llave_bronce
+   pergamino_retroceso (1): itm_pergamino_retroceso
+   pocion (1): itm_pocion_menor
+   trampa (1): trp_dardos
+
+3) Campos que trae cada clase (entre parentesis, en cuantas fichas aparece)
+   antidoto: id(1), nombre(1), clase(1), peso(1), valor(1)
+   antorcha: id(1), nombre(1), clase(1), peso(1), valor(1), duracion(1)
+   arma: id(1), nombre(1), clase(1), peso(1), valor(1), ataque_bonus(1)
+   armadura: id(1), nombre(1), clase(1), peso(1), valor(1), defensa_bonus(1)
+   enemigo: id(2), nombre(2), clase(2), vida_max(2), ataque(2), defensa(2), velocidad(2), comportamiento(2), suelta(1)
+   llave: id(2), nombre(2), clase(2), peso(2), valor(2), abre(2)
+   pergamino_retroceso: id(1), nombre(1), clase(1), peso(1), valor(1)
+   pocion: id(1), nombre(1), clase(1), peso(1), valor(1), cura(1)
+   trampa: id(1), nombre(1), clase(1), daño(1), rearme(1)
+
+4) Campos NO documentados en el enunciado (aqui suelen estar veneno y regeneracion)
+   (ninguno: todo lo que llega esta en el enunciado)
+
+5) Menciones de veneno / regeneracion (busca: regen, venen, poison, toxic)
+   No hay ninguna clave ni texto con esas palabras. Si la API trae el efecto con otro nombre,
+   miralo en los puntos 3 y 4 y en las fichas de enemigo y trampa del punto 6.
+
+6) Fichas completas de enemigos y trampas
+   {"id": "ent_rata_gigante", "nombre": "Rata gigante", "clase": "enemigo", "vida_max": 12, "ataque": 5, "defensa": 1, "velocidad": 150, "comportamiento": "rastreador", "suelta": ["itm_pocion_menor"]}   (en: cripta-01, cripta-02, cripta-03, cripta-04)
+   {"id": "ent_guardian_oseo", "nombre": "Guardián óseo", "clase": "enemigo", "vida_max": 20, "ataque": 7, "defensa": 3, "velocidad": 90, "comportamiento": "guardián"}   (en: cripta-01, cripta-02, cripta-03, cripta-04)
+   {"id": "trp_dardos", "nombre": "Dardos en la pared", "clase": "trampa", "daño": 4, "rearme": 300}   (en: cripta-01, cripta-02, cripta-03, cripta-04)
+
+7) Ids que la API no devolvio (0)
+   (ninguno)
+
+Solicitudes realizadas: 28 | tiempo: 21.7 s

@@ -173,6 +173,14 @@ class EstadoJuegoServicio:
         comunicacion = self._estadoJuegoLogica.comunicacion
         return list(getattr(comunicacion, "advertencias", []))
 
+    def avisoLlaves(self) -> str | None:
+        """Aviso de que no se pudo obtener la ubicación de las llaves (capacidad 009, FR-313), o None si no hay partida
+        o no hay aviso. Solo lee."""
+        logica = self._estadoJuegoLogica
+        if not logica.iniciado:
+            return None
+        return logica.avisoLlaves
+
     def terminado(self) -> tuple[bool, str]:
         return self._estadoJuegoLogica.terminado()
 

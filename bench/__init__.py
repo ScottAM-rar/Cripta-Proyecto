@@ -14,6 +14,7 @@ import tempfile
 from datetime import datetime
 
 from bench import agenda, bitacora, ciclo, guardado, inventario, ordenamiento, puntos_control, recorrido, replay, retroceso, salas, terreno
+from bench import llaves
 from bench.datos import SEMILLA
 from bench.salida import escribir_csv, imprimir_tabla
 
@@ -46,6 +47,7 @@ BLOQUES = (
     ("recorrido", recorrido.ejecutar),
     ("replay", replay.ejecutar),
     ("puntos_control", puntos_control.ejecutar),
+    ("llaves", llaves.ejecutar),
 )
 
 
@@ -66,6 +68,7 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
     filas: list = []
     cumple = True
     cumple_recorrido = True
+    cumple_llaves = True
     for nombre, funcion in BLOQUES:
         if nombre not in pedidos:
             continue
@@ -75,6 +78,8 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
             cumple = False
         if nombre == "recorrido" and resultado is False:
             cumple_recorrido = False
+        if nombre == "llaves" and resultado is False:
+            cumple_llaves = False
     imprimir_tabla(filas, imprimir)
     if ruta_csv:
         escribir_csv(filas, ruta_csv)
@@ -90,4 +95,8 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
     if "recorrido" in pedidos:
         imprimir("\nRecorrido por niveles (SC-004, equivalencia y verificaciones previas): "
                  + ("CUMPLE." if cumple_recorrido else "NO CUMPLE; la razón de tiempos solo informa, no decide."))
-    return 0 if cumple and cumple_recorrido else 1
+    if "llaves" in pedidos:
+        imprimir("\nLlaves (SC-001, SC-002): "
+                 + ("CUMPLE." if cumple_llaves else "NO CUMPLE: 1/0/0 en D, la verificación de B o C, o guardar con "
+                    "A y 5 000 salas supera los 50 ms."))
+    return 0 if cumple and cumple_recorrido and cumple_llaves else 1

@@ -1,6 +1,8 @@
 from __future__ import annotations
  
 from adaptadores.Interfaz import ClienteInterfaz
+from adaptadores.llaves import validar_llaves
+from Logica.FuenteCripta import LlavesNoDisponibles
  
  
 class ClientePersistente(ClienteInterfaz):
@@ -95,6 +97,39 @@ class ClientePersistente(ClienteInterfaz):
             else:
                 resultado.append(contenido)
         return resultado
+ 
+    def contenido_en_disco(self, cripta_id: str, sala: int) -> dict | None:
+        """Contenido guardado de una sala, o None. Lo usa validar_llaves; nunca hace solicitudes."""
+        return self.almacen.leer_contenido(cripta_id, sala)
+ 
+    # ------------------------------------------------------------------
+    # Llaves (capacidad 009)
+    # ------------------------------------------------------------------
+    def obtener_llaves(self, cripta_id: str, solo_guardadas: bool = False,
+                       limite_solicitudes: int | None = None) -> list[dict]:
+        """Lo guardado si la versión de la cripta coincide (0 solicitudes). Si no hay nada guardado, una consulta a la
+        red; la respuesta se guarda solo si es válida (FR-310). LlavesInvalidas se propaga sin guardar nada."""
+        self._asegurar_cripta(cripta_id)
+        guardadas = self.almacen.leer_llaves(cripta_id)
+        if guardadas is not None:
+            return guardadas
+        if solo_guardadas:
+            raise LlavesNoDisponibles(f"sin presupuesto y sin llaves guardadas de la cripta {cripta_id}")
+ 
+        crudas = self.cliente.obtener_llaves(cripta_id, limite_solicitudes=limite_solicitudes)
+ 
+        salas = self.obtener_salas(cripta_id)
+        mayor = -1
+        for sala in salas:
+            if sala["id"] > mayor:
+                mayor = sala["id"]
+        existe = [False] * (mayor + 1)
+        for sala in salas:
+            existe[sala["id"]] = True
+ 
+        validar_llaves(crudas, existe, lambda s: self.almacen.leer_contenido(cripta_id, s))
+        self.almacen.guardar_llaves(cripta_id, crudas)
+        return crudas
  
     # ------------------------------------------------------------------
     # Catálogo

@@ -88,6 +88,18 @@ with tempfile.TemporaryDirectory() as raiz:
     comprobar("cripta-01 queda vacía", a.leer_datos("cripta-01") is None and a.leer_contenido("cripta-01", 2) is None)
     comprobar("cripta-02 no se toca", a.leer_datos("cripta-02") == {"id": "cripta-02"})
  
+    print("== Llaves (capacidad 009, T007) ==")
+    llaves = [{"id": "itm_llave_bronce", "sala": 1}, {"id": "itm_llave_negra", "sala": 3, "enemigo": "e-301"}]
+    a.validar_cripta("cripta-03", "k1")
+    a.guardar_llaves("cripta-03", llaves)
+    comprobar("se guarda y se lee la lista de llaves", a.leer_llaves("cripta-03") == llaves)
+    a.validar_cripta("cripta-04", "k1")
+    a.guardar_llaves("cripta-04", [])
+    comprobar("se guarda [] y se lee [], distinto de None", a.leer_llaves("cripta-04") == []
+              and a.leer_llaves("cripta-04") is not None)
+    a.validar_cripta("cripta-03", "k2")
+    comprobar("tras validar_cripta con otra versión, leer_llaves es None", a.leer_llaves("cripta-03") is None)
+ 
     print("== Persistencia entre ejecuciones ==")
     a.validar_catalogo("v2")
     a.guardar_fichas([FICHA_RATA])
