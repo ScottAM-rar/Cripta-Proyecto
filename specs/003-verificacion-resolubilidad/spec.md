@@ -76,7 +76,7 @@ Cuando hay varios órdenes válidos de obtener las llaves, la verificación elig
 **Escenarios de aceptación**:
 
 1. **(B-R3)** **Dado** una cripta con varios órdenes válidos de obtención de llaves, **cuando** se ejecuta `--verificar` dos veces, **entonces** las dos ejecuciones producen el mismo orden y el mismo reporte. *(FR-335, FR-336)*
-2. **Dado** que en la misma oleada se vuelven obtenibles la llave `X` en la sala 4, la llave `B` en la sala 2 y la llave `A` también en la sala 2, **cuando** se verifica, **entonces** el orden es `A`, `B`, `X`: primero por menor id de sala y, dentro de la sala 2, por id de llave. Si después, al abrir una puerta con `A`, se vuelve obtenible la llave `C` en la sala 1, `C` va después de `X` porque es de la oleada siguiente. *(FR-335)*
+2. **Dado** una cripta cuya sala inicial es la 5, en la que en la misma oleada se vuelven obtenibles la llave `X` en la sala 4, la llave `B` en la sala 2 y la llave `A` también en la sala 2, y la llave `C` está en la sala 3, detrás de una puerta que se abre con `A`, **cuando** se verifica, **entonces** el orden es `A`, `B`, `X`, `C`: dentro de la primera oleada, primero por menor id de sala y, dentro de la sala 2, por id de llave; `C` va última aunque su sala tenga menor id que la de `X`, porque es de la oleada siguiente. *(FR-335)*
 3. **Dado** la misma cripta, **cuando** se verifica una vez con el contenido de las salas ya guardado y otra sin él, **entonces** el reporte es idéntico. *(FR-335, FR-341)*
 4. **Dado** la misma cripta, **cuando** se verifica con el cliente real, con `--offline` y con la API falsa v2 sobre los mismos datos, **entonces** el resultado es el mismo. *(FR-335, FR-342)*
 5. **Dado** una cripta, **cuando** se verifica con `--verificar` y al iniciar una partida, **entonces** ambos usan la misma operación de verificación y obtienen el mismo resultado (resoluble o no, mismo orden, mismo bloqueo). *(FR-344, FR-339)*
@@ -155,8 +155,8 @@ La verificación tarda menos de 200 ms en la cripta más grande publicada, con l
 
 **Verificación desde la línea de comandos**
 
-- **FR-330**: `--verificar <cripta>` DEBE analizar la cripta sin iniciar una partida, sin abrir la vista y sin escribir el registro de partida, y DEBE mostrar un reporte de la verificación.
-- **FR-331**: `--verificar` DEBE terminar con código de salida 0 si la cripta es resoluble, con un código distinto de cero si no es resoluble, y con otro código distinto de cero (y distinto del anterior) si no se pudieron obtener los datos necesarios.
+- **FR-330**: `--verificar <cripta>` DEBE analizar la cripta sin iniciar una partida, sin abrir la vista y sin escribir el registro de partida, y DEBE mostrar un reporte de la verificación. En esta capacidad el comportamiento se verifica en la operación de verificación (FR-344); la prueba desde la consola es de la capacidad que conecta las opciones `--verificar` y `--forzar`.
+- **FR-331**: `--verificar` DEBE terminar con código de salida 0 si la cripta es resoluble, con un código distinto de cero si no es resoluble, y con otro código distinto de cero (y distinto del anterior) si no se pudieron obtener los datos necesarios. En esta capacidad el comportamiento se verifica en la operación de verificación (FR-344); la prueba desde la consola es de la capacidad que conecta las opciones `--verificar` y `--forzar`.
 
 **Regla de resolubilidad**
 
@@ -174,7 +174,7 @@ La verificación tarda menos de 200 ms en la cripta más grande publicada, con l
 **Inicio de partida**
 
 - **FR-339**: Al iniciar una partida nueva, el juego DEBE verificar la cripta; si no es resoluble y no se usó `--forzar`, la partida NO DEBE iniciar y DEBE mostrarse el reporte. Si las llaves no se pudieron obtener, se aplica FR-313: la partida continúa con aviso y no se bloquea. Si las llaves se obtuvieron pero la verificación no se puede completar por datos inválidos de la cripta (por ejemplo, la sala inicial o la de salida no existe en el mapa), la partida tampoco se bloquea: continúa con un aviso, mostrado solo al iniciar, que da el motivo y dice que la verificación de resolubilidad no está disponible.
-- **FR-340**: Con `--forzar`, una cripta no resoluble DEBE iniciar igualmente y el aviso de que no es resoluble DEBE mostrarse al iniciar la partida, igual que el aviso de FR-313. `--forzar` NO DEBE cambiar nada en una cripta resoluble.
+- **FR-340**: Con `--forzar`, una cripta no resoluble DEBE iniciar igualmente y el aviso de que no es resoluble DEBE mostrarse al iniciar la partida, igual que el aviso de FR-313. `--forzar` NO DEBE cambiar nada en una cripta resoluble. En esta capacidad el comportamiento se verifica en la operación de verificación (FR-344); la prueba desde la consola es de la capacidad que conecta las opciones `--verificar` y `--forzar`.
 
 **Datos y solicitudes**
 
