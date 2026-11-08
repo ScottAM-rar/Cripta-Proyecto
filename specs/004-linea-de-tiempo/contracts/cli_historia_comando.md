@@ -58,7 +58,7 @@ La vista presenta el estado histórico de forma estructurada según FR-431:
 ESTADO HISTÓRICO: Instante <t> | Acción #<k>
 ==================================================
 SALA: <id_sala>
-VIDA: <vida>/<vida_max>
+VIDA: <vida>
 ESTADÍSTICAS: Ataque: <atk> | Defensa: <def> | Velocidad: <vel>
 
 --- INVENTARIO ---

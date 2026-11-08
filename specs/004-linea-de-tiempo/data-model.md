@@ -72,7 +72,7 @@ class PuntoControlDTO:
 
 #### Relación con el log y la reconstrucción:
 - `longitud_acciones_log`: Índice en `logEventos.obtener_registros_cronologicos()` que delimita qué porción del log ya estaba aplicada al momento del punto de control.
-- La reconstrucción lee desde `registros[punto.longitud_acciones_log:]`, evitando procesar los eventos previos al punto.
+- La reconstrucción lee el segmento `registros[punto.longitud_acciones_log : longitud_acciones_log del punto siguiente]` (o hasta el final del log si es el último punto). Dentro del segmento hay acciones vigentes, acciones revertidas, usos de pergamino y movimientos de cursor; solo una pila local decide cuáles son vigentes.
 
 ---
 
@@ -117,7 +117,7 @@ Durante la ejecución de `consultarHistoria`:
        │         │
        │         ▼
        │   Puntos con acc > (2K - m) son podados con pop()
-       │   Log trunca registros revertidos
+       │   El log NO se trunca: conserva revertidas y el uso del pergamino
        ▼
 [Línea de tiempo vigente: monótona y consistente]
 ```

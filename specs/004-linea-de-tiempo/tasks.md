@@ -14,7 +14,7 @@
 
 **Propósito**: Asegurar el entorno de pruebas y la estabilidad de la firma antes de implementar la lógica real.
 
-- [ ] T001 Verificar la ejecución limpia de la prueba de firma existente en `test_historia_firma.py`
+- [ ] T001 Verificar que `test_historia_firma.py` pasa hoy (línea base); se modificará en T009 para iniciar una partida antes de consultar
 - [ ] T002 [P] Confirmar la presencia y campos requeridos en `DTO/ResumenEstadoDTO.py` conforme a `data-model.md`
 
 ---
@@ -28,6 +28,7 @@
 - [ ] T003 Implementar la búsqueda binaria manual por acciones `_buscarPuntoPorAcciones(self, k: int) -> PuntoControlDTO | None` y refactorizar `obtenerPuntoControlReciente` en `Logica/EstadoJuegoLogica.py` sin usar bibliotecas prohibidas (Principio I)
 - [ ] T004 [P] Implementar la búsqueda binaria manual por instante de reloj `_buscarPuntoPorInstante(self, t: int) -> PuntoControlDTO | None` en `Logica/EstadoJuegoLogica.py`
 - [ ] T005 Extraer la rutina común de empaquetado `_extraerResumenEstadoActual(self, instante: int, acciones: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py` y refactorizar `_armarResultadoReplayHasta` para delegar en ella sin duplicar código
+- [ ] T005b Implementar `_planificarSegmento` en `Logica/EstadoJuegoLogica.py` (plan.md §3): fin de segmento por el punto siguiente, pasada 1 con pila local (cursor se ignora, pergamino hace `pop`, otra acción hace `push`) que devuelve los índices de acciones vigentes; sin dict/set
 - [ ] T006 Implementar el gestor de contexto / guarda en `Logica/EstadoJuegoLogica.py` para capturar y restituir los 8 atributos del singleton global `RetrocesoLogica` (`cabeza`, `cola`, `actual`, `reloj`, `cantidad_actual`, `cantidad_acciones`, `tiempo_evento`, `suspensiones`) y `reloj.retroceso` en un bloque `try ... finally`
 
 **Punto de control**: Búsqueda binaria $O(\log M)$, extracción común y guarda de singleton listas y verificadas.
@@ -44,8 +45,8 @@
 - [ ] T007 [P] [US1] Crear pruebas unitarias para consulta por instante de reloj en `test_historia_tiempo.py` cubriendo FR-427, FR-428, FR-430, FR-433 y FR-437 (incluyendo corte en $t$ y desempate determinista)
 
 ### Implementación para User Story 1
-- [ ] T008 [US1] Implementar el método interno `_reconstruirHastaInstante(self, t: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py` utilizando la segunda instancia aislada hidratada desde `_buscarPuntoPorInstante(t)`, reproduciendo con `tope=t` y ejecutando `_completarInstante(t)`
-- [ ] T009 [US1] Conectar `consultarHistoria(instante=t)` en `Servicio/EstadoJuegoServicio.py`, validando $t \ge 0$, rechazando booleanos y tipos no enteros, y delegando a la lógica cuando la partida está iniciada (o retornando DTO por defecto si no está iniciada)
+- [ ] T008 [US1] Implementar `_reconstruirHastaInstante(self, t: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py`: `t ==` reloj vivo devuelve el estado vivo; si no, punto base con `_buscarPuntoPorInstante(t)`, pasada 2 fiel en la instancia aislada (revertidas y pergamino sin tope; vigentes con `tope=t`), parada evaluada solo tras acciones vigentes y luego `_completarInstante(t)`
+- [ ] T009 [US1] Conectar `consultarHistoria(instante=t)` en `Servicio/EstadoJuegoServicio.py`: validar `t >= 0`, rechazar bool y no enteros, y delegar a la lógica. Si la partida no está iniciada lanzar `ValueError("El juego no ha sido iniciado")` (no devolver datos de prueba) y actualizar `test_historia_firma.py` para iniciar una partida antes de consultar
 - [ ] T010 [P] [US1] Implementar el método de visualización `mostrar_historia(self, resumen: ResumenEstadoDTO)` en `Controlador/Vista.py` mostrando sala, vida, estadísticas, llaves, objetos, efectos y enemigos con vida, omitiendo el mapa si es `None` (FR-431)
 - [ ] T011 [US1] Incorporar la interpretación de `historia <t>` e `historia t` en `Controlador/ControladorJuego.py` antes de `_mapear_entrada_a_evento`, manejando mensajes de error descriptivos sin alterar el estado de la partida
 - [ ] T012 [US1] Habilitar la consulta de `historia <t>` en el bucle post-partida concluida (victoria o derrota) en `Controlador/ControladorJuego.py` (FR-427)
@@ -64,7 +65,7 @@
 - [ ] T013 [P] [US2] Crear pruebas unitarias para consulta por número de acción en `test_historia_tiempo.py` cubriendo FR-429, FR-430, FR-435, FR-436 y equivalencia con `historia <t>` (SC-002)
 
 ### Implementación para User Story 2
-- [ ] T014 [US2] Implementar el método interno `_reconstruirHastaAccion(self, k: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py` seleccionando el punto con `acciones <= k - 1` y reproduciendo exactamente $(k - 1) - c$ acciones del jugador
+- [ ] T014 [US2] Implementar `_reconstruirHastaAccion(self, k: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py`: punto base con `_buscarPuntoPorAcciones(k-1)`, `j = (k-1) - c`, pasada 2 fiel parando justo antes de aplicar la acción vigente `E[j]`
 - [ ] T015 [US2] Conectar `consultarHistoria(accion=k)` en `Servicio/EstadoJuegoServicio.py`, validando $k \ge 1$ (rechazando $k=0$ y negativos con `ValueError`, FR-435), verificando $k \le N + 1$ (FR-436) y resolviendo $k = N + 1$ retornando el estado actual
 - [ ] T016 [US2] Incorporar la interpretación de `historia #k` en `Controlador/ControladorJuego.py` en la partida interactiva y en el bucle post-partida, manejando errores descriptivos
 - [ ] T017 [US2] Validar en `Logica/EstadoJuegoLogica.py` y `Servicio/EstadoJuegoServicio.py` el caso de partida sin acciones ($N=0$): `#1` y `0` devuelven estado inicial, $t > 0$ y $k > 1$ se rechazan (FR-438)
@@ -100,7 +101,7 @@
 - [ ] T021 [P] [US4] Agregar pruebas de coherencia con pergamino en `test_historia_aislamiento.py` cubriendo poda de puntos de control, invisibilidad de ramas revertidas y uso de pergamino inmediatamente después de una consulta `historia`
 
 ### Implementación para User Story 4
-- [ ] T022 [US4] Validar en `Logica/EstadoJuegoLogica.py` que la reconstrucción tome puntos que sobrevivieron a la poda (`_podarPuntosControlPosteriores`) y que el log truncado no incluya registros revertidos
+- [ ] T022 [US4] Probar en `test_historia_aislamiento.py` el caso `A1 A2 A3 P A3' A4` (consulta `#4` = estado tras `A3'`, no tras `A3`), pergamino justo después de un punto de control, y que el azar de la partida viva sigue idéntico: el log NO se trunca, la línea vigente sale de la pila de `_planificarSegmento`
 - [ ] T023 [US4] Asegurar que la restitución de atributos de `RetrocesoLogica` en `Logica/EstadoJuegoLogica.py` conserve íntegro el puntero `reloj.retroceso` de la partida viva para usos subsecuentes del pergamino
 
 **Punto de control**: Coherencia y compatibilidad total con el pergamino de retroceso confirmada.
@@ -145,6 +146,7 @@
 
 - [ ] T030 Ejecutar la suite completa de pruebas unitarias de la raíz (`test_historia_firma.py`, `test_historia_tiempo.py`, `test_historia_aislamiento.py`, `test_puntos_control.py`, `test_replay_hasta.py`) y corregir cualquier regresión
 - [ ] T031 Ejecutar la validación interactiva manual siguiendo los pasos de `quickstart.md`
+- [ ] T033 Actualizar `DECISIONES.md` (sección 004: K por defecto con números medidos por `bench/historia.py`, búsqueda binaria vs lineal, reconstrucción hacia adelante vs hacia atrás), agregar las filas de `PROMPTS_LLM_JP.md` con herramienta y modelo reales, y confirmar a Fernanda que `consultarHistoria` ya no devuelve datos de prueba
 - [ ] T032 Verificar el cumplimiento estricto del Principio I de la Constitución (auditar que no existan importaciones de `bisect`, `dict`/`set` como índice ni `collections` en el código nuevo)
 
 ---

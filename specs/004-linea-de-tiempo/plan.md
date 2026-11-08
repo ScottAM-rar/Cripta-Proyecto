@@ -13,7 +13,7 @@ Esta capacidad incorpora a Cripta la habilidad de consultar instantáneas comple
 El enfoque técnico se fundamenta en las investigaciones de [research.md](research.md):
 1. **Reconstrucción aislada**: Se hidrata una segunda instancia temporal de `EstadoJuegoLogica` a partir del punto de control previo más cercano (capacidad 007). Para blindar la partida viva contra efectos colaterales, se implementa una guarda `try ... finally` que salva y restituye las variables de estado del singleton global `RetrocesoLogica`, asegurando además que el reloj, el generador de azar, el log y el presupuesto de red de la partida viva no sean tocados.
 2. **Búsqueda binaria manual de puntos de control**: Se reemplaza el escaneo lineal inverso de `obtenerPuntoControlReciente` por una búsqueda binaria implementada a mano sobre `self.puntos_control`, operando en $O(\log M)$ sin usar bibliotecas prohibidas como `bisect`, `dict` o `set` (Principio I).
-3. **Reproducción acotada hacia adelante**: Desde el punto base seleccionado, la instancia aislada reproduce el segmento del log (a partir de `punto.longitud_acciones_log`) hasta alcanzar el instante $t$ (con corte y compleción de instante compartidos con la capacidad 008) o la acción $k-1$ del jugador, acotando el trabajo a un máximo de $K-1$ acciones (FR-439).
+3. **Reproducción acotada hacia adelante por segmento vigente**: el log conserva las acciones revertidas y los usos de pergamino, así que se analiza el segmento entre el punto base y el siguiente con una pila local (pasada 1) y se reproduce fielmente en la instancia aislada (pasada 2), parando por acción vigente y no por contador o reloj (ver sección 3). El trabajo queda acotado por el tamaño del segmento (≈ K acciones, FR-439).
 4. **Extracción unificada de estado**: Se extrae la lógica de empaquetado de estado compartida entre `_armarResultadoReplayHasta` (008) y `consultarHistoria` (004) en un método auxiliar común `_extraerResumenEstadoActual`, evitando duplicación.
 5. **Interceptación en Controlador/Vista**: `ControladorJuego` intercepta los comandos `historia <t>` e `historia #k` antes del mapeo de eventos. La presentación se delega a `VistaConsola.mostrar_historia(resumen)` (FR-431), omitiendo el mapa conocido mientras no esté integrada la capacidad 002. En `--replay` y `--bench` la vista no se instancia (Principio IV).
 6. **Validación de rendimiento**: Se incorpora el bloque `bench/historia.py` en `--bench`, evaluando partidas de $\ge 5\,000$ acciones para verificar que el tiempo de respuesta sea $\le 50$ ms (FR-442, Principio VII) y midiendo la alternativa descartada (reconstrucción desde el inicio sin puntos de control).
@@ -137,21 +137,25 @@ tests (raíz del repositorio)/
   - `obtenerPuntoControlReciente(self, k: int)` se refactoriza para reutilizar `_buscarPuntoPorAcciones(k)`.
 - Complejidad: $O(\log M)$, estrictamente sin `bisect` ni estructuras prohibidas.
 
-### 3. Semántica de `historia <t>` e `historia #k`
-- `historia <t>`:
-  - Si $t > \text{reloj.tiempo\_actual}$, se rechaza (FR-433).
-  - Punto base = `_buscarPuntoPorInstante(t)`.
-  - Replay acotado con `tope=t` y `_completarInstante(t)` para eventos de otros actores con tiempo $t$ (FR-428).
-- `historia #k`:
-  - $k=1$: Estado inicial (0 acciones).
-  - Si $k = N + 1$: Devuelve el estado actual de la partida viva (FR-436).
-  - Si $k > N + 1$: Se rechaza con mensaje de acción futura (FR-436).
-  - Si $1 \le k \le N$: Punto base = `_buscarPuntoPorAcciones(k - 1)`. Se reproducen acciones hasta que `juego_aislado.acciones_linea_tiempo == k - 1` y se alcanzan los eventos previos al turno de la acción $k$.
+### 3. Reconstrucción por segmento vigente (el log NO se trunca al usar un pergamino)
+Hechos verificados en el código: el uso de un pergamino se **agrega** al log (`_registrarAccionEnLog`) y las acciones revertidas **siguen** en él; el pergamino restaura el reloj y NO restaura el azar. Consecuencias: (a) un contador que "llega a k-1" o un reloj que "llega a t" puede ocurrir en una rama luego revertida, así que no sirven como criterio de parada; (b) la reproducción debe aplicar TODOS los registros del segmento (también los revertidos y los usos de pergamino) para que el azar quede igual que en la partida viva.
+
+Algoritmo común (`_planificarSegmento`):
+1. **Punto base** por búsqueda binaria (`acciones_linea_tiempo <= k-1` en `#k`; `instante_reloj <= t` en `<t>`). **Fin del segmento** = `longitud_acciones_log` del punto siguiente, o el final del log si el base es el último. El siguiente punto sobrevivió a la poda, así que su prefijo de log ya contiene todos los pergamino anteriores a él: el segmento queda acotado (≈ K acciones más las revertidas dentro de él), no la cola entera del log.
+2. **Pasada 1 (sin simular)**: recorrer los registros del segmento con una pila local (lista usada como pila). Cursor de inventario: se ignora. Uso de pergamino: `pop()`. Cualquier otra acción: `push` de su índice. Al terminar, la pila tiene los índices de las acciones **vigentes** `E[0..m-1]`; las demás son revertidas.
+3. **Pasada 2 (instancia aislada, fiel)**: aplicar los registros en orden y completos. Revertidas y pergamino se aplican sin tope. Las vigentes se aplican y la parada se evalúa **después** de cada una.
+   - `historia #k`: parar justo **antes** de aplicar `E[j]`, con `j = (k-1) - c` (estado tras `k-1` acciones vigentes).
+   - `historia <t>`: aplicar cada vigente con `accionJugador(ev, tope=t)`; tras cada una, si el reloj llegó a `t` o el próximo evento programado supera `t`, parar y llamar `_completarInstante(t)` (misma regla que 008).
+4. Prohibido parar por "contador == k-1" o "reloj >= t" sobre registros que no son vigentes.
+
+Reglas de entrada:
+- `historia <t>`: `t > reloj.tiempo_actual` se rechaza (FR-433); `t ==` reloj actual devuelve el estado vivo sin reconstruir.
+- `historia #k`: `k >= 1` entero (FR-435); `k = N+1` devuelve el estado vivo (FR-436); `k > N+1` se rechaza; `1 <= k <= N` usa el algoritmo anterior (`#1` cae en el punto 0 con `j = 0`).
 
 ### 4. Coherencia con el pergamino de retroceso
-- Los puntos de control posteriores a las acciones revertidas se podan en la partida viva con `_podarPuntosControlPosteriores()`.
-- Cualquier punto superviviente tiene acciones $\le$ acciones vigentes.
-- Reproducir el log desde el punto base reconstruye exclusivamente la línea de tiempo vigente; las acciones revertidas no existen (FR-434).
+- La poda de la partida viva (`_podarPuntosControlPosteriores`) elimina los puntos con más acciones que el contador vigente. Un punto superviviente solo puede tener por delante acciones que el pergamino revierte **después** de él, nunca antes.
+- El log conserva las acciones revertidas y los usos de pergamino; la línea vigente se obtiene con la pila de la pasada 1 (sección 3), no truncando el log.
+- Casos de prueba obligatorios: pergamino justo después de un punto de control; acción revertida cuyo contador coincide con el de la consulta (`A1 A2 A3 P A3' A4`, consulta `#4` debe dar el estado tras `A3'`, no tras `A3`); consulta `<t>` en un instante que solo existió en la rama revertida (rechazada por ser futuro).
 
 ### 5. Reutilización de código con Capacidad 008
 - Se factoriza el armado del estado en `_extraerResumenEstadoActual(self, instante: int, acciones: int) -> ResumenEstadoDTO`.

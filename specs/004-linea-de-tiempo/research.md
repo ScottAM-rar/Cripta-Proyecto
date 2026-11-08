@@ -73,30 +73,8 @@ def _buscarPuntoPorAcciones(self, k: int) -> PuntoControlDTO | None:
 
 ## Decisión 3: Semántica de reconstrucción para `historia <t>` e `historia #k`
 
-### Semántica para `historia <t>`
-- **Validación**: Si $t < 0$ o no es entero, rechazar con `ValueError` (FR-437). Si $t > \text{reloj.tiempo\_actual}$, rechazar como instante futuro (FR-433).
-- **Selección de base**: Búsqueda binaria del último punto con `instante_reloj <= t`.
-- **Reproducción**:
-  1. Hidratar `juego_aislado` desde `punto.estado`.
-  2. Leer los registros de `logEventos` a partir del índice `punto.longitud_acciones_log`.
-  3. Reproducir acciones con `juego_aislado.accionJugador(ev, tope=t)` hasta que el próximo evento supere $t$ o el reloj alcance $t$.
-  4. Si el reloj se detiene en $t$, invocar `juego_aislado._completarInstante(t)` para procesar todos los eventos de otros actores programados exactamente en $t$, excluyendo la decisión del jugador en $t$ (FR-428).
-  5. Extraer y retornar `ResumenEstadoDTO`.
-
-### Semántica para `historia #k`
-- **Validación**:
-  - $k$ debe ser entero $\ge 1$ (FR-435). Si $k \le 0$, rechazar con `ValueError`.
-  - Sea $N = \text{self.acciones\_linea\_tiempo}$ el número de acciones vigentes en la partida viva.
-  - Si $k = N + 1$: Retorna el estado actual de la partida viva sin reproducir (FR-436).
-  - Si $k > N + 1$: Rechazar como acción futura (FR-436).
-- **Definición de `#k`**: Estado *justo antes* de que el jugador tome su $k$-ésima acción (es decir, tras haber completado exactamente $k - 1$ acciones).
-  - `#1`: Estado inicial (0 acciones ejecutadas, equivalente al punto de control 0 y a `historia 0`).
-  - Para $1 \le k \le N$:
-    1. Búsqueda binaria del último punto con `acciones_linea_tiempo <= k - 1`.
-    2. Sea $c = \text{punto.acciones\_linea\_tiempo}$. Restan por ejecutar $(k - 1) - c$ acciones del jugador.
-    3. Hidratar `juego_aislado` desde `punto.estado`.
-    4. Reproducir desde `punto.longitud_acciones_log` hasta alcanzar `juego_aislado.acciones_linea_tiempo == k - 1` y completar los eventos hasta el turno del jugador.
-    5. Extraer y retornar `ResumenEstadoDTO`.
+### Semántica y algoritmo
+Ver `plan.md` sección 3 (reconstrucción por segmento vigente). Puntos clave: el log conserva revertidas y pergamino; se obtiene la línea vigente con una pila local sobre el segmento entre dos puntos de control; la reproducción es fiel (aplica todo, porque el pergamino no restaura el azar) y la parada se decide solo sobre acciones vigentes. `#1` = estado inicial; `#N+1` = estado vivo; `#>N+1` y `<t>` futuro se rechazan.
 
 ### Tabla de instantes por acción no requerida
 No se necesita una tabla auxiliar indexada de `acción -> instante`: la lista de puntos de control y el log determinista permiten alcanzar directamente cualquier acción $k$ contando las decisiones del jugador aplicadas desde el punto base. La monotonicidad garantiza que no hay ambigüedades.
@@ -105,14 +83,10 @@ No se necesita una tabla auxiliar indexada de `acción -> instante`: la lista de
 
 ## Decisión 4: Invariante del pergamino de retroceso y poda de puntos
 
-### Invariante de coherencia temporal
-- Cuando el jugador usa un pergamino de retroceso, revierte $m$ acciones. La variable `acciones_linea_tiempo` se decrementa y se llama a `_podarPuntosControlPosteriores(self.acciones_linea_tiempo)`.
-- **Invariante**: Todo punto de control que permanece en `puntos_control` tiene `acciones_linea_tiempo <= acciones_actuales`.
-- Dado que el log en memoria y en disco preserva la secuencia cronológica hasta el retroceso, las acciones revertidas son eliminadas de la línea de tiempo vigente.
-- Por tanto, restaurar un punto de control superviviente y avanzar aplicando el segmento de log vigente reconstruye de forma fiel y determinista la historia de la partida.
-- El punto de control 0 (`acciones = 0`) nunca se poda, garantizando que siempre existe al menos una base para reproducir cualquier instante válido.
-
----
+- Al usar un pergamino, `acciones_linea_tiempo` baja en 1 y se llama a `_podarPuntosControlPosteriores`. Todo punto superviviente tiene `acciones_linea_tiempo <= contador vigente`; por tanto las acciones que el pergamino revierte son siempre posteriores a cualquier punto superviviente.
+- El log **no** se trunca: conserva las acciones revertidas y el registro de cada uso de pergamino. La línea vigente de un segmento se obtiene con una pila local (push por acción, pop por pergamino).
+- Reproducir el segmento completo y fiel desde el punto base (con el retroceso vivo de la instancia aislada) es correcto porque cada pergamino del segmento revierte una acción del mismo segmento, y mantiene el azar idéntico al de la partida viva (el pergamino no restaura el azar).
+- El punto 0 nunca se poda.
 
 ## Decisión 5: Reconstrucción hacia adelante vs. hacia atrás (§5.5)
 
@@ -127,9 +101,8 @@ No se necesita una tabla auxiliar indexada de `acción -> instante`: la lista de
    - El peor caso de avance está estrictamente acotado por $K - 1$ acciones, independientemente de que $N = 5\,000$ o $N = 50\,000$.
 
 ### Respaldo de mediciones
-Siguiendo las mediciones de `bench/puntos_control.py`:
-- Reconstruir desde el punto más cercano toma típicamente $< 5$ ms para $K = 10$, frente a $> 150$ ms si se reprodujera desde el inicio (Alternativa C descartada).
-- Intentar reconstruir hacia atrás no es viable porque el historial solo retiene 5 acciones. Por tanto, la reconstrucción hacia adelante sobre checkpoints periódicos es la única arquitectura viable y demostrada.
+Las cifras de tiempo de esta decisión salen de `bench/historia.py` (tarea T026/T027) y de `bench/puntos_control.py` (capacidad 007). Antes de que ese bench exista no se citan números. Nota de 007: con la cripta sintética solo K=10 cabe en 50 ms de reconstrucción; K=50 y K=100 pueden superarlo y eso se reporta tal cual, sin ocultarlo, al justificar el K por defecto.
+Reconstruir hacia atrás no es viable porque el historial del pergamino retiene solo 5 acciones (`MAX_HISTORIAL`).
 
 ---
 
