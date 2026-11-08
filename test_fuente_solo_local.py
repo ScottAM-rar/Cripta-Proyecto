@@ -78,9 +78,9 @@ class SoloLocal(unittest.TestCase):
         self.carpeta = os.path.join(self._tmp.name, "datos_cripta")
         self.espia = HttpFalso()
 
-    def solo_local(self, version_vigente=None):
+    def solo_local(self, version_vigente=None, **opciones):
         """Abre la fuente solo local con la red bloqueada y el espía como único cliente HTTP posible, y comprueba (d)
-        al terminar la prueba."""
+        al terminar la prueba. `opciones`: version_catalogo_vigente (T053)."""
         antes = bytes_de_la_carpeta(self.carpeta)
         parches = [mock.patch.object(requests, "get", side_effect=_sin_red),
                    mock.patch.object(fabrica, "_cliente_http_de_ejecucion", side_effect=lambda url: self.espia)]
@@ -88,7 +88,7 @@ class SoloLocal(unittest.TestCase):
             parche.start()
             self.addCleanup(parche.stop)
         self.addCleanup(self.comprobar_sin_cambios, antes)
-        return fabrica.crear_fuente_solo_local(carpeta=self.carpeta, version_vigente=version_vigente)
+        return fabrica.crear_fuente_solo_local(carpeta=self.carpeta, version_vigente=version_vigente, **opciones)
 
     def comprobar_sin_cambios(self, antes):
         # (d) SC-003 / FR-315: ninguna solicitud y lo guardado queda igual, byte a byte.
@@ -170,6 +170,125 @@ class SinPrecarga(SoloLocal):
         self.assertEqual(fuente.precargar_vecinas(CRIPTA, 1), 0)
         self.assertEqual(fuente.precargar_vecinas(CRIPTA, 1, 3), 0)
         self.assertEqual(fuente.reporte(CRIPTA).solicitudes, 0)
+
+
+# ----------------------------------------------------------------------------------------------------------------
+# T053: lo que pide la capacidad 004 (consulta histórica). (f) vale en todas: solo_local() comprueba al terminar que
+# el espía no recibió llamadas y que los bytes de la carpeta no cambiaron.
+# ----------------------------------------------------------------------------------------------------------------
+SALA_DEL_CAZADOR = 25          # cripta_v2: el cazador está en la sala más lejana de la 1
+
+
+class ExisteCripta(SoloLocal):
+
+    def test_fr314_t053_a_existe_cripta_con_lista_guardada_true_o_false_sin_comparar_version(self):
+        guardar_cripta_completa(self.carpeta)
+        fuente = self.solo_local(version_vigente="v-nueva")      # otra versión: existe_cripta no la mira
+        self.assertIs(fuente.existe_cripta(CRIPTA), True)
+        self.assertIs(fuente.existe_cripta("cripta-que-no-esta"), False)
+
+    def test_fr315_t053_a_existe_cripta_sin_lista_en_disco_lanza(self):
+        os.makedirs(self.carpeta)
+        fuente = self.solo_local()
+        with self.assertRaises(DatoLocalFaltante):
+            fuente.existe_cripta(CRIPTA)
+
+
+class VersionCatalogo(SoloLocal):
+
+    def test_fr317_t053_b_version_catalogo_igual_o_none_devuelve_la_guardada(self):
+        guardar_cripta_completa(self.carpeta)
+        guardada = AlmacenDisco(self.carpeta).version_catalogo()
+        self.assertIsNotNone(guardada)
+        self.assertEqual(self.solo_local(version_catalogo_vigente=guardada).version_catalogo(), guardada)
+        self.assertEqual(self.solo_local().version_catalogo(), guardada)
+
+    def test_fr317_t053_b_version_catalogo_distinta_lanza_nombrando_las_dos(self):
+        guardar_cripta_completa(self.carpeta)
+        guardada = AlmacenDisco(self.carpeta).version_catalogo()
+        with self.assertRaises(DatoLocalFaltante) as error:
+            self.solo_local(version_catalogo_vigente="k-nueva").version_catalogo()
+        self.assertIn(guardada, str(error.exception))
+        self.assertIn("k-nueva", str(error.exception))
+
+    def test_fr315_t053_b_sin_version_de_catalogo_guardada_lanza(self):
+        os.makedirs(self.carpeta)
+        with self.assertRaises(DatoLocalFaltante) as error:
+            self.solo_local(version_catalogo_vigente="k1").version_catalogo()
+        self.assertIn("k1", str(error.exception))
+
+
+class ObjetosQueSuelta(SoloLocal):
+
+    def cazador(self, fuente):
+        return fuente.construir_sala(CRIPTA, SALA_DEL_CAZADOR).enemigos[0]
+
+    def test_fr314_t053_c_tras_consultar_la_cripta_da_lo_mismo_que_la_via_normal(self):
+        guardar_cripta_completa(self.carpeta)
+        fuente = self.solo_local()
+        local = fuente.objetos_que_suelta(self.cazador(fuente))
+        self.comprobar_sin_cambios(bytes_de_la_carpeta(self.carpeta))       # antes de abrir la vía normal
+        normal = servicio_normal(self.carpeta)
+        esperado = normal.objetos_que_suelta(normal.construir_sala(CRIPTA, SALA_DEL_CAZADOR).enemigos[0])
+        self.assertTrue(local)
+        self.assertEqual(local, esperado)
+
+    def test_fr317_t053_c_ultima_cripta_con_otra_version_lanza(self):
+        guardar_cripta_completa(self.carpeta)
+        cazador = self.cazador(self.solo_local())
+        fuente = self.solo_local(version_vigente="v-nueva")
+        with self.assertRaises(DatoLocalFaltante):
+            fuente.esqueleto(CRIPTA)                               # la última cripta consultada es esta
+        with self.assertRaises(DatoLocalFaltante) as error:
+            fuente.objetos_que_suelta(cazador)
+        self.assertIn("v-nueva", str(error.exception))
+
+    def test_fr315_t053_c_ficha_ausente_lanza_con_el_id_de_la_ficha(self):
+        guardar_cripta_completa(self.carpeta)
+        fuente = self.solo_local()
+        cazador = self.cazador(fuente)
+        cazador.suelta = ["itm_que_no_esta"]
+        with self.assertRaises(DatoLocalFaltante) as error:
+            fuente.objetos_que_suelta(cazador)
+        self.assertIn("itm_que_no_esta", str(error.exception))
+        self.assertIn(CRIPTA, str(error.exception))
+
+    def test_fr315_t053_c_sin_ninguna_cripta_consultada_lanza(self):
+        guardar_cripta_completa(self.carpeta)
+        cazador = self.cazador(self.solo_local())
+        with self.assertRaises(DatoLocalFaltante):
+            self.solo_local().objetos_que_suelta(cazador)
+
+
+class SalidaYMapa(SoloLocal):
+
+    def test_fr314_t053_d_sala_de_salida_y_mapa_iguales_a_la_via_normal(self):
+        guardar_cripta_completa(self.carpeta)
+        fuente = self.solo_local()
+        local = (fuente.obtener_sala_salida(CRIPTA), fuente.obtener_mapa(CRIPTA))
+        self.comprobar_sin_cambios(bytes_de_la_carpeta(self.carpeta))
+        normal = servicio_normal(self.carpeta)
+        self.assertEqual(local, (normal.obtener_sala_salida(CRIPTA), normal.obtener_mapa(CRIPTA)))
+
+    def test_fr317_t053_d_con_otra_version_lanzan(self):
+        guardar_cripta_completa(self.carpeta)
+        fuente = self.solo_local(version_vigente="v-nueva")
+        for nombre, operacion in (("obtener_sala_salida", lambda: fuente.obtener_sala_salida(CRIPTA)),
+                                  ("obtener_mapa", lambda: fuente.obtener_mapa(CRIPTA))):
+            with self.subTest(operacion=nombre):
+                with self.assertRaises(DatoLocalFaltante):
+                    operacion()
+
+
+class FichasEnUso(SoloLocal):
+
+    def test_sc003_t053_e_fijar_fichas_en_uso_no_escribe_ni_pide(self):
+        guardar_cripta_completa(self.carpeta)
+        fuente = self.solo_local()
+        fuente.construir_sala(CRIPTA, SALA_DEL_CAZADOR)
+        fuente.fijar_fichas_en_uso(["ent_cazador"])
+        fuente.fijar_fichas_en_uso([])
+        # (f) lo comprueba solo_local() al terminar: llamadas == [] y la carpeta igual byte a byte
 
 
 if __name__ == "__main__":

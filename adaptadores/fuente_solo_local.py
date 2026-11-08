@@ -14,15 +14,19 @@ from Logica.FuenteCripta import DatoLocalFaltante, LlavesNoDisponibles
 
 class FuenteSoloLocal:
 
-    def __init__(self, fuente, almacen, version_vigente: str | None) -> None:
+    def __init__(self, fuente, almacen, version_vigente: str | None,
+                 version_catalogo_vigente: str | None = None) -> None:
         self.fuente = fuente                    # ServicioCripta sobre ClienteOffline
         self.almacen = almacen                  # AlmacenDisco: solo se lee
         self.version_vigente = version_vigente  # None: sirve la versión guardada de cada cripta
+        self.version_catalogo_vigente = version_catalogo_vigente   # None: sirve la versión guardada del catálogo
+        self._ultima_cripta: str | None = None  # cripta de la última operación que la recibió (objetos_que_suelta)
 
     # ------------------------------------------------------------------
     # Comprobaciones
     # ------------------------------------------------------------------
     def _exigir_version(self, cripta_id: str) -> None:
+        self._ultima_cripta = cripta_id
         guardada = self.almacen.version_cripta(cripta_id)
         if guardada is None:
             necesaria = self.version_vigente if self.version_vigente is not None else "una versión guardada"
@@ -77,3 +81,54 @@ class FuenteSoloLocal:
     def reporte(self, cripta_id: str):
         """Reporte del servicio interior: 0 solicitudes, porque ClienteOffline nunca usa la red."""
         return self._leer(cripta_id, "los datos generales", lambda: self.fuente.reporte(cripta_id))
+
+    # ------------------------------------------------------------------
+    # Operaciones que pide la capacidad 004 (T053)
+    # ------------------------------------------------------------------
+    def obtener_mapa(self, cripta_id: str):
+        """Lo mismo que esqueleto() (el modelo lo pide con este nombre para el campo de costos)."""
+        return self.esqueleto(cripta_id)
+
+    def obtener_sala_salida(self, cripta_id: str) -> int:
+        return self._leer(cripta_id, "los datos generales", lambda: self.fuente.obtener_sala_salida(cripta_id))
+
+    def existe_cripta(self, cripta_id: str) -> bool:
+        """Solo existencia, sin comparar versión: si la cripta está en la lista de criptas guardada. Se lee la lista
+        del almacén y no la del servicio, porque el modo sin red descarta las criptas que no están completas."""
+        self._ultima_cripta = cripta_id
+        criptas = self.almacen.leer_criptas()
+        if criptas is None:
+            raise DatoLocalFaltante(f"Falta en disco la lista de criptas (se buscaba la cripta {cripta_id})")
+        for cripta in criptas:
+            if cripta.get("id") == cripta_id:
+                return True
+        return False
+
+    def version_catalogo(self) -> str:
+        guardada = self.almacen.version_catalogo()
+        if guardada is None:
+            necesaria = (self.version_catalogo_vigente if self.version_catalogo_vigente is not None
+                         else "una versión guardada")
+            raise DatoLocalFaltante(
+                f"El catálogo no tiene versión guardada en disco (guardada: ninguna); se necesita {necesaria}"
+            )
+        if self.version_catalogo_vigente is not None and guardada != self.version_catalogo_vigente:
+            raise DatoLocalFaltante(
+                f"El catálogo está guardado con la versión {guardada}; se necesita {self.version_catalogo_vigente}"
+            )
+        return guardada
+
+    def objetos_que_suelta(self, enemigo) -> list:
+        """Recibe el enemigo, no la cripta: comprueba la versión de la última cripta consultada por esta fuente. Una
+        ficha que falta en el catálogo guardado sale como DatoLocalFaltante con su id y la cripta."""
+        if self._ultima_cripta is None:
+            raise DatoLocalFaltante("Todavía no se consultó ninguna cripta: no se sabe contra qué versión comprobar "
+                                    "lo que suelta el enemigo")
+        cripta_id = self._ultima_cripta
+        ids = ", ".join(enemigo.suelta) if enemigo.suelta else "ninguna"
+        return self._leer(cripta_id, f"las fichas de lo que suelta {enemigo.id_instancia} ({ids})",
+                          lambda: self.fuente.objetos_que_suelta(enemigo))
+
+    def fijar_fichas_en_uso(self, ids_catalogo: list[str]) -> None:
+        """Delega en el servicio: solo marca fichas en la caché en memoria; no escribe en disco ni pide nada."""
+        self.fuente.fijar_fichas_en_uso(ids_catalogo)

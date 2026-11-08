@@ -96,5 +96,17 @@ with tempfile.TemporaryDirectory() as raiz:
         comprobar("0 solicitudes", fuente.reporte("cripta-01").solicitudes == 0
                   and fuente.fuente.solicitudes_realizadas == 0)
 
+    print("== 7) Fuente solo local para la capacidad 004 (T053) ==")
+    from Logica.FuenteCripta import DatoLocalFaltante
+    with mock.patch.object(requests, "get", side_effect=AssertionError("intento de red")):
+        fuente7 = fabrica.crear_fuente_solo_local(carpeta=carpeta, version_vigente="c1", version_catalogo_vigente="k1")
+        comprobar("version_catalogo_vigente igual a la guardada", fuente7.version_catalogo() == "k1")
+        comprobar("existe_cripta y obtener_sala_salida", fuente7.existe_cripta("cripta-01")
+                  and fuente7.obtener_sala_salida("cripta-01") == 3)
+        otro_catalogo = fabrica.crear_fuente_solo_local(carpeta=carpeta, version_catalogo_vigente="k9")
+        comprobar("otra versión del catálogo -> DatoLocalFaltante",
+                  lanza(DatoLocalFaltante, otro_catalogo.version_catalogo))
+        comprobar("0 solicitudes", fuente7.reporte("cripta-01").solicitudes == 0)
+
 print()
 print(f"{resultados.count(True)} de {len(resultados)} comprobaciones OK")

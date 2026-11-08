@@ -363,7 +363,7 @@
   - **(e)** Los atributos `ids`, `salas` y `enemigos` conservan el orden recibido.
 
   Va después de T004. (FR-302, IX)
-- [ ] T053 [US4] Ampliar la fuente solo local con lo que pide la capacidad 004 (respuesta de JP del 2026-11-07). Primero las pruebas, agregadas a `test_fuente_solo_local.py` (deben fallar):
+- [X] T053 [US4] Ampliar la fuente solo local con lo que pide la capacidad 004 (respuesta de JP del 2026-11-07). Primero las pruebas, agregadas a `test_fuente_solo_local.py` (deben fallar):
   - **(a)** `existe_cripta`: con la lista de criptas guardada devuelve `True` o `False`; sin lista en disco lanza `DatoLocalFaltante`; no compara versión.
   - **(b)** `version_catalogo`: con `version_catalogo_vigente` igual a la guardada devuelve la guardada; distinta, o sin versión guardada, lanza `DatoLocalFaltante` que nombra las dos; con `None` devuelve la guardada.
   - **(c)** `objetos_que_suelta`: tras consultar una cripta devuelve lo mismo que la vía normal; con la última cripta consultada guardada con otra versión lanza `DatoLocalFaltante`; una ficha ausente lanza `DatoLocalFaltante` con el id de la ficha; sin ninguna cripta consultada lanza `DatoLocalFaltante`.
