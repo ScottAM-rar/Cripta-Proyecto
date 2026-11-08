@@ -131,29 +131,29 @@
 
 ### Pruebas (escribir primero; deben fallar)
 
-- [ ] T025 [P] [US1] Crear `test_resolubilidad_regla.py`. Los mapas se arman con `esqueleto_de_conexiones`/`mapa_desde_esqueleto` (`tests_labs/cripta_sintetica.py`) y `_puerta_con_llave` (`tests_labs/api_falsa.py`); las llaves, con `UbicacionLlavesDTO` directo; se llama a `verificar_resolubilidad`.
+- [X] T025 [P] [US1] Crear `test_resolubilidad_regla.py`. Los mapas se arman con `esqueleto_de_conexiones`/`mapa_desde_esqueleto` (`tests_labs/cripta_sintetica.py`) y `_puerta_con_llave` (`tests_labs/api_falsa.py`); las llaves, con `UbicacionLlavesDTO` directo; se llama a `verificar_resolubilidad`.
   - Clase `Regla`: `test_fr332_h1_1_salida_alcanzable_y_llave_obtenible_es_resoluble`; `test_fr332_sala_inicial_es_salida`; `test_fr332_no_exige_puerta_hacia_la_salida` (la salida se alcanza por salidas abiertas y la llave de salida está en una sala alcanzable: resoluble); `test_fr333_h1_3_cadena_de_puertas` (orden `k1`, `k2`, `k3`, salida); `test_fr333_h1_6_respeta_salidas_de_un_solo_sentido`; `test_fr333_puerta_sin_llave_nunca_se_cruza`; `test_fr333_una_llave_abre_varias_puertas`; `test_fr334_h2_2_enemigo_tras_puerta` (obtenible si la puerta se abre y no obtenible si no); `test_fr334_h2_3_basta_una_ubicacion_alcanzable`; `test_fr336_llave_salida_en_el_orden_una_vez`.
   - Clase `Bloqueos`: `test_fr332_fr338_h1_4_salida_sin_camino` (`causas == ["SALIDA_SIN_CAMINO"]`); `test_fr332_fr338_h1_5_llave_salida_inexistente` (`"LLAVE_SALIDA_INEXISTENTE"` en `causas`); `test_fr337_salas_alcanzables_crecientes_y_cantidad_no_alcanzables`; `test_fr338_varios_bloqueos_en_orden` (por sala de origen creciente y N, S, E, O); `test_fr338_puerta_sin_llave_es_bloqueo_sin_llave`; `test_fr338_h1_7_llave_en_sala_sin_camino_es_bloqueo_no_ciclo` (tipo `LLAVE_SIN_CAMINO`); `test_fr338_ciclo_a_traves_de_otras_puertas` (la llave está detrás de dos puertas bloqueadas: tipo `CICLO`).
 
   (FR-332 a FR-334, FR-336 a FR-338)
-- [ ] T026 [P] [US1] Crear `test_resolubilidad_apendice_b.py`, clase `CasosB`. Un ayudante busca el caso por código en `CASOS_APENDICE_B`, arma un `ServicioCripta` sobre su `HttpConfigurable` y ejecuta los pasos `("verificar",)` del guion con `verificar(servicio, cripta_id)`:
+- [X] T026 [P] [US1] Crear `test_resolubilidad_apendice_b.py`, clase `CasosB`. Un ayudante busca el caso por código en `CASOS_APENDICE_B`, arma un `ServicioCripta` sobre su `HttpConfigurable` y ejecuta los pasos `("verificar",)` del guion con `verificar(servicio, cripta_id)`:
   - `test_b_r1_fr338_ciclo`: `resoluble is False`, `causas == ["SALIDA_BLOQUEADA"]`, un solo bloqueo 1 → 2 de tipo `CICLO` con `llave == "itm_llave_salida"` y `salas_de_la_llave == [2]`, `salas_alcanzables == [1]`, `salas_no_alcanzables == 1`.
   - `test_b_r2_fr334_llave_de_errante_en_su_sala_inicial`: `orden == [PasoLlaveDTO("itm_llave_salida", 3, "e-errante")]`.
   - `test_b_r3_fr335_dos_ejecuciones_mismo_orden`: las dos verificaciones del guion dan `itm_llave_a` (sala 2), `itm_llave_b` (sala 3), `itm_llave_salida` (sala 5) y resultados iguales campo por campo.
   - `test_b_r4_fr338_llave_inexistente`: bloqueo de tipo `LLAVE_INEXISTENTE` con `llave == "itm_llave_perdida"` y `salas_de_la_llave == []`.
 
   (B-R1, B-R2, B-R3, B-R4; FR-334, FR-335, FR-338)
-- [ ] T027 [P] [US3] Crear `test_resolubilidad_determinismo.py`:
+- [X] T027 [P] [US3] Crear `test_resolubilidad_determinismo.py`:
   - Clase `Determinismo`: `test_fr335_h3_2_dos_oleadas` (escenario H3-2 literal: sala inicial 5; en la primera oleada `X` en la sala 4, `B` y `A` en la sala 2; la llave `C` en la sala 3, detrás de la puerta que se abre con `A`; el orden es `A`, `B`, `X`, `C`: `C` va última aunque su sala tenga menor id que la de `X`, porque es de la oleada siguiente); `test_fr335_orden_de_la_respuesta_no_importa` (las tres listas de `UbicacionLlavesDTO` invertidas dan el mismo resultado); `test_fr335_suelo_antes_que_enemigo_y_menor_instancia` (misma llave y sala en el suelo y en un enemigo: `enemigo is None`; en dos enemigos: la menor instancia); `test_fr335_dos_ejecuciones_iguales`.
   - Clase `Equivalencia`: `test_fr335_fr346_incremental_igual_a_repetida_en_criptas_al_azar`: para las semillas 0 a 19, `cripta_al_azar_con_llaves(semilla)` (T028) y `verificar_resolubilidad` igual a `verificar_repetida` campo por campo. (III)
 
   (FR-335, FR-346, II, III)
-- [ ] T028 [P] [US3] Crear `tests_labs/referencia_resolubilidad.py` (oráculo, como `tests_labs/referencia_recorrido.py`):
+- [X] T028 [P] [US3] Crear `tests_labs/referencia_resolubilidad.py` (oráculo, como `tests_labs/referencia_recorrido.py`):
   - `verificar_repetida(mapa, sala_inicial, sala_salida, llave_salida, llaves, cripta_id="") -> ResultadoVerificacion`: en cada oleada recorre **desde cero** desde la sala inicial con las llaves obtenidas hasta ahora; **para igual que el algoritmo**: al final de la oleada en que la sala de salida es alcanzable y la llave de salida es obtenible (incluye las llaves de esa oleada en el orden), o cuando una oleada no agrega ninguna llave nueva (no resoluble); las llaves nuevas de la oleada se ordenan con `ordenar_adaptativo` por `(sala, id)`; bloqueos, tipos y causas calculados de forma independiente con la definición de `spec.md` (FR-338) y `research.md` §6. Costo O(K · (S + E)): es la alternativa descartada que mide el bench.
   - `cripta_al_azar_con_llaves(semilla, salas=60) -> (mapa, sala_inicial, sala_salida, llave_salida, llaves)`: `esqueleto_dirigido_aleatorio` con puertas cerradas al azar, llaves asignadas a esas puertas y ubicadas en salas al azar (algunas en enemigos, algunas inexistentes), todo con `random.Random(semilla)`.
 
   Sin `dict`, `set`, `sorted()` ni `.sort()`. (III, VII)
-- [ ] T029 Ejecutar `python -m unittest test_resolubilidad_regla test_resolubilidad_apendice_b test_resolubilidad_determinismo` y registrar la evidencia roja: fallan por aserción porque el cuerpo provisional devuelve `resoluble is None`. Si alguna pasa a la primera (por ejemplo, una que compare dos resultados provisionales iguales), anotar qué aserción la haría fallar y reforzarla. **Terminado**: evidencia anotada. (IX)
+- [X] T029 Ejecutar `python -m unittest test_resolubilidad_regla test_resolubilidad_apendice_b test_resolubilidad_determinismo` y registrar la evidencia roja: fallan por aserción porque el cuerpo provisional devuelve `resoluble is None`. Si alguna pasa a la primera (por ejemplo, una que compare dos resultados provisionales iguales), anotar qué aserción la haría fallar y reforzarla. **Terminado**: evidencia anotada. (IX)
 
 ### Implementación
 
@@ -390,3 +390,18 @@ Ninguna pasó a la primera.
 ### T022 — 2026-11-08 — `python -m unittest -v test_indice_llaves` (antes de crear `Logica/IndiceLlaves.py`)
 
 Resultado: `Ran 8 tests`, `FAILED (failures=8)`, 0 errores. Las 8 pruebas, (a) a (h), fallan por la misma aserción: `self.fail("Logica.IndiceLlaves todavía no existe: No module named 'Logica.IndiceLlaves'")`. Ninguna pasó a la primera ni falló por error de importación.
+
+### T029 — 2026-11-08 — `python -m unittest -v test_resolubilidad_regla test_resolubilidad_apendice_b test_resolubilidad_determinismo` (cuerpo provisional de T016; antes de T030)
+
+Resultado: `Ran 26 tests`, `FAILED (failures=26)`, 0 errores. Todas fallan por aserción porque `verificar_resolubilidad` y `verificar` devuelven `resoluble is None`:
+
+| Aserción | Pruebas |
+|---|---|
+| `None is not True` | 14: las de `Regla` que esperan resoluble (H1-1, sala inicial = salida, no exige puerta, H1-3, H1-6 —falla en su primera parte—, una llave abre varias puertas, H2-2, H2-3, llave de salida una vez), `CasosB` B-R2 y B-R3, y `Determinismo` H3-2, orden de la respuesta, suelo antes que enemigo, dos ejecuciones |
+| `None is not False` | 10: H1-4, H1-5, salas alcanzables (FR-337), ciclo a través de otras puertas, H1-7, varios bloqueos, puerta sin llave nunca se cruza, B-R1, B-R4 y la primera parte de H1-6 |
+| `Lists differ: [] != [BloqueoDTO(1, 'este', 2, None, [], 'SIN_LLAVE')]` | 1: `Bloqueos.test_fr338_puerta_sin_llave_es_bloqueo_sin_llave` (no comprueba `resoluble` primero) |
+| `unexpectedly None : semilla 0: no se verificó` | 1: `Equivalencia.test_fr335_fr346_incremental_igual_a_repetida_en_criptas_al_azar` |
+
+Ninguna pasó a la primera. Refuerzos hechos al escribirlas, para que dos resultados provisionales iguales no basten: `test_fr335_dos_ejecuciones_iguales`, `test_fr335_orden_de_la_respuesta_no_importa` y `test_b_r3_fr335_dos_ejecuciones_mismo_orden` comprueban `resoluble is True` antes de comparar los dos resultados; `Equivalencia` comprueba `resoluble is not None` en cada semilla antes de compararlo con el oráculo.
+
+**Cordura de las expectativas**: con un guion temporal (fuera del repositorio) que pone `verificar_repetida` en lugar de las dos funciones provisionales, las 26 pruebas pasan. Lo que esperan es coherente con el oráculo, que deriva la regla de `spec.md`. En 20 criptas al azar, el oráculo produce 10 resolubles y 10 no resolubles, y aparecen los 4 tipos de bloqueo y las 4 causas.
