@@ -336,7 +336,7 @@
 
 **Propósito**: cubrir FR-325 (llaves al cargar una partida), el 429 con el presupuesto al límite (A2), la repetición de la medición de red de la Parte I (G1) y la suite sin red (G2). Se numeran al final para no renumerar; el orden real de ejecución está en «Dependencias».
 
-- [ ] T046 [US2] Crear `test_llaves_partida_cargada.py` (escribir primero; debe fallar). Usa `EstadoJuegoLogica`, el guardado y la restauración de partida existentes y `HttpConfigurable` en una carpeta temporal:
+- [X] T046 [US2] Crear `test_llaves_partida_cargada.py` (escribir primero; debe fallar). Usa `EstadoJuegoLogica`, el guardado y la restauración de partida existentes y `HttpConfigurable` en una carpeta temporal:
   - **(a)** Al cargar una partida guardada no hay ninguna solicitud (las llamadas de `HttpConfigurable` no cambian durante la carga) y `llaves is None`, `avisoLlaves is None`.
   - **(b)** H2-4: con las llaves guardadas con la misma versión, `obtenerLlaves()` las devuelve con 0 solicitudes.
   - **(c)** H2-5: sin llaves guardadas y con presupuesto, la primera `obtenerLlaves()` hace exactamente un `("llaves", …)` y la segunda, ninguno.
@@ -345,7 +345,7 @@
   - **(f)** `EstadoJuegoLogica()` recién creado tiene `llaves is None` y `avisoLlaves is None`.
 
   (FR-325, FR-301, FR-313)
-- [ ] T047 [US2] En `Logica/EstadoGuardadoLogica.py`, en la restauración de una partida, poner `logica.llaves = None` y `logica.avisoLlaves = None` **sin** llamar a `obtenerLlaves()` ni a ninguna operación de la fuente que pida llaves. Las llaves se entregan bajo demanda con `obtenerLlaves()` (T017). Ni las llaves ni el aviso entran al estado guardado: el formato de partida no cambia. Si la partida cargada muestra el aviso, que sea cuando aparece (T021), no al cargar. Debe hacer pasar T046. (FR-325, II)
+- [X] T047 [US2] En `Logica/EstadoGuardadoLogica.py`, en la restauración de una partida, poner `logica.llaves = None` y `logica.avisoLlaves = None` **sin** llamar a `obtenerLlaves()` ni a ninguna operación de la fuente que pida llaves. Las llaves se entregan bajo demanda con `obtenerLlaves()` (T017). Ni las llaves ni el aviso entran al estado guardado: el formato de partida no cambia. Si la partida cargada muestra el aviso, que sea cuando aparece (T021), no al cargar. Debe hacer pasar T046. (FR-325, II)
 - [X] T048 [US1] Agregar a `test_llaves_presupuesto.py`, con `requests.get` sustituido por `unittest.mock.patch` y `reintentar_en: 0`:
   - **(e)** Con 1 solicitud restante y una respuesta 429, `ServicioCripta.ubicacion_llaves` hace **exactamente 1** llamada a `requests.get`, no espera, lanza `LlavesNoDisponibles` (el mensaje nombra la cripta) y `solicitudes_realizadas` no supera el presupuesto.
   - **(f)** Con 3 restantes y respuestas 429, 429, 200, hace 3 llamadas y devuelve las llaves.
