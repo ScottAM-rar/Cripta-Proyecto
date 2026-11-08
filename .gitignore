@@ -17,3 +17,6 @@ datos_cripta/
 
 # Benchmarks
 *.csv
+
+# Logs generados por las pruebas y los benchmarks (criptas sintéticas)
+logs/sintetica_*.log
