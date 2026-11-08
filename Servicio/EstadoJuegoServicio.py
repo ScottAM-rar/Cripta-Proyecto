@@ -4,6 +4,7 @@ from adaptadores.AlmacenPartidaBinario import AlmacenPartidaBinario
 from adaptadores.AlmacenLogTexto import AlmacenLogTexto
 from adaptadores.AlmacenPuntajes import AlmacenPuntajes, MAX_NOMBRE
 from DTO.RegistroPuntajeDTO import RegistroPuntajeDTO
+from DTO.ResumenEstadoDTO import ResumenEstadoDTO
 from Logica.ordenamiento import ordenar_adaptativo
 from adaptadores.fabrica import crear_servicio
 from adaptadores.extension import ruta_archivo, EXTENSION_PARTIDA, CARPETA_PARTIDAS
@@ -90,6 +91,26 @@ class EstadoJuegoServicio:
         self._almacenLog = None
         self._esRepeticion = True       # una repetición no es una partida nueva: no entra a la tabla de puntajes
         return self._estadoJuegoLogica.repetirPartida(log, hasta=hasta)
+
+    def consultarHistoria(self, instante: int | None = None, accion: int | None = None) -> ResumenEstadoDTO:
+        """PROVISIONAL (capacidad 004, aún sin lógica): firma publicada para quien programa contra ella.
+
+        `historia <t>` se pide con `instante=t` y `historia #k` con `accion=k`; hay que dar exactamente uno de los dos.
+        Los valores que devuelve son de PRUEBA y no reflejan la partida. Cuando exista la capacidad 004 este cuerpo
+        se reemplaza por la reconstrucción real, sin cambiar la firma ni ResumenEstadoDTO.
+        Lanza ValueError si faltan o sobran argumentos, o si alguno es negativo o no es entero."""
+        if (instante is None) == (accion is None):
+            raise ValueError("Indica exactamente uno: instante (historia <t>) o accion (historia #k)")
+        valor = instante if instante is not None else accion
+        if isinstance(valor, bool) or not isinstance(valor, int) or valor < 0:
+            raise ValueError("El instante o el número de acción debe ser un entero mayor o igual que 0")
+        return ResumenEstadoDTO(
+            instante=valor if instante is not None else 0,
+            acciones_jugador=valor if accion is not None else 0,
+            id_sala_jugador=1, vida_jugador=10, ataque_jugador=1, defensa_jugador=1, velocidad_jugador=100,
+            inventario_llaves=[], inventario_objetos=["Antorcha"], efectos_activos=[],
+            enemigos_sala=[("e-1", "Esbirro", 5)],
+        )
 
     def guardarPartida(self, nombre_archivo: str) -> None:
         """Guarda la partida en un archivo binario. El modelo solo entrega su estado; el archivo lo escribe el adaptador."""
