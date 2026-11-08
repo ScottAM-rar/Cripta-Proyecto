@@ -261,7 +261,7 @@ class ServicioCripta:
                 if letra in salidas_api:
                     datos = salidas_api[letra]
                     aristas.append(AristaMapaDTO(_nombre_direccion(letra), datos["sala"], datos["costo"],
-                                                 datos.get("cerrada", False)))
+                                                 datos.get("cerrada", False), llave=datos.get("llave")))
             salas[sala["id"]] = SalaMapaDTO(sala["id"], aristas)
         return MapaDTO(salas, list(self.advertencias))
 
