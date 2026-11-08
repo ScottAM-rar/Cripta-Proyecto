@@ -318,7 +318,7 @@
 
   (VI)
 - [X] T040 [P] Agregar la sección 009 a `DECISIONES.md` con enlaces a `spec.md` y `plan.md`, e indicar si cada decisión (guardado A, validación ordenando, `solo_guardadas`, fuente solo local) coincide con el plan y qué medición lo respalda. (X)
-- [ ] T041 [P] Registrar en `PROMPTS_LLM.md` los comandos `/speckit-specify`, `/speckit-clarify`, `/speckit-plan`, `/speckit-tasks` y `/speckit-implement` de esta capacidad con texto propio, con herramienta y modelo. (XI)
+- [X] T041 [P] Registrar en `PROMPTS_LLM.md` los comandos `/speckit-specify`, `/speckit-clarify`, `/speckit-plan`, `/speckit-tasks` y `/speckit-implement` de esta capacidad con texto propio, con herramienta y modelo. (XI)
 - [X] T042 [P] Actualizar `README.md` con una línea sobre la capacidad 009, `python main.py --bench llaves` y la consulta de llaves en el conteo de solicitudes. (VII)
 - [X] T043 Comprobar con búsqueda que `adaptadores/llaves.py`, `adaptadores/fuente_solo_local.py`, `DTO/LlavesDTO.py`, `bench/llaves.py` y los cambios en los clientes, `AlmacenDisco`, `servicioCripta.py` y `EstadoJuegoLogica.py`:
   - No importan `heapq`, `bisect`, `collections` ni `networkx`.
