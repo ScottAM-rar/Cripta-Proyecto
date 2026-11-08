@@ -281,13 +281,13 @@
 
 **Prueba independiente**: `python main.py --bench llaves` termina con código 0 y `mediciones.md` contiene las tablas y la recomendación.
 
-- [ ] T033 [US6] Crear `bench/llaves.py` con las alternativas descartadas, que existen **solo** aquí:
+- [X] T033 [US6] Crear `bench/llaves.py` con las alternativas descartadas, que existen **solo** aquí:
   - **(a)** `ServicioPrecargaPorCosto(ServicioCripta)`, que sobrescribe solo el orden con que `precargar_vecinas` llena el lote: el mismo límite de 10, las mismas indispensables y luego las salas faltantes por costo de ruta creciente desde la sala actual (`CampoDeCostos` o `MonticuloMinimo` sobre `esqueleto()`), con desempate por menor id.
   - **(b)** Guardado B: `llaves_<id>.bin` con su propia clave `version`, sobre `ArchivoIndexado`.
   - **(c)** Detección de repetidos comparando todas las parejas, O(k²).
 
   Sin `deque` ni `collections`. (FR-323, VII)
-- [ ] T034 [US6] En `bench/llaves.py` implementar las secciones A a D de `contracts/bench-llaves.md`, con `bench/medicion.py`, la semilla de `bench/datos.py` y carpetas temporales:
+- [X] T034 [US6] En `bench/llaves.py` implementar las secciones A a D de `contracts/bench-llaves.md`, con `bench/medicion.py`, la semilla de `bench/datos.py` y carpetas temporales:
   - **A**: lados 10, 20 y 40; 1, 4 y 16 cazadores de rango 600 a 4 o más salidas del jugador; guion fijo de 60 movimientos por salidas abiertas; reglas `saltos` y `costo` sobre las mismas criptas, semillas y guion; promedio de 5 semillas. Las solicitudes «disparadas por un enemigo» se cuentan envolviendo `EstadoJuegoLogica.ingresarEnSala` dentro del bench, sin modificar el juego.
   - **B**: 50, 500 y 5 000 salas con contenido; guardar y leer con la opción A frente a la B.
   - **C**: k = 10, 100 y 1 000; ordenar frente a todas las parejas, con verificación previa de que dan el mismo resultado.
