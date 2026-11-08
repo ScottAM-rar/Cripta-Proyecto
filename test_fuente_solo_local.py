@@ -194,6 +194,20 @@ class ExisteCripta(SoloLocal):
             fuente.existe_cripta(CRIPTA)
 
 
+class CriptaDesconocida(SoloLocal):
+    """T056: una cripta con archivo y versión en disco que no está en la lista de criptas guardada. El servicio interior
+    lanza ValueError («La cripta 'X' no existe»); la fuente solo local debe entregarlo como DatoLocalFaltante."""
+
+    def test_fr315_sc004_t056_cripta_que_no_esta_en_la_lista_lanza_dato_local_faltante(self):
+        guardar_cripta_completa(self.carpeta)
+        AlmacenDisco(self.carpeta).validar_cripta("cripta-fantasma", "c1")     # archivo con versión, fuera de la lista
+        fuente = self.solo_local()
+        self.assertIs(fuente.existe_cripta("cripta-fantasma"), False)
+        with self.assertRaises(DatoLocalFaltante) as error:
+            fuente.esqueleto("cripta-fantasma")
+        self.assertIn("cripta-fantasma", str(error.exception))
+
+
 class VersionCatalogo(SoloLocal):
 
     def test_fr317_t053_b_version_catalogo_igual_o_none_devuelve_la_guardada(self):

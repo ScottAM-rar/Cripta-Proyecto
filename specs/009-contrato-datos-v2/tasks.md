@@ -309,26 +309,26 @@
 
 ## Fase 9: Cierre y transversales
 
-- [ ] T038 [P] Completar la matriz de trazabilidad de `specs/009-contrato-datos-v2/quickstart.md` con los nombres reales de las pruebas (`clase.método`). Comprobar que ningún FR-301 a FR-325 queda sin prueba o medición y que cada escenario H1-1 a H6-2 tiene al menos una. (IX)
-- [ ] T039 [P] Actualizar `DOCUMENTACION_API.md`:
+- [X] T038 [P] Completar la matriz de trazabilidad de `specs/009-contrato-datos-v2/quickstart.md` con los nombres reales de las pruebas (`clase.método`). Comprobar que ningún FR-301 a FR-325 queda sin prueba o medición y que cada escenario H1-1 a H6-2 tiene al menos una. (IX)
+- [X] T039 [P] Actualizar `DOCUMENTACION_API.md`:
   - `obtener_llaves` en la tabla de métodos del cliente (§3) y `ubicacion_llaves`/`esqueleto` en la del servicio.
   - La clave `llaves` en el esquema del archivo de cripta (§7).
   - En la tabla de solicitudes (§8), la primera vez pasa de 6 a 7.
   - La sección de la fuente solo local.
 
   (VI)
-- [ ] T040 [P] Agregar la sección 009 a `DECISIONES.md` con enlaces a `spec.md` y `plan.md`, e indicar si cada decisión (guardado A, validación ordenando, `solo_guardadas`, fuente solo local) coincide con el plan y qué medición lo respalda. (X)
-- [ ] T041 [P] Registrar en `PROMPTS_LLM.md` los comandos `/speckit-specify`, `/speckit-clarify`, `/speckit-plan`, `/speckit-tasks` y `/speckit-implement` de esta capacidad con texto propio, con herramienta y modelo. (XI)
-- [ ] T042 [P] Actualizar `README.md` con una línea sobre la capacidad 009, `python main.py --bench llaves` y la consulta de llaves en el conteo de solicitudes. (VII)
-- [ ] T043 Comprobar con búsqueda que `adaptadores/llaves.py`, `adaptadores/fuente_solo_local.py`, `DTO/LlavesDTO.py`, `bench/llaves.py` y los cambios en los clientes, `AlmacenDisco`, `servicioCripta.py` y `EstadoJuegoLogica.py`:
+- [X] T040 [P] Agregar la sección 009 a `DECISIONES.md` con enlaces a `spec.md` y `plan.md`, e indicar si cada decisión (guardado A, validación ordenando, `solo_guardadas`, fuente solo local) coincide con el plan y qué medición lo respalda. (X)
+- [X] T041 [P] Registrar en `PROMPTS_LLM.md` los comandos `/speckit-specify`, `/speckit-clarify`, `/speckit-plan`, `/speckit-tasks` y `/speckit-implement` de esta capacidad con texto propio, con herramienta y modelo. (XI)
+- [X] T042 [P] Actualizar `README.md` con una línea sobre la capacidad 009, `python main.py --bench llaves` y la consulta de llaves en el conteo de solicitudes. (VII)
+- [X] T043 Comprobar con búsqueda que `adaptadores/llaves.py`, `adaptadores/fuente_solo_local.py`, `DTO/LlavesDTO.py`, `bench/llaves.py` y los cambios en los clientes, `AlmacenDisco`, `servicioCripta.py` y `EstadoJuegoLogica.py`:
   - No importan `heapq`, `bisect`, `collections` ni `networkx`.
   - No usan `dict`/`set` como índice ni `sorted()`/`list.sort()`.
   - No contienen ids de llaves, salas, enemigos ni presupuestos de una cripta concreta.
   - No agregan usos de `deque`.
 
   Comprobar que `Logica/` no importa nada de `adaptadores/`. (I, IV, V)
-- [ ] T044 Ejecutar todas las pruebas (`python -m unittest discover -p "test_*.py"`), los laboratorios de la línea base (T002) con `python -m tests_labs.<nombre>` y `python main.py --bench`. Comparar con la línea base y registrar cualquier fallo sin ocultarlo. (IX)
-- [ ] T045 Comparar `spec.md` con el programa entregado y corregir cualquier desajuste primero en la especificación, en un commit aparte del código. (X)
+- [X] T044 Ejecutar todas las pruebas (`python -m unittest discover -p "test_*.py"`), los laboratorios de la línea base (T002) con `python -m tests_labs.<nombre>` y `python main.py --bench`. Comparar con la línea base y registrar cualquier fallo sin ocultarlo. (IX)
+- [X] T045 Comparar `spec.md` con el programa entregado y corregir cualquier desajuste primero en la especificación, en un commit aparte del código. (X)
 
 ---
 
@@ -353,8 +353,8 @@
 
   (SC-005, FR-309, FR-313)
 - [X] T049 **Antes de cualquier cambio de código** (junto con T002), ejecutar `python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-antes.csv` y guardar en las Notas de `specs/009-contrato-datos-v2/checklists/requirements.md` la salida (solicitudes por estrategia y aciertos de caché). Es la línea base de la medición de red de la Parte I. (VII)
-- [ ] T050 Al terminar la capacidad (antes de T044), ejecutar `python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-despues.csv` y agregar a la sección 009 de `DECISIONES.md` una tabla antes/después por fila del bloque `cache`, con la diferencia y su causa (se espera +1 solicitud por cripta y versión por la consulta de llaves). Si una decisión de la Parte I deja de servir con la carga nueva, documentarlo y cambiarla en una tarea aparte. (VII, X)
-- [ ] T051 Ejecutar las 9 pruebas nuevas (`test_llaves_validacion`, `test_llaves_dto`, `test_llaves_clientes`, `test_llaves_presupuesto`, `test_llaves_version`, `test_llaves_fallos`, `test_llaves_partida_cargada`, `test_fuente_solo_local`, `test_api_falsa_v2`) con `requests.get` bloqueado: una ayuda en `tests_labs/sin_red.py` que lo sustituye por una función que lanza `AssertionError("intento de red")` y un `python -m tests_labs.sin_red` que la activa y corre esas pruebas. Ejecutar dos veces y comparar que los resultados son idénticos. Las pruebas que usan `mock.patch` de `requests.get` siguen funcionando porque lo sustituyen dentro de su propio alcance. (SC-006, FR-318)
+- [X] T050 Al terminar la capacidad (antes de T044), ejecutar `python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-despues.csv` y agregar a la sección 009 de `DECISIONES.md` una tabla antes/después por fila del bloque `cache`, con la diferencia y su causa (se espera +1 solicitud por cripta y versión por la consulta de llaves). Si una decisión de la Parte I deja de servir con la carga nueva, documentarlo y cambiarla en una tarea aparte. (VII, X)
+- [X] T051 Ejecutar las 9 pruebas nuevas (`test_llaves_validacion`, `test_llaves_dto`, `test_llaves_clientes`, `test_llaves_presupuesto`, `test_llaves_version`, `test_llaves_fallos`, `test_llaves_partida_cargada`, `test_fuente_solo_local`, `test_api_falsa_v2`) con `requests.get` bloqueado: una ayuda en `tests_labs/sin_red.py` que lo sustituye por una función que lanza `AssertionError("intento de red")` y un `python -m tests_labs.sin_red` que la activa y corre esas pruebas. Ejecutar dos veces y comparar que los resultados son idénticos. Las pruebas que usan `mock.patch` de `requests.get` siguen funcionando porque lo sustituyen dentro de su propio alcance. (SC-006, FR-318)
 - [X] T052 [US1] Crear `test_llaves_dto.py` (sin red, solo `DTO/LlavesDTO.py`) con una prueba por comportamiento, con nombre que cite FR-302:
   - **(a)** Listas de largo distinto lanzan `ValueError` y el mensaje nombra la cripta.
   - **(b)** Listas vacías son válidas y `cantidad()` es 0.
@@ -372,6 +372,11 @@
   - **(f)** En todas: el `HttpFalso` espía queda con `llamadas == []` y los bytes de la carpeta no cambian (como T023(d)).
 
   Después, en `adaptadores/fuente_solo_local.py`: implementar las operaciones nuevas y agregar `version_catalogo_vigente=None` a `FuenteSoloLocal` y a `crear_fuente_solo_local` (`adaptadores/fabrica.py`), con un caso nuevo en `tests_labs/prueba_fabrica.py`. Sigue `data-model.md` y `contracts/interfaz-clientes.md`. (FR-314, FR-315, FR-316, FR-317, SC-003)
+- [X] T054 [US1] Corregir la regresión que encontró T044: `python main.py --bench guardado` y `--bench ciclo` (y por tanto `python main.py --bench` completo) terminan con `AttributeError: 'ClienteDeBatalla' object has no attribute 'obtener_llaves'`, porque `iniciarJuego` pide las llaves desde T017 y el cliente sintético de `bench/juego.py` no las tiene. Agregar a `ClienteDeBatalla` un `obtener_llaves(cripta_id, solo_guardadas=False, limite_solicitudes=None)` que devuelva `[]` (cripta sin llaves), sin tocar los demás bloques ni sus conteos. Comprobar que `--bench guardado`, `--bench ciclo` y `--bench` completo terminan con código 0 y que las 9 filas de conteo del bloque `cache` siguen idénticas. (FR-318, SC-004)
+- [X] T055 [US2] Aviso uniforme (FR-313). Primero la prueba en `test_llaves_fallos.py` (debe fallar): sin presupuesto y sin llaves guardadas, el aviso nombra la cripta, dice el motivo y termina con «La verificación de resolubilidad no está disponible.», igual que los otros fallos. Después, en `ServicioCripta.ubicacion_llaves`, cuando el cliente lanza `LlavesNoDisponibles`, relanzarla con el mismo motivo (sin punto final repetido) y esa frase, sin duplicar el nombre de la cripta. Ajustar solo las pruebas que comparen el texto exacto. (FR-313, FR-309)
+- [X] T056 [US4] Primero la prueba en `test_fuente_solo_local.py` (debe fallar): pedir por la fuente solo local una operación de una cripta que no existe lanza `DatoLocalFaltante` que nombra la cripta, no `ValueError`. Después, en `FuenteSoloLocal._leer`, convertir también ese `ValueError`. Comprobar que `existe_cripta` sigue devolviendo `False` para una cripta ausente de la lista. (FR-315, SC-004)
+- [X] T057 [US1] Dos pruebas de casos límite que hoy no tienen prueba específica (deben ejercitar lo ya hecho; si pasan a la primera, explicarlo, sin inventar un fallo): (a) en `test_llaves_clientes.py` o `test_llaves_validacion.py`, un enemigo que suelta más de una llave produce una entrada por llave con el mismo enemigo y la misma sala; (b) en `test_llaves_version.py` o `test_llaves_presupuesto.py`, una cripta sin ninguna llave hace 1 consulta la primera vez y 0 en la segunda partida con la misma versión. (casos límite de `spec.md`, FR-301, FR-305)
+- [X] T058 [US1] Que la reproducción no pida las llaves (pedido de la capacidad 007; ver `plan.md` §4 y el caso límite de `spec.md`). Primero las pruebas (deben fallar), en `test_llaves_partida_cargada.py` o `test_llaves_presupuesto.py`: (a) `repetirPartida` de un log en carpeta vacía hace **0** consultas de llaves y `avisoLlaves` queda en `None`; (b) después de reproducir, `obtenerLlaves()` pide las llaves una vez (bajo demanda) y una partida nueva en la misma cripta sigue haciendo 1 consulta la primera vez; (c) una partida nueva (`iniciarJuego` sin argumentos extra) sigue pidiendo las llaves como antes. Después: `EstadoJuegoLogica.iniciarJuego(cripta, semilla=None, pedir_llaves=True)` solo llama a `obtenerLlaves()` si `pedir_llaves`, y `repetirPartida` pasa `False`. Comprobar que el log y el resultado de la reproducción no cambian y que la suite y `tests_labs.sin_red` siguen en verde. (FR-301, FR-325, II)
 
 ---
 

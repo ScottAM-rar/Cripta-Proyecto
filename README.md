@@ -16,6 +16,7 @@ Proyecto 1 de Estructura de datos
    Mediciones: python main.py --bench
    Mediciones de terreno y cazador: python main.py --bench terreno
    Mediciones del recorrido por niveles: python main.py --bench recorrido
+   Capacidad 009 (ubicación de llaves): python main.py --bench llaves; la consulta de llaves cuenta en el conteo de solicitudes (1 la primera partida, 0 con las llaves ya guardadas con la misma versión y en --offline)
    Mediciones de reproduccion acotada: python main.py --bench replay
    Pruebas: python -m unittest discover -p "test_*.py"
    Pruebas de replay acotado: python -m unittest test_replay_hasta test_determinismo_replay test_rendimiento_replay

@@ -67,6 +67,23 @@ class MismaVersion(ConCarpeta):
         self.assertEqual(campos(segunda), campos(primera))
 
 
+class CriptaSinLlaves(ConCarpeta):
+    """T057 (b), caso límite de spec.md: la cripta no tiene ninguna llave."""
+
+    def test_fr301_fr305_t057_b_cripta_sin_llaves_consulta_una_vez_y_la_segunda_partida_ninguna(self):
+        carpeta = self.carpeta_nueva()
+        http_1, almacen_1, servicio_1 = self.ejecucion(carpeta, "c1", [])
+        primera = servicio_1.ubicacion_llaves(CRIPTA)
+        self.assertEqual(http_1.veces("llaves"), 1)
+        self.assertEqual(primera.cantidad(), 0)
+        self.assertEqual(almacen_1.leer_llaves(CRIPTA), [])                  # lista vacía guardada, no None
+
+        http_2, _, servicio_2 = self.ejecucion(carpeta, "c1", [])
+        segunda = servicio_2.ubicacion_llaves(CRIPTA)
+        self.assertEqual(http_2.veces("llaves"), 0)
+        self.assertEqual(segunda.cantidad(), 0)
+
+
 class OtraVersion(ConCarpeta):
 
     def test_fr307_b_h2_2_con_otra_version_consulta_una_vez_y_guarda_la_lista_nueva(self):

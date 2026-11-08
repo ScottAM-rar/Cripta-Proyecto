@@ -76,3 +76,116 @@ Por capacidad: enlace a su especificación y a su plan, si la decisión final co
 | Poda por retroceso mediante truncado con `pop()` en lista contigua | Sí | Principio I: sin `dict`, `set`, `heapq`, `bisect` ni `collections`. Complejidad $O(m)$ donde $m \le 5$ |
 | `repetirPartida` (`--replay`, `--hasta`) no toma puntos de control | Sí | Invarianza y aislamiento (Principio IV); suites `test_replay_hasta`, `test_determinismo_replay` y `test_rendimiento_replay` se preservan sin sobrecosto |
 | Formato de guardado v7 en `AlmacenPartidaBinario.py` (T021 a T024) | Sí | Confirmado e implementado (FR-424, FR-425): `VERSION_FORMATO = 7`, `VERSION_ESTADO = 4`; serialización de `k_checkpoint`, `acciones_linea_tiempo` y bloque de `puntos_control`; rechazo explícito de v6 y Parte I con `ErrorPartida` sin carga silenciosa (Principio VI). Reevaluación de `--bench guardado`: antes (v6/v3) vs después (v7/v4): 10 salas 8,237 B → 12,467 B (guardar 2.36 ms → 2.91 ms, cargar 2.38 ms → 3.63 ms); 100 salas 43,595 B → 47,828 B (guardar 7.36 ms → 7.84 ms); 1 000 salas 408 KB → 412 KB (guardar 56.8 ms → 57.7 ms, acceso directo a sala 318 µs → 324 µs). `--bench puntos_control` reevaluado: peor ciclo con K=1 2.68 ms (< 20 ms), K=10 reconstrucción 12.47 ms (< 50 ms). |
+
+## 009 · Contrato de datos v2 y ubicación de llaves
+
+- Especificación: [`specs/009-contrato-datos-v2/spec.md`](specs/009-contrato-datos-v2/spec.md) (FR-301 a FR-325)
+- Plan: [`specs/009-contrato-datos-v2/plan.md`](specs/009-contrato-datos-v2/plan.md), con [`research.md`](specs/009-contrato-datos-v2/research.md)
+- Mediciones: [`specs/009-contrato-datos-v2/mediciones.md`](specs/009-contrato-datos-v2/mediciones.md) (`python main.py --bench llaves`)
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| Guardado A: las llaves van en la clave `llaves` dentro de `cripta_<id>.bin`; la validación de versión existente las invalida junto con lo demás | Sí (`research.md` §4, decisión A) | `--bench llaves` B: guardar con A y 5 000 salas tarda **27.14 ms**, por debajo del límite de 50 ms de `research.md` §4. La opción B (archivo aparte) fue más rápida: 3.43 ms al guardar y 331.4 µs al leer, frente a 3.73 ms de A. La regla solo cambia de decisión si A supera los 50 ms, y no los supera; el guardado ocurre una vez por cripta y versión (`mediciones.md`, «Revisión de las decisiones») |
+| Entradas repetidas: ordenar las posiciones con `ordenar_adaptativo` y comparar vecinas, frente a comparar todas las parejas | Sí (`research.md` §5) | `--bench llaves` C: con k = 1 000, 3.91 ms (validación elegida completa) frente a 78.55 ms (todas las parejas). Las parejas solo ganan con k = 10 (9.6 µs frente a 13.1 µs), y `research.md` §5 ya admite que con k chica cualquiera sirve |
+| `solo_guardadas`: sin presupuesto no se consulta; el persistente devuelve lo guardado o lanza `LlavesNoDisponibles`, y el HTTP no hace la solicitud. `limite_solicitudes` hace que un 429 no se reintente si ya no queda presupuesto | Sí. La firma final es `obtener_llaves(cripta_id, solo_guardadas=False, limite_solicitudes=None)`: `limite_solicitudes` se agregó tras `/speckit-analyze` y ya estaba en el contrato y en T009 antes de implementar (el resumen de `plan.md` todavía muestra la firma con solo dos parámetros) | `test_llaves_presupuesto`: sin presupuesto y sin llaves guardadas, 0 consultas y aviso con la cripta; con llaves guardadas, 0 solicitudes; con 1 restante, un 429 no se reintenta (SC-005) |
+| Una consulta por cripta y por sesión, contada en el presupuesto (`ServicioCripta.ubicacion_llaves` la memoriza) | Sí | `--bench llaves` D: **1 / 0 / 0** (primera partida, segunda con la misma versión, `--offline`). `test_llaves_presupuesto`: la primera partida pasa de 6 a 7 solicitudes («Solicitudes a la API: 7 de 9») |
+| Aviso FR-313: si no se obtienen las llaves, `llaves` queda en `None`, `avisoLlaves` guarda el mensaje con la cripta y la partida sigue; el controlador lo muestra como `AVISO:` al iniciar una partida nueva. Desde T055 el aviso es uniforme: nombra la cripta una sola vez, da el motivo y termina con «La verificación de resolubilidad no está disponible.», incluso sin presupuesto (cuando el `LlavesNoDisponibles` viene del cliente, `ServicioCripta.ubicacion_llaves` lo vuelve a lanzar con esa forma y no repite la cripta si el motivo ya la nombra) | Sí | `test_llaves_fallos` (partes c, e y g, y la clase `AvisoUniforme` de T055) y comprobación manual con `ControladorJuego` en `--offline` (T022): el aviso aparece y la partida responde a las acciones |
+| Restaurar una partida no pide llaves: `llaves` y `avisoLlaves` vuelven a `None` y se piden bajo demanda con `obtenerLlaves()` (FR-325) | Sí | `test_llaves_partida_cargada`: cargar no hace solicitudes; con llaves guardadas, 0; sin ellas, 1 la primera vez y 0 la segunda; restaurar otra cripta no arrastra las llaves anteriores |
+| La reproducción (`--replay`, `--hasta`) no pide las llaves: `repetirPartida` llama a `iniciarJuego(cripta, semilla, pedir_llaves=False)`, así que no hay consulta ni aviso; si después hacen falta, se piden bajo demanda con `obtenerLlaves()`, como en una partida cargada (FR-325). `--hasta` todavía no existe en `main.py`: es de la capacidad 007 y la regla está en el caso límite de `spec.md` | **Cambió respecto del plan**: `plan.md` §4 decía que `--replay` pedía las llaves al pasar por `iniciarJuego` y que no gastaba nada si estaban guardadas (T058) | Una reproducción no es una partida nueva y las llaves solo sirven para el aviso, así que no gasta presupuesto. `test_llaves_partida_cargada`, clase `Reproduccion` (T058): reproducir en carpeta vacía hace 0 consultas de llaves, `avisoLlaves` queda en `None` y el log no cambia; después, `obtenerLlaves()` pide una vez; una partida nueva sigue pidiendo las llaves al iniciar |
+| `FuenteSoloLocal`: envuelve `ServicioCripta` sobre `ClienteOffline`, compara la versión vigente y nunca escribe ni pide nada | **Cambió respecto del plan**: se amplió en T053 con lo que pidió la capacidad 004 (`existe_cripta`, `version_catalogo` con `version_catalogo_vigente`, `objetos_que_suelta` con la última cripta consultada, `obtener_sala_salida`, `obtener_mapa`, `fijar_fichas_en_uso`). Además, `construir_sala` comprueba en el almacén que el contenido de la sala esté antes de delegar, porque el modo sin red no ve las criptas incompletas (ver «Hallazgos y límites») | `test_fuente_solo_local`: 0 solicitudes (espía HTTP sin llamadas) y los archivos de la carpeta iguales byte a byte en todas las pruebas, incluidas las de dato faltante y versión distinta (SC-003) |
+| Precarga por saltos frente a precarga por costo (la regla por costo solo existe en el bench, `ServicioPrecargaPorCosto`) | Sí: se mantiene la precarga por saltos y no se modifica `precargar_vecinas` ni `salas_vecinas` (FR-324) | `--bench llaves` A: **inconclusiva**. Las dos reglas dieron los mismos totales de solicitudes en las 9 filas y en la variante `costo_max=300`, y casi no hubo solicitudes disparadas por un enemigo (0.2 de promedio en 2 de 9 filas). Recomendación de `mediciones.md`: mantener la precarga por saltos sin abrir una especificación aparte; es un límite del experimento (el guion no persigue a los cazadores), no una prueba de que el costo nunca sirva |
+
+### Bloque `cache`: antes y después (T050)
+
+Antes: `specs/009-contrato-datos-v2/bench-cache-antes.csv` (T049, código anterior a esta capacidad). Después:
+`specs/009-contrato-datos-v2/bench-cache-despues.csv`, generado otra vez para T050 con
+`python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-despues.csv` (código de salida 0). Las
+9 filas de cuenta (secciones 1 y 6) son idénticas antes, en la medición de T037 (`mediciones.md`) y en esta. Los
+tiempos dependen de la máquina y de su carga, así que solo sirven como referencia.
+
+| # | Sección | Medición | Antes (T049) | Después (T050) | Diferencia | Causa |
+|---|---|---|---|---|---|---|
+| 1 | 1 | sala por sala (sin precarga) | 63 solicitudes | 63 solicitudes | +0 | cuenta: igual; el bloque no pide llaves |
+| 2 | 1 | actual + vecinas en cada paso (prof. 2) | 61 solicitudes | 61 solicitudes | +0 | cuenta: igual; el bloque no pide llaves |
+| 3 | 1 | perezosa, prof. 2 | 33 solicitudes | 33 solicitudes | +0 | cuenta: igual; el bloque no pide llaves |
+| 4 | 1 | perezosa, por defecto (lote de 10) | 9 solicitudes | 9 solicitudes | +0 | cuenta: igual; el bloque no pide llaves |
+| 5 | 2 | deque lineal, 25 fichas, acierto | 1.12 µs | 1.12 µs | +0 (+0 %) | tiempo: depende de la máquina |
+| 6 | 2 | deque lineal, 25 fichas, fallo | 0.6 µs | 0.77 µs | +0.17 (+28 %) | tiempo: depende de la máquina |
+| 7 | 2 | tabla hash propia, 25 fichas, acierto (descartada) | 0.19 µs | 0.36 µs | +0.17 (+89 %) | tiempo: depende de la máquina |
+| 8 | 2 | deque lineal, 100 fichas, acierto | 3.42 µs | 3.5 µs | +0.08 (+2 %) | tiempo: depende de la máquina |
+| 9 | 2 | deque lineal, 100 fichas, fallo | 1.92 µs | 2.56 µs | +0.64 (+33 %) | tiempo: depende de la máquina |
+| 10 | 2 | tabla hash propia, 100 fichas, acierto (descartada) | 0.21 µs | 0.24 µs | +0.03 (+14 %) | tiempo: depende de la máquina |
+| 11 | 2 | deque lineal, 1000 fichas, acierto | 30.95 µs | 34.62 µs | +3.67 (+12 %) | tiempo: depende de la máquina |
+| 12 | 2 | deque lineal, 1000 fichas, fallo | 18.31 µs | 21.97 µs | +3.66 (+20 %) | tiempo: depende de la máquina |
+| 13 | 2 | tabla hash propia, 1000 fichas, acierto (descartada) | 0.31 µs | 0.28 µs | -0.03 (-10 %) | tiempo: depende de la máquina |
+| 14 | 2 | deque lineal, 5000 fichas, acierto | 176.7 µs | 181.1 µs | +4.4 (+2 %) | tiempo: depende de la máquina |
+| 15 | 2 | deque lineal, 5000 fichas, fallo | 106.76 µs | 109.46 µs | +2.7 (+3 %) | tiempo: depende de la máquina |
+| 16 | 2 | tabla hash propia, 5000 fichas, acierto (descartada) | 0.35 µs | 0.51 µs | +0.16 (+46 %) | tiempo: depende de la máquina |
+| 17 | 3 | catálogo con 25 fichas | 0.109 ms por lectura | 0.095 ms por lectura | -0.014 (-13 %) | tiempo: depende de la máquina |
+| 18 | 3 | catálogo con 200 fichas | 0.202 ms por lectura | 0.213 ms por lectura | +0.011 (+5 %) | tiempo: depende de la máquina |
+| 19 | 3 | catálogo con 1000 fichas | 0.511 ms por lectura | 0.495 ms por lectura | -0.016 (-3 %) | tiempo: depende de la máquina |
+| 20 | 4 | catálogo con 25 fichas | 3.547 ms | 3.662 ms | +0.115 (+3 %) | tiempo: depende de la máquina |
+| 21 | 4 | catálogo con 200 fichas | 11.968 ms | 10.879 ms | -1.09 (-9 %) | tiempo: depende de la máquina |
+| 22 | 4 | catálogo con 1000 fichas | 12.707 ms | 12.801 ms | +0.094 (+1 %) | tiempo: depende de la máquina |
+| 23 | 5 | salas_vecinas, 1 paso | 38.4 µs | 47.0 µs | +8.6 (+22 %) | tiempo: depende de la máquina |
+| 24 | 5 | salas_vecinas, 2 pasos | 98.1 µs | 96.1 µs | -2 (-2 %) | tiempo: depende de la máquina |
+| 25 | 5 | precargar_vecinas cuando no hace falta nada | 59.4 µs | 64.0 µs | +4.6 (+8 %) | tiempo: depende de la máquina |
+| 26 | 6 | capacidad    5 | 82 aciertos / 938 fallos (8.0 %), 19 solicitudes de red | 82 aciertos / 938 fallos (8.0 %), 19 solicitudes de red | 0 | cuenta: igual; el bloque no pide llaves |
+| 27 | 6 | capacidad   10 | 316 aciertos / 704 fallos (31.0 %), 19 solicitudes de red | 316 aciertos / 704 fallos (31.0 %), 19 solicitudes de red | 0 | cuenta: igual; el bloque no pide llaves |
+| 28 | 6 | capacidad   25 | 487 aciertos / 533 fallos (47.7 %), 19 solicitudes de red | 487 aciertos / 533 fallos (47.7 %), 19 solicitudes de red | 0 | cuenta: igual; el bloque no pide llaves |
+| 29 | 6 | capacidad  100 | 950 aciertos / 70 fallos (93.1 %), 19 solicitudes de red | 950 aciertos / 70 fallos (93.1 %), 19 solicitudes de red | 0 | cuenta: igual; el bloque no pide llaves |
+| 30 | 6 | capacidad 1000 | 950 aciertos / 70 fallos (93.1 %), 19 solicitudes de red | 950 aciertos / 70 fallos (93.1 %), 19 solicitudes de red | 0 | cuenta: igual; el bloque no pide llaves |
+
+El +1 por cripta y versión de la consulta de llaves **no aparece** en este bloque: `adaptadores/bench_red_mejorado.py`
+usa un `ClienteSintetico` propio, sin `obtener_llaves`, y llama directamente a `ServicioCripta` sin pasar por
+`EstadoJuegoLogica.iniciarJuego`, que es lo único que pide las llaves. El +1 se mide en la sección D de
+`--bench llaves` (1 / 0 / 0). Ninguna decisión de la Parte I deja de servir: las estrategias de precarga mantienen
+63 / 61 / 33 / 9 solicitudes y la caché los mismos aciertos y fallos.
+
+### Hallazgos y límites
+
+1. **Una cripta incompleta en disco no se puede leer con `ClienteOffline`**: `obtener_criptas` solo devuelve las
+   criptas completas y, si no hay ninguna, lanza `ErrorOffline("Ninguna cripta está guardada por completo. Juega una vez
+   con conexión.")`. Por eso, en `FuenteSoloLocal`, solo `construir_sala` nombra la sala que falta («Falta en disco
+   sala n de la cripta X»), porque comprueba `almacen.leer_contenido(cripta_id, numero_sala)` antes de delegar. Las demás
+   operaciones sobre esa cripta fallan con un mensaje que no nombra el dato que falta: si no hay ninguna cripta
+   completa, `DatoLocalFaltante` con el `ErrorOffline` de arriba como motivo; si hay otras completas, la incompleta no
+   está en la lista y, desde T056, sale `DatoLocalFaltante("La cripta X no está en la lista de criptas guardada en
+   disco")` (ver el punto 2).
+2. **Una cripta desconocida sale como `DatoLocalFaltante` (corregido en T056)**: `ServicioCripta` lanza
+   `ValueError(f"La cripta '{cripta_id}' no existe")`, y antes `FuenteSoloLocal._leer` solo convertía `ErrorOffline` y
+   `LlavesNoDisponibles`. Desde T056 convierte también ese `ValueError` (solo el de ese mensaje exacto; los demás
+   `ValueError` siguen saliendo tal cual) en `DatoLocalFaltante("La cripta X no está en la lista de criptas guardada en
+   disco")`. `existe_cripta` sigue devolviendo `False` para una cripta que no está en la lista
+   (`test_fuente_solo_local`, prueba de T056).
+3. **`FuenteSoloLocal` se amplió en T053** por lo que pidió la capacidad 004: `existe_cripta` (solo existencia, sin
+   comparar versión; sin lista en disco lanza `DatoLocalFaltante`), `version_catalogo` con `version_catalogo_vigente`,
+   `objetos_que_suelta` con la última cripta consultada, `obtener_sala_salida`, `obtener_mapa` y
+   `fijar_fichas_en_uso`. `crear_fuente_solo_local` acepta `version_catalogo_vigente=None`.
+4. **`tests_labs/prueba_persistencia_partida.py` ya fallaba antes de esta capacidad**: llama a
+   `original.guardarPartida(archivo)` sobre un `EstadoJuegoLogica`, y `EstadoJuegoLogica.guardarPartida` ya no existe:
+   se separó en el commit `3fc1017` (2026-10-16, «separación de responsabilidad de guardar partida»), anterior al
+   primer commit de la 009 (`57f8137`, 2026-11-06). Hoy `guardarPartida` está en `EstadoJuegoServicio`.
+5. **El aviso de llaves salía con doble punto** («…con conexión.. La verificación…») cuando el motivo ya terminaba en
+   punto. Se corrigió en `ServicioCripta.ubicacion_llaves` quitando el punto final del motivo
+   (`str(error).rstrip('.')`), commit `291afa3`.
+6. **Descuadres que ya estaban en `DOCUMENTACION_API.md`**: la tabla de §9 habla de una «cripta de 6 salas», pero el 7
+   de la primera partida sale de `test_llaves_presupuesto`, que usa una cripta de 3 salas de la API falsa; y §8.3 dice
+   «Primera vez: 6» mientras que `prueba_cliente_persistente` cuenta 7 (dos solicitudes de catálogo, fichas y botín).
+7. **Regresión de `--bench guardado` y `--bench ciclo` que encontró T044**: desde T017, `EstadoJuegoLogica.iniciarJuego`
+   pide las llaves, y el cliente sintético del bench (`ClienteDeBatalla`, en `bench/juego.py`) no tenía
+   `obtener_llaves`. El `AttributeError` no es un `RuntimeError`, así que no se convertía en `LlavesNoDisponibles` y
+   cortaba los dos bloques y `python main.py --bench` completo. Se corrigió en T054 agregando a `ClienteDeBatalla` un
+   `obtener_llaves(cripta_id, solo_guardadas=False, limite_solicitudes=None)` que devuelve `[]` (cripta sin llaves).
+   En el cierre final (T044) los dos bloques terminan y las 9 filas de conteo del bloque `cache` siguen iguales a T049.
+8. **Criterio de tiempo intermitente del bloque `ciclo`**: el límite es de 20 ms para el peor de 30 ciclos. Es un
+   criterio de la 001, no de las llaves: `bench/ciclo.py` no cambió en la 009 (su último commit es `793b300`, de la 001)
+   y la partida del bench usa `ClienteDeBatalla`, sin llaves. En el cierre final (2026-11-08, con otro programa usando
+   mucha CPU en la máquina), la fila «300 esbirros activos» no cumplió en ninguna de las tres corridas completas:
+   mediana 22.31, 21.19 y 21.17 ms, y peor ciclo 42.61, 37.38 y 39.38 ms. En una corrida aislada de `--bench ciclo`
+   dio una mediana de 15.73 ms y un peor ciclo de 29.39 ms. En esas mismas corridas también fallaron por poco
+   «100 esbirros activos» (peor ciclo 20.11 y 25.52 ms en las corridas 1 y 3, y 32.32 ms en la aislada) y «50 cazadores
+   persiguiendo» (20.95 ms en la corrida 2). Con la máquina libre el criterio se cumple con holgura: en dos corridas completas de `--bench`, «300 esbirros activos»
+   dio mediana de 3.85 y 3.82 ms y peor ciclo de 5.76 y 5.71 ms, y el guardado A de Llaves B dio 14.37 y 14.80 ms (límite 50 ms), con código de salida 0 en las dos. Las cifras
+   dependen de la carga de la máquina, y la decisión del guardado A se mantiene; ambas mediciones están en
+   `specs/009-contrato-datos-v2/checklists/requirements.md`, «Implementación, cierre final (T044)».

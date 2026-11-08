@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-06
 
-**Estado**: Borrador
+**Estado**: Implementada (T001 a T058)
 
 **Entrada**: Capacidad de apoyo de la Parte II — consulta de ubicación de llaves, lectura solo local, medición de la precarga con cazadores y API falsa v2 de pruebas. Requisitos con prefijo FR-301 a FR-329 (la capacidad 003 continúa desde FR-330 y la 010 desde FR-360).
 
@@ -143,6 +143,8 @@ Se mide cuántas solicitudes extra provoca un cazador que cruza salas cuyo conte
 - La versión de la cripta cambia durante una partida: no se vuelve a consultar en esa partida; la invalidación ocurre al iniciar la siguiente.
 - Llave soltada por un enemigo en una sala cuyo contenido aún no se descargó: se acepta; la comprobación del enemigo se omite sin solicitudes (FR-311).
 - Fallo a medio guardar: lo guardado a medias no debe tomarse como válido en la partida siguiente.
+- Reproducir un log (`--replay`, `--hasta`): una reproducción no es una partida nueva, así que no consulta las llaves ni emite el aviso de resolubilidad; si más adelante se necesitan, se piden bajo demanda como en una partida cargada (FR-325).
+- Cripta incompleta en disco por la vía solo local: solo la petición del contenido de una sala nombra la sala que falta; las demás operaciones informan que la cripta no está guardada por completo (FR-315). Una cripta que no figura en la lista guardada se informa como dato faltante, no como error de programa.
 
 ## Requisitos *(obligatorio)*
 
@@ -177,10 +179,10 @@ Se mide cuántas solicitudes extra provoca un cazador que cruza salas cuyo conte
 
 **Lectura solo local**
 
-- **FR-314**: DEBE existir una forma de pedir datos de la cripta (esqueleto, contenido de salas y llaves) que lea solo de disco y nunca haga solicitudes.
+- **FR-314**: DEBE existir una forma de pedir datos de la cripta (esqueleto, contenido de salas, llaves, datos generales, sala de salida, existencia de la cripta, versión del catálogo y lo que suelta un enemigo) que lea solo de disco y nunca haga solicitudes.
 - **FR-315**: Si por esa vía falta un dato, DEBE fallar con un mensaje claro que nombre el dato faltante y la cripta, sin solicitudes y sin modificar lo guardado.
 - **FR-316**: Para datos presentes y vigentes, la vía solo local DEBE entregar lo mismo que la vía normal.
-- **FR-317**: Por la vía solo local, un dato guardado con una versión distinta de la vigente DEBE tratarse como faltante.
+- **FR-317**: Por la vía solo local, un dato guardado con una versión distinta de la vigente DEBE tratarse como faltante. Lo mismo vale para el catálogo: una versión del catálogo distinta de la vigente se trata como faltante.
 
 **API falsa v2 (infraestructura de pruebas)**
 

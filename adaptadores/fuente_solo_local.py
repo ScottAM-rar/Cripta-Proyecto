@@ -45,6 +45,11 @@ class FuenteSoloLocal:
             return operacion()
         except (ErrorOffline, LlavesNoDisponibles) as error:
             raise DatoLocalFaltante(f"Falta en disco {dato} de la cripta {cripta_id}: {error}") from error
+        except ValueError as error:
+            # Solo el de cripta desconocida del servicio (no está en la lista de criptas guardada); los demás siguen.
+            if str(error) != f"La cripta '{cripta_id}' no existe":
+                raise
+            raise DatoLocalFaltante(f"La cripta {cripta_id} no está en la lista de criptas guardada en disco") from error
 
     # ------------------------------------------------------------------
     # Operaciones de FuenteCripta que lee la consulta histórica (data-model.md)

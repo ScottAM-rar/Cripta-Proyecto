@@ -155,7 +155,9 @@ class EstadoJuegoLogica:
         if self.comunicacion is None:
             raise ValueError("El juego no tiene un servicio de criptas")
 
-    def iniciarJuego(self,  cripta: str,semilla: int = None):
+    def iniciarJuego(self,  cripta: str,semilla: int = None, pedir_llaves: bool = True):
+        """pedir_llaves=False: la usa la reproducción, que no es una partida nueva (T058): no consulta las llaves ni
+        avisa; si después hacen falta, se piden bajo demanda con obtenerLlaves()."""
         if self.iniciado:
             raise ValueError("No se puede iniciar un juego ya iniciado")
         self._exigirServicio()
@@ -188,7 +190,8 @@ class EstadoJuegoLogica:
         self.jugadorLogica = JugadorLogica(jugador,self.semilla,self.gestorEventos.azar)
         self.logEventos.vaciar()
         self.idCripta = cripta
-        self.obtenerLlaves()           # partida nueva: la ubicación de las llaves se pide enseguida (FR-301)
+        if pedir_llaves:
+            self.obtenerLlaves()       # partida nueva: la ubicación de las llaves se pide enseguida (FR-301)
         self.iniciado = True
         self.registrador_log = None
         self.fin = False
@@ -265,7 +268,7 @@ class EstadoJuegoLogica:
         if self.iniciado:
             raise ValueError("No se puede repetir una partida durante otra partida")
 
-        self.iniciarJuego(log_original.id_cripta, log_original.semilla)
+        self.iniciarJuego(log_original.id_cripta, log_original.semilla, pedir_llaves=False)   # no es una partida nueva
         try:
             self._verificarVersionesReplay(log_original)
         except ValueError:

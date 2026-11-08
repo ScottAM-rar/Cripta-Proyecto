@@ -142,6 +142,7 @@ pasa del límite de 9. Con `precargar`, las `construir_sala` siguientes salen de
 | `obtener_contenido(id, [salas])` | `GET /criptas/{id}/contenido?salas=1,2,..` | `list[dict]`: qué hay en cada sala |
 | `obtener_catalogo([ids])` | `GET /catalogo?ids=a,b,..` | `list[dict]`: fichas completas |
 | `obtener_version_catalogo()` | `GET /catalogo/version` | `str` |
+| `obtener_llaves(id, solo_guardadas=False, limite_solicitudes=None)` | `GET /criptas/{id}/llaves` | `list[dict]`: cada llave con `id`, `sala` y, si la suelta un enemigo, `enemigo` (capacidad 009). Con `solo_guardadas=True` no hace la solicitud y lanza `LlavesNoDisponibles` («no queda presupuesto y no hay llaves guardadas de la cripta X»). Con `limite_solicitudes`, un 429 solo se reintenta mientras no se llegue a ese límite; si se llega, `RuntimeError("429 sin presupuesto para reintentar …")` |
 
 Todas las llamadas llevan el header `X-Cripta-Client-Id`.
 
@@ -151,7 +152,7 @@ Todas las llamadas llevan el header `X-Cripta-Client-Id`.
   3 solicitudes (10 + 10 + 5).
 - **Paginación.** `obtener_salas` repite hasta llegar a `total_paginas`.
 - **Error 429** (demasiadas solicitudes): espera `reintentar_en` segundos y reintenta, hasta
-  `MAX_REINTENTOS_429 = 5` veces; después lanza `RuntimeError`. El reintento **también cuenta** como solicitud.
+  `MAX_REINTENTOS_429 = 10` veces; después lanza `RuntimeError`. El reintento **también cuenta** como solicitud.
 - **Sin conexión o tiempo agotado:** lanza `ErrorSinConexion` con un mensaje que sugiere `--offline`.
   Una solicitud que nunca llegó al servidor no suma al contador.
 - **Otros errores** (400, 404, 500): `RuntimeError` con la URL y el código.
@@ -245,12 +246,42 @@ Recibe un cliente (online u offline) y una caché por el constructor; `crear_ser
 | `construir_salas(id, [n])` | Varias `SalaDTO` en lote | las mínimas |
 | `construir_todas(id)` | Todas las salas de la cripta | las mínimas |
 | `precargar(id, [n]=None)` | Trae todo (o esas salas) de golpe y lo deja en disco | las mínimas |
+| `esqueleto(id)` | `MapaDTO` con el esqueleto completo y el costo de cada salida; `obtener_mapa(id)` devuelve lo mismo (capacidad 009) | 0 extra (usa el esqueleto ya descargado) |
+| `ubicacion_llaves(id)` | `UbicacionLlavesDTO` (listas paralelas `ids`, `salas`, `enemigos`) con la ubicación de las llaves, validada; se memoriza por sesión (ver §7.1) | 1 la primera vez sin llaves guardadas; 0 si están guardadas con la misma versión o ya se pidió en la sesión |
 | `solicitudes_realizadas` | Contador de solicitudes de red (propiedad) | |
 
 Cómo arma una `SalaDTO`: toma el esqueleto (`nombre`, `salidas` en letras N/S/E/O) y el contenido ya
 resuelto. Las salidas van en un `deque(maxlen=4)` con el orden N, S, E, O, solo con las que existen, con
 la dirección como `"norte"`, `"sur"`, `"este"`, `"oeste"` y los campos `cerrada`, `llave` y
 `cierre_automatico` si la API los trae.
+
+### 7.1 Ubicación de las llaves (capacidad 009)
+
+`ubicacion_llaves(id)` calcula lo que queda del presupuesto (`presupuesto_solicitudes(id) - solicitudes_realizadas`) y
+pide `cliente.obtener_llaves(id, solo_guardadas, limite_solicitudes=restante)`, con `solo_guardadas` en `True` si no
+queda presupuesto. Después valida la lista contra el esqueleto (`adaptadores/llaves.py`) y la memoriza para la sesión.
+
+- **Cada cliente**: el persistente devuelve lo guardado si la versión coincide; si no, consulta, valida y guarda solo
+  si es válida. El offline devuelve lo guardado o lanza `ErrorOffline("Faltan las llaves de la cripta X. Juega una vez
+  con conexión.")`. El HTTP siempre consulta.
+- **Fallos**: `ErrorOffline`, `ErrorSinConexion`, los `RuntimeError` del HTTP y `LlavesInvalidas` se entregan como
+  `LlavesNoDisponibles("No se pudieron obtener las llaves de la cripta X: <motivo>. La verificación de resolubilidad no
+  está disponible.")`. Un `LlavesNoDisponibles` que ya viene del cliente pasa tal cual. Tras un fallo no se memoriza
+  nada: la siguiente llamada vuelve a intentar.
+- **Aviso en la partida (FR-313)**: `EstadoJuegoLogica.iniciarJuego` llama a `obtenerLlaves()`. Si falla, `llaves`
+  queda en `None`, `avisoLlaves` guarda el mensaje y la partida sigue. `EstadoJuegoServicio.avisoLlaves()` lo entrega
+  y `ControladorJuego` lo muestra como `AVISO: …` justo después de iniciar una partida nueva (no al cargar ni en
+  `--replay`).
+- **Aviso sin presupuesto (T055)**: cuando no queda presupuesto y no hay llaves guardadas, el `LlavesNoDisponibles` del
+  cliente se vuelve a lanzar con la misma forma que los demás fallos: nombra la cripta una sola vez (no la repite si el
+  motivo ya la nombra), da el motivo sin punto final repetido y termina con «La verificación de resolubilidad no está
+  disponible.».
+- **Reproducción (T058)**: `repetirPartida` llama a `iniciarJuego(cripta, semilla, pedir_llaves=False)`, así que
+  `--replay` no consulta las llaves ni emite el aviso; si después hacen falta, se piden bajo demanda con
+  `obtenerLlaves()`. Lo mismo vale para `--hasta`, que todavía no existe en `main.py` (capacidad 007).
+- **Partida cargada (FR-325)**: restaurar una partida deja `llaves` y `avisoLlaves` en `None` sin pedir nada. Las
+  llaves se piden la primera vez que hacen falta, con `obtenerLlaves()`. Ni las llaves ni el aviso se guardan en el
+  archivo de partida.
 
 ---
 
@@ -291,7 +322,7 @@ Solo guarda y lee; no habla con la red. Organización de la carpeta (`datos_crip
 datos_cripta/
     criptas.bin            clave "lista"
     catalogo.bin           clave "version" + una clave "ficha:<id>" por ficha
-    cripta_<id>.bin        "version" + "datos" + "salas" + "contenido:<n>" por sala
+    cripta_<id>.bin        "version" + "datos" + "salas" + "contenido:<n>" por sala + "llaves"
 ```
 
 Cada archivo del catálogo y de las criptas recuerda la **versión** con la que se descargó:
@@ -302,6 +333,10 @@ Cada archivo del catálogo y de las criptas recuerda la **versión** con la que 
 - Los ids de cripta forman parte del nombre del archivo, por eso se rechazan los peligrosos (`..`, `/`, `\`, `:`,
   etc.) con `ValueError`.
 - `cripta_completa(id, numeros)` dice si hay en disco todo lo necesario para jugar esa cripta sin red.
+- `guardar_llaves(id, llaves)` / `leer_llaves(id)` (capacidad 009): la clave `llaves` guarda la lista cruda ya
+  validada, en el mismo archivo de la cripta, así que se invalida junto con lo demás cuando cambia la versión.
+  `leer_llaves` devuelve `None` si la clave no está (nunca se pidió, o el archivo es de la Parte I) y `[]` si la
+  cripta no tiene llaves.
 
 ### 8.3 `ClientePersistente`: disco primero, red solo si falta
 
@@ -346,6 +381,40 @@ crear_servicio(offline=False, cache_size=25, carpeta="datos_cripta", url=URL_API
 - Sin conexión: `ServicioCripta(ClienteOffline(AlmacenDisco(carpeta)), CacheLRU(n))`.
 - `cache_size < 1` lanza `ValueError`. `cliente_http` solo sirve para pruebas (inyectar uno falso).
 
+### 8.6 `FuenteSoloLocal` y `crear_fuente_solo_local` (capacidad 009)
+
+```python
+crear_fuente_solo_local(carpeta="datos_cripta", version_vigente=None, version_catalogo_vigente=None)
+```
+
+Arma `ServicioCripta(ClienteOffline(AlmacenDisco(carpeta)), CacheLRU(TAMANO_CACHE))` y lo envuelve en
+`FuenteSoloLocal` (`adaptadores/fuente_solo_local.py`). La usa la consulta histórica de la capacidad 004. Lee solo de
+disco, **no hace solicitudes** y **no modifica nada** de lo guardado: nunca llama a `validar_cripta` ni a ningún
+`guardar_*`. No usa ni crea el cliente de red compartido. Con `version_vigente` o `version_catalogo_vigente` en `None`
+sirve la versión guardada.
+
+| Operación | Qué hace |
+|---|---|
+| `esqueleto(id)`, `obtener_mapa(id)` | El esqueleto (`obtener_mapa` es lo mismo) |
+| `construir_sala(id, n)` | La sala `n`; si su contenido no está en disco, `DatoLocalFaltante("Falta en disco sala n de la cripta X")` |
+| `ubicacion_llaves(id)`, `datos_cripta(id)`, `crear_jugador(id)`, `version_cripta(id)`, `total_salas(id)`, `obtener_sala_salida(id)` | Delegan en el servicio |
+| `existe_cripta(id)` | Solo existencia, **sin comparar versión**: mira la lista de criptas guardada. Sin lista en disco lanza `DatoLocalFaltante` |
+| `version_catalogo()` | La versión guardada del catálogo; distinta de `version_catalogo_vigente`, o sin versión guardada, lanza `DatoLocalFaltante` nombrando las dos |
+| `objetos_que_suelta(enemigo)` | Comprueba la versión de la última cripta consultada por esta fuente (si no hay ninguna, `DatoLocalFaltante`); una ficha ausente sale como `DatoLocalFaltante` con su id y la cripta |
+| `fijar_fichas_en_uso(ids)` | Delega en el servicio: solo toca la caché en memoria |
+| `precargar_vecinas(id, …)` | No hace nada y devuelve 0 |
+| `reporte(id)` | El reporte del servicio: 0 solicitudes |
+
+Antes de cada operación que recibe una cripta (salvo `existe_cripta`) se compara la versión guardada con
+`version_vigente`. Si no coincide: `DatoLocalFaltante("La cripta X está guardada con la versión v1; se necesita v2")`.
+Si no hay versión guardada: `DatoLocalFaltante("La cripta X no tiene versión guardada en disco (guardada: ninguna);
+se necesita …")`. `ErrorOffline` y `LlavesNoDisponibles` del interior salen como `DatoLocalFaltante("Falta en disco
+<dato> de la cripta X: <motivo>")`, con la excepción original como causa. Desde T056, una cripta que no está en la
+lista de criptas guardada (el `ValueError("La cripta 'X' no existe")` del servicio) sale como
+`DatoLocalFaltante("La cripta X no está en la lista de criptas guardada en disco")`; los demás `ValueError` no se
+convierten, y `existe_cripta` sigue devolviendo `False` para esa cripta. `listar_criptas` y `obtener_id_cripta` no se
+exponen.
+
 ---
 
 ## 9. Presupuesto de solicitudes (§5.1)
@@ -355,7 +424,7 @@ Límite: **9 por cripta**.
 | Forma de cargar | Solicitudes (cripta de 6 salas) |
 |---|---|
 | Sala por sala, sin persistencia | 14 (medido con la API real). **Se pasa del límite** |
-| `precargar` en la primera partida | 6 (medido con la API falsa) |
+| `precargar` en la primera partida | 7 (medido con la API falsa): las 6 de antes más la consulta de llaves de la capacidad 009. Lo comprueba `test_llaves_presupuesto` (`PrimeraPartida`): «Solicitudes a la API: 7 de 9» |
 | `precargar`, partidas siguientes | 3 (medido con la API falsa) |
 | Modo offline | 0 |
 

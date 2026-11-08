@@ -173,6 +173,53 @@ class OtraCripta(ConCarpeta):
         self.assertEqual((llaves.cripta_id, llaves.ids), ("cripta-B", ["itm_llave_b"]))
 
 
+class Reproduccion(ConCarpeta):
+    """T058 (pedido de la capacidad 007): una reproducción no es una partida nueva y no pide las llaves."""
+
+    def log_de_una_partida(self):
+        """Juega una partida corta en su propia carpeta y devuelve (log, acciones del log, resultados de las acciones)."""
+        servicio = servicio_en(os.path.join(self.raiz, "original"), HttpConfigurable(SALAS, llaves=LLAVES))
+        logica, _ = jugar_y_exportar(servicio)
+        log = logica.exportar_log()
+        return log, list(log.acciones)
+
+    def reproducir(self, log, carpeta):
+        http = HttpConfigurable(SALAS, llaves=LLAVES)
+        logica = EstadoJuegoLogica(comunicacion=servicio_en(carpeta, http))
+        with contextlib.redirect_stdout(io.StringIO()):
+            resultados = logica.repetirPartida(log)
+        return http, logica, resultados
+
+    def test_fr325_t058_a_reproducir_en_carpeta_vacia_no_pide_llaves_ni_avisa(self):
+        log, acciones = self.log_de_una_partida()
+        http, logica, resultados = self.reproducir(log, self.carpeta)
+        self.assertEqual(http.veces("llaves"), 0)
+        self.assertIsNone(logica.llaves)
+        self.assertIsNone(logica.avisoLlaves)
+        self.assertEqual(len(resultados), len(acciones))                    # la reproducción sigue siendo fiel
+        self.assertEqual(list(logica.exportar_log().acciones), acciones)    # y el log no cambia
+
+    def test_fr301_fr325_t058_b_tras_reproducir_las_llaves_se_piden_bajo_demanda_una_vez(self):
+        log, _ = self.log_de_una_partida()
+        http, logica, _ = self.reproducir(log, self.carpeta)
+        primera = logica.obtenerLlaves()
+        self.assertEqual(http.veces("llaves"), 1)
+        self.assertIs(logica.obtenerLlaves(), primera)
+        self.assertEqual(http.veces("llaves"), 1)
+        # Una partida nueva de la misma cripta, en una carpeta vacía, sigue haciendo su consulta la primera vez.
+        http_nueva = HttpConfigurable(SALAS, llaves=LLAVES)
+        jugar_y_exportar(servicio_en(os.path.join(self.raiz, "nueva"), http_nueva))
+        self.assertEqual(http_nueva.veces("llaves"), 1)
+
+    def test_fr301_t058_c_una_partida_nueva_sigue_pidiendo_las_llaves_al_iniciar(self):
+        http = HttpConfigurable(SALAS, llaves=LLAVES)
+        logica = EstadoJuegoLogica(comunicacion=servicio_en(self.carpeta, http))
+        with contextlib.redirect_stdout(io.StringIO()):
+            logica.iniciarJuego(CRIPTA, 1)
+        self.assertEqual(http.veces("llaves"), 1)
+        self.assertEqual(logica.llaves.ids, ["itm_llave_bronce", "itm_llave_negra"])
+
+
 class LogicaNueva(unittest.TestCase):
 
     def test_fr325_f_logica_recien_creada_sin_llaves_ni_aviso(self):
