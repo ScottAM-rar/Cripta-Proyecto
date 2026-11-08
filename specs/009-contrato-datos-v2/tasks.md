@@ -294,7 +294,7 @@
   - **D**: la primera partida, la segunda con la misma versión y `--offline` deben dar exactamente 1, 0 y 0 `("llaves", …)`.
 
   (FR-322, FR-323, SC-001, SC-002, VII)
-- [ ] T035 [US6] Registrar el bloque `llaves` en `BLOQUES` de `bench/__init__.py` (incluido en `--bench` sin argumentos) y mencionarlo en la ayuda de `--bench` en `main.py`. El código de salida es distinto de 0 si la sección D no da 1/0/0, si C no coincide en la verificación previa o si la opción A de B supera los 50 ms con 5 000 salas. A y los tiempos de C solo informan. (FR-322, SC-001, SC-002, VII)
+- [X] T035 [US6] Registrar el bloque `llaves` en `BLOQUES` de `bench/__init__.py` (incluido en `--bench` sin argumentos) y mencionarlo en la ayuda de `--bench` en `main.py`. El código de salida es distinto de 0 si la sección D no da 1/0/0, si C no coincide en la verificación previa o si la opción A de B supera los 50 ms con 5 000 salas. A y los tiempos de C solo informan. (FR-322, SC-001, SC-002, VII)
 - [ ] T036 [US6] Ejecutar `python main.py --bench llaves`. Crear `specs/009-contrato-datos-v2/mediciones.md` con la salida completa, una tabla «elegida frente a descartada, qué se midió, conclusión» para A, B y C, y la **recomendación** sobre la precarga (mantener por saltos o abrir una especificación aparte para pasar a costo). **No** modificar `precargar_vecinas` ni `salas_vecinas`. (FR-322, FR-323, FR-324)
 - [ ] T037 [US6] **Revisar las decisiones con lo medido.**
   - Si B supera el límite, cambiar a la opción B de research.md §4 en `adaptadores/AlmacenDisco.py` y `adaptadores/cliente_persistente.py`, y documentar el antes y el después en `mediciones.md` y en `DECISIONES.md`.
