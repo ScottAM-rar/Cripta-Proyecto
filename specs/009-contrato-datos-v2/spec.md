@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-06
 
-**Estado**: Implementada (T001 a T058; queda por registrar T041 en `PROMPTS_LLM.md`)
+**Estado**: Implementada (T001 a T058)
 
 **Entrada**: Capacidad de apoyo de la Parte II — consulta de ubicación de llaves, lectura solo local, medición de la precarga con cazadores y API falsa v2 de pruebas. Requisitos con prefijo FR-301 a FR-329 (la capacidad 003 continúa desde FR-330 y la 010 desde FR-360).
 
