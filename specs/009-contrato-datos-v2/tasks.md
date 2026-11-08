@@ -317,10 +317,10 @@
   - La sección de la fuente solo local.
 
   (VI)
-- [ ] T040 [P] Agregar la sección 009 a `DECISIONES.md` con enlaces a `spec.md` y `plan.md`, e indicar si cada decisión (guardado A, validación ordenando, `solo_guardadas`, fuente solo local) coincide con el plan y qué medición lo respalda. (X)
+- [X] T040 [P] Agregar la sección 009 a `DECISIONES.md` con enlaces a `spec.md` y `plan.md`, e indicar si cada decisión (guardado A, validación ordenando, `solo_guardadas`, fuente solo local) coincide con el plan y qué medición lo respalda. (X)
 - [ ] T041 [P] Registrar en `PROMPTS_LLM.md` los comandos `/speckit-specify`, `/speckit-clarify`, `/speckit-plan`, `/speckit-tasks` y `/speckit-implement` de esta capacidad con texto propio, con herramienta y modelo. (XI)
 - [X] T042 [P] Actualizar `README.md` con una línea sobre la capacidad 009, `python main.py --bench llaves` y la consulta de llaves en el conteo de solicitudes. (VII)
-- [ ] T043 Comprobar con búsqueda que `adaptadores/llaves.py`, `adaptadores/fuente_solo_local.py`, `DTO/LlavesDTO.py`, `bench/llaves.py` y los cambios en los clientes, `AlmacenDisco`, `servicioCripta.py` y `EstadoJuegoLogica.py`:
+- [X] T043 Comprobar con búsqueda que `adaptadores/llaves.py`, `adaptadores/fuente_solo_local.py`, `DTO/LlavesDTO.py`, `bench/llaves.py` y los cambios en los clientes, `AlmacenDisco`, `servicioCripta.py` y `EstadoJuegoLogica.py`:
   - No importan `heapq`, `bisect`, `collections` ni `networkx`.
   - No usan `dict`/`set` como índice ni `sorted()`/`list.sort()`.
   - No contienen ids de llaves, salas, enemigos ni presupuestos de una cripta concreta.
@@ -353,7 +353,7 @@
 
   (SC-005, FR-309, FR-313)
 - [X] T049 **Antes de cualquier cambio de código** (junto con T002), ejecutar `python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-antes.csv` y guardar en las Notas de `specs/009-contrato-datos-v2/checklists/requirements.md` la salida (solicitudes por estrategia y aciertos de caché). Es la línea base de la medición de red de la Parte I. (VII)
-- [ ] T050 Al terminar la capacidad (antes de T044), ejecutar `python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-despues.csv` y agregar a la sección 009 de `DECISIONES.md` una tabla antes/después por fila del bloque `cache`, con la diferencia y su causa (se espera +1 solicitud por cripta y versión por la consulta de llaves). Si una decisión de la Parte I deja de servir con la carga nueva, documentarlo y cambiarla en una tarea aparte. (VII, X)
+- [X] T050 Al terminar la capacidad (antes de T044), ejecutar `python main.py --bench cache --bench-csv specs/009-contrato-datos-v2/bench-cache-despues.csv` y agregar a la sección 009 de `DECISIONES.md` una tabla antes/después por fila del bloque `cache`, con la diferencia y su causa (se espera +1 solicitud por cripta y versión por la consulta de llaves). Si una decisión de la Parte I deja de servir con la carga nueva, documentarlo y cambiarla en una tarea aparte. (VII, X)
 - [X] T051 Ejecutar las 9 pruebas nuevas (`test_llaves_validacion`, `test_llaves_dto`, `test_llaves_clientes`, `test_llaves_presupuesto`, `test_llaves_version`, `test_llaves_fallos`, `test_llaves_partida_cargada`, `test_fuente_solo_local`, `test_api_falsa_v2`) con `requests.get` bloqueado: una ayuda en `tests_labs/sin_red.py` que lo sustituye por una función que lanza `AssertionError("intento de red")` y un `python -m tests_labs.sin_red` que la activa y corre esas pruebas. Ejecutar dos veces y comparar que los resultados son idénticos. Las pruebas que usan `mock.patch` de `requests.get` siguen funcionando porque lo sustituyen dentro de su propio alcance. (SC-006, FR-318)
 - [X] T052 [US1] Crear `test_llaves_dto.py` (sin red, solo `DTO/LlavesDTO.py`) con una prueba por comportamiento, con nombre que cite FR-302:
   - **(a)** Listas de largo distinto lanzan `ValueError` y el mensaje nombra la cripta.

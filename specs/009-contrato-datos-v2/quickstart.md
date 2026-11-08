@@ -11,6 +11,7 @@ La forma ya se confirmó con el Swagger (`LlavesResponse` / `KeyLocation`, 2026-
 ```text
 python -m unittest test_llaves_validacion test_llaves_dto test_llaves_clientes test_llaves_presupuesto test_llaves_version test_llaves_fallos test_llaves_partida_cargada test_fuente_solo_local test_api_falsa_v2
 python -m unittest discover -p "test_*.py"      # la suite de la Parte I, la 001 y la 005 sigue pasando
+python -m tests_labs.sin_red                    # las 9 pruebas de la capacidad con requests.get bloqueado (T051, SC-006)
 ```
 
 ## 2. Mediciones

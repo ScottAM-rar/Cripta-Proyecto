@@ -152,7 +152,7 @@ Todas las llamadas llevan el header `X-Cripta-Client-Id`.
   3 solicitudes (10 + 10 + 5).
 - **Paginación.** `obtener_salas` repite hasta llegar a `total_paginas`.
 - **Error 429** (demasiadas solicitudes): espera `reintentar_en` segundos y reintenta, hasta
-  `MAX_REINTENTOS_429 = 5` veces; después lanza `RuntimeError`. El reintento **también cuenta** como solicitud.
+  `MAX_REINTENTOS_429 = 10` veces; después lanza `RuntimeError`. El reintento **también cuenta** como solicitud.
 - **Sin conexión o tiempo agotado:** lanza `ErrorSinConexion` con un mensaje que sugiere `--offline`.
   Una solicitud que nunca llegó al servidor no suma al contador.
 - **Otros errores** (400, 404, 500): `RuntimeError` con la URL y el código.
