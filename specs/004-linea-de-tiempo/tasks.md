@@ -62,13 +62,13 @@
 **Criterio de prueba independiente**: Ejecutar $N$ acciones numeradas; verificar que `historia #k` devuelve el estado antes de la acción $k$, que `historia #1` coincide con el estado inicial (`historia 0`), que `historia #(N+1)` devuelve el estado actual, y que $k \le 0$ o $k > N+1$ se rechazan con mensaje claro.
 
 ### Pruebas para User Story 2
-- [ ] T013 [P] [US2] Crear pruebas unitarias para consulta por número de acción en `test_historia_tiempo.py` cubriendo FR-429, FR-430, FR-435, FR-436 y equivalencia con `historia <t>` (SC-002)
+- [X] T013 [P] [US2] Crear pruebas unitarias para consulta por número de acción en `test_historia_accion.py` cubriendo FR-429, FR-430, FR-435, FR-436 y equivalencia con `historia <t>` (SC-002)
 
 ### Implementación para User Story 2
-- [ ] T014 [US2] Implementar `_reconstruirHastaAccion(self, k: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py`: punto base con `_buscarPuntoPorAcciones(k-1)`, `j = (k-1) - c`, pasada 2 fiel parando justo antes de aplicar la acción vigente `E[j]`
-- [ ] T015 [US2] Conectar `consultarHistoria(accion=k)` en `Servicio/EstadoJuegoServicio.py`, validando $k \ge 1$ (rechazando $k=0$ y negativos con `ValueError`, FR-435), verificando $k \le N + 1$ (FR-436) y resolviendo $k = N + 1$ retornando el estado actual
-- [ ] T016 [US2] Incorporar la interpretación de `historia #k` en `Controlador/ControladorJuego.py` en la partida interactiva y en el bucle post-partida, manejando errores descriptivos
-- [ ] T017 [US2] Validar en `Logica/EstadoJuegoLogica.py` y `Servicio/EstadoJuegoServicio.py` el caso de partida sin acciones ($N=0$): `#1` y `0` devuelven estado inicial, $t > 0$ y $k > 1$ se rechazan (FR-438)
+- [X] T014 [US2] Implementar `_reconstruirHastaAccion(self, k: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py`: punto base con `_buscarPuntoPorAcciones(k-1)`, `j = (k-1) - c`, pasada 2 fiel parando justo antes de aplicar la acción vigente `E[j]`
+- [X] T015 [US2] Conectar `consultarHistoria(accion=k)` en `Servicio/EstadoJuegoServicio.py`, validando $k \ge 1$ (rechazando $k=0$ y negativos con `ValueError`, FR-435), verificando $k \le N + 1$ (FR-436) y resolviendo $k = N + 1$ retornando el estado actual
+- [X] T016 [US2] Incorporar la interpretación de `historia #k` en `Controlador/ControladorJuego.py` en la partida interactiva y en el bucle post-partida, manejando errores descriptivos
+- [X] T017 [US2] Validar en `Logica/EstadoJuegoLogica.py` y `Servicio/EstadoJuegoServicio.py` el caso de partida sin acciones ($N=0$): `#1` y `0` devuelven estado inicial, $t > 0$ y $k > 1$ se rechazan (FR-438)
 
 **Punto de control**: US2 es plenamente funcional y equivalente a US1 para instantes coincidentes.
 

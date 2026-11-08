@@ -114,20 +114,22 @@ class EstadoJuegoServicio:
                 raise ValueError("El instante debe ser un entero mayor o igual que 0")
             reloj_actual = self._estadoJuegoLogica.estadoJuego.reloj.tiempo_actual
             if instante > reloj_actual:
-                raise ValueError(f"El instante pedido ({instante}) es futuro respecto al reloj actual ({reloj_actual})")
+                raise ValueError(f"El instante {instante} aún no ha ocurrido (reloj actual: {reloj_actual}).")
             return self._estadoJuegoLogica._reconstruirHastaInstante(instante)
 
         if accion is not None:
-            if isinstance(accion, bool) or not isinstance(accion, int) or accion < 1:
+            if isinstance(accion, bool) or not isinstance(accion, int):
                 raise ValueError("El número de acción debe ser un entero mayor o igual que 1")
+            if accion < 1:
+                raise ValueError("El número de acción debe ser mayor o igual que 1.")
             N = self._estadoJuegoLogica.acciones_linea_tiempo
             if accion > N + 1:
-                raise ValueError(f"La acción pedida (#{accion}) supera el máximo permitido (#{N + 1})")
+                raise ValueError(f"La acción #{accion} aún no ha ocurrido (acciones vigentes: {N}).")
             if accion == N + 1:
                 return self._estadoJuegoLogica._extraerResumenEstadoActual(
                     self._estadoJuegoLogica.estadoJuego.reloj.tiempo_actual, N
                 )
-            raise NotImplementedError("La reconstrucción por número de acción se implementa en la Fase 4")
+            return self._estadoJuegoLogica._reconstruirHastaAccion(accion)
 
     def guardarPartida(self, nombre_archivo: str) -> None:
         """Guarda la partida en un archivo binario. El modelo solo entrega su estado; el archivo lo escribe el adaptador."""

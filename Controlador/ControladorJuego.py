@@ -218,15 +218,12 @@ class ControladorJuego:
                 print("Error: El número de acción debe ser mayor o igual que 1.")
                 return True
 
-            N = self.servicio._estadoJuegoLogica.acciones_linea_tiempo
-            if k > N + 1:
-                print(f"Error: La acción #{k} aún no ha ocurrido (acciones vigentes: {N}).")
-                return True
-
             try:
                 resumen = self.servicio.consultarHistoria(accion=k)
                 if self.vista is not None:
                     self.vista.mostrar_historia(resumen)
+            except ValueError as e:
+                print(f"Error: {e}")
             except Exception as e:
                 print(f"Error: {e}")
             return True
@@ -254,15 +251,12 @@ class ControladorJuego:
             print("Error: El instante o número de acción no puede ser negativo.")
             return True
 
-        reloj_actual = self.servicio._estadoJuegoLogica.estadoJuego.reloj.tiempo_actual
-        if t > reloj_actual:
-            print(f"Error: El instante {t} aún no ha ocurrido (reloj actual: {reloj_actual}).")
-            return True
-
         try:
             resumen = self.servicio.consultarHistoria(instante=t)
             if self.vista is not None:
                 self.vista.mostrar_historia(resumen)
+        except ValueError as e:
+            print(f"Error: {e}")
         except Exception as e:
             print(f"Error: {e}")
         return True
