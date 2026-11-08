@@ -104,7 +104,7 @@
 
 **Propósito**: ids de llave de texto → número denso con el orden de los ids, sin `dict` ([research.md §4](research.md)).
 
-- [ ] T021 [P] Crear `test_indice_llaves.py`, clase `IndiceLlavesPrueba` (importación con `try/except ImportError: self.fail(...)`):
+- [X] T021 [P] Crear `test_indice_llaves.py`, clase `IndiceLlavesPrueba` (importación con `try/except ImportError: self.fail(...)`):
   - (a) `test_fr335_ids_quedan_en_orden_creciente`: con ids desordenados, `id_de(0..n-1)` es creciente.
   - (b) `test_fr335_repetidos_cuentan_una_vez`: `cantidad()` cuenta ids distintos.
   - (c) `test_fr335_numero_de_un_id_presente`: `numero(id) == i` si `id_de(i) == id`.
@@ -115,9 +115,9 @@
   - (h) `test_fr335_igual_que_busqueda_lineal`: 1 000 ids generados con `random.Random(semilla)` (semillas 0 a 4); para cada id presente y 200 ausentes, `numero` coincide con una búsqueda lineal sobre `id_de`.
 
   (FR-335, I)
-- [ ] T022 Ejecutar `python -m unittest test_indice_llaves` y registrar la evidencia roja (falla por `self.fail`: el módulo no existe). (IX)
-- [ ] T023 Crear `Logica/IndiceLlaves.py`, `class IndiceLlaves`: `__init__(self, ids: list[str])` ordena con `ordenar_adaptativo` y quita repetidos comparando vecinos; `numero(id) -> int` es una **búsqueda binaria escrita a mano** (bucle con `bajo`/`alto`), −1 si no está; `id_de(numero) -> str`; `cantidad() -> int`. Docstring con costos: construir O(K log K), consultar O(log K). Sin `bisect`, `sorted()`, `.sort()`, `dict` ni `set`. (FR-335, I)
-- [ ] T024 Ejecutar `python -m unittest test_indice_llaves`. **Terminado**: las 8 pruebas pasan.
+- [X] T022 Ejecutar `python -m unittest test_indice_llaves` y registrar la evidencia roja (falla por `self.fail`: el módulo no existe). (IX)
+- [X] T023 Crear `Logica/IndiceLlaves.py`, `class IndiceLlaves`: `__init__(self, ids: list[str])` ordena con `ordenar_adaptativo` y quita repetidos comparando vecinos; `numero(id) -> int` es una **búsqueda binaria escrita a mano** (bucle con `bajo`/`alto`), −1 si no está; `id_de(numero) -> str`; `cantidad() -> int`. Docstring con costos: construir O(K log K), consultar O(log K). Sin `bisect`, `sorted()`, `.sort()`, `dict` ni `set`. (FR-335, I)
+- [X] T024 Ejecutar `python -m unittest test_indice_llaves`. **Terminado**: las 8 pruebas pasan.
 
 **Punto de control**: índice listo y equivalente a la búsqueda lineal.
 
@@ -386,3 +386,7 @@ Resultado: `Ran 6 tests`, `FAILED (failures=6)`, 0 errores. Todas fallan por ase
 | `test_fr343_cuerpo_provisional_devuelve_codigo_2` | `Logica.VerificacionResolubilidad todavía no existe` |
 
 Ninguna pasó a la primera.
+
+### T022 — 2026-11-08 — `python -m unittest -v test_indice_llaves` (antes de crear `Logica/IndiceLlaves.py`)
+
+Resultado: `Ran 8 tests`, `FAILED (failures=8)`, 0 errores. Las 8 pruebas, (a) a (h), fallan por la misma aserción: `self.fail("Logica.IndiceLlaves todavía no existe: No module named 'Logica.IndiceLlaves'")`. Ninguna pasó a la primera ni falló por error de importación.
