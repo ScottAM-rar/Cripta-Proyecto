@@ -61,7 +61,7 @@
 
 **Propósito**: fijar firmas, DTO y operaciones con cuerpo provisional que devuelve código 2 ([contracts/interfaz-verificacion.md](contracts/interfaz-verificacion.md), [research.md §12](research.md)), para que Fernanda conecte `--verificar` y `--forzar` mientras se implementa el algoritmo.
 
-- [ ] T010 Crear `test_resolubilidad_reporte.py` con la clase `Contrato` (importaciones dentro de cada prueba con `try/except ImportError: self.fail(...)`):
+- [X] T010 Crear `test_resolubilidad_reporte.py` con la clase `Contrato` (importaciones dentro de cada prueba con `try/except ImportError: self.fail(...)`):
   - `test_fr344_firmas_de_la_interfaz`: con `inspect.signature`, comprobar `verificar_resolubilidad(mapa, sala_inicial, sala_salida, llave_salida, llaves, cripta_id="")`, `verificar(fuente, cripta_id, llaves=None)`, `EstadoJuegoServicio.verificar(self, cripta_id, offline=None)`, `EstadoJuegoServicio.iniciarJuego(..., forzar=False)`, `EstadoJuegoLogica.iniciarJuego(self, cripta, semilla=None, pedir_llaves=True, forzar=False)`, `EstadoJuegoServicio.avisoResolubilidad(self)`, `lineas_reporte(resultado)` y `aviso_forzado(resultado)`.
   - `test_fr331_codigo_salida`: `ResultadoVerificacion(..., resoluble=True/False/None)` da 0 / 1 / 2.
   - `test_fr344_campos_del_resultado`: `ResultadoVerificacion` tiene `cripta_id`, `resoluble`, `orden`, `salas_alcanzables`, `salas_no_alcanzables`, `bloqueos`, `causas`, `llave_salida`, `sala_salida`, `motivo_error`; `PasoLlaveDTO` tiene `llave`, `sala`, `enemigo`; `BloqueoDTO` tiene `sala_origen`, `direccion`, `sala_destino`, `llave`, `salas_de_la_llave`, `tipo`; las listas por defecto están vacías y no se comparten entre instancias.
@@ -70,31 +70,31 @@
   - `test_fr343_cuerpo_provisional_devuelve_codigo_2`: `verificar(...)` devuelve `resoluble is None`, `motivo_error == "La verificación de resolubilidad todavía no está implementada."` y `codigo_salida() == 2`; `lineas_reporte` de ese resultado da las dos líneas del caso de error de `contracts/reporte-verificacion.md`. (Esta prueba se **reemplaza** en el grupo D, T032, cuando el cuerpo deja de ser provisional; anotarlo en el docstring.)
 
   **Terminado**: el archivo corre sin errores de importación. (FR-331, FR-339, FR-343, FR-344)
-- [ ] T011 Ejecutar `python -m unittest test_resolubilidad_reporte` y registrar la evidencia roja: todas fallan por `self.fail` («todavía no existe») o por aserción. **Terminado**: evidencia anotada. (IX)
-- [ ] T012 [P] Crear `DTO/ResultadoVerificacionDTO.py` (sin importar `Logica/` ni `adaptadores/`), según [data-model.md §3](data-model.md):
+- [X] T011 Ejecutar `python -m unittest test_resolubilidad_reporte` y registrar la evidencia roja: todas fallan por `self.fail` («todavía no existe») o por aserción. **Terminado**: evidencia anotada. (IX)
+- [X] T012 [P] Crear `DTO/ResultadoVerificacionDTO.py` (sin importar `Logica/` ni `adaptadores/`), según [data-model.md §3](data-model.md):
   - Constantes de tipo de bloqueo `SIN_LLAVE`, `LLAVE_INEXISTENTE`, `CICLO`, `LLAVE_SIN_CAMINO` y de causas `LLAVE_SALIDA_INEXISTENTE`, `SALIDA_SIN_CAMINO`, `SALIDA_BLOQUEADA`, `LLAVE_SALIDA_INALCANZABLE`, más la tupla `CAUSAS_EN_ORDEN` en ese orden fijo.
   - `@dataclass PasoLlaveDTO(llave: str, sala: int, enemigo: str | None = None)`.
   - `@dataclass BloqueoDTO(sala_origen: int, direccion: str, sala_destino: int, llave: str | None, salas_de_la_llave: list[int], tipo: str)`.
   - `@dataclass ResultadoVerificacion(cripta_id: str, resoluble: bool | None, orden, salas_alcanzables, salas_no_alcanzables: int = 0, bloqueos, causas, llave_salida: str | None = None, sala_salida: int | None = None, motivo_error: str | None = None)`, con las listas en `field(default_factory=list)`.
   - `codigo_salida()`: «0 si `resoluble is True`, 1 si `resoluble is False`, 2 si `resoluble is None`».
   - Docstring con las invariantes literales: «`resoluble is None` ⇔ `motivo_error is not None`»; «`resoluble is True` ⇒ la llave de salida figura exactamente una vez en `orden`; `bloqueos` y `causas` vacías»; «`resoluble is False` ⇒ `orden` vacía y `causas` no vacía»; «cada id de llave aparece como máximo una vez en `orden`». (FR-331, FR-336 a FR-338, FR-343, FR-344)
-- [ ] T013 [P] En `Logica/FuenteCripta.py` agregar al `Protocol` `obtener_sala_inicial(self, cripta_id: str) -> int: ...` y `obtener_llave_salida(self, cripta_id: str) -> str | None: ...`, junto a `obtener_sala_salida`. (FR-344, IV)
-- [ ] T014 En `adaptadores/servicioCripta.py` agregar `obtener_sala_inicial` (`self.datos_cripta(cripta_id)["sala_inicial"]`) y `obtener_llave_salida` (`self.datos_cripta(cripta_id).get("llave_salida")`), con docstring como el de `obtener_sala_salida`. Sin solicitudes nuevas (los datos generales ya se piden una vez). (FR-341, FR-344)
-- [ ] T015 En `adaptadores/fuente_solo_local.py` agregar los dos métodos con `self._leer(cripta_id, "los datos generales", lambda: self.fuente.obtener_...(cripta_id))`, como `obtener_sala_salida`. (FR-342, FR-344)
-- [ ] T016 [P] Crear `Logica/VerificacionResolubilidad.py` con la **entrega provisional**:
+- [X] T013 [P] En `Logica/FuenteCripta.py` agregar al `Protocol` `obtener_sala_inicial(self, cripta_id: str) -> int: ...` y `obtener_llave_salida(self, cripta_id: str) -> str | None: ...`, junto a `obtener_sala_salida`. (FR-344, IV)
+- [X] T014 En `adaptadores/servicioCripta.py` agregar `obtener_sala_inicial` (`self.datos_cripta(cripta_id)["sala_inicial"]`) y `obtener_llave_salida` (`self.datos_cripta(cripta_id).get("llave_salida")`), con docstring como el de `obtener_sala_salida`. Sin solicitudes nuevas (los datos generales ya se piden una vez). (FR-341, FR-344)
+- [X] T015 En `adaptadores/fuente_solo_local.py` agregar los dos métodos con `self._leer(cripta_id, "los datos generales", lambda: self.fuente.obtener_...(cripta_id))`, como `obtener_sala_salida`. (FR-342, FR-344)
+- [X] T016 [P] Crear `Logica/VerificacionResolubilidad.py` con la **entrega provisional**:
   - `MOTIVO_PROVISIONAL = "La verificación de resolubilidad todavía no está implementada."`.
   - `class CriptaNoResoluble(RuntimeError)`: `__init__(self, resultado)` guarda `self.resultado` y usa como mensaje `"\n".join(lineas_reporte(resultado))`.
   - `verificar_resolubilidad(mapa, sala_inicial, sala_salida, llave_salida, llaves, cripta_id="") -> ResultadoVerificacion` y `verificar(fuente, cripta_id, llaves=None) -> ResultadoVerificacion`: ambas devuelven `ResultadoVerificacion(cripta_id, resoluble=None, motivo_error=MOTIVO_PROVISIONAL)`.
   - Docstring del módulo que remite a `research.md` §2 a §8. Sin importar adaptadores. (FR-343, FR-344)
-- [ ] T017 [P] Crear `Logica/ReporteVerificacion.py` con `lineas_reporte(resultado) -> list[str]` y `aviso_forzado(resultado) -> str`. En esta entrega solo el caso de error (`resoluble is None`): `["Verificación de la cripta <id>: NO SE PUDO VERIFICAR.", <motivo_error>]`. Para los otros casos lanzar `NotImplementedError("se completa en el grupo E (T036)")`. (FR-330, FR-343)
-- [ ] T018 En `Logica/EstadoJuegoLogica.py`: `__init__` agrega `self.resultadoVerificacion = None` y `self.avisoResolubilidad = None`; `iniciarJuego(self, cripta, semilla=None, pedir_llaves=True, forzar=False)` acepta `forzar` **sin efecto** todavía. En `Logica/EstadoGuardadoLogica.py`, la restauración pone los dos atributos en `None` (una línea cada uno, junto a `llaves` y `avisoLlaves`). No tocar `DTO/EstadoGuardadoDTO.py`. (FR-339, FR-340)
-- [ ] T019 En `Servicio/EstadoJuegoServicio.py`:
+- [X] T017 [P] Crear `Logica/ReporteVerificacion.py` con `lineas_reporte(resultado) -> list[str]` y `aviso_forzado(resultado) -> str`. En esta entrega solo el caso de error (`resoluble is None`): `["Verificación de la cripta <id>: NO SE PUDO VERIFICAR.", <motivo_error>]`. Para los otros casos lanzar `NotImplementedError("se completa en el grupo E (T036)")`. (FR-330, FR-343)
+- [X] T018 En `Logica/EstadoJuegoLogica.py`: `__init__` agrega `self.resultadoVerificacion = None` y `self.avisoResolubilidad = None`; `iniciarJuego(self, cripta, semilla=None, pedir_llaves=True, forzar=False)` acepta `forzar` **sin efecto** todavía. En `Logica/EstadoGuardadoLogica.py`, la restauración pone los dos atributos en `None` (una línea cada uno, junto a `llaves` y `avisoLlaves`). No tocar `DTO/EstadoGuardadoDTO.py`. (FR-339, FR-340)
+- [X] T019 En `Servicio/EstadoJuegoServicio.py`:
   - `verificar(self, cripta_id: str, offline: bool | None = None) -> ResultadoVerificacion`: `self._asegurarServicio(offline)` y devuelve `VerificacionResolubilidad.verificar(self._estadoJuegoLogica.comunicacion, cripta_id)`; no inicia partida ni abre log.
   - `iniciarJuego(..., forzar: bool = False)`: pasa `forzar` a la lógica.
   - `avisoResolubilidad(self) -> str | None`: igual que `avisoLlaves()` (`None` si no hay partida iniciada).
 
   (FR-330, FR-344)
-- [ ] T020 Ejecutar `python -m unittest test_resolubilidad_reporte test_mapa_con_llaves` y la suite de la línea base. **Terminado**: todas las de `Contrato` pasan y la suite sigue igual.
+- [X] T020 Ejecutar `python -m unittest test_resolubilidad_reporte test_mapa_con_llaves` y la suite de la línea base. **Terminado**: todas las de `Contrato` pasan y la suite sigue igual.
 
 **🛑 Punto de parada (fin del grupo B)**: detenerse aquí. Scott avisa a Fernanda que la interfaz está lista ([contracts/interfaz-verificacion.md](contracts/interfaz-verificacion.md)) y hace un commit aparte con los grupos A y B. No seguir con el grupo C hasta que Scott lo confirme.
 
@@ -371,3 +371,18 @@ Resultado: `Ran 6 tests`, `FAILED (failures=5)`, 0 errores.
 | `test_fr341_g6_sin_solicitudes_nuevas` | **pasa a la primera** | Es una garantía de regresión: hoy el esqueleto hace exactamente `[('criptas', None), ('salas', 'cripta-01')]` (línea base anotada en T002). Fallaría si el cambio hiciera que `esqueleto()` pidiera de nuevo las salas (`veces("salas") == 2`) o agregara cualquier otra llamada al `HttpConfigurable` (por ejemplo, pedir el contenido para buscar las llaves) |
 
 Nota: la primera ejecución dio 2 errores en G3 y G4 por un defecto **de la prueba**, no del código: `ClienteOffline` solo acepta criptas guardadas por completo (`ErrorOffline: Ninguna cripta está guardada por completo`). Se corrigió la preparación (guardar también todo el contenido y las llaves, como `guardar_cripta_completa` de `test_fuente_solo_local`) y la salida de arriba es la de la prueba corregida, todavía sin cambios de código.
+
+### T011 — 2026-11-08 — `python -m unittest -v test_resolubilidad_reporte` (clase `Contrato`, antes de crear o tocar código del grupo B)
+
+Resultado: `Ran 6 tests`, `FAILED (failures=6)`, 0 errores. Todas fallan por aserción (`self.fail` o `assertTrue`), ninguna por error de importación.
+
+| Prueba | Aserción |
+|---|---|
+| `test_fr344_firmas_de_la_interfaz` | `Logica.VerificacionResolubilidad todavía no existe: No module named 'Logica.VerificacionResolubilidad'` |
+| `test_fr331_codigo_salida` | `DTO.ResultadoVerificacionDTO todavía no existe: No module named 'DTO.ResultadoVerificacionDTO'` |
+| `test_fr344_campos_del_resultado` | `DTO.ResultadoVerificacionDTO todavía no existe` |
+| `test_fr339_cripta_no_resoluble_es_runtime_error` | `Logica.VerificacionResolubilidad todavía no existe` |
+| `test_fr344_fuente_entrega_sala_inicial_y_llave_salida` | `False is not true : FuenteCripta no declara obtener_sala_inicial` |
+| `test_fr343_cuerpo_provisional_devuelve_codigo_2` | `Logica.VerificacionResolubilidad todavía no existe` |
+
+Ninguna pasó a la primera.
