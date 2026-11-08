@@ -23,6 +23,9 @@ Una cripta con puertas cerradas y llaves repartidas puede quedar sin solución: 
 - Q: ¿Qué significa completar la cripta? → A: Llegar a la sala de salida respetando las puertas, con la llave de salida obtenible; no se exige una puerta concreta hacia la sala de salida (FR-332).
 - Q: Cuando varias llaves se pueden conseguir en el mismo momento, ¿en qué orden aparecen? → A: Por menor id de la sala donde se ubica la llave y, dentro de la misma sala, por id de llave (FR-335).
 - Q: Con `--forzar`, ¿dónde se ve el aviso de cripta no resoluble? → A: Solo al iniciar la partida, igual que el aviso de FR-313 (FR-340).
+- Q: ¿Qué significa que varias llaves se vuelvan obtenibles «en el mismo momento»? → A: Por oleadas: una oleada son todas las llaves que se pueden conseguir antes de tener que abrir otra puerta; dentro de la oleada, menor sala y luego id; una oleada anterior siempre va antes que una posterior (FR-335).
+- Q: Al iniciar una partida nueva, si las llaves se obtuvieron pero la verificación no se puede completar por datos inválidos de la cripta, ¿la partida inicia? → A: Sí, con un aviso que da el motivo y dice que la verificación no está disponible, igual que cuando faltan las llaves; `--verificar` sigue terminando con el código de error de datos (FR-339).
+- Q: Si una puerta bloqueada pide una llave que existe pero está en una sala sin camino desde la sala inicial ni abriendo todas las puertas, ¿cómo se clasifica? → A: Como bloqueo, con el motivo «la llave está en una sala sin camino desde la sala inicial»; una puerta cerrada sin llave también es un bloqueo, con el motivo «no tiene llave» (FR-338).
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
@@ -42,6 +45,7 @@ Quien juega ejecuta `--verificar <cripta>`. El juego analiza la cripta sin inici
 4. **Dado** una cripta cuya sala de salida no tiene ningún camino desde la sala inicial, aunque se tengan todas las llaves, **cuando** se ejecuta `--verificar`, **entonces** no es resoluble y el reporte indica que la sala de salida no es alcanzable y hasta qué salas se llega. *(FR-332, FR-337, FR-338)*
 5. **Dado** una cripta cuya llave de salida no aparece en la ubicación de llaves, **cuando** se ejecuta `--verificar`, **entonces** no es resoluble y el reporte indica que la llave de salida no existe en la cripta. *(FR-332, FR-338)*
 6. **Dado** una puerta que solo se puede abrir con una llave ubicada detrás de una salida de un solo sentido que no tiene vuelta, **cuando** se ejecuta `--verificar`, **entonces** el resultado respeta el sentido de las salidas: una sala solo es alcanzable si existe un camino en el sentido permitido. *(FR-333, FR-334)*
+7. **Dado** una puerta cerrada que pide la llave `L`, y `L` está solo en una sala sin ningún camino desde la sala inicial (ni abriendo todas las puertas), **cuando** se ejecuta `--verificar`, **entonces** el reporte muestra esa puerta como bloqueo con el motivo «la llave está en una sala sin camino desde la sala inicial», no como ciclo. *(FR-338)*
 
 ---
 
@@ -72,7 +76,7 @@ Cuando hay varios órdenes válidos de obtener las llaves, la verificación elig
 **Escenarios de aceptación**:
 
 1. **(B-R3)** **Dado** una cripta con varios órdenes válidos de obtención de llaves, **cuando** se ejecuta `--verificar` dos veces, **entonces** las dos ejecuciones producen el mismo orden y el mismo reporte. *(FR-335, FR-336)*
-2. **Dado** que al mismo tiempo se vuelven obtenibles la llave `X` en la sala 4, la llave `B` en la sala 2 y la llave `A` también en la sala 2, **cuando** se verifica, **entonces** el orden es `A`, `B`, `X`: primero por menor id de sala y, dentro de la sala 2, por id de llave. *(FR-335)*
+2. **Dado** que en la misma oleada se vuelven obtenibles la llave `X` en la sala 4, la llave `B` en la sala 2 y la llave `A` también en la sala 2, **cuando** se verifica, **entonces** el orden es `A`, `B`, `X`: primero por menor id de sala y, dentro de la sala 2, por id de llave. Si después, al abrir una puerta con `A`, se vuelve obtenible la llave `C` en la sala 1, `C` va después de `X` porque es de la oleada siguiente. *(FR-335)*
 3. **Dado** la misma cripta, **cuando** se verifica una vez con el contenido de las salas ya guardado y otra sin él, **entonces** el reporte es idéntico. *(FR-335, FR-341)*
 4. **Dado** la misma cripta, **cuando** se verifica con el cliente real, con `--offline` y con la API falsa v2 sobre los mismos datos, **entonces** el resultado es el mismo. *(FR-335, FR-342)*
 5. **Dado** una cripta, **cuando** se verifica con `--verificar` y al iniciar una partida, **entonces** ambos usan la misma operación de verificación y obtienen el mismo resultado (resoluble o no, mismo orden, mismo bloqueo). *(FR-344, FR-339)*
@@ -93,6 +97,7 @@ Al iniciar una partida nueva, el juego verifica la cripta. Si no es resoluble, l
 2. **Dado** una cripta no resoluble, **cuando** se inicia una partida con `--forzar`, **entonces** la partida inicia y el aviso de que la cripta no es resoluble se muestra al iniciar la partida, igual que el aviso de FR-313, y no se repite durante la partida. *(FR-340)*
 3. **Dado** una cripta resoluble, **cuando** se inicia una partida, con o sin `--forzar`, **entonces** la partida inicia con normalidad y sin aviso. *(FR-339, FR-340)*
 4. **Dado** una cripta cuyas llaves no se pudieron obtener, **cuando** se inicia una partida, **entonces** la partida continúa con el aviso de FR-313 (la verificación no está disponible) y no se bloquea. *(FR-339, FR-313)*
+5. **Dado** una cripta con llaves obtenidas cuya sala de salida no existe en el mapa, **cuando** se inicia una partida, **entonces** la partida inicia con un aviso que da el motivo y dice que la verificación no está disponible; **cuando** se ejecuta `--verificar` sobre la misma cripta, **entonces** termina con el código de error de datos. *(FR-339, FR-343)*
 
 ---
 
@@ -132,7 +137,8 @@ La verificación tarda menos de 200 ms en la cripta más grande publicada, con l
 
 - La sala inicial es la sala de salida: la cripta es resoluble si la llave de salida es obtenible desde ahí.
 - La llave de salida está en la sala inicial y no hay puertas: resoluble, con el orden de llaves formado solo por la llave de salida.
-- Una puerta cerrada sin llave asignada: nunca se puede cruzar.
+- Una puerta cerrada sin llave asignada: nunca se puede cruzar; si separa lo alcanzable de lo no alcanzable, el reporte la muestra como bloqueo con el motivo «no tiene llave» (FR-338).
+- Una puerta pide una llave que está en una sala sin ningún camino desde la sala inicial, ni abriendo todas las puertas: bloqueo con el motivo «la llave está en una sala sin camino desde la sala inicial», no ciclo (FR-338).
 - Una misma llave abre varias puertas: una vez obtenible, sirve para todas (las llaves no se gastan al abrir).
 - Una llave aparece en varias ubicaciones: figura una sola vez en el orden, en el momento en que la primera de sus ubicaciones resulta alcanzable.
 - Llaves que no hacen falta para salir (están en salas alcanzables pero no abren nada necesario): aparecen en el orden si son obtenibles antes de alcanzar la salida [ver Supuestos].
@@ -141,6 +147,7 @@ La verificación tarda menos de 200 ms en la cripta más grande publicada, con l
 - Varios bloqueos independientes: el reporte los muestra todos, en orden determinista.
 - La cripta cambia de versión entre `--verificar` y la partida: la partida vuelve a verificar con los datos vigentes al iniciar.
 - Partida cargada y reproducción (`--replay`, `--hasta`): no se verifica al cargar ni al reproducir; no son partidas nuevas.
+- Datos inválidos de la cripta al iniciar una partida (llaves presentes, pero la sala inicial o la de salida no existe en el mapa): la partida inicia con aviso; `--verificar` da error de datos (FR-339, FR-343).
 
 ## Requisitos *(obligatorio)*
 
@@ -156,17 +163,17 @@ La verificación tarda menos de 200 ms en la cripta más grande publicada, con l
 - **FR-332**: Una cripta DEBE considerarse resoluble si y solo si, partiendo de la sala inicial, existe un orden de obtención de llaves que permite completarla usando la llave de salida. Completarla significa llegar a la sala de salida respetando las puertas (FR-333) con la llave de salida obtenible (FR-334); NO DEBE exigirse una puerta concreta hacia la sala de salida.
 - **FR-333**: Una sala DEBE considerarse alcanzable si existe un camino desde la sala inicial, respetando el sentido de las salidas, en el que cada puerta cerrada que se cruza tiene su llave ya obtenible. Una puerta cerrada sin llave asignada NO DEBE cruzarse nunca.
 - **FR-334**: Una llave DEBE considerarse obtenible cuando al menos una de sus ubicaciones está en una sala alcanzable: el suelo de esa sala o lo que suelta un enemigo cuya sala inicial es esa sala. El movimiento del enemigo durante la partida NO DEBE influir.
-- **FR-335**: La verificación DEBE ser determinista: la misma cripta con los mismos datos DEBE producir siempre el mismo resultado, el mismo orden de llaves y el mismo reporte, aunque existan varios órdenes válidos, sin depender del orden en que llegaron los datos ni de qué contenido ya estaba guardado. Cuando varias llaves se vuelven obtenibles en el mismo momento, el desempate DEBE ser por menor id de la sala donde se ubica la llave y, dentro de la misma sala, por id de llave.
+- **FR-335**: La verificación DEBE ser determinista: la misma cripta con los mismos datos DEBE producir siempre el mismo resultado, el mismo orden de llaves y el mismo reporte, aunque existan varios órdenes válidos, sin depender del orden en que llegaron los datos ni de qué contenido ya estaba guardado. El orden DEBE construirse por **oleadas**: una oleada son todas las llaves que se pueden obtener antes de tener que abrir otra puerta; las llaves de una oleada anterior van siempre antes que las de una posterior. Dentro de una oleada, el desempate DEBE ser por menor id de la sala donde se ubica la llave y, dentro de la misma sala, por id de llave.
 
 **Reporte**
 
 - **FR-336**: Si la cripta es resoluble, el reporte DEBE mostrar un orden válido de obtención de llaves: cada llave con la sala donde se obtiene y, si la suelta un enemigo, qué enemigo es; la llave de salida DEBE figurar en el orden.
 - **FR-337**: Si la cripta no es resoluble, el reporte DEBE mostrar las salas alcanzables (en orden creciente de id) y la cantidad de salas no alcanzables.
-- **FR-338**: Si la cripta no es resoluble, el reporte DEBE indicar el motivo: cada puerta que separa lo alcanzable de lo no alcanzable con la llave que necesita y dónde está esa llave, señalando como **ciclo** cuando la llave está detrás de esa misma puerta (directamente o a través de otras puertas bloqueadas), y como **bloqueo** cuando la llave no existe en la cripta, la llave de salida no existe, o la sala de salida no tiene camino aunque se tengan todas las llaves.
+- **FR-338**: Si la cripta no es resoluble, el reporte DEBE indicar el motivo: cada puerta que separa lo alcanzable de lo no alcanzable con la llave que necesita y dónde está esa llave, señalando como **ciclo** cuando la llave está detrás de esa misma puerta (directamente o a través de otras puertas bloqueadas), y como **bloqueo**, con su motivo, cuando la puerta está cerrada y no tiene llave, cuando la llave no existe en la cripta, cuando la llave existe pero todas sus ubicaciones están en salas sin camino desde la sala inicial aunque se abrieran todas las puertas, cuando la llave de salida no existe, o cuando la sala de salida no tiene camino aunque se tengan todas las llaves. Una llave cuenta como «detrás de la puerta» (ciclo) solo si alguna de sus ubicaciones tiene camino desde la sala inicial abriendo todas las puertas.
 
 **Inicio de partida**
 
-- **FR-339**: Al iniciar una partida nueva, el juego DEBE verificar la cripta; si no es resoluble y no se usó `--forzar`, la partida NO DEBE iniciar y DEBE mostrarse el reporte. Si las llaves no se pudieron obtener, se aplica FR-313: la partida continúa con aviso y no se bloquea.
+- **FR-339**: Al iniciar una partida nueva, el juego DEBE verificar la cripta; si no es resoluble y no se usó `--forzar`, la partida NO DEBE iniciar y DEBE mostrarse el reporte. Si las llaves no se pudieron obtener, se aplica FR-313: la partida continúa con aviso y no se bloquea. Si las llaves se obtuvieron pero la verificación no se puede completar por datos inválidos de la cripta (por ejemplo, la sala inicial o la de salida no existe en el mapa), la partida tampoco se bloquea: continúa con un aviso, mostrado solo al iniciar, que da el motivo y dice que la verificación de resolubilidad no está disponible.
 - **FR-340**: Con `--forzar`, una cripta no resoluble DEBE iniciar igualmente y el aviso de que no es resoluble DEBE mostrarse al iniciar la partida, igual que el aviso de FR-313. `--forzar` NO DEBE cambiar nada en una cripta resoluble.
 
 **Datos y solicitudes**
