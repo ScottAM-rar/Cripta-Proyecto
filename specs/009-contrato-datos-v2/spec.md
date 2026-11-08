@@ -143,6 +143,7 @@ Se mide cuántas solicitudes extra provoca un cazador que cruza salas cuyo conte
 - La versión de la cripta cambia durante una partida: no se vuelve a consultar en esa partida; la invalidación ocurre al iniciar la siguiente.
 - Llave soltada por un enemigo en una sala cuyo contenido aún no se descargó: se acepta; la comprobación del enemigo se omite sin solicitudes (FR-311).
 - Fallo a medio guardar: lo guardado a medias no debe tomarse como válido en la partida siguiente.
+- Reproducir un log (`--replay`, `--hasta`): una reproducción no es una partida nueva, así que no consulta las llaves ni emite el aviso de resolubilidad; si más adelante se necesitan, se piden bajo demanda como en una partida cargada (FR-325).
 - Cripta incompleta en disco por la vía solo local: solo la petición del contenido de una sala nombra la sala que falta; las demás operaciones informan que la cripta no está guardada por completo (FR-315). Una cripta que no figura en la lista guardada se informa como dato faltante, no como error de programa.
 
 ## Requisitos *(obligatorio)*

@@ -67,7 +67,7 @@ El enfoque, justificado en [research.md](research.md):
 1. **El presupuesto hoy solo se reporta.** Esta capacidad lo hace cumplir solo para la consulta de llaves (FR-309, SC-005).
 2. **El HTTP no puede validar contra el contenido.** Por eso la validación es una función pura que recibe quién lee el contenido guardado. El persistente valida **antes** de guardar (FR-310).
 3. **`validar_cripta` vacía el archivo** si la versión no coincide. La lectura solo local no debe llamarlo, porque destruiría datos que la consulta histórica podría necesitar después.
-4. **`--replay` pasa por `iniciarJuego`**: con las llaves guardadas no gasta nada. Sin llaves, solo emite el aviso. El log no cambia.
+4. **`--replay` pasa por `iniciarJuego`, pero no pide las llaves** (cambió el 2026-11-07, tras la pregunta de la capacidad 007 y T058): una reproducción no es una partida nueva y las llaves solo sirven para el aviso de resolubilidad, así que no gasta presupuesto ni emite el aviso. `iniciarJuego` recibe `pedir_llaves=True` y `repetirPartida` pasa `False`; `obtenerLlaves()` sigue pidiéndolas bajo demanda. El log no cambia.
 5. **`--verificar` no es de esta capacidad**: qué hace cuando faltan las llaves lo especifica e implementa la capacidad 003 (FR-330 en adelante). Aquí solo quedan `obtenerLlaves()`, `llaves` y `avisoLlaves`.
 6. **Partida cargada** (FR-325): la restauración no pasa por `iniciarJuego`; por eso `llaves` y `avisoLlaves` se inicializan en `__init__` y la restauración los reinicia a `None`, para no arrastrar las llaves de otra cripta.
 
