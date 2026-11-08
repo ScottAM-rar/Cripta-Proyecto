@@ -16,7 +16,7 @@ class TestBenchPuntosControl(unittest.TestCase):
     def test_ejecutar_benchmark_puntos_control(self):
         filas = []
         salida_io = io.StringIO()
-        cumple = puntos_control.ejecutar(filas, imprimir=lambda s="": salida_io.write(s + "\n"))
+        cumple = puntos_control.ejecutar(filas, imprimir=lambda s="": salida_io.write(s + "\n"), acciones=300)
 
         self.assertTrue(cumple, "El benchmark de puntos de control debe cumplir con el límite de 20 ms con K=1")
         self.assertGreater(len(filas), 0)
