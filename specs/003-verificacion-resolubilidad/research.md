@@ -67,7 +67,7 @@ Cuando la cola se vacía termina una **oleada**:
 
 | Alternativa | Costo | Por qué no |
 |---|---|---|
-| **Repetir el recorrido completo** desde la sala inicial cada vez que se obtiene una llave (o cada oleada) | O(K · (S + E)) | Cuadrático en criptas encadenadas. Es la alternativa que **mide el bench** (§9): da el mismo resultado, así que también sirve de oráculo en las pruebas de equivalencia |
+| **Repetir el recorrido completo** desde la sala inicial cada vez que se obtiene una llave (o cada oleada) | O(K · (S + E)) | Cuadrático en criptas encadenadas. Es la alternativa que **mide el bench** (§9): da el mismo resultado, así que también sirve de oráculo en las pruebas de equivalencia (`tests_labs/referencia_resolubilidad.py`, `verificar_repetida`). El oráculo **para igual** que el algoritmo: al final de la oleada en que la sala de salida es alcanzable y la llave de salida es obtenible (e incluye las llaves de esa oleada), o cuando una oleada no agrega ninguna llave nueva |
 | Punto fijo sobre la lista de puertas: repasar todas las puertas cerradas hasta que ninguna se abra | O(K · E) | Igual de cuadrático y sin orden natural por oleadas |
 | Una llave por vez del montículo (sacar solo el mínimo y volver al recorrido) | Mismo costo | Es determinista, pero una llave descubierta después puede adelantarse a una que estaba pendiente desde antes; contradice «primero lo que es obtenible antes» y hace el reporte menos explicable. Las oleadas dan el mismo resultado en B-R3 y en la cadena |
 | Búsqueda exhaustiva de órdenes (permutaciones, retroceso) | O(K!) | Innecesaria: con llaves que no se gastan, la alcanzabilidad es monótona |
@@ -134,7 +134,7 @@ Una llave que aparece en una puerta o como llave de salida pero no en ninguna ub
 |---|---|
 | `SIN_LLAVE` | La puerta está cerrada y no tiene llave asignada |
 | `LLAVE_INEXISTENTE` | Ninguna ubicación tiene esa llave |
-| `CICLO` | La llave existe, pero todas sus ubicaciones están en salas no alcanzables a las que sí se llegaría sin puertas: está detrás de esta puerta o de otras puertas bloqueadas |
+| `CICLO` | La llave existe y alguna de sus ubicaciones está en una sala no alcanzable a la que sí se llegaría abriendo todas las puertas: está detrás de esta puerta o de otras puertas bloqueadas (FR-338) |
 | `LLAVE_SIN_CAMINO` | La llave existe, pero ninguna de sus ubicaciones tiene camino desde la sala inicial ni ignorando todas las puertas |
 
 - `causas`: lista ordenada fija de causas generales, para el encabezado del reporte: `LLAVE_SALIDA_INEXISTENTE` (la llave de salida no tiene ubicaciones), `SALIDA_SIN_CAMINO` (la sala de salida no tiene camino ni ignorando las puertas), `SALIDA_BLOQUEADA` (tiene camino, pero las puertas lo impiden), `LLAVE_SALIDA_INALCANZABLE` (se llega a la sala de salida, pero la llave de salida no es obtenible).
@@ -157,6 +157,7 @@ Con la cripta resoluble: `orden` (lista de `PasoLlaveDTO(llave, sala, enemigo)`)
 - Dentro de `iniciarJuego`, justo después de `self.obtenerLlaves()` y **antes** de `self.iniciado = True`:
   - `self.resultadoVerificacion` y `self.avisoResolubilidad` vuelven a `None`;
   - si `self.llaves` es `None` (FR-313): no se verifica, la partida sigue con `avisoLlaves` (FR-339);
+  - si hay llaves pero la verificación da error de datos (`resoluble is None`, por ejemplo la sala de salida no existe en el mapa; escenario H4-5): la partida inicia con `avisoResolubilidad` = el `motivo_error` seguido de «La verificación de resolubilidad no está disponible.»; `--verificar` sobre la misma cripta da código 2 (FR-339, FR-343);
   - si no, `resultado = verificar(self.comunicacion, cripta, llaves=self.llaves)`; se guarda en `self.resultadoVerificacion`;
   - si `resultado.resoluble is False` y no `forzar`: se lanza `CriptaNoResoluble(resultado)` (en `Logica/VerificacionResolubilidad.py`, hereda de `RuntimeError`, `str()` es el reporte completo) y `iniciado` queda en `False`;
   - si `resultado.resoluble is False` y `forzar`: `self.avisoResolubilidad = aviso_forzado(resultado)` y la partida sigue.

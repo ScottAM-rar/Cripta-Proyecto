@@ -12,10 +12,12 @@ Un solo lugar: `Logica/ReporteVerificacion.py` (`lineas_reporte`, `aviso_forzado
 
 ## Forma del reporte
 
+Los ejemplos usan `cripta-01`, el id que publica siempre la API falsa v2 (`HttpConfigurable`), así que las pruebas pueden compararlos literalmente.
+
 Resoluble (B-R3):
 
 ```text
-Verificación de la cripta caso-b-r3: RESOLUBLE.
+Verificación de la cripta cripta-01: RESOLUBLE.
 Orden de obtención de llaves:
   1. itm_llave_a en la sala 2
   2. itm_llave_b en la sala 3
@@ -27,7 +29,7 @@ Con enemigo (B-R2): `  1. itm_llave_salida en la sala 3, la suelta e-errante (ll
 No resoluble (B-R1):
 
 ```text
-Verificación de la cripta caso-b-r1: NO RESOLUBLE.
+Verificación de la cripta cripta-01: NO RESOLUBLE.
 Motivo: la sala de salida 2 tiene camino, pero las puertas lo impiden.
 Puertas bloqueadas:
   - Sala 1, salida este hacia la sala 2: pide itm_llave_salida (llave de salida), que está en la sala 2. Ciclo: la llave está detrás de esta puerta o de otras puertas bloqueadas.
@@ -40,7 +42,7 @@ No resoluble (B-R4): la puerta dice `pide itm_llave_perdida, que no existe en la
 Error de datos:
 
 ```text
-Verificación de la cripta X: NO SE PUDO VERIFICAR.
+Verificación de la cripta cripta-01: NO SE PUDO VERIFICAR.
 <motivo_error>
 ```
 

@@ -37,21 +37,21 @@
 
 - [ ] T001 [P] Revisar `plan.md`, `research.md`, `data-model.md` y este `tasks.md` contra la lista de prohibidos del principio I y las reglas de arriba, y anotar el resultado en la sección Notas de `specs/003-verificacion-resolubilidad/checklists/requirements.md`. Comprobar en especial que `IndiceLlaves`, el recorrido por oleadas, la elección de ubicación y el oráculo de `tests_labs/referencia_resolubilidad.py` no necesitan `dict`, `set`, `collections`, `sorted()` ni `.sort()`. **Terminado**: nota con fecha y «sin hallazgos» o la lista de hallazgos. (I)
 - [ ] T002 [P] Ejecutar `python -m unittest discover -p "test_*.py"` y `python -m tests_labs.sin_red`, y anotar la línea base (cantidad de pruebas, las que fallan y por qué) en las Notas de `specs/003-verificacion-resolubilidad/checklists/requirements.md`. No ejecutar `prueba_cliente_http` ni `prueba_servicio`. **Terminado**: línea base anotada antes de cualquier cambio de código. (IX)
-- [ ] T003 [P] En la matriz de trazabilidad de `specs/003-verificacion-resolubilidad/quickstart.md` agregar los escenarios del clarify con sus pruebas previstas: H1-7 en la fila FR-338 (`Bloqueos.test_fr338_h1_7_llave_en_sala_sin_camino_es_bloqueo_no_ciclo`); H4-5 en las filas FR-339 y FR-343 (`Inicio.test_fr339_h4_5_datos_invalidos_inicia_con_aviso`, `ErroresDeDatos.test_fr343_h4_5_sala_de_salida_inexistente`); el ejemplo de dos oleadas de H3-2 en la fila FR-335 (`Determinismo.test_fr335_h3_2_dos_oleadas`); y comprobar que la numeración H3-1 a H3-5 de la matriz coincide con la de la spec. Solo el documento. **Terminado**: cada escenario H1-1 a H6-2 de `spec.md` aparece en al menos una fila. (IX)
+- [ ] T003 [P] En la matriz de trazabilidad de `specs/003-verificacion-resolubilidad/quickstart.md` agregar los escenarios del clarify con sus pruebas previstas: H1-7 en la fila FR-338 (`Bloqueos.test_fr338_h1_7_llave_en_sala_sin_camino_es_bloqueo_no_ciclo`); H4-5 en las filas FR-339 y FR-343 (`Inicio.test_fr339_h4_5_datos_invalidos_inicia_con_aviso`, `ErroresDeDatos.test_fr343_h4_5_sala_de_salida_inexistente`); el ejemplo de dos oleadas de H3-2 en la fila FR-335 (`Determinismo.test_fr335_h3_2_dos_oleadas`); comprobar que la numeración H3-1 a H3-5 de la matriz coincide con la de la spec; y **alinear los nombres de prueba que ya están en la matriz** con los de este `tasks.md` (por ejemplo, `test_fr333_cadena_de_puertas` → `test_fr333_h1_3_cadena_de_puertas`, `test_fr335_desempate_sala_y_luego_id` → `test_fr335_h3_2_dos_oleadas`, `test_fr342_http_offline_y_solo_local_dan_lo_mismo` → `test_fr342_h3_4_http_offline_y_solo_local_dan_lo_mismo`), incluidas las pruebas de casos límite de T038. Solo el documento. **Terminado**: cada escenario H1-1 a H6-2 de `spec.md` aparece en al menos una fila. (IX)
 - [ ] T004 Crear `test_mapa_con_llaves.py`, clase `MapaConLlaves`, una prueba por garantía de `contracts/mapa-con-llaves.md`, leyendo el campo con `getattr(arista, "llave", "<sin campo>")`:
   - `test_fr333_g1_esqueleto_copia_la_llave`: con el `HttpConfigurable` de `_b_r3` (de `CASOS_APENDICE_B`) y un `ServicioCripta`, `esqueleto()` da `itm_llave_a` en las salidas 1→4 y 4→1, `itm_llave_b` en 4→5 y 5→4, y `None` en 1→2 y 1→3.
   - `test_fr333_g2_mapa_cripta_copia_la_llave`: lo mismo leyendo `MapaCripta(...).salidas(n)`.
   - `test_fr342_g3_offline_igual_que_con_red`: guardar con `ClientePersistente` sobre ese `HttpConfigurable` en una carpeta temporal y leer con `ClienteOffline`; las ternas `(origen, dirección, llave)` coinciden.
   - `test_fr342_g4_fuente_solo_local_igual_sin_solicitudes`: `FuenteSoloLocal.esqueleto()` da las mismas ternas y el contador de solicitudes no cambia.
   - `test_g5_construccion_sin_llave_sigue_funcionando`: `AristaMapaDTO` con 4 argumentos y `AristaCripta` con 5 posicionales dan `llave is None`; con `llave="x"` por nombre, el campo vale `"x"` (envolver la construcción en `try/except TypeError: self.fail(...)`).
-  - `test_fr341_g6_sin_solicitudes_nuevas`: `obtener_salas` se llama una sola vez y la lista de llamadas del `HttpConfigurable` no cambia respecto de no pedir el esqueleto con llaves.
+  - `test_fr341_g6_sin_solicitudes_nuevas`: `obtener_salas` se llama **exactamente una vez** y la lista de llamadas del `HttpConfigurable` es la misma que anotó la línea base de T002 para el mismo recorrido (ninguna llamada nueva).
 
   **Terminado**: el archivo existe y corre sin errores de importación. (FR-333, FR-341, FR-342)
 - [ ] T005 Ejecutar `python -m unittest test_mapa_con_llaves` y registrar en «Evidencia en rojo» la salida resumida. Se espera: G1 a G4 fallan por aserción (`'<sin campo>' != 'itm_llave_a'`), G5 falla por `self.fail` (el constructor no acepta `llave`). G6 probablemente pasa a la primera: anotar que es una garantía de regresión y que fallaría si `esqueleto()` hiciera una segunda llamada a `obtener_salas`. **Terminado**: evidencia anotada, sin inventar rojos. (IX)
 - [ ] T006 [P] En `DTO/MapaDTO.py` agregar a `AristaMapaDTO` el campo `llave: str | None = None` **al final** y actualizar el docstring: «Id de catálogo de la llave que abre la puerta de esta salida, tal como lo publica la API en la salida (`"llave"`). `None` si la API no lo trae». (FR-333)
 - [ ] T007 [P] En `Logica/MapaCripta.py`: `AristaCripta.__slots__` pasa a `("origen", "direccion", "destino", "costo", "cerrada_inicial", "llave")`; el constructor recibe `llave: str | None = None` al final; `MapaCripta.__init__` pasa `a.llave`. Nada más cambia (`version_puertas`, `esta_abierta`, salientes, entrantes). (FR-333)
 - [ ] T008 En `adaptadores/servicioCripta.py`, `esqueleto()`: pasar `llave=datos.get("llave")` al construir cada `AristaMapaDTO`. Sin otros cambios y sin usos nuevos de `deque`. (FR-333)
-- [ ] T009 Ejecutar `python -m unittest test_mapa_con_llaves` y la suite de la línea base. **Terminado**: las 6 pruebas pasan; la suite queda igual que en T002. Si G3 o G4 fallaran (la llave no llega por `--offline` o por la lectura solo local), corregir el adaptador que la pierde en esta misma tarea y anotarlo en Notas del checklist para actualizar `research.md` §1 en el grupo I. (FR-333, FR-342)
+- [ ] T009 Ejecutar `python -m unittest test_mapa_con_llaves` y la suite de la línea base. **Terminado**: las 6 pruebas pasan; la suite queda igual que en T002. Si G3 o G4 fallaran (la llave no llega por `--offline` o por la lectura solo local), corregir solo en `adaptadores/servicioCripta.py` o `adaptadores/fuente_solo_local.py` (como T041) y anotarlo en Notas del checklist para actualizar `research.md` §1 en el grupo I. Si la llave se pierde en otro lado (clientes HTTP, persistente u offline, o `AlmacenDisco`), **detenerse y consultar a Scott** sin modificar esos archivos. (FR-333, FR-342)
 
 **Punto de control**: el mapa conoce la llave de cada puerta por las tres fuentes y nada anterior se rompió.
 
@@ -144,12 +144,12 @@
 
   (B-R1, B-R2, B-R3, B-R4; FR-334, FR-335, FR-338)
 - [ ] T027 [P] [US3] Crear `test_resolubilidad_determinismo.py`:
-  - Clase `Determinismo`: `test_fr335_h3_2_dos_oleadas` (escenario H3-2 literal: en la primera oleada `X` en la sala 4, `B` y `A` en la sala 2 dan `A`, `B`, `X`; la llave `C` de la sala 1, que se libera al abrir con `A`, va **después** de `X`); `test_fr335_orden_de_la_respuesta_no_importa` (las tres listas de `UbicacionLlavesDTO` invertidas dan el mismo resultado); `test_fr335_suelo_antes_que_enemigo_y_menor_instancia` (misma llave y sala en el suelo y en un enemigo: `enemigo is None`; en dos enemigos: la menor instancia); `test_fr335_dos_ejecuciones_iguales`.
+  - Clase `Determinismo`: `test_fr335_h3_2_dos_oleadas` (escenario H3-2 literal: sala inicial 5; en la primera oleada `X` en la sala 4, `B` y `A` en la sala 2; la llave `C` en la sala 3, detrás de la puerta que se abre con `A`; el orden es `A`, `B`, `X`, `C`: `C` va última aunque su sala tenga menor id que la de `X`, porque es de la oleada siguiente); `test_fr335_orden_de_la_respuesta_no_importa` (las tres listas de `UbicacionLlavesDTO` invertidas dan el mismo resultado); `test_fr335_suelo_antes_que_enemigo_y_menor_instancia` (misma llave y sala en el suelo y en un enemigo: `enemigo is None`; en dos enemigos: la menor instancia); `test_fr335_dos_ejecuciones_iguales`.
   - Clase `Equivalencia`: `test_fr335_fr346_incremental_igual_a_repetida_en_criptas_al_azar`: para las semillas 0 a 19, `cripta_al_azar_con_llaves(semilla)` (T028) y `verificar_resolubilidad` igual a `verificar_repetida` campo por campo. (III)
 
   (FR-335, FR-346, II, III)
 - [ ] T028 [P] [US3] Crear `tests_labs/referencia_resolubilidad.py` (oráculo, como `tests_labs/referencia_recorrido.py`):
-  - `verificar_repetida(mapa, sala_inicial, sala_salida, llave_salida, llaves, cripta_id="") -> ResultadoVerificacion`: en cada oleada recorre **desde cero** desde la sala inicial con las llaves obtenidas hasta ahora; las llaves nuevas de la oleada se ordenan con `ordenar_adaptativo` por `(sala, id)`; bloqueos, tipos y causas calculados de forma independiente con la definición de `spec.md` (FR-338) y `research.md` §6. Costo O(K · (S + E)): es la alternativa descartada que mide el bench.
+  - `verificar_repetida(mapa, sala_inicial, sala_salida, llave_salida, llaves, cripta_id="") -> ResultadoVerificacion`: en cada oleada recorre **desde cero** desde la sala inicial con las llaves obtenidas hasta ahora; **para igual que el algoritmo**: al final de la oleada en que la sala de salida es alcanzable y la llave de salida es obtenible (incluye las llaves de esa oleada en el orden), o cuando una oleada no agrega ninguna llave nueva (no resoluble); las llaves nuevas de la oleada se ordenan con `ordenar_adaptativo` por `(sala, id)`; bloqueos, tipos y causas calculados de forma independiente con la definición de `spec.md` (FR-338) y `research.md` §6. Costo O(K · (S + E)): es la alternativa descartada que mide el bench.
   - `cripta_al_azar_con_llaves(semilla, salas=60) -> (mapa, sala_inicial, sala_salida, llave_salida, llaves)`: `esqueleto_dirigido_aleatorio` con puertas cerradas al azar, llaves asignadas a esas puertas y ubicadas en salas al azar (algunas en enemigos, algunas inexistentes), todo con `random.Random(semilla)`.
 
   Sin `dict`, `set`, `sorted()` ni `.sort()`. (III, VII)
@@ -178,7 +178,7 @@
 **Objetivo**: un solo lugar para el texto, idéntico entre ejecuciones ([contracts/reporte-verificacion.md](contracts/reporte-verificacion.md)).
 
 - [ ] T034 [P] [US1] Ampliar `test_resolubilidad_reporte.py`:
-  - Clase `Texto`: `test_fr336_resoluble_muestra_orden_con_sala_y_enemigo` (líneas exactas de B-R3 y la línea con enemigo de B-R2); `test_fr337_lista_salas_alcanzables`; `test_fr338_texto_por_tipo_de_bloqueo` (los 4 tipos); `test_fr338_texto_por_causa` (las 4 causas, una línea `Motivo:` por causa en orden); `test_fr338_b_r1_reporte_completo` (las 5 líneas del ejemplo del contrato); `test_fr343_reporte_de_error`.
+  - Clase `Texto`: `test_fr336_resoluble_muestra_orden_con_sala_y_enemigo` (líneas exactas de B-R3 y la línea con enemigo de B-R2); `test_fr337_lista_salas_alcanzables`; `test_fr338_texto_por_tipo_de_bloqueo` (los 4 tipos); `test_fr338_texto_por_causa` (las 4 causas, una línea `Motivo:` por causa en orden); `test_fr338_b_r1_reporte_completo` (las 5 líneas del ejemplo del contrato, con el id `cripta-01` que publica la API falsa v2); `test_fr343_reporte_de_error`.
   - Clase `CodigosDeSalida`: `test_fr331_resoluble_0_no_resoluble_1_error_2` con B-R3, B-R1 y `fallo_llaves="sin_respuesta"`.
   - Clase `VerificarSinPartida`: `test_fr330_verificar_no_inicia_partida_ni_crea_log_ni_vista`: tras `EstadoJuegoServicio.verificar`, la lógica sigue con `iniciado is False`, `AlmacenLogTexto.abrir` (con `unittest.mock.patch`) no se llamó y no se instanció `Controlador.Vista`.
   - Clase `AvisoForzado`: `test_fr340_aviso_forzado_una_linea` con el texto del contrato.
@@ -199,6 +199,7 @@
 - [ ] T038 [P] [US5] Crear `test_resolubilidad_datos.py`:
   - Clase `Solicitudes`: `test_fr341_llaves_guardadas_cero_solicitudes` (con `ClientePersistente` en carpeta temporal: una primera sesión obtiene las llaves; en una sesión nueva, `verificar` no agrega llamadas `("llaves", …)` y el contador no cambia); `test_fr341_sin_llaves_solo_la_consulta_de_la_009` (exactamente una llamada `("llaves", id)`); `test_fr341_nunca_pide_contenido` (ninguna llamada `obtener_contenido` en `HttpConfigurable.llamadas`).
   - Clase `ErroresDeDatos`: `test_fr343_servicio_sin_respuesta` (`fallo_llaves="sin_respuesta"`: `resoluble is None`, código 2, el motivo nombra la cripta); `test_fr343_offline_sin_llaves_sin_solicitudes` (`ClienteOffline` sobre una caché sin llaves); `test_fr343_cripta_inexistente`; `test_fr343_h4_5_sala_de_salida_inexistente` (`HttpConfigurable(sala_salida=<id sin sala>)`: código 2 y «Datos inválidos»).
+  - Clase `CasosLimite` (casos límite de `spec.md` que no tenían prueba): `test_fr333_salida_a_sala_inexistente_se_ignora` (una salida apunta a un id sin sala: se ignora, la sala no aparece en `salas_alcanzables` y el resto del resultado no cambia); `test_fr343_ubicacion_de_llave_en_sala_inexistente_es_error_de_datos` (la consulta de llaves trae una sala que no existe: la 009 la rechaza y `verificar` da `resoluble is None`, código 2, sin resultado inventado); `test_fr339_cambio_de_version_entre_verificar_y_la_partida` (con `ClientePersistente`: `verificar` con la versión `v1` es resoluble; el servicio publica `v2` con la puerta de la salida pidiendo una llave inexistente; una partida nueva vuelve a verificar con los datos de `v2` y no inicia sin `forzar`).
 
   (FR-341, FR-343, SC-003, SC-004)
 - [ ] T039 [P] [US3] Ampliar `test_resolubilidad_determinismo.py`: clase `Fuentes` con `test_fr342_h3_4_http_offline_y_solo_local_dan_lo_mismo` (`ServicioCripta` sobre `HttpConfigurable`, `ClienteOffline` tras guardar con `ClientePersistente`, y `FuenteSoloLocal`: resultados iguales campo por campo); y en `Determinismo`, `test_fr335_h3_3_con_y_sin_contenido_guardado` (precargar todas las salas y verificar de nuevo: resultado igual). (FR-335, FR-342)
@@ -269,7 +270,7 @@
 ### Entre grupos
 
 - **A** primero. T001, T002 y T003 son paralelas; T004 → T005 → (T006 ∥ T007) → T008 → T009.
-- **B** depende de A. T010 → T011 → (T012 ∥ T013 ∥ T016 ∥ T017) → T014 → T015 → T018 → T019 → T020. **Punto de parada** al terminar: no seguir sin la confirmación de Scott.
+- **B** depende de A. T010 → T011 → (T012 ∥ T013 ∥ T016 ∥ T017) → T014 → T015 → T018 → T019 → T020. T016 importa T017; se prueban juntos en T020. **Punto de parada** al terminar: no seguir sin la confirmación de Scott.
 - **C** depende de B (punto de parada). T021 → T022 → T023 → T024. Puede hacerse en paralelo con las pruebas del grupo D (T025 a T028), que no dependen de `IndiceLlaves`.
 - **D** depende de C (la implementación usa `IndiceLlaves`). T025, T026, T027 y T028 en paralelo → T029 → T030 → T031 → T032 → T033.
 - **E** depende de D. T034 → T035 → T036 → T037.
@@ -329,13 +330,13 @@ Cada incremento se confirma por separado. La especificación y el plan se confir
 | FR-330 | T017, T019, T034, T036 |
 | FR-331 | T010, T012, T034, T036 |
 | FR-332 | T025, T030 |
-| FR-333 | T004, T006, T007, T008, T009, T025, T030 |
+| FR-333 | T004, T006, T007, T008, T009, T025, T030, T038 |
 | FR-334 | T025, T026, T030 |
 | FR-335 | T021, T023, T026, T027, T028, T030, T036, T039 |
 | FR-336 | T012, T025, T026, T030, T034, T036 |
 | FR-337 | T012, T025, T031, T034, T036 |
 | FR-338 | T012, T025, T026, T031, T034, T036 |
-| FR-339 | T010, T018, T043, T044, T047, T048 |
+| FR-339 | T010, T018, T038, T043, T044, T047, T048 |
 | FR-340 | T018, T034, T036, T043, T047 |
 | FR-341 | T004, T014, T032, T038, T045 |
 | FR-342 | T004, T015, T039, T041 |

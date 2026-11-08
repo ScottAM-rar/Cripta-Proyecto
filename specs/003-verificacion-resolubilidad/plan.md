@@ -112,6 +112,7 @@ bench/resolubilidad.py             # NUEVO: secciones A–D
 bench/__init__.py                  # MODIFICADO: registra "resolubilidad" y su indicador
 main.py                            # MODIFICADO mínimo: la ayuda de --bench menciona "resolubilidad" (no cablea --verificar ni --forzar)
 tests_labs/cripta_sintetica.py     # AMPLIADO: esqueleto_llaves_encadenadas
+tests_labs/referencia_resolubilidad.py # NUEVO: oráculo de la estrategia repetida (verificar_repetida) y criptas al azar con llaves
 tests_labs/sin_red.py              # AMPLIADO: agrega las pruebas de la capacidad
 
 test_mapa_con_llaves.py            # NUEVO (primera tarea)

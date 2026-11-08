@@ -136,3 +136,7 @@ El último caso (llaves presentes pero, por ejemplo, la sala de salida no existe
 ## 7. Datos sintéticos del bench (`tests_labs/cripta_sintetica.py`, AMPLIADO)
 
 `esqueleto_llaves_encadenadas(n, semilla) -> (esqueleto, llaves, llave_salida, sala_salida)`: pasillo de n salas y n salas laterales; la puerta i → i+1 (en los dos sentidos) se abre con `k_<j>`, ubicada en la lateral de la sala i; los nombres `j` y el orden de las laterales se barajan con `random.Random(semilla)`. La llave de salida está en la lateral de la última sala. Determinista por semilla; ningún tamaño fijo (principio V). Detalle en [contracts/bench-resolubilidad.md](contracts/bench-resolubilidad.md).
+
+## 8. Oráculo de pruebas (`tests_labs/referencia_resolubilidad.py`, NUEVO)
+
+`verificar_repetida(mapa, sala_inicial, sala_salida, llave_salida, llaves, cripta_id="") -> ResultadoVerificacion`: la estrategia descartada (recorrido desde cero en cada oleada, O(K · (S + E))). Devuelve el mismo `ResultadoVerificacion` que `verificar_resolubilidad` y para igual: al final de la oleada en que la sala de salida es alcanzable y la llave de salida es obtenible, o cuando una oleada no agrega ninguna llave nueva. `cripta_al_azar_con_llaves(semilla, salas=60)` arma criptas deterministas por semilla para la prueba de equivalencia. No es código de producción; vale igual el principio I.

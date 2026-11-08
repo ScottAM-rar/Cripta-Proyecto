@@ -65,7 +65,7 @@ Ninguno debe encontrar nada. Revisar a mano que no haya `dict()`/`{}` ni `set()`
 | FR-342 | H3-4, H5-2 | `test_resolubilidad_determinismo`: `Fuentes.test_fr342_http_offline_y_solo_local_dan_lo_mismo`; `test_mapa_con_llaves` (G3, G4) |
 | FR-343 | H5-1, H5-2, H5-4 | `test_resolubilidad_datos`: `ErroresDeDatos.test_fr343_servicio_sin_respuesta`, `ErroresDeDatos.test_fr343_offline_sin_llaves_sin_solicitudes`, `ErroresDeDatos.test_fr343_cripta_inexistente`, `ErroresDeDatos.test_fr343_sala_de_salida_inexistente` |
 | FR-344 | H3-5 | `test_resolubilidad_inicio`: `MismaOperacion.test_fr344_inicio_y_verificar_dan_el_mismo_resultado`; `test_resolubilidad_reporte`: `Contrato.test_fr344_firmas_de_la_interfaz` |
-| FR-345 | H6-1 | `--bench resolubilidad` sección C; paso 3 de esta guía; ambos en `mediciones.md` |
+| FR-345 | H6-1 | Evidencia automática: `--bench resolubilidad` sección C (cripta sintética mucho mayor que la publicada más grande; falla si supera 200 ms). Complemento: la medición manual del paso 3 (T057), solo si la cripta publicada más grande está guardada. Ambos en `mediciones.md` |
 | FR-346 | H6-2 | `--bench resolubilidad` secciones A y D; `test_resolubilidad_determinismo`: `Equivalencia` (las dos estrategias coinciden) |
 
 ### Casos del Apéndice B
@@ -86,7 +86,7 @@ Ninguno debe encontrar nada. Revisar a mano que no haya `dict()`/`{}` ni `set()`
 | SC-003 | `test_resolubilidad_datos` (`Solicitudes`) |
 | SC-004 | `test_resolubilidad_datos` (`ErroresDeDatos`) y `CodigosDeSalida` |
 | SC-005 | `test_resolubilidad_inicio` (`Inicio`, `Forzar`) |
-| SC-006 | Paso 3 de esta guía y sección C del bench |
+| SC-006 | Sección C del bench (evidencia automática) y, si la cripta está guardada, el paso 3 de esta guía (T057) |
 | SC-007 | Sección D del bench |
 
 ### Cambio de contrato del mapa (no es un FR de la spec; habilita FR-333)
