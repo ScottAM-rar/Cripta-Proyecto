@@ -209,7 +209,7 @@
 
 ### Pruebas de la Historia 4 (escribir primero; deben fallar)
 
-- [ ] T023 [P] [US4] Crear `test_fuente_solo_local.py`:
+- [X] T023 [P] [US4] Crear `test_fuente_solo_local.py`:
   - **(a)** H4-1: falta `contenido:5` y `construir_sala(cid, 5)` lanza `DatoLocalFaltante`, cuyo mensaje contiene «sala 5» y el id de la cripta.
   - **(b)** H4-2: con la caché completa, `esqueleto`, `construir_sala`, `ubicacion_llaves`, `crear_jugador` y `total_salas` dan lo mismo que la vía normal (`ServicioCripta` sobre el persistente) con la misma carpeta.
   - **(c)** H4-3: con `version_vigente` distinta de la guardada, cualquier operación lanza `DatoLocalFaltante` que nombra las dos versiones.
@@ -220,14 +220,14 @@
 
 ### Implementación de la Historia 4
 
-- [ ] T024 [US4] Crear `adaptadores/fuente_solo_local.py` con `FuenteSoloLocal(fuente, almacen, version_vigente)`:
+- [X] T024 [US4] Crear `adaptadores/fuente_solo_local.py` con `FuenteSoloLocal(fuente, almacen, version_vigente)`:
   - Antes de cada operación compara `almacen.version_cripta(cripta_id)` con `version_vigente`. Si son distintas, o si la guardada es `None`, lanza `DatoLocalFaltante`.
   - Delega en `fuente` y convierte `ErrorOffline` y `LlavesNoDisponibles` en `DatoLocalFaltante` con el dato y la cripta.
   - `precargar_vecinas` devuelve 0. **Nunca** llama a `validar_cripta` ni a ningún `guardar_*`.
   - Expone las operaciones listadas en data-model.md y `reporte()` con 0 solicitudes.
 
   (FR-314, FR-315, FR-316, FR-317)
-- [ ] T025 [US4] En `adaptadores/fabrica.py` agregar `crear_fuente_solo_local(carpeta: str = CARPETA_DATOS, version_vigente: str | None = None) -> FuenteSoloLocal`. Arma `ServicioCripta(ClienteOffline(AlmacenDisco(carpeta)), CacheLRU(TAMANO_CACHE))` y lo envuelve. Si `version_vigente` es `None`, usa la versión guardada. No toca `_cliente_compartido`. Agregar un caso a `tests_labs/prueba_fabrica.py`. Debe hacer pasar T023. (FR-314)
+- [X] T025 [US4] En `adaptadores/fabrica.py` agregar `crear_fuente_solo_local(carpeta: str = CARPETA_DATOS, version_vigente: str | None = None) -> FuenteSoloLocal`. Arma `ServicioCripta(ClienteOffline(AlmacenDisco(carpeta)), CacheLRU(TAMANO_CACHE))` y lo envuelve. Si `version_vigente` es `None`, usa la versión guardada. No toca `_cliente_compartido`. Agregar un caso a `tests_labs/prueba_fabrica.py`. Debe hacer pasar T023. (FR-314)
 
 **Punto de control**: `python -m unittest test_fuente_solo_local` pasa.
 

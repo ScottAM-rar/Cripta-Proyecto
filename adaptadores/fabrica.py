@@ -16,6 +16,7 @@ from adaptadores.cache import CacheLRU
 from adaptadores.cliente_offline import ClienteOffline
 from adaptadores.cliente_persistente import ClientePersistente
 from adaptadores.servicioCripta import ServicioCripta
+from adaptadores.fuente_solo_local import FuenteSoloLocal
 
 URL_API = "https://cripta-api.kad06a0zhgs84.us-east-2.cs.amazonlightsail.com/v1"
 CARPETA_DATOS = "datos_cripta"
@@ -87,3 +88,14 @@ def crear_servicio(offline: bool = False,
         cliente = ClientePersistente(cliente_http, AlmacenDisco(carpeta))
 
     return ServicioCripta(cliente, CacheLRU(cache_size))
+
+
+def crear_fuente_solo_local(carpeta: str = CARPETA_DATOS, version_vigente: str | None = None) -> FuenteSoloLocal:
+    """Fuente que lee solo de disco, para la consulta histórica (capacidad 009, FR-314; la usa la capacidad 004).
+
+    Arma ServicioCripta(ClienteOffline(AlmacenDisco(carpeta)), CacheLRU(TAMANO_CACHE)) y lo envuelve en FuenteSoloLocal.
+    version_vigente None: sirve la versión guardada de cada cripta (útil para pruebas); la 004 pasa la del log.
+    No usa ni crea el cliente de red compartido: no hay ningún cliente HTTP en la composición."""
+    almacen = AlmacenDisco(carpeta)
+    servicio = ServicioCripta(ClienteOffline(almacen), CacheLRU(TAMANO_CACHE))
+    return FuenteSoloLocal(servicio, almacen, version_vigente)
