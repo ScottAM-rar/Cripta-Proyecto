@@ -121,10 +121,10 @@
 
 ### Implementación de User Story 4
 
-- [ ] T021 [US4] Coordinar con quien mantiene el formato (Scott) antes de editar y actualizar `adaptadores/AlmacenPartidaBinario.py` a `VERSION_FORMATO = 7`: implementar la serialización de `k_checkpoint`, `acciones_linea_tiempo` y el bloque contenedor indexado de `puntos_control` según `contracts/formato-partida-v7.md`. (FR-424)
-- [ ] T022 [US4] Implementar en `adaptadores/AlmacenPartidaBinario.py` la deserialización del bloque de puntos de control y el rechazo explícito con `ErrorPartida` cuando `version != 7`, emitiendo mensaje descriptivo que menciona incompatibilidad con versión 7. (FR-424, FR-425, Principio VI)
-- [ ] T023 [US4] Integrar en `Servicio/EstadoJuegoServicio.py` y `ControladorJuego` la lógica de carga: si `--checkpoint-cada` fue provisto explícitamente en CLI, asignar el nuevo $K$ al estado restaurado; si no, mantener el $K$ cargado desde el archivo v7. (FR-424)
-- [ ] T024 [US4] Ejecutar `python -m unittest test_persistencia_v7` y verificar que los escenarios de la Historia 4 pasan al 100%. (FR-424, FR-425)
+- [X] T021 [US4] Coordinar con quien mantiene el formato (Scott) antes de editar y actualizar `adaptadores/AlmacenPartidaBinario.py` a `VERSION_FORMATO = 7`: implementar la serialización de `k_checkpoint`, `acciones_linea_tiempo` y el bloque contenedor indexado de `puntos_control` según `contracts/formato-partida-v7.md`. (FR-424)
+- [X] T022 [US4] Implementar en `adaptadores/AlmacenPartidaBinario.py` la deserialización del bloque de puntos de control y el rechazo explícito con `ErrorPartida` cuando `version != 7`, emitiendo mensaje descriptivo que menciona incompatibilidad con versión 7. (FR-424, FR-425, Principio VI)
+- [X] T023 [US4] Integrar en `Servicio/EstadoJuegoServicio.py` y `ControladorJuego` la lógica de carga: si `--checkpoint-cada` fue provisto explícitamente en CLI, asignar el nuevo $K$ al estado restaurado; si no, mantener el $K$ cargado desde el archivo v7. (FR-424)
+- [X] T024 [US4] Ejecutar `python -m unittest test_persistencia_v7` y verificar que los escenarios de la Historia 4 pasan al 100%. (FR-424, FR-425)
 
 **Punto de control**: Persistencia binaria v7 funcional y rechazo de versiones anteriores verificado.
 

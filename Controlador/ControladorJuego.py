@@ -4,9 +4,10 @@ from Controlador.Vista import VistaConsola
 import random
 
 class ControladorJuego:
-    def __init__(self, servicio: EstadoJuegoServicio):
+    def __init__(self, servicio: EstadoJuegoServicio, k_checkpoint: int | None = None):
         self.servicio = servicio
         self.vista = VistaConsola()
+        self.k_checkpoint_cli = k_checkpoint
         self._advertencias_mostradas = 0
 
     def _mostrar_advertencias_nuevas(self):
@@ -28,7 +29,7 @@ class ControladorJuego:
         if cargar == 's':
             nombre_archivo = input("Ingresa el nombre del archivo de la partida: ").strip()
             try:
-                self.servicio.cargarPartida(nombre_archivo)
+                self.servicio.cargarPartida(nombre_archivo, k_checkpoint=self.k_checkpoint_cli)
                 print("¡Partida cargada exitosamente!")
                 partida_cargada = True
             except Exception as e:

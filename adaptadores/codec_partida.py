@@ -13,12 +13,15 @@ import struct
 from DTO.EstadoGuardadoDTO import (
     ObjetoGuardadoDTO, EnemigoGuardadoDTO, TrampaGuardadaDTO, SalidaGuardadaDTO, SalaGuardadaDTO,
     ReferenciaGuardadaDTO, EventoGuardadoDTO, RelojGuardadoDTO, JugadorGuardadoDTO, MensajeGuardadoDTO,
+    EstadoGuardadoDTO,
 )
+from DTO.PuntoControlDTO import PuntoControlDTO
 
 # El orden es parte del formato: agregar al final, nunca reordenar (y subir la versión del archivo).
 CLASES_DTO = (
     ObjetoGuardadoDTO, EnemigoGuardadoDTO, TrampaGuardadaDTO, SalidaGuardadaDTO, SalaGuardadaDTO,
     ReferenciaGuardadaDTO, EventoGuardadoDTO, RelojGuardadoDTO, JugadorGuardadoDTO, MensajeGuardadoDTO,
+    PuntoControlDTO, EstadoGuardadoDTO,
 )
 
 _NADA, _FALSO, _VERDADERO, _ENTERO, _FLOTANTE, _TEXTO, _LISTA, _DTO = 0, 1, 2, 3, 4, 5, 6, 7

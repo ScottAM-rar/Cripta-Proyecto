@@ -108,7 +108,7 @@ class EstadoJuegoServicio:
         """Restaura la partida desde un punto de control."""
         self._estadoJuegoLogica.restaurarDesdePuntoControl(punto)
 
-    def cargarPartida(self, nombre_archivo: str) -> None:
+    def cargarPartida(self, nombre_archivo: str, k_checkpoint: int | None = None) -> None:
         """Carga una partida guardada. Un archivo inválido se rechaza antes de tocar la partida actual."""
         ruta = ruta_archivo(nombre_archivo, EXTENSION_PARTIDA, CARPETA_PARTIDAS)
         estado = AlmacenPartidaBinario(ruta).cargar()
@@ -116,6 +116,8 @@ class EstadoJuegoServicio:
             self._offline = estado.offline
             self._asegurarServicio()        # se usa el mismo origen de datos con el que se guardó la partida
         self._estadoJuegoLogica.restaurar_estado(estado)
+        if k_checkpoint is not None:
+            self._estadoJuegoLogica.k_checkpoint = k_checkpoint
         self._puntajeRegistrado = self._esRepeticion = False
         self._abrirLog(None)      # la partida cargada sigue en un log nuevo que ya incluye las acciones anteriores
 

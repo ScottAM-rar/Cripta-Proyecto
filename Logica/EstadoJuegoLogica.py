@@ -49,7 +49,11 @@ class EstadoJuegoLogica:
     def exportar_estado(self) -> EstadoGuardadoDTO:
         """Instantánea de la partida en datos simples; no toca archivos ni red."""
         self._asegurarPuntoControlInicial()
-        return EstadoGuardadoLogica.exportar(self)
+        dto = EstadoGuardadoLogica.exportar(self)
+        dto.k_checkpoint = self.k_checkpoint
+        dto.acciones_linea_tiempo = self.acciones_linea_tiempo
+        dto.puntos_control = list(self.puntos_control)
+        return dto
 
     def _asegurarPuntoControlInicial(self) -> None:
         if getattr(self, "_es_repeticion", False):
@@ -60,6 +64,7 @@ class EstadoJuegoLogica:
             long_log = len(estado_dto.acciones_log)
             estado_dto.bitacora = []
             estado_dto.acciones_log = []
+            estado_dto.puntos_control = []
             reloj = getattr(self.estadoJuego, 'reloj', None)
             tiempo_reloj = reloj.tiempo_actual if reloj is not None else 0
             p0 = PuntoControlDTO(
@@ -87,6 +92,7 @@ class EstadoJuegoLogica:
             long_log = len(estado_dto.acciones_log)
             estado_dto.bitacora = []
             estado_dto.acciones_log = []
+            estado_dto.puntos_control = []
             reloj = getattr(self.estadoJuego, 'reloj', None)
             tiempo_reloj = reloj.tiempo_actual if reloj is not None else 0
             punto = PuntoControlDTO(
@@ -140,6 +146,9 @@ class EstadoJuegoLogica:
         """Deja la partida como estaba cuando se exportó `estado`. El historial del pergamino empieza vacío."""
         self._exigirServicio()
         EstadoGuardadoLogica.restaurar(self, estado)
+        self.k_checkpoint = getattr(estado, "k_checkpoint", 10)
+        self.acciones_linea_tiempo = getattr(estado, "acciones_linea_tiempo", 0)
+        self.puntos_control = list(getattr(estado, "puntos_control", []))
         self._actualizarFichasEnUso()
 
     def _exigirServicio(self) -> None:

@@ -1,0 +1,14 @@
+cripta: sintetica
+semilla: 2026
+version_cripta: v1
+version_catalogo: k1
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}
+{"tipo_accion": "ESPERAR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": []}

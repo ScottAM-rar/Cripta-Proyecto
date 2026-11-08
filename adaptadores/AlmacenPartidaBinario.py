@@ -24,7 +24,7 @@ from adaptadores.codec_partida import (
 )
 
 MAGIA = b"CRPP"
-VERSION_FORMATO = 6     # 6: costo por salida y rango por enemigo; 5: anterior; 4: se guarda el contador de acciones del jugador; 3: los enemigos guardan si están activos
+VERSION_FORMATO = 7     # 7: puntos de control; 6: costo por salida y rango por enemigo; 5: anterior; 4: se guarda el contador de acciones del jugador; 3: los enemigos guardan si están activos
 MARCA_FIN = b"FIN!"
 
 _ENCABEZADO = struct.Struct(">4sH")
@@ -168,7 +168,9 @@ class AlmacenPartidaBinario:
             raise ErrorPartida("El archivo no es una partida guardada de Cripta")
         if version != VERSION_FORMATO:
             raise ErrorPartida(
-                f"Versión del formato de partida no soportada: {version} (este programa usa la {VERSION_FORMATO})"
+                f"Versión del formato de partida no soportada: {version} "
+                f"(el archivo es de una versión anterior del programa y no se carga en silencio; "
+                f"este programa usa la versión {VERSION_FORMATO} con puntos de control)"
             )
         archivo.seek(tamano - _PIE.size)
         pos_secciones, largo_secciones, pos_tabla, cantidad, marca = _PIE.unpack(archivo.read(_PIE.size))

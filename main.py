@@ -149,7 +149,7 @@ def main(argv=None) -> int:
         if args.replay:
             return reproducir(servicio, args.replay, hasta=args.hasta)     # no se crea la vista
         print("Inicializando Cripta...")
-        ControladorJuego(servicio).iniciar()
+        ControladorJuego(servicio, k_checkpoint=args.checkpoint_cada).iniciar()
         return 0
     except KeyboardInterrupt:
         print("\nInterrumpido.")

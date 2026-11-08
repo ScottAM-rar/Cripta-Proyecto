@@ -38,5 +38,5 @@
   - US1 (FR-414 a FR-417, SC-006): Cubierto por `test_cli_checkpoint.py` (8 pruebas pasando).
   - US2 (FR-418 a FR-421): Cubierto por `test_puntos_control.py` (7 pruebas pasando).
   - US3 (FR-422, FR-423, Principio II): Cubierto por `test_determinismo_puntos_control.py` (4 pruebas pasando).
-  - US4 (FR-424, FR-425): T020 implementado en `test_persistencia_v7.py` (pruebas preparadas a la espera de confirmación de Scott para T021-T024).
+  - US4 (FR-424, FR-425): Implementado en T021 a T024 (formato v7, VERSION_ESTADO=4 en DTO/EstadoGuardadoDTO, adaptadores/codec_partida.py, adaptadores/AlmacenPartidaBinario.py, Logica/EstadoJuegoLogica.py, Servicio y Controlador) y verificado por test_persistencia_v7.py (7 pruebas pasando).
   - US5 (FR-426, SC-004, Principio VII): Implementado en `bench/puntos_control.py` y validado por `bench/test_bench_puntos_control.py` y ejecución CLI. Máximo 1.75 ms (< 20 ms).

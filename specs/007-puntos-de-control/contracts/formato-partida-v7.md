@@ -37,21 +37,24 @@ Para incorporar los puntos de control y su configuración dentro del mismo archi
 ### 2.3. `puntos_control` (Tabla de puntos de control)
 - **Nombre de sección**: `"puntos_control"`
 - **Estructura serializada**:
+  Codificado directamente mediante `codec_partida.py` con `PuntoControlDTO` registrado en `CLASES_DTO` (índice 10) y `EstadoGuardadoDTO` (índice 11, con `VERSION_ESTADO = 4`):
   ```text
-  [cantidad_puntos: natural]
-    Por cada punto de 0 a cantidad_puntos - 1:
+  [marca _LISTA: 6] [cantidad_puntos: natural]
+    Por cada punto de 0 a cantidad_puntos - 1 (marca _DTO: 7, índice 10):
+      [numero_punto: natural]
       [acciones_linea_tiempo: natural]
+      [instante_reloj: natural]
+      [estado: _DTO índice 11 EstadoGuardadoDTO con salas anidadas y puntos_control=[]]
       [longitud_bitacora: natural]
       [longitud_acciones_log: natural]
-      [tamano_bloque_estado: natural]
-      [estado_serializado: bytes de tamaño tamano_bloque_estado]
   ```
   - `cantidad_puntos`: Total de puntos de control contenidos ($\ge 1$, incluye el punto 0 inicial).
   - Por cada punto de control:
+    - `numero_punto`: Índice secuencial del punto ($0, 1, 2, \dots$).
     - `acciones_linea_tiempo`: El número de acciones de la línea de tiempo en el momento en que se tomó el punto ($0$ para el inicial, $n \times K$ para los periódicos).
-    - `longitud_bitacora` y `longitud_acciones_log`: prefijos de la bitácora y de las acciones del log (guardadas una sola vez, en los bloques del estado actual) que corresponden a ese punto.
-    - `tamano_bloque_estado`: Longitud en bytes del bloque serializado del estado.
-    - `estado_serializado`: Instantánea del estado correspondiente a `EstadoGuardadoDTO` (reutilizando el codec de bloques con su propio `VERSION_ESTADO = 3`), con `bitacora` y `acciones_log` vacías. Las salas de cada punto van **dentro** de su propio bloque: la tabla de salas del pie solo describe el estado actual, de modo que `leer_sala` y la carga perezosa de salas no cambian.
+    - `instante_reloj`: Tiempo virtual del reloj en el instante de captura.
+    - `estado`: Instantánea del estado correspondiente a `EstadoGuardadoDTO` (`VERSION_ESTADO = 4`), con `bitacora`, `acciones_log` y `puntos_control` vacías (no anida puntos dentro de puntos). Las salas de cada punto van **dentro** de su propio bloque: la tabla de salas del pie solo describe el estado actual, de modo que `leer_sala` y la carga perezosa de salas no cambian.
+    - `longitud_bitacora` y `longitud_acciones_log`: prefijos de la bitácora y de las acciones del log (guardadas una sola vez en los bloques del estado actual) que corresponden a ese punto.
 
 ---
 
@@ -95,11 +98,12 @@ El formato conserva la arquitectura de secciones indexadas y tabla de salas al p
 ## 4. Política de Compatibilidad y Migración (FR-425)
 
 1. **Rechazo estricto de versiones anteriores**:
-   - Si `version < 7` (versiones 1 a 6 de la Parte I o capacidades iniciales de Parte II):
+   - Si `version != 7` (versiones 1 a 6 de la Parte I o capacidades iniciales de Parte II):
      ```python
      raise ErrorPartida(
          f"Versión del formato de partida no soportada: {version} "
-         f"(este programa usa la versión 7 con puntos de control)"
+         f"(el archivo es de una versión anterior del programa y no se carga en silencio; "
+         f"este programa usa la versión 7 con puntos de control)"
      )
      ```
 2. **Justificación del rechazo frente a la migración automática**:
