@@ -5,6 +5,7 @@ from DTO.ActorDTO import JugadorDTO, EnemigoDTO
 from DTO.FinPartidaDTO import FinPartidaDTO
 from DTO.Objeto import Llave
 from DTO.ResultadoReplayHastaDTO import ResultadoReplayHastaDTO
+from DTO.ResumenEstadoDTO import ResumenEstadoDTO
 from Logica.GestorEventos import GestorEventos, PERIODO_REGENERACION
 from Logica.ActorLogica import ActorLogica
 from Logica.JugadorLogica import JugadorLogica
@@ -110,11 +111,255 @@ class EstadoJuegoLogica:
             self.puntos_control.pop()
 
     def obtenerPuntoControlReciente(self, k: int) -> PuntoControlDTO | None:
-        """Retorna el punto de control más reciente con acciones_linea_tiempo <= k."""
-        for punto in reversed(self.puntos_control):
-            if punto.acciones_linea_tiempo <= k:
-                return punto
-        return None
+        """Retorna el punto de control más reciente con acciones_linea_tiempo <= k.
+        Delega en la búsqueda binaria (T003)."""
+        return self._buscarPuntoPorAcciones(k)
+
+    # ------------------------------------------------------------------ T003
+    def _buscarPuntoPorAcciones(self, k: int) -> 'PuntoControlDTO | None':
+        """Búsqueda binaria manual (sin bisect) del último punto con acciones_linea_tiempo <= k.
+        La lista puntos_control está ordenada de forma no decreciente por acciones_linea_tiempo
+        (invariante mantenido por _podarPuntosControlPosteriores y el orden de inserción).
+        O(log M) donde M = len(puntos_control)."""
+        izq, der = 0, len(self.puntos_control) - 1
+        candidato = None
+        while izq <= der:
+            medio = (izq + der) // 2
+            if self.puntos_control[medio].acciones_linea_tiempo <= k:
+                candidato = self.puntos_control[medio]
+                izq = medio + 1
+            else:
+                der = medio - 1
+        return candidato
+
+    # ------------------------------------------------------------------ T004
+    def _buscarPuntoPorInstante(self, t: int) -> 'PuntoControlDTO | None':
+        """Búsqueda binaria manual (sin bisect) del último punto con instante_reloj <= t.
+        La lista puntos_control está ordenada de forma no decreciente por instante_reloj
+        (monotonía garantizada: acciones vigentes y reloj son co-monótonos tras la poda).
+        O(log M) donde M = len(puntos_control)."""
+        izq, der = 0, len(self.puntos_control) - 1
+        candidato = None
+        while izq <= der:
+            medio = (izq + der) // 2
+            if self.puntos_control[medio].instante_reloj <= t:
+                candidato = self.puntos_control[medio]
+                izq = medio + 1
+            else:
+                der = medio - 1
+        return candidato
+
+    # ------------------------------------------------------------------ T005
+    def _extraerResumenEstadoActual(self, instante: int, acciones: int) -> ResumenEstadoDTO:
+        """Empaqueta el estado vivo de la instancia (self) en un ResumenEstadoDTO.
+        Se llama tanto desde _armarResultadoReplayHasta (que añade sus propios campos en
+        ResultadoReplayHastaDTO) como desde consultarHistoria (que devuelve ResumenEstadoDTO
+        directamente).  No toca el log ni el reloj."""
+        jugador = self.estadoJuego.jugador
+        reloj   = self.estadoJuego.reloj
+
+        id_sala   = jugador.id_sala_actual
+        vida      = jugador.vida_actual
+        ataque    = ActorLogica.ataque_efectivo(jugador)
+        defensa   = ActorLogica.defensa_efectiva(jugador)
+        velocidad = ActorLogica.velocidad_efectiva(jugador)
+
+        inventario_llaves: list[str] = []
+        inventario_objetos: list[str] = []
+        if getattr(jugador, "inventario", None) is not None:
+            nodo = jugador.inventario.cabeza
+            while nodo is not None:
+                obj = nodo.objeto
+                if isinstance(obj, Llave):
+                    inventario_llaves.append(obj.id_catalogo)
+                else:
+                    inventario_objetos.append(obj.nombre)
+                nodo = nodo.siguiente
+
+        efectos_activos: list[str] = []
+        if getattr(jugador, "veneno", False):
+            efectos_activos.append("veneno")
+        if getattr(jugador, "modificador_velocidad", 0) != 0:
+            efectos_activos.append("velocidad temporal")
+        if getattr(jugador, "antorcha_encendida", False):
+            efectos_activos.append("antorcha encendida")
+
+        enemigos_sala: list[tuple[str, str, int]] = []
+        if id_sala < len(self.estadoJuego.salas):
+            sala = self.estadoJuego.salas[id_sala]
+            if sala is not None and getattr(sala, "enemigos", None):
+                for e in sala.enemigos:
+                    if e.vida_actual > 0:
+                        enemigos_sala.append((e.id_instancia, e.nombre, e.vida_actual))
+                enemigos_sala.sort(key=lambda t: t[0])
+
+        return ResumenEstadoDTO(
+            instante=instante,
+            acciones_jugador=acciones,
+            id_sala_jugador=id_sala,
+            vida_jugador=vida,
+            ataque_jugador=ataque,
+            defensa_jugador=defensa,
+            velocidad_jugador=velocidad,
+            inventario_llaves=inventario_llaves,
+            inventario_objetos=inventario_objetos,
+            efectos_activos=efectos_activos,
+            enemigos_sala=enemigos_sala,
+            partida_terminada=self.fin,
+            motivo_terminacion=self.motivoFin if self.fin else None,
+            mapa_conocido=None,
+        )
+
+    # ------------------------------------------------------------------ T005b
+    def _planificarSegmento(
+        self,
+        punto_base: PuntoControlDTO | int | None = None,
+        fin_log: int | None = None,
+    ) -> list[int]:
+        """Pasada 1 (simulación de clasificación, plan.md §3):
+        Determina qué índices de registro del log corresponden a acciones vigentes en la
+        línea de tiempo.
+
+        No inspecciona el texto del id del objeto (Principio V). El tipo real se conoce hidratando
+        una instancia aislada desde el punto base (bajo la guarda try/finally del singleton RetrocesoLogica)
+        y construyendo cada evento con _crear_evento_repeticion para evaluar
+        GestorEventos.es_uso_de_pergamino(evento).
+
+        Por cada registro del segmento se anota si fue cursor, uso de pergamino u otra acción,
+        más el reloj antes de aplicarlo. Una pila local (push por acción, pop por pergamino)
+        da la lista de índices de acciones vigentes (E[0..m-1]).
+        """
+        todos_los_registros = self.logEventos.obtener_registros_cronologicos()
+
+        # 1. Resolver el punto base (PuntoControlDTO) y el inicio del segmento
+        if punto_base is None:
+            if not self.puntos_control:
+                self._asegurarPuntoControlInicial()
+            base_dto = self.puntos_control[0] if self.puntos_control else None
+            inicio_log = 0 if base_dto is None else base_dto.longitud_acciones_log
+        elif isinstance(punto_base, PuntoControlDTO):
+            base_dto = punto_base
+            inicio_log = base_dto.longitud_acciones_log
+        else:
+            inicio_log = int(punto_base)
+            base_dto = None
+            for p in reversed(self.puntos_control):
+                if p.longitud_acciones_log <= inicio_log:
+                    base_dto = p
+                    break
+            if base_dto is None:
+                if not self.puntos_control:
+                    self._asegurarPuntoControlInicial()
+                base_dto = self.puntos_control[0] if self.puntos_control else None
+
+        # 2. Resolver el fin del segmento
+        if fin_log is None:
+            fin_log = len(todos_los_registros)
+            if base_dto is not None:
+                for i in range(len(self.puntos_control)):
+                    if self.puntos_control[i] is base_dto:
+                        if i + 1 < len(self.puntos_control):
+                            fin_log = self.puntos_control[i + 1].longitud_acciones_log
+                        break
+
+        tope_fin = min(fin_log, len(todos_los_registros))
+        if inicio_log >= tope_fin or base_dto is None:
+            return []
+
+        # 3. Pasada 1: Clasificación mediante instancia aislada hidratada
+        snapshot, reloj_retro_ref = self._guardarSingletonRetroceso()
+        try:
+            aislada = EstadoJuegoLogica(comunicacion=self.comunicacion)
+            aislada._es_repeticion = True
+            aislada.registrador_log = None
+            aislada._actualizarFichasEnUso = lambda: None
+
+            EstadoGuardadoLogica.restaurar(aislada, base_dto.estado)
+            aislada.acciones_linea_tiempo = base_dto.acciones_linea_tiempo
+            aislada._es_repeticion = True
+            aislada.registrador_log = None
+            aislada.puntos_control = []
+            aislada._actualizarFichasEnUso = lambda: None
+
+            marcas: list[tuple[int, str, int]] = []
+
+            for idx in range(inicio_log, tope_fin):
+                reg = todos_los_registros[idx]
+                reloj_antes = aislada.estadoJuego.reloj.tiempo_actual
+
+                if reg.tipo_accion in TIPOS_CURSOR_INVENTARIO:
+                    aislada._repetirMovimientoDeCursor(reg.tipo_accion)
+                    marcas.append((idx, "cursor", reloj_antes))
+                    continue
+
+                evento = aislada._crear_evento_repeticion(reg)
+                es_pergamino = GestorEventos.es_uso_de_pergamino(evento)
+
+                if es_pergamino:
+                    if aislada.jugadorLogica.retroceso.hay_algo_para_deshacer():
+                        aislada.accionJugador(evento)
+                    marcas.append((idx, "pergamino", reloj_antes))
+                else:
+                    resultado = aislada.accionJugador(evento)
+                    if resultado.exito is False:
+                        raise ValueError(
+                            f"La reproducción no es fiel: {evento.tipo_accion} fue rechazada ({resultado.mensaje})"
+                        )
+                    marcas.append((idx, "accion", reloj_antes))
+
+            # 4. Pila local que produce los índices vigentes
+            pila: list[int] = []
+            for idx, tipo_marca, reloj_antes in marcas:
+                if tipo_marca == "cursor":
+                    continue
+                elif tipo_marca == "pergamino":
+                    if pila:
+                        pila.pop()
+                else:
+                    pila.append(idx)
+
+            return pila
+        finally:
+            self._restaurarSingletonRetroceso(snapshot, reloj_retro_ref)
+
+    # ------------------------------------------------------------------ T006
+    def _guardarSingletonRetroceso(self):
+        """Captura los 8 atributos del singleton RetrocesoLogica y el puntero reloj.retroceso
+        de la partida viva.  Devuelve (snapshot_tuple, reloj_retroceso_ref)."""
+        retro = RetrocesoLogica()
+        snapshot = (
+            retro.cabeza,
+            retro.cola,
+            retro.actual,
+            retro.reloj,
+            retro.cantidad_actual,
+            retro.cantidad_acciones,
+            retro.tiempo_evento,
+            retro.suspensiones,
+        )
+        reloj_retro_ref = None
+        if self.iniciado and getattr(self, "estadoJuego", None) is not None:
+            reloj_retro_ref = getattr(self.estadoJuego.reloj, "retroceso", None)
+        return snapshot, reloj_retro_ref
+
+    def _restaurarSingletonRetroceso(self, snapshot, reloj_retro_ref) -> None:
+        """Reestablece el singleton RetrocesoLogica y el puntero reloj.retroceso de la partida
+        viva a los valores capturados antes de la reconstrucción aislada."""
+        retro = RetrocesoLogica()
+        (
+            retro.cabeza,
+            retro.cola,
+            retro.actual,
+            retro.reloj,
+            retro.cantidad_actual,
+            retro.cantidad_acciones,
+            retro.tiempo_evento,
+            retro.suspensiones,
+        ) = snapshot
+        # Restaurar el puntero reloj.retroceso de la partida viva
+        if self.iniciado and getattr(self, "estadoJuego", None) is not None:
+            if reloj_retro_ref is not None:
+                self.estadoJuego.reloj.retroceso = reloj_retro_ref
 
     def restaurarDesdePuntoControl(self, punto: PuntoControlDTO) -> None:
         """Restaura el estado completo del juego a partir de un punto de control y preserva los puntos hasta él."""
@@ -326,57 +571,25 @@ class EstadoJuegoLogica:
     def _armarResultadoReplayHasta(
         self, hasta: int, acciones_reproducidas: int, log_agotado: bool
     ) -> ResultadoReplayHastaDTO:
-        jugador = self.estadoJuego.jugador
         reloj = self.estadoJuego.reloj
-
-        id_sala = jugador.id_sala_actual
-        vida = jugador.vida_actual
-        ataque = ActorLogica.ataque_efectivo(jugador)
-        defensa = ActorLogica.defensa_efectiva(jugador)
-        velocidad = ActorLogica.velocidad_efectiva(jugador)
-
-        inventario_llaves: list[str] = []
-        inventario_objetos: list[str] = []
-        if getattr(jugador, "inventario", None) is not None:
-            nodo = jugador.inventario.cabeza
-            while nodo is not None:
-                obj = nodo.objeto
-                if isinstance(obj, Llave):
-                    inventario_llaves.append(obj.id_catalogo)
-                else:
-                    inventario_objetos.append(obj.nombre)
-                nodo = nodo.siguiente
-
-        efectos_activos: list[str] = []
-        if getattr(jugador, "veneno", False):
-            efectos_activos.append("veneno")
-        if getattr(jugador, "modificador_velocidad", 0) != 0:
-            efectos_activos.append("velocidad temporal")
-        if getattr(jugador, "antorcha_encendida", False):
-            efectos_activos.append("antorcha encendida")
-
-        enemigos_sala: list[tuple[str, str, int]] = []
-        if id_sala < len(self.estadoJuego.salas):
-            sala = self.estadoJuego.salas[id_sala]
-            if sala is not None and getattr(sala, "enemigos", None):
-                for e in sala.enemigos:
-                    if e.vida_actual > 0:
-                        enemigos_sala.append((e.id_instancia, e.nombre, e.vida_actual))
-                enemigos_sala.sort(key=lambda t: t[0])
-
+        # Reutiliza el empaquetado común de estado: evita duplicación (T005).
+        resumen = self._extraerResumenEstadoActual(
+            instante=reloj.tiempo_actual,
+            acciones=self.acciones_linea_tiempo,
+        )
         return ResultadoReplayHastaDTO(
             instante_pedido=hasta,
             instante_alcanzado=reloj.tiempo_actual,
             acciones_reproducidas=acciones_reproducidas,
-            id_sala_jugador=id_sala,
-            vida_jugador=vida,
-            ataque_jugador=ataque,
-            defensa_jugador=defensa,
-            velocidad_jugador=velocidad,
-            inventario_llaves=inventario_llaves,
-            inventario_objetos=inventario_objetos,
-            efectos_activos=efectos_activos,
-            enemigos_sala=enemigos_sala,
+            id_sala_jugador=resumen.id_sala_jugador,
+            vida_jugador=resumen.vida_jugador,
+            ataque_jugador=resumen.ataque_jugador,
+            defensa_jugador=resumen.defensa_jugador,
+            velocidad_jugador=resumen.velocidad_jugador,
+            inventario_llaves=resumen.inventario_llaves,
+            inventario_objetos=resumen.inventario_objetos,
+            efectos_activos=resumen.efectos_activos,
+            enemigos_sala=resumen.enemigos_sala,
             partida_terminada=self.fin,
             motivo_terminacion=self.motivoFin if self.fin else None,
             log_agotado=log_agotado,

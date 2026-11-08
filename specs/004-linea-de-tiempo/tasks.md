@@ -14,8 +14,8 @@
 
 **Propósito**: Asegurar el entorno de pruebas y la estabilidad de la firma antes de implementar la lógica real.
 
-- [ ] T001 Verificar que `test_historia_firma.py` pasa hoy (línea base); se modificará en T009 para iniciar una partida antes de consultar
-- [ ] T002 [P] Confirmar la presencia y campos requeridos en `DTO/ResumenEstadoDTO.py` conforme a `data-model.md`
+- [X] T001 Verificar que `test_historia_firma.py` pasa hoy (línea base); se modificará en T009 para iniciar una partida antes de consultar
+- [X] T002 [P] Confirmar la presencia y campos requeridos en `DTO/ResumenEstadoDTO.py` conforme a `data-model.md`
 
 ---
 
@@ -25,11 +25,11 @@
 
 ⚠️ **CRÍTICO**: Ninguna historia de usuario puede comenzar hasta completar esta fase.
 
-- [ ] T003 Implementar la búsqueda binaria manual por acciones `_buscarPuntoPorAcciones(self, k: int) -> PuntoControlDTO | None` y refactorizar `obtenerPuntoControlReciente` en `Logica/EstadoJuegoLogica.py` sin usar bibliotecas prohibidas (Principio I)
-- [ ] T004 [P] Implementar la búsqueda binaria manual por instante de reloj `_buscarPuntoPorInstante(self, t: int) -> PuntoControlDTO | None` en `Logica/EstadoJuegoLogica.py`
-- [ ] T005 Extraer la rutina común de empaquetado `_extraerResumenEstadoActual(self, instante: int, acciones: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py` y refactorizar `_armarResultadoReplayHasta` para delegar en ella sin duplicar código
-- [ ] T005b Implementar `_planificarSegmento` en `Logica/EstadoJuegoLogica.py` (plan.md §3): fin de segmento por el punto siguiente, pasada 1 con pila local (cursor se ignora, pergamino hace `pop`, otra acción hace `push`) que devuelve los índices de acciones vigentes; sin dict/set
-- [ ] T006 Implementar el gestor de contexto / guarda en `Logica/EstadoJuegoLogica.py` para capturar y restituir los 8 atributos del singleton global `RetrocesoLogica` (`cabeza`, `cola`, `actual`, `reloj`, `cantidad_actual`, `cantidad_acciones`, `tiempo_evento`, `suspensiones`) y `reloj.retroceso` en un bloque `try ... finally`
+- [X] T003 Implementar la búsqueda binaria manual por acciones `_buscarPuntoPorAcciones(self, k: int) -> PuntoControlDTO | None` y refactorizar `obtenerPuntoControlReciente` en `Logica/EstadoJuegoLogica.py` sin usar bibliotecas prohibidas (Principio I)
+- [X] T004 [P] Implementar la búsqueda binaria manual por instante de reloj `_buscarPuntoPorInstante(self, t: int) -> PuntoControlDTO | None` en `Logica/EstadoJuegoLogica.py`
+- [X] T005 Extraer la rutina común de empaquetado `_extraerResumenEstadoActual(self, instante: int, acciones: int) -> ResumenEstadoDTO` en `Logica/EstadoJuegoLogica.py` y refactorizar `_armarResultadoReplayHasta` para delegar en ella sin duplicar código
+- [ ] T005b Corregir `_planificarSegmento` en `Logica/EstadoJuegoLogica.py` (plan.md §3, pasada 1): hoy usa `obtener_acciones_cronologicas()` (cadenas JSON, no `RegistroEvento`) y detecta el pergamino con una heurística sobre el texto del id; debe clasificar con `GestorEventos.es_uso_de_pergamino` al construir cada evento en una instancia aislada y devolver los índices vigentes con la pila local; test unitario propio con `A1 A2 A3 P A3' A4`
+- [X] T006 Implementar el gestor de contexto / guarda en `Logica/EstadoJuegoLogica.py` para capturar y restituir los 8 atributos del singleton global `RetrocesoLogica` (`cabeza`, `cola`, `actual`, `reloj`, `cantidad_actual`, `cantidad_acciones`, `tiempo_evento`, `suspensiones`) y `reloj.retroceso` en un bloque `try ... finally`
 
 **Punto de control**: Búsqueda binaria $O(\log M)$, extracción común y guarda de singleton listas y verificadas.
 
