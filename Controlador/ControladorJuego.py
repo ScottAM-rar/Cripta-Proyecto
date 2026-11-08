@@ -149,7 +149,8 @@ class ControladorJuego:
                 entrada_usuario = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
                 "\n usar[objeto actual],siguiente[objeto],anterior[objeto]," \
                 "\n soltar, atacar, esperar, abrir[puerta], cerrar[puerta]," \
-                "\n inventario[peso/valor/nombre], salir: ").strip()
+                "\n inventario[peso/valor/nombre]," \
+                "\n historia <t> | historia #k, salir: ").strip()
             except (EOFError, KeyboardInterrupt):
                 break
 

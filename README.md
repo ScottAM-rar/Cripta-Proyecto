@@ -35,7 +35,8 @@ Para la Parte II se usa **GitHub Spec Kit** con los agentes **Claude Code** y **
 | Herramienta | Versión |
 |---|---|
 | Spec Kit (`specify-cli`) | **1.2.3 o superior** |
-| Agente | Claude Code |
+| Agente 1 | Claude Code |
+| Agente 2 | Antigravity |
 | Python | 3.11+ |
 
 Instalación (todo el equipo debe usar exactamente esta versión):
