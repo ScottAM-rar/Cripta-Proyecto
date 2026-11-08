@@ -299,8 +299,16 @@ class ServicioCripta:
 
             ids, salas, enemigos = validar_llaves(crudas, existe, contenido_guardado)
             llaves = UbicacionLlavesDTO(cripta_id, self.version_cripta(cripta_id), ids, salas, enemigos)
-        except LlavesNoDisponibles:
-            raise
+        except LlavesNoDisponibles as error:
+            # Viene del cliente (sin presupuesto y sin llaves guardadas): mismo aviso que los demás fallos (FR-313).
+            # Si el motivo ya nombra la cripta, no se repite.
+            motivo = str(error).rstrip('.')
+            prefijo = "No se pudieron obtener las llaves"
+            if cripta_id not in motivo:
+                prefijo += f" de la cripta {cripta_id}"
+            raise LlavesNoDisponibles(
+                f"{prefijo}: {motivo}. La verificación de resolubilidad no está disponible."
+            ) from error
         except (RuntimeError, LlavesInvalidas) as error:
             # RuntimeError cubre ErrorOffline, ErrorSinConexion y los demás errores del HTTP, que heredan de él.
             raise LlavesNoDisponibles(

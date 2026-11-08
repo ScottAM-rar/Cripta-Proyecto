@@ -45,6 +45,10 @@ class ClienteDeBatalla(ClienteSintetico):
         self.llamadas += 1
         return [dict(self.ficha)] if "ent_bench" in ids else []
 
+    def obtener_llaves(self, cripta_id, solo_guardadas=False, limite_solicitudes=None):
+        """Capacidad 009: la cripta de batalla no tiene llaves (lista vacía, válida)."""
+        return []
+
 
 def servicio_sintetico(carpeta: str, enemigos: int = 0, ancho: int = 5, alto: int = 5, comportamiento: str = "guardián"):
     cliente = ClienteDeBatalla(ancho, alto, enemigos, comportamiento)

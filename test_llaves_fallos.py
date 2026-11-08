@@ -72,6 +72,32 @@ class SinRespuesta(ConCarpeta):
         self.assertIsNone(almacen.leer_llaves(CRIPTA))
 
 
+class HttpSinPresupuesto(HttpConfigurable):
+    """Datos generales con presupuesto_solicitudes en 0: nunca queda presupuesto para la consulta de llaves."""
+
+    def obtener_datos_generales(self, cripta_id):
+        datos = super().obtener_datos_generales(cripta_id)
+        datos["presupuesto_solicitudes"] = 0
+        return datos
+
+
+class AvisoUniforme(ConCarpeta):
+    """T055: sin presupuesto el aviso tiene la misma forma que los demás fallos (FR-313, FR-309)."""
+
+    def test_fr313_fr309_t055_sin_presupuesto_el_aviso_nombra_la_cripta_el_motivo_y_la_verificacion(self):
+        http = HttpSinPresupuesto(SALAS, ENEMIGOS, llaves=LLAVES_BUENAS)
+        servicio = ServicioCripta(ClientePersistente(http, AlmacenDisco(self.carpeta)), CacheLRU(25))
+        with self.assertRaises(LlavesNoDisponibles) as error:
+            servicio.ubicacion_llaves(CRIPTA)
+        mensaje = str(error.exception)
+        self.assertEqual(http.veces("llaves"), 0)
+        self.assertTrue(mensaje.startswith("No se pudieron obtener las llaves"), mensaje)
+        self.assertEqual(mensaje.count(CRIPTA), 1, mensaje)                 # la cripta, una sola vez
+        self.assertIn("sin presupuesto", mensaje)                           # el motivo
+        self.assertTrue(mensaje.endswith("La verificación de resolubilidad no está disponible."), mensaje)
+        self.assertNotIn("..", mensaje)
+
+
 class RespuestaInvalida(ConCarpeta):
 
     def test_fr310_fr311_b_h3_2_respuestas_invalidas_avisan_y_no_guardan_nada(self):

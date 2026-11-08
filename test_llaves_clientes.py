@@ -96,6 +96,17 @@ class UbicacionLlavesDelServicio(ConCarpeta):
         self.assertEqual([dto.salas[i] for i in posiciones], [3, 9])
 
 
+class EnemigoConVariasLlaves(ConCarpeta):
+    """T057 (a), caso límite de spec.md: un enemigo suelta más de una llave."""
+
+    def test_fr302_t057_a_un_enemigo_que_suelta_dos_llaves_da_una_entrada_por_llave(self):
+        http = HttpConfigurable(pasillo(9), [(7, "e-701", "ent_guardian_oseo", None)],
+                                llaves=[("itm_llave_A", 7, "e-701"), ("itm_llave_B", 7, "e-701")])
+        dto = self.servicio(http).ubicacion_llaves("cripta-01")
+        self.assertEqual((dto.ids, dto.salas, dto.enemigos),
+                         (["itm_llave_A", "itm_llave_B"], [7, 7], ["e-701", "e-701"]))
+
+
 class MismaListaPorLosTresClientes(ConCarpeta):
 
     def test_fr303_e_h5_5_http_persistente_y_offline_dan_la_misma_lista(self):
