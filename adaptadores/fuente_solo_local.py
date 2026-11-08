@@ -97,6 +97,14 @@ class FuenteSoloLocal:
     def obtener_sala_salida(self, cripta_id: str) -> int:
         return self._leer(cripta_id, "los datos generales", lambda: self.fuente.obtener_sala_salida(cripta_id))
 
+    def obtener_sala_inicial(self, cripta_id: str) -> int:
+        """Capacidad 003: sala inicial de los datos generales guardados, sin solicitudes."""
+        return self._leer(cripta_id, "los datos generales", lambda: self.fuente.obtener_sala_inicial(cripta_id))
+
+    def obtener_llave_salida(self, cripta_id: str) -> str | None:
+        """Capacidad 003: llave de salida de los datos generales guardados, sin solicitudes."""
+        return self._leer(cripta_id, "los datos generales", lambda: self.fuente.obtener_llave_salida(cripta_id))
+
     def existe_cripta(self, cripta_id: str) -> bool:
         """Solo existencia, sin comparar versión: si la cripta está en la lista de criptas guardada. Se lee la lista
         del almacén y no la del servicio, porque el modo sin red descarta las criptas que no están completas."""

@@ -1,5 +1,7 @@
 from Logica.EstadoJuegoLogica import *
 from DTO.FinPartidaDTO import FinPartidaDTO
+from DTO.ResultadoVerificacionDTO import ResultadoVerificacion
+from Logica import VerificacionResolubilidad
 from adaptadores.AlmacenPartidaBinario import AlmacenPartidaBinario
 from adaptadores.AlmacenLogTexto import AlmacenLogTexto
 from adaptadores.AlmacenPuntajes import AlmacenPuntajes, MAX_NOMBRE
@@ -51,11 +53,13 @@ class EstadoJuegoServicio:
     def obtenerSala(self, id_sala: int) -> SalaDTO:
         return self._estadoJuegoLogica.ingresarEnSala(id_sala)
 
-    def iniciarJuego(self, cripta: str, semilla=None, offline: bool | None = None, nombre_log: str | None = None):
-        """nombre_log=None: el log de la partida se llama solo (cripta, semilla y fecha-hora)."""
+    def iniciarJuego(self, cripta: str, semilla=None, offline: bool | None = None, nombre_log: str | None = None,
+                     forzar: bool = False):
+        """nombre_log=None: el log de la partida se llama solo (cripta, semilla y fecha-hora).
+        forzar (capacidad 003, FR-340): iniciar aunque la cripta no sea resoluble; se pasa a la lógica."""
         AlmacenLogTexto(nombre_log).comprobar_nombre()      # antes de empezar: un nombre repetido no deja la partida a medias
         self._asegurarServicio(offline)
-        self._estadoJuegoLogica.iniciarJuego(cripta,semilla)
+        self._estadoJuegoLogica.iniciarJuego(cripta, semilla, forzar=forzar)
         self._puntajeRegistrado = self._esRepeticion = False
         self._abrirLog(nombre_log)
 
@@ -162,6 +166,20 @@ class EstadoJuegoServicio:
         if not logica.iniciado:
             return None
         return logica.avisoLlaves
+
+    def verificar(self, cripta_id: str, offline: bool | None = None) -> ResultadoVerificacion:
+        """Verificación de resolubilidad de una cripta (capacidad 003, FR-330, FR-344). No inicia partida, no abre log
+        ni usa la vista. Nunca lanza por falta de datos: devuelve resoluble=None con motivo_error (FR-343)."""
+        self._asegurarServicio(offline)
+        return VerificacionResolubilidad.verificar(self._estadoJuegoLogica.comunicacion, cripta_id)
+
+    def avisoResolubilidad(self) -> str | None:
+        """Aviso de la verificación al iniciar (cripta no resoluble iniciada con --forzar, o verificación no
+        disponible), o None si no hay partida o no hay aviso. Se muestra solo al iniciar (FR-340). Solo lee."""
+        logica = self._estadoJuegoLogica
+        if not logica.iniciado:
+            return None
+        return logica.avisoResolubilidad
 
     def terminado(self) -> tuple[bool, str]:
         return self._estadoJuegoLogica.terminado()

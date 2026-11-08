@@ -36,7 +36,9 @@ class EstadoJuegoLogica:
         self.registrador_log = None    # opcional: algo con agregar(linea); el modelo solo le avisa cada acción
         self.llaves = None             # UbicacionLlavesDTO de la cripta, o None si no se pidió o no se pudo (capacidad 009)
         self.avisoLlaves = None        # mensaje del último LlavesNoDisponibles, para mostrarlo (FR-313)
-        
+        self.resultadoVerificacion = None  # ResultadoVerificacion del inicio de la partida (capacidad 003), o None
+        self.avisoResolubilidad = None     # aviso de --forzar o de verificación no disponible (FR-339, FR-340), o None
+
         if(cripta is not None):
             self.iniciarJuego(cripta)
 
@@ -54,9 +56,11 @@ class EstadoJuegoLogica:
         if self.comunicacion is None:
             raise ValueError("El juego no tiene un servicio de criptas")
 
-    def iniciarJuego(self,  cripta: str,semilla: int = None, pedir_llaves: bool = True):
+    def iniciarJuego(self, cripta: str, semilla: int = None, pedir_llaves: bool = True, forzar: bool = False):
         """pedir_llaves=False: la usa la reproducción, que no es una partida nueva (T058): no consulta las llaves ni
-        avisa; si después hacen falta, se piden bajo demanda con obtenerLlaves()."""
+        avisa; si después hacen falta, se piden bajo demanda con obtenerLlaves().
+        forzar (capacidad 003, FR-340): iniciar aunque la cripta no sea resoluble. Entrega provisional (grupo B): se
+        acepta sin efecto; la verificación al iniciar se implementa en el grupo G (T047)."""
         if self.iniciado:
             raise ValueError("No se puede iniciar un juego ya iniciado")
         self._exigirServicio()

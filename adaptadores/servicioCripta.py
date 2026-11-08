@@ -222,6 +222,16 @@ class ServicioCripta:
         Sale de los datos generales, que ya se piden una sola vez por cripta."""
         return self.datos_cripta(cripta_id)["sala_salida"]
 
+    def obtener_sala_inicial(self, cripta_id: str) -> int:
+        """Id de la sala donde empieza la partida (capacidad 003, verificación de resolubilidad).
+        Sale de los datos generales, que ya se piden una sola vez por cripta: no agrega solicitudes (FR-341)."""
+        return self.datos_cripta(cripta_id)["sala_inicial"]
+
+    def obtener_llave_salida(self, cripta_id: str) -> str | None:
+        """Id de la llave de salida de la cripta, o None si los datos generales no la traen (capacidad 003).
+        Sale de los datos generales, que ya se piden una sola vez por cripta: no agrega solicitudes (FR-341)."""
+        return self.datos_cripta(cripta_id).get("llave_salida")
+
     def presupuesto_solicitudes(self, cripta_id: str) -> int:
         """Cuántas solicitudes permite la API para jugar esta cripta."""
         return self.datos_cripta(cripta_id)["presupuesto_solicitudes"]
