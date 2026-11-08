@@ -21,7 +21,7 @@ El intervalo $K$ de los puntos de control mide acciones del jugador en la **lín
 ### Decisión
 - **Introducir un atributo nuevo e independiente**: `self.acciones_linea_tiempo: int = 0` en `EstadoJuegoLogica`.
 - `acciones_linea_tiempo` inicia en 0 con la partida.
-- Suma 1 por cada acción aceptada y ejecutada por el jugador.
+- Suma 1 por cada acción aceptada y ejecutada por el jugador, es decir, el mismo conjunto de acciones que hoy incrementa `accionesJugador` (acciones aceptadas que consumen tiempo, línea 663). Los movimientos del cursor del inventario no consumen tiempo, no pasan por ese punto y no cuentan. **Debe confirmarse con quien implementa 004** que `historia #k` numera las acciones con el mismo criterio.
 - Resta $m$ (en la práctica 1 por uso de pergamino) cuando el pergamino revierte exitosamente acciones.
 - `accionesJugador` se mantiene intacto con su semántica original (§2.12).
 
@@ -43,12 +43,12 @@ En `EstadoJuegoLogica.accionJugador(self, evento, tope=None)`:
    - Se actualizan las fichas en uso.
 
 ### Decisión
-- **Punto de captura periódico**: Justo al final de `accionJugador`, después de `_registrarAccionEnLog(evento)`, verificando que `not self.fin` y que `self.acciones_linea_tiempo % self.k_checkpoint == 0`. En ese instante exacto, el reloj virtual ya avanzó al instante del siguiente turno del jugador y todos los eventos intermedios (enemigos, trampas, regeneraciones) ya fueron procesados; es el estado exacto previo a la decisión $n \times K + 1$.
+- **Punto de captura periódico**: Justo al final de `accionJugador`, después de `_registrarAccionEnLog(evento)`, verificando que `not self.fin` y que `self.acciones_linea_tiempo - self.puntos_control[-1].acciones_linea_tiempo >= self.k_checkpoint` (con K fijo es «múltiplo de K»; si K cambia al cargar una partida, garantiza al menos K acciones entre puntos, FR-419). En ese instante exacto, el reloj virtual ya avanzó al instante del siguiente turno del jugador y todos los eventos intermedios (enemigos, trampas, regeneraciones) ya fueron procesados; es el estado exacto previo a la decisión $n \times K + 1$.
 - **Partida finalizada**: Si la acción causó `self.fin = True` (victoria o muerte), no se captura punto de control (acordado en clarificación c).
-- **Punto de captura inicial (Punto 0)**: En `iniciarJuego`, una vez cargada la sala de inicio y ubicadas las entidades, pero antes de procesar cualquier entrada del jugador, se captura automáticamente el punto de control 0 con `acciones = 0`.
+- **Punto de captura inicial (Punto 0)**: `iniciarJuego` no carga la sala inicial ni programa el primer turno; eso lo hace el controlador (`obtenerSala`) o `repetirPartida`. Por eso el punto 0 se captura de forma perezosa: al empezar `accionJugador` (antes de procesar la primera decisión) o en `exportar_estado`, si `puntos_control` está vacía, con `acciones = 0`. Así es el estado justo antes de la primera decisión.
 - **Poda por retroceso**: En la rama de `GestorEventos.es_uso_de_pergamino`:
   1. Se ejecuta el retroceso en `PergaminoLogica`.
-  2. Se decrementa `self.acciones_linea_tiempo -= 1`.
+  2. Se decrementa `self.acciones_linea_tiempo -= 1` (`RetrocesoLogica.obtener_cambios_retroceso` revierte exactamente una acción por uso).
   3. Se podan de la lista de puntos de control todos aquellos con `acciones > self.acciones_linea_tiempo`. Si un punto de control coincide con el nuevo valor de `acciones_linea_tiempo`, se conserva.
 
 ---
@@ -67,7 +67,8 @@ En `EstadoJuegoLogica.accionJugador(self, evento, tope=None)`:
 - **Alternativa A (copia completa exhaustiva)**: Clonar en cada punto de control toda la bitácora y todas las líneas de `acciones_log`.
   - *Problema*: Como el log es estrictamente de adición (*append-only*), en una partida de 5 000 acciones con $K=1$, guardar 5 000 copias completas de un log acumulativo implicaría almacenar $\approx \frac{5000 \times 5001}{2} \approx 12.5$ millones de entradas de log, disparando el uso de memoria RAM a cientos de megabytes y degradando el tiempo de captura por encima de 20 ms.
 - **Alternativa B (instantánea de estado con marca de longitud en historiales)**: Guardar el estado completo de las entidades vivas, reloj y azar, pero en los historiales (*bitácora* y *acciones_log*) registrar únicamente la longitud actual (`len(bitacora)`, `len(acciones_log)`), o rebanadas (*slices*) compartidas. Al restaurar un punto de control, simplemente se trunca la bitácora viva a esa longitud.
-- **Elección para el plan**: Implementar y comparar ambas opciones en el benchmark `puntos_control`. Se adopta la Alternativa B como diseño de producción recomendado por su eficiencia $O(1)$ en historiales y su bajo impacto en el ciclo de eventos ($\le 20$ ms), dejando la Alternativa A como la alternativa descartada a medir formalmente en `--bench`.
+- **Elección para el plan**: Se adopta la Alternativa B y la Alternativa A queda como la descartada que se mide en `--bench`. Concreción: `PuntoControlDTO` guarda `longitud_bitacora` y `longitud_acciones_log`, y su `estado` va con `bitacora` y `acciones_log` vacías (son prefijos de los historiales vivos, que solo crecen: el uso del pergamino se agrega al log, no lo recorta). Un test debe comprobar esa propiedad de prefijo.
+- **Advertencia de costo**: la bitácora no es lo único grande; cada punto copia todas las salas cargadas. Si con K=1 el punto no cabe en 20 ms (FR-426), la contingencia a evaluar en el benchmark es copiar solo las salas cambiadas desde el punto anterior. Se decide con datos de `--bench`, no antes.
 
 ---
 
@@ -107,7 +108,7 @@ En `main.py`, argumentos como `--hasta` se validan mediante conversores (`_insta
 - **Interacción con `--replay`**:
   - `--replay` opera en modo desatendido por lotes y sin vista (Principio IV).
   - Dado que la toma de puntos de control es puramente observacional y no afecta el azar ni los desempates (Principio II, FR-423), la partida reproducida llega al mismo desenlace independientemente de si se toman o no puntos de control.
-  - Para consistencia con el guardado, durante `--replay` se mantiene la contabilización de $K$ de forma transparente sin imprimir mensajes.
+  - `repetirPartida` (`--replay` y `--hasta`) no toma puntos de control: no cambian el desenlace y encarecerían la reproducción acotada de 008.
 
 ---
 
@@ -142,3 +143,13 @@ En `main.py`, argumentos como `--hasta` se validan mediante conversores (`_insta
    - Alternativa C (línea base): Sin puntos de control (reproducir siempre desde el inicio).
 5. **Derivación de $K$ por defecto**:
    - A partir de la relación entre sobrecarga de tiempo ($\le 20$ ms), uso de memoria y distancia máxima de recuperación ($< K$), fijar el valor por defecto empíricamente defendible (preliminarmente propuesto $K=10$).
+
+---
+
+## 8. El historial del pergamino no forma parte del punto de control
+
+`EstadoGuardadoLogica.restaurar` reinicia el historial de retroceso (`retroceso.reiniciar()`, "el historial del pergamino no se guarda"). Reanudar desde un punto de control se comporta igual: el pergamino no puede deshacer acciones anteriores al punto. Consecuencias:
+
+- FR-422 se cumple para secuencias de acciones que no usan el pergamino sobre acciones previas al punto (en la práctica, en las 5 primeras acciones tras el punto). Las pruebas de T016 se escriben con esa condición.
+- Para la capacidad 004: reconstruir un estado pasado debe reaplicar la secuencia efectiva de acciones (las acciones revertidas por el pergamino «dejan de existir»), no los usos del pergamino. Avisar a quien implementa 004.
+- Guardar el historial en cada punto exigiría serializar `CambioDTO` con referencias a objetos vivos; queda fuera de esta capacidad.

@@ -27,19 +27,19 @@ Todas las pruebas unitarias y de integración de la capacidad se ejecutan median
 
 ```powershell
 # Pruebas de validación de CLI y configuración de K
-.venv\Scripts\python.exe -m unittest tests/test_cli_checkpoint.py
+.venv\Scripts\python.exe -m unittest test_cli_checkpoint
 
 # Pruebas de captura de puntos, contador temporal y poda por pergamino
-.venv\Scripts\python.exe -m unittest tests/test_puntos_control.py
+.venv\Scripts\python.exe -m unittest test_puntos_control
 
 # Pruebas de determinismo e invariancia de la partida con distintos valores de K
-.venv\Scripts\python.exe -m unittest tests/test_determinismo_puntos_control.py
+.venv\Scripts\python.exe -m unittest test_determinismo_puntos_control
 
 # Pruebas de persistencia binaria v7 y rechazo explícito de versiones anteriores
-.venv\Scripts\python.exe -m unittest tests/test_persistencia_v7.py
+.venv\Scripts\python.exe -m unittest test_persistencia_v7
 
 # Ejecutar todas las pruebas de la capacidad juntas
-.venv\Scripts\python.exe -m unittest discover -s tests -p "*puntos_control*.py"
+.venv\Scripts\python.exe -m unittest discover -p "test_*puntos_control*.py"
 ```
 
 ### 1.3. Medición de Rendimiento con `--bench`

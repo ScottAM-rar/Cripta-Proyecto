@@ -14,10 +14,10 @@ El enfoque técnico, respaldado y justificado en [research.md](research.md):
 
 1. **Contador propio de la línea de tiempo vigente (`acciones_linea_tiempo`)**: Se crea un contador independiente de `accionesJugador`. Mientras `accionesJugador` (§2.12) mide el esfuerzo acumulado global para puntaje y ranking sin decrecer, `acciones_linea_tiempo` registra el avance en la línea temporal activa (se decrementa al usar el pergamino de retroceso).
 2. **Punto de captura transparente y sincronizado**: 
-   - El **Punto 0** se captura automáticamente al iniciar el juego antes de la primera decisión del jugador.
+   - El **Punto 0** se captura automáticamente justo antes de procesar la primera decisión del jugador (no al final de `iniciarJuego`, donde la sala inicial aún no está cargada).
    - Los **Puntos periódicos $n$** se capturan al final de `EstadoJuegoLogica.accionJugador`, tras `_avanzarHastaProximoTurno` y `_registrarAccionEnLog`, cuando llega el turno del jugador y no hay fin de partida (estado previo a la decisión $n \times K + 1$). Si la acción finaliza la partida, no se captura.
    - **Poda por retroceso**: En la rama de uso del pergamino se descartan permanentemente los puntos de control con `acciones > acciones_linea_tiempo`.
-3. **Reutilización de `EstadoGuardadoLogica` y `EstadoGuardadoDTO`**: Se reutiliza el mecanismo de instantáneas completas desconectadas (que incluye reloj, agenda, entidades, salas cargadas y estado del generador aleatorio). Como alternativa de diseño a medir en `--bench`, se compara la copia completa de historiales frente a la marca de longitud en historiales append-only.
+3. **Reutilización de `EstadoGuardadoLogica` y `EstadoGuardadoDTO`**: Se reutiliza el mecanismo de instantáneas completas desconectadas (que incluye reloj, agenda, entidades, salas cargadas y estado del generador aleatorio). El punto guarda las longitudes de la bitácora y de las acciones del log en lugar de copiarlas (Alternativa B); la copia completa de historiales es la alternativa descartada que se mide en `--bench`. El historial del pergamino no forma parte del punto (research.md §8).
 4. **Formato binario v7 en `AlmacenPartidaBinario`**: La versión del formato de partida avanza a 7. Los archivos v6 y anteriores se rechazan explícitamente con `ErrorPartida` claro (FR-425).
 5. **Validación temprana en CLI**: La función `_intervalo_checkpoint` en `main.py` rechaza valores $\le 0$, flotantes o no numéricos con código de salida 2 antes de inicializar servicios o tocar disco. El valor vigente se informa antes de la primera decisión.
 6. **Estructuras propias (Principio I)**: Almacenamiento contiguo en `list[PuntoControlDTO]` ordenado por acciones, sin `dict`/`set` como índice, sin `heapq`, `bisect` ni `collections`. Se expone exclusivamente `obtenerPuntoControlReciente(k)` para la futura capacidad 004.
@@ -65,8 +65,8 @@ El enfoque técnico, respaldado y justificado en [research.md](research.md):
 
 ### D2. Sincronización y captura en el ciclo de turnos
 - **Justificación**: Satisface **FR-418**, **FR-419**, **FR-420** y **FR-421**.
-  - **Punto 0**: Se toma en `iniciarJuego` antes de que el jugador realice su primera acción, asegurando que siempre exista una base completa desde la cual reconstruir el inicio.
-  - **Puntos periódicos**: Al final de `accionJugador`, tras `_avanzarHastaProximoTurno` y `_registrarAccionEnLog`, si `not self.fin` y `acciones_linea_tiempo % K == 0`. Captura el estado exacto antes de la decisión $(n \times K + 1)$, con todos los eventos intermedios resueltos.
+  - **Punto 0**: Se toma de forma perezosa al empezar `accionJugador` (o en `exportar_estado`) si la lista está vacía, es decir, justo antes de la primera decisión y con la sala inicial ya cargada por el controlador o por `repetirPartida`.
+  - **Puntos periódicos**: Al final de `accionJugador`, tras `_avanzarHastaProximoTurno` y `_registrarAccionEnLog`, si `not self.fin` y `acciones_linea_tiempo - último_punto.acciones >= K` (con K fijo equivale a «múltiplo de K»; con K cambiado al cargar mantiene al menos K acciones entre puntos). Captura el estado exacto antes de la decisión $(n \times K + 1)$, con todos los eventos intermedios resueltos.
   - **Acción terminal**: Si la acción finaliza la partida (`self.fin = True`), el punto no se toma.
   - **Poda por retroceso**: Al usar el pergamino, se eliminan permanentemente los puntos con `acciones > acciones_linea_tiempo`.
 
@@ -116,11 +116,11 @@ Archivos de código a modificar o crear en la fase de implementación:
 │   ├── puntos_control.py                  # Nuevo módulo de benchmark de puntos de control
 │   ├── __init__.py                        # Registro del bloque puntos_control en --bench
 │   └── test_bench_puntos_control.py       # Pruebas automatizadas del benchmark
-└── tests/
-    ├── test_cli_checkpoint.py             # Pruebas de validación CLI y código 2
-    ├── test_puntos_control.py             # Pruebas unitarias de captura, turno y poda
-    ├── test_determinismo_puntos_control.py# Pruebas de determinismo e invarianza de desenlace
-    └── test_persistencia_v7.py            # Pruebas de guardado/carga v7 y rechazo de v6
+├── test_cli_checkpoint.py                 # Pruebas de validación CLI y código 2 (raíz, como el resto de test_*.py)
+├── test_puntos_control.py                 # Pruebas unitarias de captura, turno y poda
+├── test_determinismo_puntos_control.py    # Pruebas de determinismo e invarianza de desenlace
+├── test_persistencia_v7.py                # Pruebas de guardado/carga v7 y rechazo de v6
+└── tests_labs/generador_partidas.py       # Se reutiliza (y se extiende si hace falta) para partidas sintéticas
 ```
 
 ---

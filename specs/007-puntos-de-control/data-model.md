@@ -19,13 +19,15 @@ class PuntoControlDTO:
     numero_punto: int             # 0 para inicial, 1..n para periódicos
     acciones_linea_tiempo: int    # Contador de acciones vigentes al tomarlo (0, K, 2K, ...)
     instante_reloj: int           # reloj.tiempo_actual en el momento de la captura
-    estado: EstadoGuardadoDTO     # Copia completa desconectada del estado del juego
+    estado: EstadoGuardadoDTO     # Copia completa desconectada del estado, con bitacora y acciones_log vacías
+    longitud_bitacora: int        # Prefijo de la bitácora viva que corresponde a este punto
+    longitud_acciones_log: int    # Prefijo de las acciones del log que corresponde a este punto
 ```
 
 - **Invariantes**:
   - `numero_punto >= 0`.
   - `acciones_linea_tiempo >= 0`.
-  - Para puntos periódicos $n \ge 1$: `acciones_linea_tiempo == n * k`.
+  - Con K constante, el punto periódico $n \ge 1$ cumple `acciones_linea_tiempo == n * k`; si K cambia al cargar, la distancia entre puntos consecutivos es siempre al menos el K vigente.
   - `estado` es un grafo de objetos desconectado (`EstadoGuardadoDTO`), libre de referencias compartidas a los objetos activos de la simulación.
 
 ---
@@ -56,15 +58,15 @@ class EstadoJuegoLogica:
 ## 2. Operaciones y Métodos del Modelo
 
 ### 2.1. `_capturarPuntoControlInicial(self) -> None`
-- Se invoca al final de `iniciarJuego`, tras cargar la sala de inicio y generar la agenda inicial.
+- Se invoca de forma perezosa (solo si `puntos_control` está vacía) al empezar `accionJugador` y en `exportar_estado`, no al final de `iniciarJuego`: ahí la sala inicial aún no está cargada.
 - Construye un `PuntoControlDTO` con `numero_punto = 0`, `acciones_linea_tiempo = 0`, `instante_reloj = self.estadoJuego.reloj.tiempo_actual` y `estado = EstadoGuardadoLogica.exportar(self)`.
 - Se almacena como el primer elemento de `self.puntos_control`.
 
 ### 2.2. `_verificarYCapturarPuntoControl(self) -> None`
 - Se invoca al final de `accionJugador`, tras `_avanzarHastaProximoTurno` y `_registrarAccionEnLog`.
 - Si `self.fin` es verdadero, no se ejecuta ninguna captura.
-- Comprueba si `self.acciones_linea_tiempo % self.k_checkpoint == 0`:
-  - En caso afirmativo, calcula `numero_punto = self.acciones_linea_tiempo // self.k_checkpoint`.
+- Comprueba si `self.acciones_linea_tiempo - self.puntos_control[-1].acciones_linea_tiempo >= self.k_checkpoint`:
+  - En caso afirmativo, calcula `numero_punto = len(self.puntos_control)`.
   - Exporta el estado actual mediante `EstadoGuardadoLogica.exportar(self)`.
   - Añade el nuevo `PuntoControlDTO` al final de `self.puntos_control`.
 
