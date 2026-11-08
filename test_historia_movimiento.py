@@ -46,9 +46,9 @@ class FuenteContadora:
         return getattr(self._fuente, nombre)
 
 
-def _armar(carpeta: str, capacidad_cache: int = 25, enemigos: int = 2):
+def _armar(carpeta: str, capacidad_cache: int = 25, enemigos: int = 2, comportamiento: str = "guardián"):
     RetrocesoLogica().reiniciar()
-    cliente = ClienteDeBatalla(5, 5, enemigos)
+    cliente = ClienteDeBatalla(5, 5, enemigos, comportamiento)
     servicio = ServicioCripta(ClientePersistente(cliente, AlmacenDisco(carpeta)), CacheLRU(capacidad_cache))
     servicio.listar_criptas()
     cripta = servicio.obtener_id_cripta(1)
@@ -144,6 +144,19 @@ class TestHistoriaConMovimiento(unittest.TestCase):
         llamadas_cliente = cliente.llamadas
         self._verificar_contra_oraculo(juego, oraculo)
         self.assertEqual(cliente.llamadas, llamadas_cliente)
+        self.assertEqual(servicio.reporte(cripta), reporte_antes)
+
+    def test_con_enemigos_cazadores_y_pergamino(self):
+        """El cazador decide con el campo de costos y el azar: la reconstrucción debe dar el mismo estado que vivió."""
+        juego, fuente, servicio, cliente, cripta = _armar(self.temp.name, enemigos=2, comportamiento="cazador")
+        pergamino = PergaminoRetroceso("p_caz", "Pergamino", 0, 0)
+        juego.estadoJuego.jugador.inventario.agregar_objeto(pergamino)
+        visitadas, oraculo = [], {}
+        _recorrer(juego, 60, visitadas, oraculo, pergamino_en=12, pergamino=pergamino)
+        self.assertTrue(any(e.activo for e in juego.estadoJuego.catalogo_enemigos), "debe haber cazadores activos")
+        self.assertTrue(any('USAR_OBJETO' in linea for linea in juego.logEventos.obtener_acciones_cronologicas()))
+        reporte_antes = servicio.reporte(cripta)
+        self._verificar_contra_oraculo(juego, oraculo)
         self.assertEqual(servicio.reporte(cripta), reporte_antes)
 
     def test_la_consulta_no_usa_el_azar_ni_el_log_vivos_con_combate(self):

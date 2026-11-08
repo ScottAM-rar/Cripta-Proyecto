@@ -109,11 +109,16 @@ class InventarioLogica:
             raise ValueError("El inventario esta vacio")
         
         nodo_actual = self.actual
-        if nodo_actual is self.cabeza or nodo_actual is self.cabeza.siguiente:
+        tipo_objeto = Arma if isinstance(nodo_actual.objeto, Arma) else Armadura
+        otro_tipo = Armadura if tipo_objeto is Arma else Arma
+        if nodo_actual is self.cabeza:
             return nodo_actual.objeto  # Ya está equipado, no hacer nada
+        # La segunda posición solo es "ya equipado" si la primera guarda el otro tipo de equipo (arma + armadura).
+        # Si ahí hay un objeto cualquiera u otro del mismo tipo, el objeto no está equipado: sube a la cabeza.
+        if nodo_actual is self.cabeza.siguiente and isinstance(self.cabeza.objeto, otro_tipo):
+            return nodo_actual.objeto
 
         indice_actual = self.indice_de_objeto(nodo_actual.objeto)
-        tipo_objeto = Arma if isinstance(nodo_actual.objeto, Arma) else Armadura
         nodo_equipo = self.cabeza
         indice_equipo = None
         for indice in range(2):
