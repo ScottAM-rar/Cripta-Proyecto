@@ -328,7 +328,7 @@
 
   Comprobar que `Logica/` no importa nada de `adaptadores/`. (I, IV, V)
 - [ ] T044 Ejecutar todas las pruebas (`python -m unittest discover -p "test_*.py"`), los laboratorios de la línea base (T002) con `python -m tests_labs.<nombre>` y `python main.py --bench`. Comparar con la línea base y registrar cualquier fallo sin ocultarlo. (IX)
-- [ ] T045 Comparar `spec.md` con el programa entregado y corregir cualquier desajuste primero en la especificación, en un commit aparte del código. (X)
+- [X] T045 Comparar `spec.md` con el programa entregado y corregir cualquier desajuste primero en la especificación, en un commit aparte del código. (X)
 
 ---
 
@@ -372,6 +372,10 @@
   - **(f)** En todas: el `HttpFalso` espía queda con `llamadas == []` y los bytes de la carpeta no cambian (como T023(d)).
 
   Después, en `adaptadores/fuente_solo_local.py`: implementar las operaciones nuevas y agregar `version_catalogo_vigente=None` a `FuenteSoloLocal` y a `crear_fuente_solo_local` (`adaptadores/fabrica.py`), con un caso nuevo en `tests_labs/prueba_fabrica.py`. Sigue `data-model.md` y `contracts/interfaz-clientes.md`. (FR-314, FR-315, FR-316, FR-317, SC-003)
+- [ ] T054 [US1] Corregir la regresión que encontró T044: `python main.py --bench guardado` y `--bench ciclo` (y por tanto `python main.py --bench` completo) terminan con `AttributeError: 'ClienteDeBatalla' object has no attribute 'obtener_llaves'`, porque `iniciarJuego` pide las llaves desde T017 y el cliente sintético de `bench/juego.py` no las tiene. Agregar a `ClienteDeBatalla` un `obtener_llaves(cripta_id, solo_guardadas=False, limite_solicitudes=None)` que devuelva `[]` (cripta sin llaves), sin tocar los demás bloques ni sus conteos. Comprobar que `--bench guardado`, `--bench ciclo` y `--bench` completo terminan con código 0 y que las 9 filas de conteo del bloque `cache` siguen idénticas. (FR-318, SC-004)
+- [ ] T055 [US2] Aviso uniforme (FR-313). Primero la prueba en `test_llaves_fallos.py` (debe fallar): sin presupuesto y sin llaves guardadas, el aviso nombra la cripta, dice el motivo y termina con «La verificación de resolubilidad no está disponible.», igual que los otros fallos. Después, en `ServicioCripta.ubicacion_llaves`, cuando el cliente lanza `LlavesNoDisponibles`, relanzarla con el mismo motivo (sin punto final repetido) y esa frase, sin duplicar el nombre de la cripta. Ajustar solo las pruebas que comparen el texto exacto. (FR-313, FR-309)
+- [ ] T056 [US4] Primero la prueba en `test_fuente_solo_local.py` (debe fallar): pedir por la fuente solo local una operación de una cripta que no existe lanza `DatoLocalFaltante` que nombra la cripta, no `ValueError`. Después, en `FuenteSoloLocal._leer`, convertir también ese `ValueError`. Comprobar que `existe_cripta` sigue devolviendo `False` para una cripta ausente de la lista. (FR-315, SC-004)
+- [ ] T057 [US1] Dos pruebas de casos límite que hoy no tienen prueba específica (deben ejercitar lo ya hecho; si pasan a la primera, explicarlo, sin inventar un fallo): (a) en `test_llaves_clientes.py` o `test_llaves_validacion.py`, un enemigo que suelta más de una llave produce una entrada por llave con el mismo enemigo y la misma sala; (b) en `test_llaves_version.py` o `test_llaves_presupuesto.py`, una cripta sin ninguna llave hace 1 consulta la primera vez y 0 en la segunda partida con la misma versión. (casos límite de `spec.md`, FR-301, FR-305)
 
 ---
 
