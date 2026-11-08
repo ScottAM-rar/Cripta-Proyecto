@@ -46,11 +46,11 @@ Mientras juega, el jugador escribe `historia <t>` donde `t` es un instante del r
 
 3. **Dado** una partida con reloj en T y un instante `t` al que corresponden varios eventos simultáneos de enemigos y del entorno (ninguno del jugador), **cuando** el jugador escribe `historia <t>`, **entonces** el estado mostrado incluye las consecuencias de todos esos eventos, respetando el orden determinista del reloj virtual. *(FR-427, FR-428)*
 
-4. **Dado** una partida con reloj en T, **cuando** el jugador escribe `historia <0>`, **entonces** el juego muestra el estado inicial (punto de control 0: antes de que el jugador tomara su primera decisión). *(FR-427, FR-430)*
+4. **Dado** una partida con reloj en T, **cuando** el jugador escribe `historia 0`, **entonces** el juego muestra el estado inicial (punto de control 0: antes de que el jugador tomara su primera decisión). *(FR-427, FR-430)*
 
 5. **Dado** una partida en curso, **cuando** el jugador escribe `historia <t>` con t > T (instante futuro), **entonces** el juego rechaza la consulta con un mensaje claro que indica que ese instante aún no ha ocurrido, sin mostrar ningún estado y sin alterar la partida. *(FR-433, Apéndice B: caso 1)*
 
-6. **Dado** una partida en la que el jugador usó un pergamino de retroceso y revirtió m acciones, **cuando** el jugador escribe `historia <t>` para un instante anterior al retroceso, **entonces** el estado mostrado describe la partida tal como quedó tras el retroceso: las acciones revertidas no aparecen en la línea de tiempo y el estado refleja el camino que sí ocurrió. *(FR-434, Apéndice B: caso 2)*
+6. **Dado** una partida en la que el jugador usó un pergamino de retroceso y revirtió m acciones (el reloj vuelve al instante anterior a la primera acción revertida), **cuando** el jugador escribe `historia <t>` para un instante t menor o igual que el reloj actual, **entonces** el estado mostrado describe la partida tal como quedó tras el retroceso: las acciones revertidas no aparecen en la línea de tiempo. Un instante que solo existía en la parte revertida es posterior al reloj actual y se rechaza como futuro (FR-433). *(FR-434, Apéndice B: caso 2)*
 
 7. **Dado** una partida en curso, **cuando** el jugador escribe `historia <t>`, **entonces** el tiempo virtual del reloj no avanza, la consulta no aparece en `partida.log`, el historial del pergamino de retroceso no se modifica y la partida continúa exactamente como si no se hubiera hecho la consulta. *(FR-432, Apéndice B: caso 4)*
 
@@ -106,9 +106,11 @@ Las acciones que el pergamino ha revertido dejan de existir en la línea de tiem
 
 **Escenarios de aceptación**:
 
-1. **Dado** una partida en la que se ejecutaron N acciones y luego el pergamino revirtió las últimas m, dejando N - m acciones vigentes, **cuando** el jugador consulta `historia` para cualquier instante t' correspondiente a las m acciones revertidas, **entonces** esos instantes ya no pertenecen a la línea de tiempo vigente: `historia <t'>` puede resultar en el estado del momento del retroceso o posterior (según el reloj vigente), y `historia #k` con k > N - m es rechazado. *(FR-434, Apéndice B: caso 2)*
+1. **Dado** una partida en la que se ejecutaron N acciones y luego el pergamino revirtió las últimas m, dejando N - m acciones vigentes y el reloj en el instante de la primera acción revertida, **cuando** el jugador escribe `historia #k` con k > N - m + 1, **entonces** la consulta se rechaza con un mensaje claro indicando que esa acción aún no ha ocurrido, y `historia <t>` con t mayor que el reloj actual se rechaza como instante futuro. *(FR-433, FR-434, FR-436, Apéndice B: caso 2)*
 
-2. **Dado** la misma situación anterior, **cuando** el jugador consulta `historia #k` con k ≤ N - m, **entonces** el estado mostrado es el correspondiente a la línea de tiempo vigente, igual al que habría mostrado antes del uso del pergamino para esa acción. *(FR-434)*
+2. **Dado** la misma situación, **cuando** el jugador escribe `historia #k` con k ≤ N - m + 1, **entonces** el estado mostrado es el de la línea de tiempo vigente y es idéntico al que se habría mostrado para esa k antes de usar el pergamino. *(FR-434)*
+
+3. **Dado** la misma situación y después de ella el jugador ejecuta nuevas acciones, **cuando** consulta `historia #k` para un k mayor que N - m + 1 que ya existe en la nueva línea, **entonces** el estado mostrado corresponde a las nuevas acciones y no a las revertidas. *(FR-434)*
 
 ---
 
@@ -146,15 +148,15 @@ La consulta `historia` responde en un tiempo proporcional a la distancia entre e
 
 ### Casos límite
 
-- `historia <0>` y `historia #1`: equivalen al estado inicial (punto de control 0); se aceptan siempre. *(FR-427, FR-430)*
+- `historia 0` y `historia #1`: equivalen al estado inicial (punto de control 0); se aceptan siempre. *(FR-427, FR-430)*
 - `t` o `k` negativos: se rechazan con mensaje claro. *(FR-437)*
 - `t` o `k` decimales (p. ej. `historia 2.5` o `historia #3.0`): se rechazan con mensaje claro. *(FR-437)*
-- Valor no numérico (p. ej. `historia abc`): se rechazado con mensaje claro. *(FR-437)*
-- Partida sin ninguna acción: `historia <0>` y `historia #1` devuelven el estado inicial; cualquier `t` > 0 y `k` > 1 se rechazan. *(FR-438)*
+- Valor no numérico (p. ej. `historia abc`): se rechaza con mensaje claro. *(FR-437)*
+- Partida sin ninguna acción: `historia 0` y `historia #1` devuelven el estado inicial; cualquier `t` > 0 y `k` > 1 se rechazan. *(FR-438)*
 - `historia` en una partida terminada (victoria o derrota): se acepta y muestra el estado histórico pedido; la terminación de la partida no invalida la línea de tiempo. *(FR-427, FR-429)*
 - `historia #k` con k = acciones_realizadas + 1: se acepta y devuelve el estado actual de la partida. Con k > acciones_realizadas + 1 se rechaza con mensaje claro. *(FR-436)*
 - Múltiples eventos en el mismo instante t: se muestran tras aplicar todos, respetando el orden determinista del reloj virtual. *(FR-427, Apéndice B: caso 3)*
-- Reconstrucción necesita más de K acciones: imposible por FR-439; el programa informa un error claro sin dejar la partida a medias. *(FR-439, FR-440)*
+- Falta algún dato local necesario para reconstruir el estado: la consulta falla con un mensaje claro y la partida queda intacta. *(FR-440)*
 - K mayor que el número total de acciones: solo existe el punto de control 0; `historia` puede consultar cualquier instante reproduciendo desde 0. *(FR-439)*
 
 ---
@@ -171,12 +173,12 @@ La consulta `historia` responde en un tiempo proporcional a la distancia entre e
 **Consulta por número de acción**
 
 - **FR-429**: El juego DEBE aceptar el comando `historia #k` durante la partida interactiva y también una vez que la partida ha concluido (victoria o derrota), donde k es un entero ≥ 1. El estado devuelto DEBE ser el estado justo antes de que el jugador tomara la acción número k de la línea de tiempo vigente. La terminación de la partida no invalida la línea de tiempo.
-- **FR-430**: `historia #1` DEBE devolver el estado inicial de la partida (punto de control 0: el estado antes de que el jugador tomara su primera decisión). Esto es equivalente a `historia <0>` cuando la primera acción del jugador ocurre en el instante 0.
+- **FR-430**: `historia #1` DEBE devolver el estado inicial de la partida (punto de control 0: el estado antes de que el jugador tomara su primera decisión). Esto es equivalente a `historia 0`, porque la primera decisión del jugador ocurre en el instante 0.
 
 **Contenido mínimo del estado mostrado**
 
 - **FR-431**: Tanto `historia <t>` como `historia #k` DEBEN mostrar como mínimo la siguiente información referida al instante histórico consultado:
-  1. El instante del reloj virtual en el estado devuelto.
+  1. El instante del reloj virtual del estado devuelto: para `historia <t>`, el instante `t` pedido; para `historia #k`, el instante en que el jugador tomó (o va a tomar) la acción k.
   2. La sala en la que se encontraba el jugador.
   3. Los puntos de vida del jugador y sus estadísticas (ataque, defensa y velocidad vigentes).
   4. El inventario del jugador (llaves y objetos).
@@ -201,11 +203,11 @@ La consulta `historia` responde en un tiempo proporcional a la distancia entre e
 
 **Partida sin acciones y estado inicial**
 
-- **FR-438**: En una partida en la que el jugador aún no ha tomado ninguna acción, `historia <0>` y `historia #1` DEBEN devolver el estado inicial. Cualquier `t` > 0 y cualquier `k` > 1 DEBEN rechazarse como instantes futuros.
+- **FR-438**: En una partida en la que el jugador aún no ha tomado ninguna acción, `historia 0` y `historia #1` DEBEN devolver el estado inicial. Cualquier `t` > 0 y cualquier `k` > 1 DEBEN rechazarse como instantes futuros.
 
 **Límite de reconstrucción**
 
-- **FR-439**: Una consulta `historia` NO DEBE requerir reconstruir más de K acciones del jugador desde el punto de control más cercano anterior al instante pedido (K = intervalo de puntos de control vigente, capacidad 007). Si esto no fuera posible, el juego DEBE informar el problema con un mensaje claro sin dejar la partida a medias.
+- **FR-439**: Una consulta `historia` NO DEBE requerir aplicar ni deshacer los cambios de más de K acciones del jugador (K = intervalo de puntos de control vigente, capacidad 007), contadas desde el punto de control más cercano anterior al estado pedido.
 - **FR-440**: La reconstrucción del estado histórico NO DEBE realizar solicitudes de red ni acceder a recursos externos. Si falta algún dato local necesario para completar la consulta, el juego DEBE informar el problema con un mensaje claro sin dejar la partida en un estado inconsistente.
 
 **Persistencia**
