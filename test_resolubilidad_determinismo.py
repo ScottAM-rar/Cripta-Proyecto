@@ -90,5 +90,86 @@ class Equivalencia(Base):
             self.assertEqual(obtenido, esperado, f"semilla {semilla}")
 
 
+def caso_http(codigo: str):
+    from tests_labs.api_falsa import CASOS_APENDICE_B
+    for cod, _descripcion, constructor in CASOS_APENDICE_B:
+        if cod == codigo:
+            return constructor()[0]
+    raise AssertionError(f"CASOS_APENDICE_B no tiene el caso {codigo}")
+
+
+class ConServicio(unittest.TestCase):
+    """Grupo F (T039): las mismas verificaciones a través de las fuentes reales, con requests.get bloqueado."""
+
+    def setUp(self):
+        import shutil
+        import tempfile
+        from unittest import mock
+
+        import requests
+        self.carpeta = tempfile.mkdtemp(prefix="cripta_003_fuentes_")
+        self.addCleanup(shutil.rmtree, self.carpeta, True)
+        parche = mock.patch.object(requests, "get", side_effect=AssertionError("intento de red"))
+        parche.start()
+        self.addCleanup(parche.stop)
+
+    def directo(self, codigo: str):
+        from adaptadores.cache import CacheLRU
+        from adaptadores.servicioCripta import ServicioCripta
+        servicio = ServicioCripta(caso_http(codigo), CacheLRU(25))
+        servicio.listar_criptas()
+        return servicio
+
+    def verificar(self, fuente):
+        try:
+            return importlib.import_module("Logica.VerificacionResolubilidad").verificar(fuente, CRIPTA)
+        except ImportError as error:
+            self.fail(f"Logica.VerificacionResolubilidad todavía no existe: {error}")
+
+
+class Fuentes(ConServicio):
+
+    def test_fr342_h3_4_http_offline_y_solo_local_dan_lo_mismo(self):
+        from adaptadores import fabrica
+        from adaptadores.AlmacenDisco import AlmacenDisco
+        from adaptadores.cache import CacheLRU
+        from adaptadores.cliente_offline import ClienteOffline
+        from adaptadores.cliente_persistente import ClientePersistente
+        from adaptadores.servicioCripta import ServicioCripta
+        for codigo in ("B-R1", "B-R2", "B-R3", "B-R4"):
+            carpeta = f"{self.carpeta}/{codigo}"
+            # Con red (cliente HTTP falso directo).
+            con_red = self.verificar(self.directo(codigo))
+            self.assertIsNotNone(con_red.resoluble, codigo)
+            # Guardar la cripta completa por el flujo normal y leerla por --offline y por la lectura solo local.
+            guardado = ServicioCripta(ClientePersistente(caso_http(codigo), AlmacenDisco(carpeta)), CacheLRU(25))
+            guardado.listar_criptas()
+            guardado.crear_jugador(CRIPTA)
+            guardado.construir_todas(CRIPTA)
+            guardado.ubicacion_llaves(CRIPTA)
+            offline = ServicioCripta(ClienteOffline(AlmacenDisco(carpeta)), CacheLRU(25))
+            offline.listar_criptas()
+            solo_local = fabrica.crear_fuente_solo_local(carpeta=carpeta)
+            self.assertEqual(self.verificar(offline), con_red, f"{codigo}: --offline")
+            self.assertEqual(self.verificar(solo_local), con_red, f"{codigo}: lectura solo local")
+            self.assertEqual(offline.solicitudes_realizadas, 0)
+            self.assertEqual(solo_local.fuente.solicitudes_realizadas, 0)
+
+
+class DeterminismoConContenido(ConServicio):
+
+    def test_fr335_h3_3_con_y_sin_contenido_guardado(self):
+        for codigo in ("B-R1", "B-R2", "B-R3", "B-R4"):
+            servicio = self.directo(codigo)
+            sin_contenido = self.verificar(servicio)
+            servicio.crear_jugador(CRIPTA)
+            servicio.construir_todas(CRIPTA)                     # ahora el contenido de todas las salas está traído
+            con_contenido = self.verificar(servicio)
+            otra_sesion = self.verificar(self.directo(codigo))   # sesión nueva, sin contenido
+            self.assertIsNotNone(sin_contenido.resoluble, codigo)
+            self.assertEqual(con_contenido, sin_contenido, codigo)
+            self.assertEqual(otra_sesion, sin_contenido, codigo)
+
+
 if __name__ == "__main__":
     unittest.main()
