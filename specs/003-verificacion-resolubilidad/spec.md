@@ -204,7 +204,7 @@ La verificación tarda menos de 200 ms en la cripta más grande publicada, con l
 
 - **SC-001**: Los cuatro casos de resolubilidad del Apéndice B (B-R1 a B-R4) pasan como pruebas automatizadas que citan sus requisitos.
 - **SC-002**: Dos ejecuciones de `--verificar` sobre la misma cripta producen reportes idénticos en el 100 % de las pruebas, incluida la comparación con y sin contenido de salas guardado.
-- **SC-003**: Con las llaves guardadas, `--verificar` hace 0 solicitudes; sin ellas, como máximo la única consulta de llaves de la 009.
+- **SC-003**: Con las llaves guardadas, la verificación no hace ninguna solicitud de llaves, de salas ni de contenido (más allá del arranque de la Parte I: lista de criptas y validación de versión); sin ellas, hace como máximo la única consulta de llaves de la 009.
 - **SC-004**: El 100 % de los fallos de datos terminan con un mensaje que nombra la cripta y el motivo y con el código de error de datos; ninguno muestra un resultado de resolubilidad.
 - **SC-005**: Ninguna partida sobre una cripta no resoluble inicia sin `--forzar`; con `--forzar`, el 100 % muestra el aviso.
 - **SC-006**: La verificación de la cripta más grande publicada tarda menos de 200 ms con los datos guardados.
