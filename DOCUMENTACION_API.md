@@ -78,7 +78,9 @@ servicio.precargar(cid)                 # trae TODAS las salas de golpe (ver 2.3
 sala = servicio.construir_sala(cid, 3)  # SalaDTO de la sala 3 (los ids de sala empiezan en 1)
 
 servicio.obtener_sala_salida(cid)       # id de la sala donde se gana
-servicio.datos_cripta(cid)["llave_salida"]   # id de la llave que hace falta para ganar
+servicio.obtener_sala_inicial(cid)      # id de la sala donde empieza la partida (capacidad 003)
+servicio.obtener_llave_salida(cid)      # id de la llave que hace falta para ganar, o None (capacidad 003)
+                                        # (lo mismo que datos_cripta(cid).get("llave_salida"))
 
 servicio.solicitudes_realizadas         # solicitudes de red usadas hasta ahora (0 si es offline)
 servicio.presupuesto_solicitudes(cid)   # el máximo permitido (9)
@@ -240,13 +242,15 @@ Recibe un cliente (online u offline) y una caché por el constructor; `crear_ser
 | `datos_cripta(id)` | Datos generales de la cripta (una vez por cripta) | 1 (la primera vez) |
 | `crear_jugador(id)` | `JugadorDTO` con las stats de la API, vida llena, en la sala inicial | 0 extra |
 | `obtener_sala_salida(id)` | Id de la sala donde se gana | 0 extra |
+| `obtener_sala_inicial(id)` | Id de la sala donde empieza la partida (capacidad 003, de los datos generales) | 0 extra |
+| `obtener_llave_salida(id)` | Id de la llave de salida, o `None` si los datos generales no la traen (capacidad 003) | 0 extra |
 | `presupuesto_solicitudes(id)` | Máximo de solicitudes permitido | 0 extra |
 | `total_salas(id)` | Cantidad de salas | 1 (la primera vez) |
 | `construir_sala(id, n)` | `SalaDTO` de una sala (nueva cada vez) | 0 si hubo `precargar` |
 | `construir_salas(id, [n])` | Varias `SalaDTO` en lote | las mínimas |
 | `construir_todas(id)` | Todas las salas de la cripta | las mínimas |
 | `precargar(id, [n]=None)` | Trae todo (o esas salas) de golpe y lo deja en disco | las mínimas |
-| `esqueleto(id)` | `MapaDTO` con el esqueleto completo y el costo de cada salida; `obtener_mapa(id)` devuelve lo mismo (capacidad 009) | 0 extra (usa el esqueleto ya descargado) |
+| `esqueleto(id)` | `MapaDTO` con el esqueleto completo, el costo de cada salida, el estado inicial de la puerta y, desde la capacidad 003, la llave que la abre (`AristaMapaDTO.llave`); `obtener_mapa(id)` devuelve lo mismo (capacidad 009) | 0 extra (usa el esqueleto ya descargado) |
 | `ubicacion_llaves(id)` | `UbicacionLlavesDTO` (listas paralelas `ids`, `salas`, `enemigos`) con la ubicación de las llaves, validada; se memoriza por sesión (ver §7.1) | 1 la primera vez sin llaves guardadas; 0 si están guardadas con la misma versión o ya se pidió en la sesión |
 | `solicitudes_realizadas` | Contador de solicitudes de red (propiedad) | |
 
@@ -282,6 +286,92 @@ queda presupuesto. Después valida la lista contra el esqueleto (`adaptadores/ll
 - **Partida cargada (FR-325)**: restaurar una partida deja `llaves` y `avisoLlaves` en `None` sin pedir nada. Las
   llaves se piden la primera vez que hacen falta, con `obtenerLlaves()`. Ni las llaves ni el aviso se guardan en el
   archivo de partida.
+
+### 7.2 Verificación de resolubilidad (capacidad 003)
+
+Decide, antes de jugar, si la cripta se puede completar: llegar a la sala de salida con la llave de salida obtenible,
+abriendo puertas solo con llaves que se puedan conseguir antes. Especificación, plan y mediciones en
+`specs/003-verificacion-resolubilidad/`. **No hace solicitudes nuevas**: usa el esqueleto ya descargado, los datos
+generales y la ubicación de llaves de la 009 (§7.1). Nunca pide el contenido de las salas.
+
+**La llave de cada puerta en el mapa.** `AristaMapaDTO` (`DTO/MapaDTO.py`) y `AristaCripta` (`Logica/MapaCripta.py`)
+tienen un último campo `llave: str | None = None`, con el id de catálogo de la llave que abre la puerta de esa salida,
+tal como lo publica la API en la salida. Es `None` si la salida no tiene puerta o la puerta no tiene llave.
+`ServicioCripta.esqueleto()` la copia, y `--offline` y `FuenteSoloLocal` la heredan. Quien construye una arista con
+cuatro argumentos sigue funcionando.
+
+```python
+AristaMapaDTO(direccion, destino, costo, cerrada_inicial=False, llave=None)
+AristaCripta(origen, direccion, destino, costo, cerrada_inicial, llave=None)
+```
+
+**Contrato del modelo.** `FuenteCripta` (`Logica/FuenteCripta.py`) gana `obtener_sala_inicial(cripta_id) -> int` y
+`obtener_llave_salida(cripta_id) -> str | None`, junto a `obtener_sala_salida`. Las implementan `ServicioCripta` (§7)
+y `FuenteSoloLocal` (§8.6), las dos con 0 solicitudes extra.
+
+**La operación.**
+
+```python
+from Logica.VerificacionResolubilidad import verificar, verificar_resolubilidad, CriptaNoResoluble
+from Logica.ReporteVerificacion import lineas_reporte, aviso_forzado
+
+resultado = verificar(fuente, "cripta-04")                # fuente: cualquier FuenteCripta
+resultado = verificar(fuente, "cripta-04", llaves=llaves)  # reutiliza las llaves ya pedidas (no las vuelve a pedir)
+resultado = servicio_juego.verificar("cripta-04")          # EstadoJuegoServicio.verificar(cripta_id, offline=None)
+for linea in lineas_reporte(resultado):
+    print(linea)
+codigo = resultado.codigo_salida()                         # 0, 1 o 2
+```
+
+| Función o método | Firma | Qué hace |
+|---|---|---|
+| `verificar` (Logica) | `verificar(fuente, cripta_id: str, llaves: UbicacionLlavesDTO \| None = None) -> ResultadoVerificacion` | Junta el mapa, la sala inicial, la sala de salida, la llave de salida y las llaves desde la fuente, y llama a la función pura. **Nunca lanza por falta de datos**: `LlavesNoDisponibles`, `DatoLocalFaltante`, `RuntimeError` y `OSError` salen como `resoluble=None` con `motivo_error`; también unos datos generales sin `sala_inicial` o sin `sala_salida` (`motivo_error="Datos inválidos en la cripta X: faltan los datos generales «sala_inicial»."`). Una cripta inexistente da `motivo_error="La cripta X no existe."`; con `--offline`, también una cripta que no está guardada completa |
+| `verificar_resolubilidad` (Logica) | `verificar_resolubilidad(mapa: MapaCripta, sala_inicial: int, sala_salida: int, llave_salida: str \| None, llaves: UbicacionLlavesDTO, cripta_id: str = "") -> ResultadoVerificacion` | La función pura: sin E/S ni solicitudes, mismo resultado para los mismos datos. Un solo recorrido incremental por oleadas, O(S + E + L log L + (L + E) log K) |
+| `EstadoJuegoServicio.verificar` | `verificar(cripta_id: str, offline: bool \| None = None) -> ResultadoVerificacion` | La misma operación sobre la fuente del servicio. No inicia partida, no abre log ni crea la vista |
+| `lineas_reporte` | `lineas_reporte(resultado: ResultadoVerificacion) -> list[str]` | El texto del reporte (`Logica/ReporteVerificacion.py`). La primera línea es `Verificación de la cripta X: RESOLUBLE.`, `NO RESOLUBLE.` o `NO SE PUDO VERIFICAR.`. Resoluble: el orden de llaves con sala, enemigo y la marca «(llave de salida)». No resoluble: motivos, puertas bloqueadas, salas alcanzables y cantidad de no alcanzables. Error: una segunda línea con `motivo_error`. Dos resultados iguales dan el mismo texto carácter por carácter |
+| `aviso_forzado` | `aviso_forzado(resultado: ResultadoVerificacion) -> str` | El aviso de una línea para una partida forzada: `AVISO: la cripta X no es resoluble (<primera causa>); la partida se inicia porque se usó --forzar.`. Lanza `ValueError` si el resultado no es no resoluble |
+
+**El resultado** (`DTO/ResultadoVerificacionDTO.py`, dataclasses con listas comunes):
+
+| Clase | Campos |
+|---|---|
+| `ResultadoVerificacion` | `cripta_id: str`; `resoluble: bool \| None` (`None` = error de datos); `orden: list[PasoLlaveDTO]` (solo si resoluble; la llave de salida exactamente una vez); `salas_alcanzables: list[int]` (ids crecientes); `salas_no_alcanzables: int`; `bloqueos: list[BloqueoDTO]` y `causas: list[str]` (solo si no resoluble); `llave_salida: str \| None`; `sala_salida: int \| None`; `motivo_error: str \| None` (solo si `resoluble is None`). Método `codigo_salida() -> int` |
+| `PasoLlaveDTO` | `llave: str`; `sala: int` (sala del suelo o sala inicial del enemigo que la suelta); `enemigo: str \| None = None` (instancia del enemigo, o `None` si está en el suelo; con suelo y enemigo en la misma sala se informa el suelo y, entre enemigos, la menor instancia) |
+| `BloqueoDTO` | `sala_origen: int` (alcanzable); `direccion: str`; `sala_destino: int` (no alcanzable); `llave: str \| None`; `salas_de_la_llave: list[int]` (crecientes, sin repetir; vacía si la llave no existe); `tipo: str` |
+
+Tipos de bloqueo (constantes del mismo módulo): `SIN_LLAVE` (puerta cerrada sin llave asignada), `LLAVE_INEXISTENTE`
+(ninguna ubicación tiene esa llave), `CICLO` (la llave está en una sala a la que se llegaría abriendo todas las
+puertas), `LLAVE_SIN_CAMINO` (ninguna ubicación tiene camino desde la sala inicial, ni abriendo todas las puertas).
+Causas, en el orden fijo `CAUSAS_EN_ORDEN`: `LLAVE_SALIDA_INEXISTENTE`, `SALIDA_SIN_CAMINO`, `SALIDA_BLOQUEADA`,
+`LLAVE_SALIDA_INALCANZABLE`.
+
+**Códigos de salida de `--verificar`** (`codigo_salida()`): **0** resoluble, **1** no resoluble, **2** error de datos
+(no se pudo verificar; nunca se inventa un resultado). Conectar `--verificar` y `--forzar` a la línea de comandos y
+mostrar el reporte y los avisos es de la capacidad de Fernanda, sobre esta interfaz.
+
+**Inicio de partida con verificación.**
+
+```python
+EstadoJuegoLogica.iniciarJuego(cripta, semilla=None, pedir_llaves=True, forzar=False)
+EstadoJuegoServicio.iniciarJuego(cripta, semilla=None, offline=None, nombre_log=None, forzar=False)
+EstadoJuegoServicio.avisoResolubilidad() -> str | None
+```
+
+Una partida nueva pide las llaves (`obtenerLlaves()`) y, con ellas, verifica con la misma operación que `--verificar`,
+sin volver a pedir las llaves:
+
+| Situación | Qué pasa |
+|---|---|
+| Sin llaves (FR-313) | No verifica; queda el aviso de la 009 en `avisoLlaves` y la partida sigue |
+| Resoluble | Inicia sin aviso (con o sin `forzar`) |
+| No resoluble, sin `forzar` | `CriptaNoResoluble(resultado)` **antes** de marcar la partida como iniciada: no se abre el log ni se escribe ninguna acción. El mensaje es el reporte |
+| No resoluble, con `forzar` | Inicia; `avisoResolubilidad` = `aviso_forzado(resultado)`, que se muestra solo al iniciar |
+| Error de datos (por ejemplo, la sala de salida no existe o falta en los datos generales) | Inicia; `avisoResolubilidad` = `motivo_error` + « La verificación de resolubilidad no está disponible.». Excepción: si los datos generales no traen `sala_inicial`, la partida no llega a verificar, porque `crear_jugador` (Parte I) falla antes al ubicar al jugador (límite conocido, fuera de la 003) |
+| `pedir_llaves=False` (`--replay`) o partida cargada | No verifica; `resultadoVerificacion` y `avisoResolubilidad` quedan en `None` |
+
+`EstadoJuegoLogica.resultadoVerificacion` guarda el `ResultadoVerificacion` del inicio, o `None`.
+`EstadoJuegoServicio.avisoResolubilidad()` devuelve el aviso, o `None` si no hay partida o no hay aviso; solo lee. Ni
+el resultado ni el aviso entran al log ni al archivo de partida.
 
 ---
 
@@ -398,6 +488,7 @@ sirve la versión guardada.
 | `esqueleto(id)`, `obtener_mapa(id)` | El esqueleto (`obtener_mapa` es lo mismo) |
 | `construir_sala(id, n)` | La sala `n`; si su contenido no está en disco, `DatoLocalFaltante("Falta en disco sala n de la cripta X")` |
 | `ubicacion_llaves(id)`, `datos_cripta(id)`, `crear_jugador(id)`, `version_cripta(id)`, `total_salas(id)`, `obtener_sala_salida(id)` | Delegan en el servicio |
+| `obtener_sala_inicial(id)`, `obtener_llave_salida(id)` | Capacidad 003: delegan en el servicio (datos generales guardados, sin solicitudes) |
 | `existe_cripta(id)` | Solo existencia, **sin comparar versión**: mira la lista de criptas guardada. Sin lista en disco lanza `DatoLocalFaltante` |
 | `version_catalogo()` | La versión guardada del catálogo; distinta de `version_catalogo_vigente`, o sin versión guardada, lanza `DatoLocalFaltante` nombrando las dos |
 | `objetos_que_suelta(enemigo)` | Comprueba la versión de la última cripta consultada por esta fuente (si no hay ninguna, `DatoLocalFaltante`); una ficha ausente sale como `DatoLocalFaltante` con su id y la cripta |
@@ -442,6 +533,7 @@ Pendiente: confirmar con la API real la cuenta de `precargar` y que `datos["vers
 | `RuntimeError` | `cliente_http` | Código HTTP inesperado, o 429 repetido más de 5 veces | Mostrar el mensaje |
 | `ValueError` | varios | Cripta o sala inexistente, id de archivo no válido, `cache_size < 1`, clase de objeto desconocida | Es un error de uso o de datos |
 | `ErrorArchivo` | `Archivo_indexado` | Archivo dañado | `AlmacenDisco` lo trata como "no hay nada guardado" y lo vuelve a pedir |
+| `CriptaNoResoluble` (`RuntimeError`) | `Logica/VerificacionResolubilidad.py`, lanzada por `EstadoJuegoLogica.iniciarJuego` | Partida nueva sin `forzar` en una cripta no resoluble (capacidad 003, FR-339) | La partida no inicia y no hay log. Mostrar `str(error)` (es el reporte); `error.resultado` trae el `ResultadoVerificacion`. Para jugar igual, `iniciarJuego(..., forzar=True)` (§7.2) |
 
 ---
 

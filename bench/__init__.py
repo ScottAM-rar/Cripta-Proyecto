@@ -15,6 +15,7 @@ from datetime import datetime
 
 from bench import agenda, bitacora, ciclo, guardado, historia, inventario, ordenamiento, puntos_control, recorrido, replay, retroceso, salas, terreno
 from bench import llaves
+from bench import resolubilidad
 from bench.datos import SEMILLA
 from bench.salida import escribir_csv, imprimir_tabla
 
@@ -49,6 +50,7 @@ BLOQUES = (
     ("puntos_control", puntos_control.ejecutar),
     ("llaves", llaves.ejecutar),
     ("historia", historia.ejecutar),
+    ("resolubilidad", resolubilidad.ejecutar),
 )
 
 
@@ -70,6 +72,7 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
     cumple = True
     cumple_recorrido = True
     cumple_llaves = True
+    cumple_resolubilidad = True
     for nombre, funcion in BLOQUES:
         if nombre not in pedidos:
             continue
@@ -81,6 +84,8 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
             cumple_recorrido = False
         if nombre == "llaves" and resultado is False:
             cumple_llaves = False
+        if nombre == "resolubilidad" and resultado is False:
+            cumple_resolubilidad = False
     imprimir_tabla(filas, imprimir)
     if ruta_csv:
         escribir_csv(filas, ruta_csv)
@@ -100,4 +105,8 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
         imprimir("\nLlaves (SC-001, SC-002): "
                  + ("CUMPLE." if cumple_llaves else "NO CUMPLE: 1/0/0 en D, la verificación de B o C, o guardar con "
                     "A y 5 000 salas supera los 50 ms."))
-    return 0 if cumple and cumple_recorrido and cumple_llaves else 1
+    if "resolubilidad" in pedidos:
+        imprimir("\nResolubilidad (FR-345, FR-346): "
+                 + ("CUMPLE." if cumple_resolubilidad else "NO CUMPLE: los resultados de A difieren, C supera 200 ms o "
+                    "la razón de D del incremental supera 20."))
+    return 0 if cumple and cumple_recorrido and cumple_llaves and cumple_resolubilidad else 1

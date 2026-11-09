@@ -20,6 +20,7 @@ Proyecto 1 de Estructura de datos
    Mediciones de reproduccion acotada: python main.py --bench replay
    Puntos de control: python main.py --checkpoint-cada K (una instantánea cada K acciones del jugador; por defecto 10); mediciones: python main.py --bench puntos_control
    Consultar el pasado durante la partida (o al terminar): escribir historia <t> (estado en el instante virtual t) o historia #k (estado justo antes de tu acción k); no consume tiempo, no cuenta como acción ni queda en el log. Mediciones: python main.py --bench historia
+   Capacidad 003 (verificación de resolubilidad: si la cripta se puede completar con las llaves obtenibles; una partida nueva no inicia en una cripta no resoluble salvo con forzar): python main.py --bench resolubilidad; las opciones --verificar y --forzar las conecta la capacidad de Fernanda sobre esta interfaz (EstadoJuegoServicio.verificar e iniciarJuego(..., forzar))
    Pruebas: python -m unittest discover -p "test_*.py"
    Pruebas de replay acotado: python -m unittest test_replay_hasta test_determinismo_replay test_rendimiento_replay
    Datos generados: datos_cripta/, logs/, Partidas Guardadas/

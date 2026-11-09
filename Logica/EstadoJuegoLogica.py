@@ -24,6 +24,8 @@ from Logica.MapaCripta import MapaCripta
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
 from DTO.PuntoControlDTO import PuntoControlDTO
 from Logica import EstadoGuardadoLogica
+from Logica import VerificacionResolubilidad
+from Logica.ReporteVerificacion import aviso_forzado
 
 class EstadoJuegoLogica:
     def __init__(self,semilla: int = None, cripta: str = None, comunicacion: FuenteCripta | None = None):
@@ -43,8 +45,6 @@ class EstadoJuegoLogica:
         self.registrador_log = None    # opcional: algo con agregar(linea); el modelo solo le avisa cada acción
         self.llaves = None             # UbicacionLlavesDTO de la cripta, o None si no se pidió o no se pudo (capacidad 009)
         self.avisoLlaves = None        # mensaje del último LlavesNoDisponibles, para mostrarlo (FR-313)
-        self._es_aislada = False       # True si es una instancia aislada para consultas historia (T019/T020)
-        self._es_repeticion = False
         
         if(cripta is not None):
             self.iniciarJuego(cripta)
@@ -579,11 +579,15 @@ class EstadoJuegoLogica:
         if self.comunicacion is None:
             raise ValueError("El juego no tiene un servicio de criptas")
 
-    def iniciarJuego(self,  cripta: str,semilla: int = None, pedir_llaves: bool = True):
+    def iniciarJuego(self, cripta: str, semilla: int = None, pedir_llaves: bool = True, forzar: bool = False):
         """pedir_llaves=False: la usa la reproducción, que no es una partida nueva (T058): no consulta las llaves ni
-        avisa; si después hacen falta, se piden bajo demanda con obtenerLlaves()."""
+        avisa; si después hacen falta, se piden bajo demanda con obtenerLlaves().
+        forzar (capacidad 003, FR-340): iniciar aunque la cripta no sea resoluble (ver _verificarAlIniciar). Una partida
+        nueva verifica la cripta; pedir_llaves=False (reproducción) no verifica."""
         if self.iniciado:
             raise ValueError("No se puede iniciar un juego ya iniciado")
+        self.resultadoVerificacion = None  # capacidad 003: cada inicio verifica de nuevo (o no verifica)
+        self.avisoResolubilidad = None
         self._exigirServicio()
         if not self.comunicacion.existe_cripta(cripta):
             raise ValueError("No existe la cripta solicitada")
@@ -616,10 +620,34 @@ class EstadoJuegoLogica:
         self.idCripta = cripta
         if pedir_llaves:
             self.obtenerLlaves()       # partida nueva: la ubicación de las llaves se pide enseguida (FR-301)
+            self._verificarAlIniciar(cripta, forzar)   # capacidad 003; puede lanzar CriptaNoResoluble (FR-339)
         self.iniciado = True
         self.registrador_log = None
         self.fin = False
         self.motivoFin = None
+
+    def _verificarAlIniciar(self, cripta: str, forzar: bool) -> None:
+        """Verificación de resolubilidad de una partida nueva (capacidad 003; data-model.md §5, research.md §7).
+
+        Va después de obtenerLlaves() y antes de marcar la partida como iniciada, así que, si lanza, la partida no
+        queda iniciada y el servicio no llega a abrir el registro de partida. Usa la misma operación que --verificar
+        (FR-344) con las llaves que la partida ya pidió: no hace solicitudes nuevas (FR-341).
+        - Sin llaves (FR-313): no verifica; queda el aviso de la 009 en avisoLlaves.
+        - Resoluble: sin aviso.
+        - No resoluble con forzar: aviso de una línea, que se muestra solo al iniciar (FR-340).
+        - No resoluble sin forzar: CriptaNoResoluble (FR-339).
+        - Error de datos: la partida no se bloquea; aviso con el motivo (FR-339, escenario H4-5).
+        El resultado y el aviso no entran al log ni al estado guardado."""
+        if self.llaves is None:
+            return
+        resultado = VerificacionResolubilidad.verificar(self.comunicacion, cripta, llaves=self.llaves)
+        self.resultadoVerificacion = resultado
+        if resultado.resoluble is None:
+            self.avisoResolubilidad = f"{resultado.motivo_error} La verificación de resolubilidad no está disponible."
+        elif resultado.resoluble is False:
+            if not forzar:
+                raise VerificacionResolubilidad.CriptaNoResoluble(resultado)
+            self.avisoResolubilidad = aviso_forzado(resultado)
 
     def _crearCampoDeCostos(self, cripta: str, salas: list, jugador) -> CampoDeCostos | None:
         """Mapa del esqueleto completo + campo de costos hacia el jugador, para los cazadores (FR-117). Si la fuente

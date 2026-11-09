@@ -51,11 +51,11 @@ def servicio_en(carpeta, http):
     return ServicioCripta(ClientePersistente(http, AlmacenDisco(carpeta)), CacheLRU(25))
 
 
-def jugar_y_exportar(servicio, cripta=CRIPTA):
+def jugar_y_exportar(servicio, cripta=CRIPTA, forzar=False):
     """Partida nueva con algunas acciones; devuelve (lógica, estado exportado)."""
     logica = EstadoJuegoLogica(comunicacion=servicio)
     with contextlib.redirect_stdout(io.StringIO()):
-        logica.iniciarJuego(cripta, 1)
+        logica.iniciarJuego(cripta, 1, forzar=forzar)
         logica.ingresarEnSala(logica.estadoJuego.jugador.id_sala_actual)
     jugar(logica, "ESPERAR")
     jugar(logica, "ESPERAR")
@@ -157,12 +157,13 @@ class OtraCripta(ConCarpeta):
         llaves_a = [("itm_llave_a", 2, None)]
         llaves_b = [("itm_llave_b", 3, None)]
         http = HttpDosCriptas([("cripta-A", llaves_a), ("cripta-B", llaves_b)])
+        # Estas criptas no tienen la llave de salida (capacidad 003: no resolubles); aquí se prueban las llaves al cargar, no la resolubilidad.
         servicio = servicio_en(self.carpeta, http)
-        _, estado_b = jugar_y_exportar(servicio, "cripta-B")
+        _, estado_b = jugar_y_exportar(servicio, "cripta-B", forzar=True)
 
         logica = EstadoJuegoLogica(comunicacion=servicio)
         with contextlib.redirect_stdout(io.StringIO()):
-            logica.iniciarJuego("cripta-A", 1)
+            logica.iniciarJuego("cripta-A", 1, forzar=True)
         self.assertEqual(logica.llaves.ids, ["itm_llave_a"])
 
         cargar(servicio, estado_b, logica)               # sobre la MISMA lógica, que ya tenía las llaves de A

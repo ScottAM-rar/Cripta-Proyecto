@@ -363,3 +363,6 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
     # Las llaves no se guardan ni se piden al cargar (FR-325): se piden bajo demanda con obtenerLlaves().
     logica.llaves = None
     logica.avisoLlaves = None
+    # La partida cargada no se verifica (capacidad 003): no arrastra el resultado ni el aviso de otra partida.
+    logica.resultadoVerificacion = None
+    logica.avisoResolubilidad = None

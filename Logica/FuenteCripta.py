@@ -33,6 +33,10 @@ class FuenteCripta(Protocol):
 
     def obtener_sala_salida(self, cripta_id: str) -> int: ...
 
+    def obtener_sala_inicial(self, cripta_id: str) -> int: ...            # capacidad 003 (verificación)
+
+    def obtener_llave_salida(self, cripta_id: str) -> str | None: ...     # capacidad 003 (verificación)
+
     def total_salas(self, cripta_id: str) -> int: ...
 
     def construir_sala(self, cripta_id: str, numero_sala: int) -> SalaDTO: ...

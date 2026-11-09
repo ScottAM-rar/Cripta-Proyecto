@@ -46,9 +46,9 @@ class ClienteDeBatalla(ClienteSintetico):
         return [dict(self.ficha)] if "ent_bench" in ids else []
 
     def obtener_llaves(self, cripta_id, solo_guardadas=False, limite_solicitudes=None):
-        """Capacidad 009: iniciarJuego pide la ubicación de las llaves. La cripta sintética entrega la llave de salida suelta
-        en la sala 1 (así la verificación de resolubilidad de la 003 la da por resoluble) sin contar como solicitud,
-        para no alterar las mediciones."""
+        """Capacidades 009 y 003: la llave de salida (`itm_llave`, de los datos generales) está en el suelo de la sala
+        inicial, así que la cripta es resoluble y la partida del bench inicia como una real (FR-339). Es solo su
+        ubicación: el contenido de la sala no cambia y no cuenta como solicitud, igual que la lista vacía de antes."""
         return [{"id": "itm_llave", "sala": 1}]
 
 
