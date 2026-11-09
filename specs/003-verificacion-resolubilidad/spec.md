@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-08
 
-**Estado**: Borrador
+**Estado**: Implementada (T001 a T066)
 
 **Entrada**: Capacidad 3 de la Parte II — verificación de resolubilidad de una cripta: opción `--verificar`, opción `--forzar` y resultado de la verificación (`ResultadoVerificacion`). Requisitos con prefijo FR-330 en adelante (la 009 llegó hasta FR-325; la 010 usa FR-360).
 
