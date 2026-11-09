@@ -46,9 +46,10 @@ class ClienteDeBatalla(ClienteSintetico):
         return [dict(self.ficha)] if "ent_bench" in ids else []
 
     def obtener_llaves(self, cripta_id, solo_guardadas=False, limite_solicitudes=None):
-        """Capacidad 009: iniciarJuego pide la ubicación de las llaves. La cripta sintética no tiene llaves, así que
-        entrega una lista vacía (válida) sin contar como solicitud, para no alterar las mediciones."""
-        return []
+        """Capacidad 009: iniciarJuego pide la ubicación de las llaves. La cripta sintética entrega la llave de salida suelta
+        en la sala 1 (así la verificación de resolubilidad de la 003 la da por resoluble) sin contar como solicitud,
+        para no alterar las mediciones."""
+        return [{"id": "itm_llave", "sala": 1}]
 
 
 def servicio_sintetico(carpeta: str, enemigos: int = 0, ancho: int = 5, alto: int = 5, comportamiento: str = "guardián"):
