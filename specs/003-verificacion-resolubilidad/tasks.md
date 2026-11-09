@@ -237,13 +237,13 @@
 
 **Objetivo**: bloque `--bench resolubilidad` con la alternativa descartada ([contracts/bench-resolubilidad.md](contracts/bench-resolubilidad.md), [research.md §9](research.md)).
 
-- [ ] T050 [P] [US6] En `test_resolubilidad_determinismo.py`, clase `CadenaSintetica`: `test_fr346_cadena_determinista_por_semilla` (dos llamadas con la misma semilla dan lo mismo; con otra semilla cambian los ids); `test_fr346_cadena_es_resoluble_con_n_llaves` (n = 50: resoluble, `orden` con n llaves incluida la de salida, en el orden de la cadena); `test_fr346_ids_no_siguen_la_cadena` (el orden de ids no coincide con el de la cadena). (FR-346, V)
-- [ ] T051 Ejecutar `python -m unittest test_resolubilidad_determinismo` y registrar la evidencia roja de `CadenaSintetica` (falla por `self.fail`: `esqueleto_llaves_encadenadas` no existe). (IX)
-- [ ] T052 [US6] En `tests_labs/cripta_sintetica.py`, `esqueleto_llaves_encadenadas(n, semilla) -> (esqueleto, llaves, llave_salida, sala_salida)` según [data-model.md §7](data-model.md): pasillo de n salas y una lateral por sala; la puerta i → i+1 (en los dos sentidos) se abre con `k_<j>`, ubicada en la lateral de la sala i; los nombres `j` y el orden de las laterales se barajan con `random.Random(semilla)`; la llave de salida en la lateral de la última sala. `llaves` como lista de tuplas `(id, sala, None)`. Sin tamaños fijos. (FR-346, V)
-- [ ] T053 [US6] Crear `bench/resolubilidad.py` con `ejecutar(filas: list) -> bool` y las secciones A a D del contrato: A (incremental y `verificar_repetida` de `tests_labs/referencia_resolubilidad.py`, n = 300 y 3 000, mediana de 5; la repetida con n = 3 000 con 1 repetición si la primera supera 10 s, anotado en la fila; falla si los resultados difieren); B (búsqueda binaria de `IndiceLlaves` frente a búsqueda lineal escrita en el bench, K = 100, 1 000, 10 000; informativa); C (incremental en la cadena con n = 5 000 y en la rejilla de 70 × 70 con `fraccion_cerradas=0.15` y llaves asignadas por semilla; falla si supera 200 ms); D (razón t(3 000)/t(300) de cada estrategia; falla si la de la incremental supera 20). Mide con `time.perf_counter_ns` sobre la función pura, con `MapaCripta` y `UbicacionLlavesDTO` ya construidos. Sin red, vista ni caché del usuario. (FR-345, FR-346, VII)
-- [ ] T054 [US6] Registrar el bloque en `bench/__init__.py` (`("resolubilidad", resolubilidad.ejecutar)` en `BLOQUES`, indicador `cumple_resolubilidad` y su línea en el resumen: «Resolubilidad (FR-345, FR-346): CUMPLE.» o el motivo), y mencionar `resolubilidad` en la ayuda de `--bench` de `main.py` (solo ese texto). (VII)
-- [ ] T055 [US6] En `tests_labs/sin_red.py`, agregar las pruebas de la capacidad (`test_mapa_con_llaves`, `test_indice_llaves`, `test_resolubilidad_regla`, `test_resolubilidad_apendice_b`, `test_resolubilidad_determinismo`, `test_resolubilidad_datos`, `test_resolubilidad_inicio`, `test_resolubilidad_reporte`). (SC-002, IX)
-- [ ] T056 Con la máquina libre, ejecutar `python main.py --bench resolubilidad` y `python -m tests_labs.sin_red`. Guardar la salida del bench (cabecera con Python, sistema, fecha y semilla) para `mediciones.md`. **Terminado**: el bench termina con 0 (o se anota con honestidad qué criterio no se cumple) y `sin_red` pasa. (FR-345, FR-346, SC-006, SC-007)
+- [X] T050 [P] [US6] En `test_resolubilidad_determinismo.py`, clase `CadenaSintetica`: `test_fr346_cadena_determinista_por_semilla` (dos llamadas con la misma semilla dan lo mismo; con otra semilla cambian los ids); `test_fr346_cadena_es_resoluble_con_n_llaves` (n = 50: resoluble, `orden` con n llaves incluida la de salida, en el orden de la cadena); `test_fr346_ids_no_siguen_la_cadena` (el orden de ids no coincide con el de la cadena). (FR-346, V)
+- [X] T051 Ejecutar `python -m unittest test_resolubilidad_determinismo` y registrar la evidencia roja de `CadenaSintetica` (falla por `self.fail`: `esqueleto_llaves_encadenadas` no existe). (IX)
+- [X] T052 [US6] En `tests_labs/cripta_sintetica.py`, `esqueleto_llaves_encadenadas(n, semilla) -> (esqueleto, llaves, llave_salida, sala_salida)` según [data-model.md §7](data-model.md): pasillo de n salas y una lateral por sala; la puerta i → i+1 (en los dos sentidos) se abre con `k_<j>`, ubicada en la lateral de la sala i; los nombres `j` y el orden de las laterales se barajan con `random.Random(semilla)`; la llave de salida en la lateral de la última sala. `llaves` como lista de tuplas `(id, sala, None)`. Sin tamaños fijos. (FR-346, V)
+- [X] T053 [US6] Crear `bench/resolubilidad.py` con `ejecutar(filas: list) -> bool` y las secciones A a D del contrato: A (incremental y `verificar_repetida` de `tests_labs/referencia_resolubilidad.py`, n = 300 y 3 000, mediana de 5; la repetida con n = 3 000 con 1 repetición si la primera supera 10 s, anotado en la fila; falla si los resultados difieren); B (búsqueda binaria de `IndiceLlaves` frente a búsqueda lineal escrita en el bench, K = 100, 1 000, 10 000; informativa); C (incremental en la cadena con n = 5 000 y en la rejilla de 70 × 70 con `fraccion_cerradas=0.15` y llaves asignadas por semilla; falla si supera 200 ms); D (razón t(3 000)/t(300) de cada estrategia; falla si la de la incremental supera 20). Mide con `time.perf_counter_ns` sobre la función pura, con `MapaCripta` y `UbicacionLlavesDTO` ya construidos. Sin red, vista ni caché del usuario. (FR-345, FR-346, VII)
+- [X] T054 [US6] Registrar el bloque en `bench/__init__.py` (`("resolubilidad", resolubilidad.ejecutar)` en `BLOQUES`, indicador `cumple_resolubilidad` y su línea en el resumen: «Resolubilidad (FR-345, FR-346): CUMPLE.» o el motivo), y mencionar `resolubilidad` en la ayuda de `--bench` de `main.py` (solo ese texto). (VII)
+- [X] T055 [US6] En `tests_labs/sin_red.py`, agregar las pruebas de la capacidad (`test_mapa_con_llaves`, `test_indice_llaves`, `test_resolubilidad_regla`, `test_resolubilidad_apendice_b`, `test_resolubilidad_determinismo`, `test_resolubilidad_datos`, `test_resolubilidad_inicio`, `test_resolubilidad_reporte`). (SC-002, IX)
+- [X] T056 Con la máquina libre, ejecutar `python main.py --bench resolubilidad` y `python -m tests_labs.sin_red`. Guardar la salida del bench (cabecera con Python, sistema, fecha y semilla) para `mediciones.md`. **Terminado**: el bench termina con 0 (o se anota con honestidad qué criterio no se cumple) y `sin_red` pasa. (FR-345, FR-346, SC-006, SC-007)
 
 **Punto de control**: el bench muestra las dos estrategias, el límite y el crecimiento.
 
@@ -484,3 +484,56 @@ Defecto **de la prueba** corregido después de T047: en `Forzar.test_fr340_forza
 - **Prueba de la 009 tocada**: `test_llaves_partida_cargada.OtraCripta.test_fr325_e_restaurar_otra_cripta_no_arrastra_las_llaves_anteriores`. Sus criptas «cripta-A» y «cripta-B» no tienen la llave de salida (`itm_llave_negra`); con la regla nueva (FR-339) son **no resolubles** (`LLAVE_SALIDA_INEXISTENTE`) e `iniciarJuego` lanzaba `CriptaNoResoluble`. La prueba trata de las llaves al cargar una partida (FR-325), no de resolubilidad, así que se inicia con `forzar=True`.
 - **Cambio mínimo en `test_llaves_partida_cargada.py`**: el ayudante `jugar_y_exportar` gana el parámetro opcional `forzar=False` y lo pasa a `iniciarJuego`; en esa prueba, `forzar=True` en la llamada con «cripta-B» y en la llamada directa a `logica.iniciarJuego("cripta-A", 1)`, con una línea de comentario que explica por qué. Las demás pruebas de la 009 no cambian (usan el valor por defecto). No se tocó `Logica/EstadoJuegoLogica.py` ni ninguna otra prueba.
 - **Resultado**: `test_resolubilidad_inicio`, `test_resolubilidad_apendice_b` y `test_resolubilidad_datos`: 26 OK. `test_llaves_partida_cargada`: 10 OK. Suite completa: 375, OK, 0 fallas. `tests_labs.sin_red`: 95, 0 fallos y 0 errores.
+
+### T051 — 2026-11-08 — `python -m unittest -v test_resolubilidad_determinismo.CadenaSintetica` (antes de crear `esqueleto_llaves_encadenadas`)
+
+Resultado: `Ran 3 tests`, `FAILED (failures=3)`, 0 errores. Las tres (`test_fr346_cadena_determinista_por_semilla`, `test_fr346_cadena_es_resoluble_con_n_llaves` y `test_fr346_ids_no_siguen_la_cadena`) fallan por la misma aserción: `self.fail("esqueleto_llaves_encadenadas todavía no existe: module 'tests_labs.cripta_sintetica' has no attribute 'esqueleto_llaves_encadenadas'")`. Ninguna pasó a la primera.
+
+### T056 — 2026-11-08 — `python main.py --bench resolubilidad` y `python -m tests_labs.sin_red` (máquina libre, sin nada más corriendo)
+
+Salida completa del bench (para copiarla a `mediciones.md` en T058). Una sola corrida, sin ruido evidente: las medianas del incremental son coherentes entre secciones (34 ms con n = 3 000 en A; 59 ms con n = 5 000 en C).
+
+```text
+CRIPTA --bench · Python 3.12.10 · Windows AMD64 · 2026-11-08 19:05 · semilla 2026
+... midiendo resolubilidad
+
+Resolubilidad (A): incremental frente a recorrido repetido, cadena de llaves encadenadas
+  verificación: n = 300: el incremental y la repetida dan el mismo resultado (300 llaves en el orden) OK
+  n = 300 (600 salas): incremental (elegido)                         2.71 ms  mediana de 5
+  n = 300 (600 salas): repetida (oráculo, descartada)                198.41 ms  mediana de 5
+  verificación: n = 3,000: el incremental y la repetida dan el mismo resultado (3,000 llaves en el orden) OK
+  n = 3,000 (6,000 salas): incremental (elegido)                     34.29 ms  mediana de 5
+  n = 3,000 (6,000 salas): repetida (oráculo, descartada)            220,792.58 ms  1 repetición (la primera superó 10 s)
+
+Resolubilidad (B): índice de llaves, búsqueda binaria frente a búsqueda lineal (INFORMATIVA)
+  verificación: K = 100: binaria y lineal dan la misma posición      OK
+  K = 100, 100 consultas: búsqueda binaria (elegida)                 44.5 µs  mediana de 5
+  K = 100, 100 consultas: búsqueda lineal (descartada)               108.0 µs  mediana de 5
+  verificación: K = 1,000: binaria y lineal dan la misma posición    OK
+  K = 1,000, 1,000 consultas: búsqueda binaria (elegida)             794.4 µs  mediana de 5
+  K = 1,000, 1,000 consultas: búsqueda lineal (descartada)           11.11 ms  mediana de 5
+  verificación: K = 10,000: binaria y lineal dan la misma posición   OK
+  K = 10,000, 10,000 consultas: búsqueda binaria (elegida)           10.69 ms  mediana de 5
+  K = 10,000, 10,000 consultas: búsqueda lineal (descartada)         1,194.44 ms  1 repetición
+
+Resolubilidad (C): límite de 200 ms del incremental (FR-345)
+  cadena n = 5,000 (10,000 salas, 5,000 llaves, resoluble)           58.51 ms  mediana de 5; límite 200 ms: CUMPLE
+  rejilla 70 × 70 con puertas y llaves al azar (4,900 salas, 1,461 llaves, resoluble) 16.00 ms  mediana de 5; límite 200 ms: CUMPLE
+
+Resolubilidad (D): crecimiento t(3 000) / t(300) (FR-346, SC-007)
+  incremental (elegido)                                              12.7  tamaño ×10; límite 20: CUMPLE
+  repetida (oráculo, descartada)                                     1,112.8  INFORMATIVA
+  Una razón cercana a 10 es crecimiento lineal; cerca de 100, cuadrático. 
+
+Resolubilidad (FR-345, FR-346): CUMPLE.
+exit=0
+```
+
+Resumen: **CUMPLE** (código de salida 0).
+- **A**: resultados iguales en n = 300 y n = 3 000. Incremental: 2,71 ms y 34,29 ms. Repetida: 198,41 ms y 220 792,58 ms (1 repetición: la primera superó 10 s).
+- **C**: cadena con n = 5 000, 58,51 ms; rejilla de 70 × 70, 16,00 ms. Las dos por debajo de 200 ms.
+- **D**: razón del incremental 12,7 (límite 20); de la repetida, 1 112,8.
+
+Hallazgo para el grupo I (`mediciones.md`, `DECISIONES.md`): la razón de la repetida (1 112,8 con tamaño ×10) es mayor que la «cercana a 100» que preveía el contrato para O(K · (S + E)). El oráculo `verificar_repetida` no es solo «recorrer desde cero en cada oleada»: también averigua si una llave ya se obtuvo con búsquedas lineales sobre listas (`_contiene`), lo que agrega un factor K. Su costo real es cercano a O(K² · (S + E)). Eso no cambia la conclusión (el incremental crece de forma lineal y la alternativa descartada, mucho más rápido). El oráculo no se modificó.
+
+`tests_labs.sin_red`: 178 pruebas con `requests.get` bloqueado (95 de antes + 83 de las 8 pruebas de la capacidad 003), 0 fallos y 0 errores.
