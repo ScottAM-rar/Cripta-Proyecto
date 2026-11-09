@@ -196,16 +196,16 @@
 
 **Objetivo**: las tres fuentes dan lo mismo, con 0 solicitudes si las llaves están guardadas, y errores de datos claros con código 2.
 
-- [ ] T038 [P] [US5] Crear `test_resolubilidad_datos.py`:
+- [X] T038 [P] [US5] Crear `test_resolubilidad_datos.py`:
   - Clase `Solicitudes`: `test_fr341_llaves_guardadas_cero_solicitudes` (con `ClientePersistente` en carpeta temporal: una primera sesión obtiene las llaves; en una sesión nueva, `verificar` no agrega llamadas `("llaves", …)` y el contador no cambia); `test_fr341_sin_llaves_solo_la_consulta_de_la_009` (exactamente una llamada `("llaves", id)`); `test_fr341_nunca_pide_contenido` (ninguna llamada `obtener_contenido` en `HttpConfigurable.llamadas`).
   - Clase `ErroresDeDatos`: `test_fr343_servicio_sin_respuesta` (`fallo_llaves="sin_respuesta"`: `resoluble is None`, código 2, el motivo nombra la cripta); `test_fr343_offline_sin_llaves_sin_solicitudes` (`ClienteOffline` sobre una caché sin llaves); `test_fr343_cripta_inexistente`; `test_fr343_h4_5_sala_de_salida_inexistente` (`HttpConfigurable(sala_salida=<id sin sala>)`: código 2 y «Datos inválidos»).
   - Clase `CasosLimite` (casos límite de `spec.md` que no tenían prueba): `test_fr333_salida_a_sala_inexistente_se_ignora` (una salida apunta a un id sin sala: se ignora, la sala no aparece en `salas_alcanzables` y el resto del resultado no cambia); `test_fr343_ubicacion_de_llave_en_sala_inexistente_es_error_de_datos` (la consulta de llaves trae una sala que no existe: la 009 la rechaza y `verificar` da `resoluble is None`, código 2, sin resultado inventado); `test_fr339_cambio_de_version_entre_verificar_y_la_partida` (con `ClientePersistente`: `verificar` con la versión `v1` es resoluble; el servicio publica `v2` con la puerta de la salida pidiendo una llave inexistente; una partida nueva vuelve a verificar con los datos de `v2` y no inicia sin `forzar`).
 
   (FR-341, FR-343, SC-003, SC-004)
-- [ ] T039 [P] [US3] Ampliar `test_resolubilidad_determinismo.py`: clase `Fuentes` con `test_fr342_h3_4_http_offline_y_solo_local_dan_lo_mismo` (`ServicioCripta` sobre `HttpConfigurable`, `ClienteOffline` tras guardar con `ClientePersistente`, y `FuenteSoloLocal`: resultados iguales campo por campo); y en `Determinismo`, `test_fr335_h3_3_con_y_sin_contenido_guardado` (precargar todas las salas y verificar de nuevo: resultado igual). (FR-335, FR-342)
-- [ ] T040 Ejecutar `python -m unittest test_resolubilidad_datos test_resolubilidad_determinismo`. Como el algoritmo y `verificar` ya existen, varias pruebas pueden pasar a la primera: por cada una, anotar en «Evidencia en rojo» qué aserción fallaría y con qué cambio (por ejemplo, «fallaría si `verificar` llamara a `ubicacion_llaves` aunque reciba `llaves`»). Registrar como rojo solo lo que falle de verdad. (IX)
-- [ ] T041 [US5] Corregir en `Logica/VerificacionResolubilidad.py` lo que haya fallado en T040 (por ejemplo, la traducción de un error de datos). Si la corrección exige tocar un adaptador, hacerlo solo en `adaptadores/servicioCripta.py` o `adaptadores/fuente_solo_local.py` y anotarlo. Si todo pasó en T040, marcar la tarea como «sin cambios» con la explicación. (FR-341 a FR-343)
-- [ ] T042 Ejecutar `python -m unittest test_resolubilidad_datos test_resolubilidad_determinismo`. **Terminado**: todo pasa.
+- [X] T039 [P] [US3] Ampliar `test_resolubilidad_determinismo.py`: clase `Fuentes` con `test_fr342_h3_4_http_offline_y_solo_local_dan_lo_mismo` (`ServicioCripta` sobre `HttpConfigurable`, `ClienteOffline` tras guardar con `ClientePersistente`, y `FuenteSoloLocal`: resultados iguales campo por campo); y en `Determinismo`, `test_fr335_h3_3_con_y_sin_contenido_guardado` (precargar todas las salas y verificar de nuevo: resultado igual). (FR-335, FR-342)
+- [X] T040 Ejecutar `python -m unittest test_resolubilidad_datos test_resolubilidad_determinismo`. Como el algoritmo y `verificar` ya existen, varias pruebas pueden pasar a la primera: por cada una, anotar en «Evidencia en rojo» qué aserción fallaría y con qué cambio (por ejemplo, «fallaría si `verificar` llamara a `ubicacion_llaves` aunque reciba `llaves`»). Registrar como rojo solo lo que falle de verdad. (IX)
+- [X] T041 [US5] Corregir en `Logica/VerificacionResolubilidad.py` lo que haya fallado en T040 (por ejemplo, la traducción de un error de datos). Si la corrección exige tocar un adaptador, hacerlo solo en `adaptadores/servicioCripta.py` o `adaptadores/fuente_solo_local.py` y anotarlo. Si todo pasó en T040, marcar la tarea como «sin cambios» con la explicación. (FR-341 a FR-343)
+- [X] T042 Ejecutar `python -m unittest test_resolubilidad_datos test_resolubilidad_determinismo`. **Terminado**: todo pasa.
 
 **Punto de control**: FR-341 a FR-343 cubiertos con las tres fuentes.
 
@@ -422,3 +422,33 @@ Resultado: `Ran 16 tests`, `FAILED (failures=7)`, 0 errores. Las 6 de `Contrato`
 | `Texto.test_fr343_reporte_de_error` | **pasa a la primera** | La rama de error de datos ya la implementó T017 (entrega temprana). Fallaría si `lineas_reporte` cambiara el encabezado `Verificación de la cripta <id>: NO SE PUDO VERIFICAR.` o no copiara `motivo_error` tal cual en la segunda línea |
 | `CodigosDeSalida.test_fr331_resoluble_0_no_resoluble_1_error_2` | **pasa a la primera** | `codigo_salida()` existe desde T012 y el algoritmo desde T030. Fallaría si `codigo_salida` cambiara el mapeo 0/1/2 (por ejemplo, si devolviera 1 también para `resoluble is None`) o si `verificar` dejara de devolver `resoluble=None` cuando el servicio no responde |
 | `VerificarSinPartida.test_fr330_verificar_no_inicia_partida_ni_crea_log_ni_vista` | **pasa a la primera** | `EstadoJuegoServicio.verificar` existe desde T019 y no inicia partida. Fallaría si `verificar` llamara a `iniciarJuego` (quedaría `iniciado = True` y se llamaría `AlmacenLogTexto.abrir`), si abriera el log, o si creara `VistaConsola` (el parche lanza `AssertionError`) |
+
+### T040 — 2026-11-08 — `python -m unittest -v test_resolubilidad_datos test_resolubilidad_determinismo`
+
+Resultado: `Ran 17 tests`, `OK`. **No hubo rojo**: el algoritmo y `verificar` existen desde T030 a T032, y las 12 pruebas nuevas (10 de `test_resolubilidad_datos` y 2 de `test_resolubilidad_determinismo`) pasan a la primera. No se registra ningún rojo inventado. Para cada una se comprobó que la aserción **puede** fallar: un guion fuera del repositorio aplica con `mock.patch` una mutación concreta, corre la prueba y verifica que falla. El código real no se tocó.
+
+| Prueba | Fallaría si… (mutación aplicada) | Resultado con la mutación |
+|---|---|---|
+| `Solicitudes.test_fr341_llaves_guardadas_cero_solicitudes` | `verificar` volviera a pedir las llaves a la red aunque estén guardadas | FALLA: `http.llamadas` trae una llamada `("llaves", …)` además del arranque |
+| `Solicitudes.test_fr341_sin_llaves_solo_la_consulta_de_la_009` | `verificar` pidiera además el contenido de una sala | FALLA: aparece `("contenido", …)` |
+| `Solicitudes.test_fr341_nunca_pide_contenido` | La misma | FALLA en B-R1 |
+| `ErroresDeDatos.test_fr343_servicio_sin_respuesta` | Sin llaves, `verificar` siguiera con una lista vacía (resultado inventado) | FALLA: `False is not None` |
+| `ErroresDeDatos.test_fr343_offline_sin_llaves_sin_solicitudes` | La misma | FALLA: `False is not None` |
+| `ErroresDeDatos.test_fr343_cripta_inexistente` | `existe_cripta` respondiera siempre que sí | FALLA: `True is not None` |
+| `ErroresDeDatos.test_fr343_h4_5_sala_de_salida_inexistente` | `_existe` no comprobara que la sala exista | FALLA (error `IndexError`) |
+| `CasosLimite.test_fr333_salida_a_sala_inexistente_se_ignora` | La misma | FALLA (error `IndexError`) |
+| `CasosLimite.test_fr343_ubicacion_de_llave_en_sala_inexistente_es_error_de_datos` | Sin llaves válidas, `verificar` siguiera con una lista vacía | FALLA: `False is not None` |
+| `CasosLimite.test_fr339_cambio_de_version_entre_verificar_y_la_partida` | La verificación reutilizara el resultado de la versión anterior | FALLA: `True is not False` |
+| `Fuentes.test_fr342_h3_4_http_offline_y_solo_local_dan_lo_mismo` | `FuenteSoloLocal.obtener_llave_salida` devolviera `None` | FALLA: la lectura solo local da `LLAVE_SALIDA_INEXISTENTE` y las otras fuentes no |
+| `DeterminismoConContenido.test_fr335_h3_3_con_y_sin_contenido_guardado` | El resultado cambiara cuando ya se trajo el contenido de las salas | FALLA: `salas_no_alcanzables` difiere |
+
+Notas:
+- **Primer intento del guion de mutaciones**: dio falsos «no detectada» por un defecto del guion, no de las pruebas. `test_resolubilidad_datos` importa `verificar` por nombre (había que parchear también ese nombre), y la primera importación ocurría dentro de un parche. Corregido el guion, todas detectan su mutación.
+- **«Pide contenido» frente a `test_fr341_llaves_guardadas_cero_solicitudes`**: esa mutación no se detecta en esta prueba porque en la primera sesión el contenido pedido queda guardado y en la segunda sale del disco sin solicitud. La detectan las otras dos pruebas de `Solicitudes`; esta prueba detecta la regresión que le corresponde (volver a pedir las llaves).
+- **Arranque de una sesión nueva**: con las llaves guardadas, una sesión nueva con `ClientePersistente` pide `("criptas", None)` y `("datos", "cripta-01")`. Es el arranque de la Parte I (lista de criptas y datos generales con la validación de versión) y no lo agrega la verificación. La prueba exige exactamente esas dos llamadas y ninguna de llaves, salas o contenido. SC-003 dice «0 solicitudes» de forma literal; ver T041.
+- **Cambio de versión (`test_fr339_…`)**: se prueba sobre la operación `verificar` que usa el inicio de partida (FR-344), con una sesión nueva sobre la versión `v2`. La parte «la partida no inicia sin `forzar`» depende de la verificación al iniciar, que se implementa en el grupo G (T047); la cubren `Inicio.test_fr339_no_resoluble_no_inicia_y_no_crea_log` (T043) y, para este caso, una aserción que se agrega en T043.
+- **Nombres**: la prueba con y sin contenido quedó en la clase `DeterminismoConContenido` (necesita la preparación con servicio y red bloqueada) y no en `Determinismo`. T062 pone el nombre real en la matriz.
+
+### T041 — 2026-11-08 — sin cambios
+
+Nada falló en T040, así que no se tocó `Logica/VerificacionResolubilidad.py` ni ningún adaptador. Queda un punto de **especificación**, no de código: SC-003 dice «Con las llaves guardadas, `--verificar` hace 0 solicitudes», pero toda sesión nueva hace las 2 solicitudes de arranque de la Parte I (lista de criptas y datos generales para validar la versión), antes y fuera de la verificación. FR-341 sí lo describe bien («no hace solicitudes más allá de la consulta de llaves y de la descarga del mapa existente»). Si se quiere alinear SC-003, va en un commit de especificación aparte (principio X).
