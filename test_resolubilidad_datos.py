@@ -99,6 +99,29 @@ class Solicitudes(ConCarpeta):
         self.assertEqual(nombres(nuevas, "contenido"), [])
         self.assertEqual([n for n, _ in nuevas], ["datos", "salas", "llaves"])   # mapa y datos: lo existente
 
+    def test_fr341_inicio_reutiliza_las_llaves_de_la_partida(self):
+        """T045 (grupo G): una partida nueva hace una sola consulta de llaves en total y la verificación al iniciar no
+        vuelve a pedir la ubicación de las llaves (usa las que ya pidió la partida)."""
+        import contextlib
+        import io
+        import os
+        import Servicio.EstadoJuegoServicio as modulo_servicio
+        from adaptadores.AlmacenLogTexto import AlmacenLogTexto
+        from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
+        carpeta_logs = os.path.join(self.carpeta, "logs")
+        http = caso("B-R3")
+        servicio = servicio_directo(http)
+        juego = EstadoJuegoServicio(comunicacion=servicio)
+        with mock.patch.object(modulo_servicio, "AlmacenLogTexto",
+                               lambda nombre=None, carpeta=None: AlmacenLogTexto(nombre, carpeta_logs)), \
+                mock.patch.object(ServicioCripta, "ubicacion_llaves", autospec=True,
+                                  side_effect=ServicioCripta.ubicacion_llaves) as ubicacion, \
+                contextlib.redirect_stdout(io.StringIO()):
+            juego.iniciarJuego(CRIPTA, 1)
+        self.assertTrue(juego._estadoJuegoLogica.iniciado)
+        self.assertEqual(nombres(http.llamadas, "llaves"), [("llaves", CRIPTA)])
+        self.assertEqual(ubicacion.call_count, 1)
+
     def test_fr341_nunca_pide_contenido(self):
         for codigo in ("B-R1", "B-R2", "B-R3", "B-R4"):
             http = caso(codigo)

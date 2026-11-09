@@ -89,6 +89,39 @@ class CasosB(unittest.TestCase):
         self.assertIs(r.resoluble, False)
         self.assertEqual(r.bloqueos, [BloqueoDTO(1, "este", 2, "itm_llave_perdida", [], LLAVE_INEXISTENTE)])
 
+    def test_b_r4_fr339_no_inicia_sin_forzar(self):
+        """T044 (grupo G): ejecuta el paso ("iniciar_sin_forzar",) del guion de B-R4 con EstadoJuegoServicio. El log va a
+        una carpeta temporal y AlmacenLogTexto.abrir se espía: no debe abrirse el registro de partida."""
+        import contextlib
+        import io
+        import os
+        import shutil
+        import tempfile
+        import Servicio.EstadoJuegoServicio as modulo_servicio
+        from adaptadores.AlmacenLogTexto import AlmacenLogTexto
+        from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
+        verificacion = importlib.import_module("Logica.VerificacionResolubilidad")
+
+        carpeta_logs = os.path.join(tempfile.mkdtemp(prefix="cripta_003_b_r4_"), "logs")
+        self.addCleanup(shutil.rmtree, os.path.dirname(carpeta_logs), True)
+        http, guion = caso("B-R4")
+        self.assertIn(("iniciar_sin_forzar",), guion)
+        servicio = ServicioCripta(http, CacheLRU(25))
+        servicio.listar_criptas()
+        juego = EstadoJuegoServicio(comunicacion=servicio)
+        with mock.patch.object(modulo_servicio, "AlmacenLogTexto",
+                               lambda nombre=None, carpeta=None: AlmacenLogTexto(nombre, carpeta_logs)), \
+                mock.patch.object(AlmacenLogTexto, "abrir", autospec=True, side_effect=AlmacenLogTexto.abrir) as abrir:
+            for paso in guion:
+                if paso[0] == "iniciar_sin_forzar":
+                    with self.assertRaises(verificacion.CriptaNoResoluble) as contexto, \
+                            contextlib.redirect_stdout(io.StringIO()):
+                        juego.iniciarJuego(CRIPTA, 1)
+        self.assertFalse(juego._estadoJuegoLogica.iniciado)
+        abrir.assert_not_called()
+        self.assertFalse(os.path.isdir(carpeta_logs) and os.listdir(carpeta_logs))
+        self.assertIn("itm_llave_perdida", str(contexto.exception))         # el mensaje es el reporte
+
     def _verificar_directo(self, codigo: str):
         try:
             modulo = importlib.import_module("Logica.VerificacionResolubilidad")
