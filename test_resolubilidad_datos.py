@@ -19,6 +19,8 @@ from adaptadores.cache import CacheLRU
 from adaptadores.cliente_offline import ClienteOffline
 from adaptadores.cliente_persistente import ClientePersistente
 from adaptadores.servicioCripta import ServicioCripta
+from Logica.EstadoJuegoLogica import EstadoJuegoLogica
+from Logica.RetrocesoLogica import RetrocesoLogica
 from Logica.VerificacionResolubilidad import verificar, verificar_resolubilidad
 from tests_labs.api_falsa import CASOS_APENDICE_B, HttpConfigurable
 from tests_labs.cripta_sintetica import esqueleto_de_conexiones, esqueleto_lineal
@@ -59,6 +61,25 @@ def servicio_directo(http):
 
 def nombres(llamadas, nombre):
     return [llamada for llamada in llamadas if llamada[0] == nombre]
+
+
+class HttpSinDatoGeneral(HttpConfigurable):
+    """API falsa v2 cuyos datos generales no traen el campo `falta` (T065: «sala_inicial» o «sala_salida»).
+    Subclase de la prueba: tests_labs/api_falsa.py no cambia."""
+
+    def __init__(self, falta: str, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.falta = falta
+
+    def obtener_datos_generales(self, cripta_id):
+        datos = super().obtener_datos_generales(cripta_id)
+        del datos[self.falta]
+        return datos
+
+
+def sin_dato_general(falta: str) -> HttpSinDatoGeneral:
+    """Pasillo 1-2 abierto con la llave de salida en la sala 1: resoluble si el dato estuviera."""
+    return HttpSinDatoGeneral(falta, esqueleto_lineal([None]), sala_salida=2, llaves=[(S, 1, None)], llave_salida=S)
 
 
 class ConCarpeta(unittest.TestCase):
@@ -158,6 +179,31 @@ class ErroresDeDatos(ConCarpeta):
     def test_fr343_h4_5_sala_de_salida_inexistente(self):
         http = HttpConfigurable(esqueleto_lineal([None]), sala_salida=99, llaves=[(S, 1, None)], llave_salida=S)
         self.assertErrorDeDatos(verificar(servicio_directo(http), CRIPTA), CRIPTA, "Datos inválidos", "99")
+
+    def test_fr343_t065_datos_generales_sin_sala_inicial_ni_sala_salida(self):
+        # Antes lanzaba KeyError desde ServicioCripta.obtener_sala_inicial / obtener_sala_salida.
+        for falta in ("sala_inicial", "sala_salida"):
+            with self.subTest(falta=falta):
+                try:
+                    resultado = verificar(servicio_directo(sin_dato_general(falta)), CRIPTA)
+                except KeyError as error:
+                    self.fail(f"verificar lanzó KeyError({error}) en vez de devolver un error de datos")
+                self.assertErrorDeDatos(resultado, CRIPTA, "Datos inválidos", f"«{falta}»")
+
+    def test_fr339_h4_5_t065_sin_sala_salida_la_partida_inicia_con_aviso(self):
+        # Sin «sala_inicial» la partida no puede ubicar al jugador (crear_jugador, Parte I), así que solo se
+        # comprueba el inicio sin «sala_salida».
+        RetrocesoLogica().reiniciar()
+        logica = EstadoJuegoLogica(comunicacion=servicio_directo(sin_dato_general("sala_salida")))
+        try:
+            logica.iniciarJuego(CRIPTA, 1)
+        except KeyError as error:
+            self.fail(f"iniciarJuego lanzó KeyError({error}) en vez de iniciar con aviso")
+        self.assertTrue(logica.iniciado)
+        self.assertIsNone(logica.resultadoVerificacion.resoluble)
+        self.assertIn("«sala_salida»", logica.avisoResolubilidad)
+        self.assertTrue(logica.avisoResolubilidad.endswith("La verificación de resolubilidad no está disponible."),
+                        logica.avisoResolubilidad)
 
 
 class CasosLimite(ConCarpeta):

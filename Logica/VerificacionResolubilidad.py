@@ -233,6 +233,22 @@ def _no_resoluble(mapa: MapaCripta, sala_inicial: int, sala_salida: int, llave_s
                                  llave_salida=llave_salida, sala_salida=sala_salida)
 
 
+class DatoGeneralFaltante(Exception):
+    """Los datos generales de la cripta no traen un campo que la verificación necesita (T065, FR-343)."""
+
+
+def _dato_general(obtener, cripta_id: str, campo: str):
+    """Lee un campo de los datos generales con la operación de la fuente. Si la fuente lo lee con [] y el campo no
+    está, el KeyError se traduce a un error de datos que nombra la cripta y el campo (FR-343); no se cambia el
+    adaptador. Solo se traduce el KeyError de este campo: uno de otra clave no se oculta."""
+    try:
+        return obtener(cripta_id)
+    except KeyError as error:
+        if error.args != (campo,):
+            raise
+        raise DatoGeneralFaltante(f"Datos inválidos en la cripta {cripta_id}: faltan los datos generales «{campo}».")
+
+
 def verificar(fuente, cripta_id: str, llaves: UbicacionLlavesDTO | None = None) -> ResultadoVerificacion:
     """Verifica la cripta con los datos de `fuente` (FuenteCripta). `llaves`: las que ya pidió la partida, para no
     volver a pedirlas (FR-341). Nunca lanza por falta de datos ni inventa un resultado: devuelve resoluble=None con
@@ -241,12 +257,12 @@ def verificar(fuente, cripta_id: str, llaves: UbicacionLlavesDTO | None = None) 
         if not fuente.existe_cripta(cripta_id):
             return ResultadoVerificacion(cripta_id, None, motivo_error=f"La cripta {cripta_id} no existe.")
         mapa = MapaCripta(fuente.obtener_mapa(cripta_id))
-        sala_inicial = fuente.obtener_sala_inicial(cripta_id)
-        sala_salida = fuente.obtener_sala_salida(cripta_id)
+        sala_inicial = _dato_general(fuente.obtener_sala_inicial, cripta_id, "sala_inicial")
+        sala_salida = _dato_general(fuente.obtener_sala_salida, cripta_id, "sala_salida")
         llave_salida = fuente.obtener_llave_salida(cripta_id)
         if llaves is None:
             llaves = fuente.ubicacion_llaves(cripta_id)
-    except (LlavesNoDisponibles, DatoLocalFaltante) as error:
+    except (LlavesNoDisponibles, DatoLocalFaltante, DatoGeneralFaltante) as error:
         return ResultadoVerificacion(cripta_id, None, motivo_error=str(error))
     except (RuntimeError, OSError) as error:
         return ResultadoVerificacion(cripta_id, None, motivo_error=f"No se pudieron obtener los datos de la cripta "
