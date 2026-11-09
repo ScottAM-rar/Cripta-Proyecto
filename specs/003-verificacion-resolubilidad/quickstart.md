@@ -33,14 +33,20 @@ Por qué no se usa `FuenteSoloLocal` ni `ClientePersistente`: `ClienteOffline` (
 
 **Alternativa, si la cripta está completa en disco**: `crear_fuente_solo_local()` (009) y cronometrar `verificar(fuente, <id>)` del mismo modo. Es equivalente a jugar con `--offline`. En T057 dio el mismo reporte que el método de arriba en cripta-04 y cripta-05, las dos completas.
 
-## 4. Comprobación manual con la interfaz provisional (para Fernanda)
+## 4. Comprobación manual con la interfaz (opcional, con red; para Fernanda)
 
-Después del primer grupo de tareas, desde un intérprete:
+Desde un intérprete, con un `EstadoJuegoServicio` (`servicio`) y dos criptas del catálogo publicado: cripta-04 («Catacumbas profundas», número 3 del menú) y cripta-05 («Cripta sellada», número 4 del menú). El número del menú es el orden de la lista de criptas de ese momento: comprobarlo con `listar_criptas()`.
 
 ```text
-servicio.verificar("cripta-01").codigo_salida()   → 2 con el cuerpo provisional; 0 o 1 cuando esté el algoritmo
-lineas_reporte(servicio.verificar("cripta-01"))   → el texto de contracts/reporte-verificacion.md
+servicio.verificar("cripta-04").codigo_salida()   → 0 (resoluble)
+servicio.verificar("cripta-05").codigo_salida()   → 1 (no resoluble)
+lineas_reporte(servicio.verificar("cripta-04"))   → «Verificación de la cripta cripta-04: RESOLUBLE.» y el orden de llaves
+lineas_reporte(servicio.verificar("cripta-05"))   → «Verificación de la cripta cripta-05: NO RESOLUBLE.», el motivo, las puertas bloqueadas y las salas alcanzables
 ```
+
+El texto sigue [contracts/reporte-verificacion.md](contracts/reporte-verificacion.md). Los reportes completos de las dos criptas están en [mediciones.md](mediciones.md).
+
+Es un paso **opcional que usa la red**: la primera vez gasta la consulta de llaves de la 009 y las solicitudes del arranque. `servicio.verificar(id, offline=True)` solo funciona sin red si el mapa, los datos y las llaves de esa cripta están guardados y la cripta está completa en disco (`ClienteOffline` exige el contenido de todas las salas). Si falta algo, el código es 2 (`NO SE PUDO VERIFICAR`), no un resultado inventado. Si cambia la versión publicada de una cripta, el resultado puede cambiar.
 
 ## 5. Revisión de los principios I y IV
 

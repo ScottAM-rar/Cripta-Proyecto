@@ -259,8 +259,8 @@
 - [X] T060 [P] Actualizar `DOCUMENTACION_API.md`: `AristaMapaDTO.llave` y `AristaCripta.llave`; `obtener_sala_inicial` y `obtener_llave_salida` en el contrato y en las fuentes; `verificar` (Logica y Servicio), `ResultadoVerificacion`, `PasoLlaveDTO`, `BloqueoDTO`, `CriptaNoResoluble`, `iniciarJuego(..., forzar)`, `avisoResolubilidad()`; códigos 0/1/2. (IV, IX)
 - [X] T061 [P] Actualizar `README.md` con una línea sobre la capacidad 003, `python main.py --bench resolubilidad` y que `--verificar`/`--forzar` los conecta la capacidad de Fernanda sobre esta interfaz. (VII)
 - [X] T062 [P] Completar la matriz de `specs/003-verificacion-resolubilidad/quickstart.md` con los nombres reales (`archivo: Clase.método`) tomados de los archivos que existen; comprobar que ningún FR-330 a FR-346 ni escenario H1-1 a H6-2 queda sin prueba o medición, y que B-R1 a B-R4 están. Si `research.md` §1 necesita la nota de T009, agregarla aquí. (IX)
-- [ ] T063 Comprobar con búsqueda (paso 5 de `quickstart.md`) que `DTO/ResultadoVerificacionDTO.py`, `Logica/IndiceLlaves.py`, `Logica/VerificacionResolubilidad.py`, `Logica/ReporteVerificacion.py`, `bench/resolubilidad.py`, `tests_labs/referencia_resolubilidad.py` y los cambios en `MapaDTO.py`, `MapaCripta.py`, `servicioCripta.py`, `fuente_solo_local.py`, `EstadoJuegoLogica.py` y `EstadoJuegoServicio.py`: no importan `heapq`, `bisect`, `collections` ni `networkx`; no usan `dict`/`set` como índice ni `sorted()`/`.sort()`; no contienen ids ni tamaños de una cripta concreta; `Logica/` y `DTO/` no importan adaptadores. Comprobar con `git diff --stat` que `AlmacenPartidaBinario.py`, `EstadoGuardadoDTO.py` y `codec_partida.py` no cambiaron, y que todos los archivos nuevos o modificados están en CRLF. (I, IV, V)
-- [ ] T064 Ejecutar `python -m unittest discover -p "test_*.py"`, `python -m tests_labs.sin_red` y `python main.py --bench`. Comparar con la línea base de T002 y registrar cualquier fallo sin ocultarlo. (IX)
+- [X] T063 Comprobar con búsqueda (paso 5 de `quickstart.md`) que `DTO/ResultadoVerificacionDTO.py`, `Logica/IndiceLlaves.py`, `Logica/VerificacionResolubilidad.py`, `Logica/ReporteVerificacion.py`, `bench/resolubilidad.py`, `tests_labs/referencia_resolubilidad.py` y los cambios en `MapaDTO.py`, `MapaCripta.py`, `servicioCripta.py`, `fuente_solo_local.py`, `EstadoJuegoLogica.py` y `EstadoJuegoServicio.py`: no importan `heapq`, `bisect`, `collections` ni `networkx`; no usan `dict`/`set` como índice ni `sorted()`/`.sort()`; no contienen ids ni tamaños de una cripta concreta; `Logica/` y `DTO/` no importan adaptadores. Comprobar con `git diff --stat` que `AlmacenPartidaBinario.py`, `EstadoGuardadoDTO.py` y `codec_partida.py` no cambiaron, y que todos los archivos nuevos o modificados están en CRLF. (I, IV, V)
+- [X] T064 Ejecutar `python -m unittest discover -p "test_*.py"`, `python -m tests_labs.sin_red` y `python main.py --bench`. Comparar con la línea base de T002 y registrar cualquier fallo sin ocultarlo. (IX)
 - [ ] T065 Comparar `spec.md` con el programa entregado; si hay desajustes, corregir primero la especificación en una tarea y un commit aparte (X). Después, poner el **Estado** de `spec.md` en «Implementada (T001 a T066)» y marcar con `[X]` las tareas terminadas de este archivo. (X)
 - [ ] T066 Preparar, **sin editar `PROMPTS_LLM.md`**, el texto de las filas de esta capacidad (`/speckit-specify`, respuestas del clarify de la spec, `/speckit-plan`, `/speckit-clarify`, `/speckit-tasks`, `/speckit-implement` y los prompts literales sin comando), con fecha, persona, herramienta y modelo, y entregarlo en el informe final para que Scott lo pase por lotes. (XI)
 
@@ -555,3 +555,73 @@ Hallazgo para el grupo I (`mediciones.md`, `DECISIONES.md`): la razón de la rep
 - **T060**: `DOCUMENTACION_API.md`: §2.2, §7 y §8.6 con `obtener_sala_inicial` y `obtener_llave_salida`; §7 con la llave en `esqueleto()`; §7.2 nueva (mapa con llaves, `FuenteCripta`, `verificar`, `ResultadoVerificacion`, `PasoLlaveDTO`, `BloqueoDTO`, `lineas_reporte`, `aviso_forzado`, códigos 0/1/2, `iniciarJuego(..., forzar)`, `avisoResolubilidad()`); §10 con `CriptaNoResoluble`.
 - **T061**: una línea en `README.md`.
 - **T062**: la matriz de `quickstart.md` lleva los nombres reales. Las 83 pruebas de los 8 archivos aparecen y ninguna citada falta en el código; se corrigieron `DeterminismoConContenido.test_fr335_h3_3_con_y_sin_contenido_guardado` y `Contrato.test_fr343_sin_datos_devuelve_codigo_2`. Se agregó una tabla por escenario: FR-330 a FR-346, H1-1 a H6-2 y B-R1 a B-R4 tienen todos prueba o medición. La parte de consola de algunos escenarios (`--verificar`, `--forzar`, mostrar el aviso) es de la capacidad de Fernanda, y H3-4 prueba «el cliente real» con el HTTP falso. `research.md` §1 no necesitó la nota de T009 (checklist: G3 y G4 pasaron sin cambios). Se alinearon con lo que se hizo en T057 los cuatro textos que la nota de T057 dejaba para Scott: el paso 3 y §2 de `quickstart.md`, la última sección de `contracts/bench-resolubilidad.md` y la última frase de la tabla de `research.md` §9. `spec.md` no se cambió.
+
+### Corrección de documentos — 2026-11-09 — paso 4 de `quickstart.md`
+
+El paso 4 usaba cripta-01, que ya no está en la lista guardada de criptas, y hablaba del cuerpo provisional. Ahora usa cripta-04 (número 3 del menú: código 0, resoluble) y cripta-05 (número 4: código 1, no resoluble), con el texto de `contracts/reporte-verificacion.md`. Queda como paso opcional con red: sin red solo funciona si la cripta está completa en disco.
+
+### T063 — 2026-11-09 — revisión por búsqueda (base: `e47a18a`, padre del primer commit de la 003, `2a31a68`)
+
+Archivos de producción revisados: los 18 que la capacidad crea o modifica según `git diff --stat e47a18a`. Son `DTO/MapaDTO.py`, `DTO/ResultadoVerificacionDTO.py`, `Logica/EstadoGuardadoLogica.py`, `Logica/EstadoJuegoLogica.py`, `Logica/FuenteCripta.py`, `Logica/IndiceLlaves.py`, `Logica/MapaCripta.py`, `Logica/ReporteVerificacion.py`, `Logica/VerificacionResolubilidad.py`, `Servicio/EstadoJuegoServicio.py`, `adaptadores/fuente_solo_local.py`, `adaptadores/servicioCripta.py`, `bench/__init__.py`, `bench/resolubilidad.py`, `main.py`, `tests_labs/cripta_sintetica.py`, `tests_labs/referencia_resolubilidad.py` y `tests_labs/sin_red.py`.
+
+| Comprobación | Resultado |
+|---|---|
+| `heapq`, `bisect`, `collections`, `networkx` | **Cumple.** Solo hay dos coincidencias, `from collections import deque` en `Logica/EstadoGuardadoLogica.py:10` y en `adaptadores/servicioCripta.py:2`, y las dos ya estaban en `e47a18a` (de la Parte I). Ninguna línea agregada por la capacidad importa esos módulos |
+| `sorted()` / `.sort()` | **Cumple.** Las 4 coincidencias son docstrings que dicen que no se usan (`Logica/IndiceLlaves.py:9`, `Logica/VerificacionResolubilidad.py:25`, `bench/resolubilidad.py:15`, `tests_labs/referencia_resolubilidad.py:25`) |
+| `dict`/`set` como índice | **Cumple** (revisión a mano de las líneas agregadas). Las coincidencias son f-strings, docstrings y, en `tests_labs/cripta_sintetica.py` y `tests_labs/referencia_resolubilidad.py`, los `dict` del formato crudo del esqueleto de la API (`{"id", "nombre", "salidas"}`), igual que el `esqueleto_rejilla` que ya existía: son registros, no índices. En `adaptadores/servicioCripta.py` la línea agregada lee `datos.get("llave")` de la salida cruda de la API |
+| Ids o tamaños de una cripta concreta | **Cumple.** `cripta-0` no aparece en el código de producción. `itm_llave_` aparece solo en `bench/resolubilidad.py:140`, como prefijo de ids sintéticos al azar (`f"itm_llave_{azar.randrange(10 ** 9)}"`) para la sección B. Los números agregados son textos de error o de reporte; los tamaños del bench (`TAMANO_CHICO = 300`, `TAMANO_GRANDE = 3000`, `TAMANO_LIMITE = 5000`, `LADO_REJILLA = 70`, `CANTIDADES_INDICE`) son parámetros sintéticos del contrato, no datos de una cripta |
+| `Logica/` y `DTO/` no importan adaptadores | **Cumple**: `grep -rnE "^\s*(from\|import)\s+(adaptadores\|Controlador\|Servicio)" Logica DTO` no encuentra nada |
+| `AlmacenPartidaBinario.py`, `EstadoGuardadoDTO.py`, `codec_partida.py` | **Cumple**: `git diff --stat e47a18a` no muestra cambios en ninguno de los tres |
+| CRLF en todos los archivos nuevos o modificados por la capacidad | **No cumple en dos documentos.** `specs/003-verificacion-resolubilidad/mediciones.md` (las 191 líneas en LF) y `specs/003-verificacion-resolubilidad/quickstart.md` (las 147 líneas en LF). Los escribió el asistente en T058 y T062 con una herramienta que guarda en LF. La comprobación de entonces (`grep -vc $'\r$'` en Git Bash) daba un falso 0; ahora se contó con Python sobre los bytes. Hace falta convertirlos a CRLF; no se tocaron, como pide T063. Los demás 40 archivos del diff están en CRLF. (`PROMPTS_Scott.md`, también en LF, no es de la capacidad) |
+
+### T064 — 2026-11-09 — suite, `sin_red` y `python main.py --bench` (máquina libre, una cosa a la vez)
+
+- `python -m unittest discover -p "test_*.py"`: **378 pruebas, OK** (0 fallos, 0 errores). Línea base de T002: 295; último registro: 378.
+- `python -m tests_labs.sin_red`: **178 pruebas, OK** con `requests.get` bloqueado (0 fallos, 0 errores). Línea base: 95; último registro: 178.
+- `python main.py --bench` completo (2026-11-09 01:21): **falla, código de salida 1.** Corta en el bloque `guardado` con `CriptaNoResoluble`, antes de imprimir la tabla, así que no hay cifras de esa corrida:
+
+  ```text
+  File "bench/guardado.py", line 54, in ejecutar → bench/juego.py, line 79, in partida_base → line 71, in nuevo_juego
+      juego = EstadoJuegoLogica(1, cripta, servicio)
+  File "Logica/EstadoJuegoLogica.py", line 128, in _verificarAlIniciar
+  Logica.VerificacionResolubilidad.CriptaNoResoluble: Verificación de la cripta sintetica: NO RESOLUBLE.
+  Motivo: la llave de salida itm_llave no existe en la cripta.
+  Salas alcanzables (25): 1, 2, …, 25
+  Salas no alcanzables: 0
+  ```
+
+  **Causa (regresión de la 003, igual que la de la 009 en T054)**: la cripta sintética del bench (`ClienteDeBatalla` en `bench/juego.py`) publica la llave de salida `itm_llave` en sus datos generales (`adaptadores/bench_red_mejorado.py:50`), pero `ClienteDeBatalla.obtener_llaves` devuelve `[]` (`bench/juego.py:48-50`). Con FR-339, `EstadoJuegoLogica.__init__` → `iniciarJuego` verifica, la cripta es no resoluble (`LLAVE_SALIDA_INEXISTENTE`) y no inicia sin `forzar`. Afecta a los dos bloques que usan `nuevo_juego`: `guardado` y `ciclo`. `python main.py --bench ciclo` solo falla igual (código 1). T056 no lo vio porque corrió solo `--bench resolubilidad`. **No se corrigió**: hace falta decidir entre que `ClienteDeBatalla.obtener_llaves` ubique `itm_llave` en una sala de la rejilla, iniciar la partida del bench con `forzar=True` o quitar la llave de salida de los datos del bench. Cualquiera de las tres va en una tarea aparte.
+- **Los demás bloques**, corridos juntos sin `guardado` ni `ciclo` (`--bench agenda,cache,salas,inventario,retroceso,ordenamiento,bitacora,terreno,recorrido,llaves,resolubilidad`, 2026-11-09 01:26, `PYTHONIOENCODING=utf-8`): **código de salida 0, todos los criterios cumplen.** Un primer intento de esa misma corrida con la salida redirigida a un archivo midió todo, pero cortó al imprimir la tabla con `UnicodeEncodeError` («≤» en cp1252). Fue por la redirección a archivo en Windows, no por el programa, y se repitió con UTF-8.
+
+  | Criterio | Resultado |
+  |---|---|
+  | Terreno A: peor de 25 ciclos < 20 ms (1, 10 y 50 cazadores, quieto y moviéndose) | CUMPLE (el peor: 224,6 µs con 50 cazadores moviéndose) |
+  | Recorrido por niveles (SC-004, equivalencia, verificaciones) | CUMPLE (13 salas y 20 salidas con límite 2 en 400, 4 900 y 40 000 salas; razón 0,99×) |
+  | Llaves B: guardar con A y 5 000 salas ≤ 50 ms | CUMPLE (16,38 ms) |
+  | Llaves D: 1 / 0 / 0 | CUMPLE |
+  | Resolubilidad A: mismo resultado en n = 300 y 3 000 | OK. Incremental 2,43 ms y 32,70 ms; repetida 192,89 ms y 165 929,88 ms (1 repetición) |
+  | Resolubilidad C: < 200 ms | CUMPLE (cadena 56,73 ms; rejilla 17,49 ms) |
+  | Resolubilidad D: razón de la incremental ≤ 20 | CUMPLE (13,4; repetida 860,2, informativa) |
+  | §5.2 ciclo de eventos ≤ 20 ms | **Sin medir**: el bloque `ciclo` no corre (regresión de arriba). La línea «§5.2: el ciclo de eventos CUMPLE» del resumen sale por defecto porque el bloque no se ejecutó, no es una medición |
+  | `guardado` | **Sin medir** (regresión de arriba) |
+
+  Las 53 verificaciones `OK` previas a las mediciones pasaron. La razón de la repetida (860,2 ahora, 1 112,8 en T056) varía porque la n = 3 000 se mide con 1 sola repetición; la de la incremental (13,4 frente a 12,7) se mantiene. No se cambiaron umbrales ni código.
+
+### T065 — 2026-11-09 — comparación de `spec.md` con el programa y con `mediciones.md` (sin corregir; T065 queda abierta)
+
+Desajustes encontrados:
+
+1. **`--offline` exige la cripta completa aunque la verificación no use el contenido de las salas** (FR-341, FR-342, H5-2). Con `--offline` (`crear_servicio(offline=True)`), una cripta con mapa, datos y llaves guardados, pero sin el contenido de todas sus salas, da código 2 con un mensaje engañoso: comprobado con cripta-06, sin red y con sha1 de `datos_cripta/` igual antes y después:
+
+   ```text
+   Verificación de la cripta cripta-06: NO SE PUDO VERIFICAR.
+   La cripta cripta-06 no existe.
+   ```
+
+   La cripta existe: `ClienteOffline.obtener_criptas` solo lista las criptas completas (Parte I). `FuenteSoloLocal` da otro mensaje, «no está en la lista de criptas guardada en disco». La spec dice que la verificación usa solo el mapa, los datos generales y las llaves, y que funciona igual con `--offline`. Hace falta decidir si la spec agrega esa condición previa («con `--offline`, la cripta debe estar completa en disco») o si se cambia el programa en otra capacidad. Al menos, el mensaje no debería decir «no existe».
+2. **El `--bench` completo de la Parte II deja de funcionar por FR-339** (ver T064): la cripta sintética de `guardado` y `ciclo` no tiene la ubicación de su llave de salida. No es una contradicción con un FR, pero la spec no prevé el efecto de FR-339 sobre las criptas sintéticas que inician partidas sin llaves.
+3. **Un dato general sin `sala_inicial` o sin `sala_salida` haría lanzar a `verificar`** (FR-343: «no DEBE dar un resultado…: DEBE informar un error claro»). `ServicioCripta.obtener_sala_inicial` y `obtener_sala_salida` leen `datos["sala_inicial"]` y `datos["sala_salida"]`, y un `KeyError` no lo captura `verificar`, que solo captura `LlavesNoDisponibles`, `DatoLocalFaltante`, `RuntimeError` y `OSError`. Hallado por lectura del código, **sin prueba que lo ejecute**; no se probó con datos reales. `obtener_llave_salida` usa `.get` y no tiene el problema.
+4. **Texto (menor): FR-338 llama «bloqueo» a «la llave de salida no existe» y a «la sala de salida no tiene camino».** El programa los modela como `causas` (líneas «Motivo:» del reporte), no como `BloqueoDTO`, y agrega dos causas que la spec no nombra (`SALIDA_BLOQUEADA` y `LLAVE_SALIDA_INALCANZABLE`). La entidad «Bloqueo» de la spec dice «y si forma un ciclo»; el programa tiene 4 tipos y la dirección de la salida. El reporte informa todo lo que pide FR-338: es una diferencia de nombres, no de comportamiento.
+5. **Texto (menor): FR-339 no tiene la frase «en esta capacidad el comportamiento se verifica en la operación…»** que sí tienen FR-330, FR-331 y FR-340, aunque «DEBE mostrarse el reporte» depende de quien conecta las opciones. El programa lanza `CriptaNoResoluble` con el reporte como mensaje; mostrarlo es de la capacidad de Fernanda.
+
+Sin desajuste: la regla (FR-332 a FR-335, oleadas y desempate), el reporte (FR-336, FR-337), `--forzar` (FR-340: el aviso no entra a los mensajes ni al log; mostrarlo una vez es del controlador), FR-341 (no pide contenido), FR-344, las clarificaciones, los casos límite (salida a sala inexistente, versión que cambia, reproducción y partida cargada sin verificar, datos inválidos al iniciar), SC-001 a SC-005 y SC-007 por las pruebas y el bench, y FR-345 y SC-006 por `mediciones.md` (cripta-06, 2,925 ms). El Estado de `spec.md` sigue en «Borrador», como se pidió.
