@@ -22,7 +22,6 @@ from adaptadores.servicioCripta import ServicioCripta
 from tests_labs.api_falsa import HttpFalso, cargar_todo, nueva_ejecucion
 
 CRIPTA = "cripta-01"
-MOTIVO_PROVISIONAL = "La verificación de resolubilidad todavía no está implementada."
 
 
 def _sin_red(*args, **kwargs):
@@ -145,28 +144,27 @@ class Contrato(unittest.TestCase):
         finally:
             shutil.rmtree(carpeta, ignore_errors=True)
 
-    def test_fr343_cuerpo_provisional_devuelve_codigo_2(self):
-        """Entrega provisional del grupo B. T032 (grupo D) reemplaza esta prueba por
-        test_fr343_sin_datos_devuelve_codigo_2 cuando el cuerpo deja de ser provisional."""
+    def test_fr343_sin_datos_devuelve_codigo_2(self):
+        """Reemplaza a test_fr343_cuerpo_provisional_devuelve_codigo_2 (T032, grupo D): desde que el cuerpo dejó de ser
+        provisional, el código 2 solo aparece cuando faltan datos. Aquí el servicio no responde a la consulta de llaves
+        (fallo real de la API falsa v2): no se inventa un resultado (FR-343)."""
         verificacion = self.importar("Logica.VerificacionResolubilidad")
         reporte = self.importar("Logica.ReporteVerificacion")
-        from DTO.LlavesDTO import UbicacionLlavesDTO
-        from Logica.MapaCripta import MapaCripta
         from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
+        from tests_labs.api_falsa import HttpConfigurable
+        from tests_labs.cripta_sintetica import esqueleto_lineal
 
-        servicio = self.servicio_falso()
+        servicio = ServicioCripta(HttpConfigurable(esqueleto_lineal([None, None]), sala_salida=3,
+                                                   fallo_llaves="sin_respuesta"), CacheLRU(25))
+        servicio.listar_criptas()
         resultado = verificacion.verificar(servicio, CRIPTA)
         self.assertIsNone(resultado.resoluble)
-        self.assertEqual(resultado.motivo_error, MOTIVO_PROVISIONAL)
         self.assertEqual(resultado.codigo_salida(), 2)
+        self.assertIn(CRIPTA, resultado.motivo_error)
+        self.assertEqual((resultado.orden, resultado.salas_alcanzables, resultado.bloqueos, resultado.causas),
+                         ([], [], [], []))
         self.assertEqual(reporte.lineas_reporte(resultado),
-                         [f"Verificación de la cripta {CRIPTA}: NO SE PUDO VERIFICAR.", MOTIVO_PROVISIONAL])
-
-        llaves = UbicacionLlavesDTO(CRIPTA, None, ["itm_llave_negra"], [3], [None])
-        pura = verificacion.verificar_resolubilidad(MapaCripta(servicio.esqueleto(CRIPTA)), 1, 3, "itm_llave_negra",
-                                                    llaves, CRIPTA)
-        self.assertIsNone(pura.resoluble)
-        self.assertEqual(pura.codigo_salida(), 2)
+                         [f"Verificación de la cripta {CRIPTA}: NO SE PUDO VERIFICAR.", resultado.motivo_error])
 
         juego = EstadoJuegoServicio(comunicacion=servicio)
         desde_servicio = juego.verificar(CRIPTA)
