@@ -177,16 +177,16 @@
 
 **Objetivo**: un solo lugar para el texto, idéntico entre ejecuciones ([contracts/reporte-verificacion.md](contracts/reporte-verificacion.md)).
 
-- [ ] T034 [P] [US1] Ampliar `test_resolubilidad_reporte.py`:
+- [X] T034 [P] [US1] Ampliar `test_resolubilidad_reporte.py`:
   - Clase `Texto`: `test_fr336_resoluble_muestra_orden_con_sala_y_enemigo` (líneas exactas de B-R3 y la línea con enemigo de B-R2); `test_fr337_lista_salas_alcanzables`; `test_fr338_texto_por_tipo_de_bloqueo` (los 4 tipos); `test_fr338_texto_por_causa` (las 4 causas, una línea `Motivo:` por causa en orden); `test_fr338_b_r1_reporte_completo` (las 5 líneas del ejemplo del contrato, con el id `cripta-01` que publica la API falsa v2); `test_fr343_reporte_de_error`.
   - Clase `CodigosDeSalida`: `test_fr331_resoluble_0_no_resoluble_1_error_2` con B-R3, B-R1 y `fallo_llaves="sin_respuesta"`.
   - Clase `VerificarSinPartida`: `test_fr330_verificar_no_inicia_partida_ni_crea_log_ni_vista`: tras `EstadoJuegoServicio.verificar`, la lógica sigue con `iniciado is False`, `AlmacenLogTexto.abrir` (con `unittest.mock.patch`) no se llamó y no se instanció `Controlador.Vista`.
   - Clase `AvisoForzado`: `test_fr340_aviso_forzado_una_linea` con el texto del contrato.
 
   (FR-330, FR-331, FR-336 a FR-338, FR-340, FR-343)
-- [ ] T035 Ejecutar `python -m unittest test_resolubilidad_reporte` y registrar la evidencia roja: `Texto` y `AvisoForzado` fallan (envolver en las pruebas el `NotImplementedError` de T017 con `self.fail`); `CodigosDeSalida` y `VerificarSinPartida` probablemente pasan ya (el DTO y `verificar` existen): anotar que fallarían si `codigo_salida` cambiara el mapeo o si `verificar` iniciara la partida. (IX)
-- [ ] T036 [US1] Completar `Logica/ReporteVerificacion.py` con los textos exactos de [contracts/reporte-verificacion.md](contracts/reporte-verificacion.md): encabezado por caso, orden numerado con `(llave de salida)`, líneas `Motivo:`, `Puertas bloqueadas:` con el texto por tipo, `Salas alcanzables (n): …`, `Salas no alcanzables: n`, y `aviso_forzado`. Solo a partir del resultado: sin hora, rutas ni contadores. (FR-335 a FR-338, FR-340)
-- [ ] T037 Ejecutar `python -m unittest test_resolubilidad_reporte`. **Terminado**: todo pasa.
+- [X] T035 Ejecutar `python -m unittest test_resolubilidad_reporte` y registrar la evidencia roja: `Texto` y `AvisoForzado` fallan (envolver en las pruebas el `NotImplementedError` de T017 con `self.fail`); `CodigosDeSalida` y `VerificarSinPartida` probablemente pasan ya (el DTO y `verificar` existen): anotar que fallarían si `codigo_salida` cambiara el mapeo o si `verificar` iniciara la partida. (IX)
+- [X] T036 [US1] Completar `Logica/ReporteVerificacion.py` con los textos exactos de [contracts/reporte-verificacion.md](contracts/reporte-verificacion.md): encabezado por caso, orden numerado con `(llave de salida)`, líneas `Motivo:`, `Puertas bloqueadas:` con el texto por tipo, `Salas alcanzables (n): …`, `Salas no alcanzables: n`, y `aviso_forzado`. Solo a partir del resultado: sin hora, rutas ni contadores. (FR-335 a FR-338, FR-340)
+- [X] T037 Ejecutar `python -m unittest test_resolubilidad_reporte`. **Terminado**: todo pasa.
 
 **Punto de control**: `lineas_reporte(r)` y `r.codigo_salida()` son todo lo que necesita `--verificar`.
 
@@ -405,3 +405,20 @@ Resultado: `Ran 26 tests`, `FAILED (failures=26)`, 0 errores. Todas fallan por a
 Ninguna pasó a la primera. Refuerzos hechos al escribirlas, para que dos resultados provisionales iguales no basten: `test_fr335_dos_ejecuciones_iguales`, `test_fr335_orden_de_la_respuesta_no_importa` y `test_b_r3_fr335_dos_ejecuciones_mismo_orden` comprueban `resoluble is True` antes de comparar los dos resultados; `Equivalencia` comprueba `resoluble is not None` en cada semilla antes de compararlo con el oráculo.
 
 **Cordura de las expectativas**: con un guion temporal (fuera del repositorio) que pone `verificar_repetida` en lugar de las dos funciones provisionales, las 26 pruebas pasan. Lo que esperan es coherente con el oráculo, que deriva la regla de `spec.md`. En 20 criptas al azar, el oráculo produce 10 resolubles y 10 no resolubles, y aparecen los 4 tipos de bloqueo y las 4 causas.
+
+### T035 — 2026-11-08 — `python -m unittest -v test_resolubilidad_reporte` (antes de completar `Logica/ReporteVerificacion.py`)
+
+Resultado: `Ran 16 tests`, `FAILED (failures=7)`, 0 errores. Las 6 de `Contrato` (grupos B y D) siguen pasando. De las 10 nuevas:
+
+| Prueba | Resultado | Aserción o explicación |
+|---|---|---|
+| `Texto.test_fr336_resoluble_muestra_orden_con_sala_y_enemigo` | FAIL | `self.fail("lineas_reporte todavía no implementa este caso: se completa en el grupo E (T036)")` (envuelve el `NotImplementedError` de T017) |
+| `Texto.test_fr337_lista_salas_alcanzables` | FAIL | La misma |
+| `Texto.test_fr338_texto_por_tipo_de_bloqueo` | FAIL | La misma |
+| `Texto.test_fr338_texto_por_causa` | FAIL | La misma |
+| `Texto.test_fr338_b_r1_reporte_completo` | FAIL | La misma |
+| `Texto.test_fr335_mismo_resultado_mismo_reporte` | FAIL | La misma (prueba agregada: dos verificaciones de B-R1 dan el mismo texto carácter por carácter) |
+| `AvisoForzado.test_fr340_aviso_forzado_una_linea` | FAIL | `self.fail("aviso_forzado todavía no está implementado: se completa en el grupo E (T036)")` |
+| `Texto.test_fr343_reporte_de_error` | **pasa a la primera** | La rama de error de datos ya la implementó T017 (entrega temprana). Fallaría si `lineas_reporte` cambiara el encabezado `Verificación de la cripta <id>: NO SE PUDO VERIFICAR.` o no copiara `motivo_error` tal cual en la segunda línea |
+| `CodigosDeSalida.test_fr331_resoluble_0_no_resoluble_1_error_2` | **pasa a la primera** | `codigo_salida()` existe desde T012 y el algoritmo desde T030. Fallaría si `codigo_salida` cambiara el mapeo 0/1/2 (por ejemplo, si devolviera 1 también para `resoluble is None`) o si `verificar` dejara de devolver `resoluble=None` cuando el servicio no responde |
+| `VerificarSinPartida.test_fr330_verificar_no_inicia_partida_ni_crea_log_ni_vista` | **pasa a la primera** | `EstadoJuegoServicio.verificar` existe desde T019 y no inicia partida. Fallaría si `verificar` llamara a `iniciarJuego` (quedaría `iniciado = True` y se llamaría `AlmacenLogTexto.abrir`), si abriera el log, o si creara `VistaConsola` (el parche lanza `AssertionError`) |

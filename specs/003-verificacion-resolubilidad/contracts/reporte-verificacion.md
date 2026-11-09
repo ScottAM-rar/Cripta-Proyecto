@@ -61,6 +61,12 @@ Verificación de la cripta cripta-01: NO SE PUDO VERIFICAR.
 
 Varias causas: una línea `Motivo:` por causa, en el orden de `causas`. Listas de salas separadas por coma y espacio. La llave de salida se marca con ` (llave de salida)` donde aparezca.
 
+Precisiones (fijadas en T036 con `test_resolubilidad_reporte`, sin cambiar ningún texto de arriba):
+
+- «la(s) sala(s) <lista>» se escribe «la sala 2» con una sola sala y «las salas 4, 9» con varias.
+- Si no hay puertas bloqueadas (por ejemplo, `SALIDA_SIN_CAMINO` sin bloqueos), se omite la línea `Puertas bloqueadas:`; las líneas de salas alcanzables y no alcanzables se escriben siempre.
+- La marca ` (llave de salida)` va en las líneas del orden (al final, después de `, la suelta <instancia>`) y en las puertas bloqueadas; no se repite en los textos de causa, que ya dicen «la llave de salida».
+
 ## Aviso de `--forzar` (FR-340, clarificación Q3)
 
 `aviso_forzado(resultado)` devuelve una sola línea, que el controlador muestra **solo al iniciar**:
@@ -68,5 +74,7 @@ Varias causas: una línea `Motivo:` por causa, en el orden de `causas`. Listas d
 ```text
 AVISO: la cripta X no es resoluble (<primera causa>); la partida se inicia porque se usó --forzar.
 ```
+
+`<primera causa>` es el texto de la primera causa de `causas` sin su punto final. `aviso_forzado` solo se usa con una cripta no resoluble (lanza `ValueError` en los otros casos).
 
 Los textos exactos se fijan en `test_resolubilidad_reporte.py`; si cambian, cambian la prueba y este contrato en la misma tarea.
