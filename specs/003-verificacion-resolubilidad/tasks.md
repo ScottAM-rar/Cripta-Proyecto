@@ -625,3 +625,34 @@ Desajustes encontrados:
 5. **Texto (menor): FR-339 no tiene la frase «en esta capacidad el comportamiento se verifica en la operación…»** que sí tienen FR-330, FR-331 y FR-340, aunque «DEBE mostrarse el reporte» depende de quien conecta las opciones. El programa lanza `CriptaNoResoluble` con el reporte como mensaje; mostrarlo es de la capacidad de Fernanda.
 
 Sin desajuste: la regla (FR-332 a FR-335, oleadas y desempate), el reporte (FR-336, FR-337), `--forzar` (FR-340: el aviso no entra a los mensajes ni al log; mostrarlo una vez es del controlador), FR-341 (no pide contenido), FR-344, las clarificaciones, los casos límite (salida a sala inexistente, versión que cambia, reproducción y partida cargada sin verificar, datos inválidos al iniciar), SC-001 a SC-005 y SC-007 por las pruebas y el bench, y FR-345 y SC-006 por `mediciones.md` (cripta-06, 2,925 ms). El Estado de `spec.md` sigue en «Borrador», como se pidió.
+
+### T065 (corrección B) — 2026-11-09 — `verificar` con datos generales sin `sala_inicial` o sin `sala_salida` (FR-343, FR-339, H4-5)
+
+Pruebas nuevas en `test_resolubilidad_datos.py`, clase `ErroresDeDatos`, con `HttpSinDatoGeneral` (una subclase de `HttpConfigurable` dentro de la prueba que borra el campo de los datos generales; `tests_labs/api_falsa.py` no cambia):
+
+- `test_fr343_t065_datos_generales_sin_sala_inicial_ni_sala_salida` (dos sub-pruebas, una por campo): `verificar` devuelve `resoluble is None`, código 2, sin orden, alcanzables, bloqueos ni causas, y un motivo con la cripta, «Datos inválidos» y el campo entre «».
+- `test_fr339_h4_5_t065_sin_sala_salida_la_partida_inicia_con_aviso`: `iniciarJuego` inicia, `resultadoVerificacion.resoluble is None` y el aviso nombra «sala_salida» y termina en «La verificación de resolubilidad no está disponible.». Solo se prueba sin `sala_salida`, porque sin `sala_inicial` la partida falla antes de verificar, en `ServicioCripta.crear_jugador` (`datos["sala_inicial"]`, de la Parte I), al ubicar al jugador. Ese caso no se corrigió porque no se cambian los adaptadores.
+
+Rojo honesto (`python -m unittest test_resolubilidad_datos.ErroresDeDatos`, antes de corregir): **6 pruebas, 3 fallos.** Las 4 pruebas anteriores de la clase pasan.
+
+```text
+FAIL: test_fr343_t065_..._sin_sala_inicial_ni_sala_salida (falta='sala_inicial')
+  Logica/VerificacionResolubilidad.py, line 244, in verificar: sala_inicial = fuente.obtener_sala_inicial(cripta_id)
+  adaptadores/servicioCripta.py, line 228: KeyError: 'sala_inicial'
+  AssertionError: verificar lanzó KeyError('sala_inicial') en vez de devolver un error de datos
+FAIL: test_fr343_t065_..._sin_sala_inicial_ni_sala_salida (falta='sala_salida')
+  adaptadores/servicioCripta.py, line 223: KeyError: 'sala_salida'
+FAIL: test_fr339_h4_5_t065_sin_sala_salida_la_partida_inicia_con_aviso
+  EstadoJuegoLogica.iniciarJuego → _verificarAlIniciar → verificar → obtener_sala_salida: KeyError: 'sala_salida'
+FAILED (failures=3)
+```
+
+Corrección en `Logica/VerificacionResolubilidad.py`, sin cambiar adaptadores: `verificar` lee los dos campos con `_dato_general`, que convierte el `KeyError` **de ese campo** en `DatoGeneralFaltante`, con el mensaje «Datos inválidos en la cripta <id>: faltan los datos generales «sala_inicial».», y lo devuelve como `motivo_error`. Un `KeyError` de otra clave no se oculta. Verde: `python -m unittest test_resolubilidad_datos` da **13 pruebas, OK**.
+
+### T064 y T065 (corrección A) — 2026-11-09 — `--bench guardado` y `--bench ciclo` vuelven a correr
+
+Se eligió la opción preferida: `ClienteDeBatalla.obtener_llaves` (`bench/juego.py`) devuelve `[{"id": "itm_llave", "sala": 1}]`, es decir, la llave de salida en el suelo de la sala inicial. Así la cripta sintética es resoluble y la partida del bench inicia y verifica igual que una real (FR-339). Lo que miden los bloques no cambia: es solo la ubicación, no un objeto en el contenido de la sala; `ClienteDeBatalla.obtener_llaves` no cuenta solicitudes, como antes; y las llaves no entran al estado guardado. El guardado de 1 000 salas mide 408 092 B, igual que en la 001. No se cambió el modelo.
+
+- `python main.py --bench guardado,ciclo`: código 0. Ciclo §5.2 CUMPLE: 300 esbirros, mediana 4,00 ms y peor ciclo 7,07 ms; 100 esbirros, 1,21 y 3,89 ms; 1 000 esbirros (estrés), peor ciclo 18,40 ms.
+- `python main.py --bench` completo: **código 0, 0 criterios sin cumplir y 55 verificaciones OK.** Ciclo: 300 esbirros, mediana 3,93 ms y peor ciclo 8,78 ms. Terreno A: el peor, 427,0 µs. Recorrido: razón 0,97×. Llaves D: 1 / 0 / 0. Resolubilidad C: cadena 62,64 ms y rejilla 18,43 ms. Resolubilidad D: razón 11,7. Llaves B: 32,47 ms, pero mientras corría se ejecutaron las pruebas de la corrección B, así que la máquina no estuvo libre todo el tiempo. Con `--bench llaves` aislado dio 16,84 ms y 18,72 ms.
+- Comparación con la 009 (DECISIONES.md, sección 009, punto 8, con la máquina libre; 300 esbirros: mediana 3,85 ms y peor ciclo 5,76 ms; Llaves B: 14,4 ms). Las medianas son casi iguales (3,93 y 4,00 ms). El peor ciclo es mayor (7,07 y 8,78 ms) y Llaves B aislado da 16,8 a 18,7 ms. Todo sigue muy por debajo de sus límites (20 ms y 50 ms).
