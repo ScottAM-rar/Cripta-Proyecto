@@ -171,5 +171,52 @@ class DeterminismoConContenido(ConServicio):
             self.assertEqual(otra_sesion, sin_contenido, codigo)
 
 
+class CadenaSintetica(unittest.TestCase):
+    """Grupo H (T050): la cripta sintética de llaves encadenadas del bench (data-model.md §7; FR-346, principio V).
+    `esqueleto_llaves_encadenadas` se importa dentro de cada prueba con try/except ImportError: self.fail."""
+
+    def generador(self):
+        try:
+            return importlib.import_module("tests_labs.cripta_sintetica").esqueleto_llaves_encadenadas
+        except (ImportError, AttributeError) as error:
+            self.fail(f"esqueleto_llaves_encadenadas todavía no existe: {error}")
+
+    def verificar_cadena(self, n: int, semilla: int):
+        esqueleto, llaves, llave_salida, sala_salida = self.generador()(n, semilla)
+        resultado = importlib.import_module("Logica.VerificacionResolubilidad").verificar_resolubilidad(
+            mapa_desde_salas(esqueleto), 1, sala_salida, llave_salida, ubicaciones(CRIPTA, llaves), CRIPTA)
+        return esqueleto, llave_salida, sala_salida, resultado
+
+    def test_fr346_cadena_determinista_por_semilla(self):
+        generar = self.generador()
+        self.assertEqual(generar(30, 7), generar(30, 7))
+        _, llaves_7, _, _ = generar(30, 7)
+        _, llaves_8, _, _ = generar(30, 8)
+        self.assertNotEqual([e[0] for e in llaves_7], [e[0] for e in llaves_8])
+
+    def test_fr346_cadena_es_resoluble_con_n_llaves(self):
+        n = 50
+        esqueleto, llave_salida, sala_salida, r = self.verificar_cadena(n, 3)
+        self.assertEqual(sala_salida, n)
+        self.assertIs(r.resoluble, True)
+        self.assertEqual(len(r.orden), n)                      # n - 1 puertas + la llave de salida
+        self.assertEqual(r.orden[-1].llave, llave_salida)
+        # El orden sigue la cadena: el paso i es la llave de la puerta i+1 -> i+2 del pasillo.
+        for i in range(n - 1):
+            puerta = esqueleto[i]["salidas"]["E"]
+            self.assertEqual(puerta["sala"], i + 2)
+            self.assertTrue(puerta.get("cerrada"))
+            self.assertEqual(puerta.get("llave"), r.orden[i].llave, f"paso {i}")
+
+    def test_fr346_ids_no_siguen_la_cadena(self):
+        _esqueleto, _llave_salida, _sala_salida, r = self.verificar_cadena(50, 3)
+        ids = [paso.llave for paso in r.orden[:-1]]
+        bajadas = 0
+        for i in range(1, len(ids)):
+            if ids[i] < ids[i - 1]:
+                bajadas += 1
+        self.assertGreater(bajadas, 0, "los ids de llave quedaron en el mismo orden que la cadena")
+
+
 if __name__ == "__main__":
     unittest.main()

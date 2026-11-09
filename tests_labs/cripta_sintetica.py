@@ -178,3 +178,37 @@ def mapa_desde_esqueleto(esqueleto: list[dict]):
     servicio = ServicioCripta(HttpConfigurable(esqueleto), CacheLRU(5))
     servicio.listar_criptas()
     return MapaCripta(servicio.obtener_mapa(servicio.obtener_id_cripta(1)))
+
+
+# ---------------------------------------------------------------- verificación de resolubilidad (capacidad 003)
+
+def esqueleto_llaves_encadenadas(n: int, semilla: int = 0):
+    """Cripta de llaves encadenadas para --bench resolubilidad (data-model.md §7). Devuelve
+    (esqueleto, llaves, llave_salida, sala_salida).
+
+    Pasillo 1 - 2 - ... - n (salidas este/oeste) y una sala lateral por cada sala del pasillo (salida norte/sur, abierta).
+    La puerta i -> i+1 del pasillo está cerrada en los dos sentidos y se abre con la llave que está en la lateral de la
+    sala i, así que cada llave aparece recién al abrir la puerta anterior: K ≈ n oleadas, el peor caso del recorrido
+    repetido. La llave de salida está en la lateral de la última sala, que es la sala de salida; se empieza en la sala 1.
+    Los nombres de las llaves (`k_<j>`) y los ids de las laterales se barajan con random.Random(semilla), para que ni el
+    orden de los ids de llave ni el de los ids de sala sigan la cadena. Ningún tamaño fijo (principio V).
+    `llaves` es una lista de tuplas (id, sala, None): todas en el suelo."""
+    if n < 1:
+        raise ValueError("La cadena necesita al menos una sala")
+    azar = random.Random(semilla)
+    numeros = list(range(n))
+    azar.shuffle(numeros)                                    # nombre de la llave de cada eslabón
+    laterales = list(range(n + 1, 2 * n + 1))
+    azar.shuffle(laterales)                                  # id de la sala lateral de cada sala del pasillo
+    salas = [{"id": i, "nombre": f"Sala {i}", "salidas": {}} for i in range(1, 2 * n + 1)]
+    llaves = []
+    for i in range(1, n + 1):
+        lateral = laterales[i - 1]
+        salas[i - 1]["salidas"]["N"] = {"sala": lateral}
+        salas[lateral - 1]["salidas"]["S"] = {"sala": i}
+        llave = f"k_{numeros[i - 1]}"
+        llaves.append((llave, lateral, None))
+        if i < n:
+            salas[i - 1]["salidas"]["E"] = {"sala": i + 1, "cerrada": True, "llave": llave}
+            salas[i]["salidas"]["O"] = {"sala": i, "cerrada": True, "llave": llave}
+    return salas, llaves, f"k_{numeros[n - 1]}", n

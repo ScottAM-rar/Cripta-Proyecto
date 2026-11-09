@@ -1,4 +1,5 @@
-"""Corre las 9 pruebas nuevas de la capacidad 009 con la red bloqueada (T051, SC-006, FR-318).
+"""Corre con la red bloqueada las 9 pruebas nuevas de la capacidad 009 (T051, SC-006, FR-318) y las 8 de la capacidad 003
+(T055, SC-002).
 
     py -m tests_labs.sin_red
 
@@ -25,6 +26,15 @@ PRUEBAS = (
     "test_llaves_partida_cargada",
     "test_fuente_solo_local",
     "test_api_falsa_v2",
+    # Capacidad 003 (verificación de resolubilidad)
+    "test_mapa_con_llaves",
+    "test_indice_llaves",
+    "test_resolubilidad_regla",
+    "test_resolubilidad_apendice_b",
+    "test_resolubilidad_determinismo",
+    "test_resolubilidad_datos",
+    "test_resolubilidad_inicio",
+    "test_resolubilidad_reporte",
 )
 
 

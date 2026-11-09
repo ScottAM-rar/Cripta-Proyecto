@@ -28,7 +28,7 @@ def leer_argumentos(argv=None) -> argparse.Namespace:
     parser.add_argument("--bench", nargs="?", const="todo", metavar="BLOQUES",
                         help="mide el rendimiento con cargas sintéticas, sin red ni vista (todos los bloques, o una lista "
                              "separada por comas: agenda, cache, inventario, retroceso, ordenamiento, guardado, bitacora, ciclo, "
-                             "llaves)")
+                             "llaves, resolubilidad)")
     parser.add_argument("--bench-csv", metavar="ARCHIVO.csv", help="con --bench, guarda además los resultados en un CSV")
     parser.add_argument("--replay", metavar="PARTIDA.log",
                         help=f"reproduce una partida grabada, sin pedir nada al usuario (el log debe estar en {CARPETA_LOGS}/)")
