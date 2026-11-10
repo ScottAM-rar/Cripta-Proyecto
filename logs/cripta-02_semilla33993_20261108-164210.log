@@ -1,9 +1,0 @@
-cripta: cripta-02
-semilla: 33993
-version_cripta: 52532a77ee04
-version_catalogo: 4b9e75a42be5
-{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 60, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 1}, "norte"]}
-{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 2}, "norte"]}
-{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 150, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 3}, "norte"]}
-{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 100, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 4}, "norte"]}
-{"tipo_accion": "MOVER_JUGADOR", "tiempo_ejecucion": 80, "actor": {"tipo": "jugador"}, "datos_extra": [{"tipo": "sala", "id": 5}, "norte"]}
