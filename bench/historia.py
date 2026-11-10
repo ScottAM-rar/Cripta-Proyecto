@@ -19,6 +19,7 @@ import time
 
 from DTO.EventoDTO import EventoDTO
 from DTO.ResumenEstadoDTO import ResumenEstadoDTO
+from Logica.ordenamiento import ordenar_adaptativo
 from Logica.EstadoJuegoLogica import EstadoJuegoLogica
 from Logica.RetrocesoLogica import RetrocesoLogica
 from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
@@ -36,15 +37,23 @@ def _tamano(objeto) -> int:
 
 
 def _mediana(valores: list[float]) -> float:
-    ordenados = sorted(valores)
+    ordenados = ordenar_adaptativo(valores)
     n = len(ordenados)
     if not n:
         return 0.0
     return ordenados[n // 2]
 
 
+def _resultado_k(resultados: list[tuple], k: int):
+    """Búsqueda lineal de la fila de `k` en la lista de resultados (None si no existe)."""
+    for fila in resultados:
+        if fila[0] == k:
+            return fila
+    return None
+
+
 def _percentil_95(valores: list[float]) -> float:
-    ordenados = sorted(valores)
+    ordenados = ordenar_adaptativo(valores)
     n = len(ordenados)
     if not n:
         return 0.0
@@ -128,7 +137,8 @@ def ejecutar(filas: list, imprimir=print, acciones: int = 5000) -> bool:
     cumple = True
     imprimir(f"\n--- Línea de tiempo (historia <t> / historia #k): {acciones} acciones con K en {VALORES_K} ---")
 
-    resultados_k = {}
+    # Lista de tuplas (k, mediana, p95, maximo, puntos, tamano_kb): sin dict (principio I)
+    resultados_k: list[tuple] = []
 
     with tempfile.TemporaryDirectory() as raiz:
         for k in VALORES_K:
@@ -173,13 +183,7 @@ def ejecutar(filas: list, imprimir=print, acciones: int = 5000) -> bool:
             max_us = max(tiempos_us)
             tamano_kb = _tamano([p.estado for p in logica.puntos_control]) / 1024
 
-            resultados_k[k] = {
-                "mediana": med_us,
-                "p95": p95_us,
-                "maximo": max_us,
-                "puntos": puntos_totales,
-                "tamano_kb": tamano_kb,
-            }
+            resultados_k.append((k, med_us, p95_us, max_us, puntos_totales, tamano_kb))
 
             ok = max_us <= LIMITE_HISTORIA_US
             cumple = cumple and ok
@@ -208,7 +212,7 @@ def ejecutar(filas: list, imprimir=print, acciones: int = 5000) -> bool:
         finally:
             gc.enable()
 
-        tiempo_k10_us = resultados_k[10]["mediana"]
+        tiempo_k10_us = _resultado_k(resultados_k, 10)[1]
         factor_aceleracion = tiempo_c_us / max(tiempo_k10_us, 1.0)
         filas.append((SECCION, f"Alternativa C (descartada): reconstruir {n_c} acciones desde el inicio (sin checkpoints)",
                       texto(tiempo_c_us), f"{factor_aceleracion:.1f}x la mediana de historia con K=10 ({texto(tiempo_k10_us)})"))
@@ -232,11 +236,12 @@ def ejecutar(filas: list, imprimir=print, acciones: int = 5000) -> bool:
 
         # 5. Justificación de K por defecto
         k_por_defecto = EstadoJuegoLogica().k_checkpoint
-        peor_defecto = resultados_k.get(k_por_defecto, {}).get("maximo", 0.0)
+        fila_defecto = _resultado_k(resultados_k, k_por_defecto)
+        peor_defecto = fila_defecto[3] if fila_defecto is not None else 0.0
         ok_defecto = peor_defecto <= LIMITE_HISTORIA_US
         filas.append((SECCION, f"Justificación K={k_por_defecto} por defecto: peor caso medido",
                       texto(peor_defecto), "CUMPLE (<= 50 ms)" if ok_defecto else "NO CUMPLE"))
-        nota(filas, SECCION, f"K={k_por_defecto} garantiza tiempos de respuesta entre {texto(resultados_k[10]['mediana'])} "
-                             f"y {texto(resultados_k[10]['maximo'])}, cumpliendo holgadamente el límite de 50 ms.")
+        nota(filas, SECCION, f"K={k_por_defecto} garantiza tiempos de respuesta entre {texto(_resultado_k(resultados_k, 10)[1])} "
+                             f"y {texto(_resultado_k(resultados_k, 10)[3])}, cumpliendo holgadamente el límite de 50 ms.")
 
     return cumple

@@ -21,6 +21,7 @@ from Logica.FuenteCripta import LlavesNoDisponibles
 from DTO.LlavesDTO import UbicacionLlavesDTO
 from Logica.CampoDeCostos import CampoDeCostos
 from Logica.MapaCripta import MapaCripta
+from Logica.ordenamiento import ordenar_adaptativo
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
 from DTO.PuntoControlDTO import PuntoControlDTO
 from Logica import EstadoGuardadoLogica
@@ -209,7 +210,7 @@ class EstadoJuegoLogica:
                 for e in sala.enemigos:
                     if e.vida_actual > 0:
                         enemigos_sala.append((e.id_instancia, e.nombre, e.vida_actual))
-                enemigos_sala.sort(key=lambda t: t[0])
+                enemigos_sala = ordenar_adaptativo(enemigos_sala, key=lambda t: t[0])
 
         return ResumenEstadoDTO(
             instante=instante,
@@ -1302,4 +1303,4 @@ class EstadoJuegoLogica:
             self.jugadorLogica.enemigos_eliminados(),
             self.estadoJuego.reloj.tiempo_actual,
             not self.jugadorLogica.esta_muerto(),
-        )
+        )

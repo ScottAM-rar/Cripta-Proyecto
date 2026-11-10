@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-04
 
-**Status**: Draft
+**Estado**: Implementada (T001 a T031)
 
 **Input**: User description: "Capacidad: reproducir una partida grabada solo hasta un instante dado (nombre sugerido de la carpeta: replay-hasta). Prefijo de requisitos: FR-4xx. Escribe la especificación en español, desde el punto de vista del juego y de quien lo juega o lo revisa. No nombres estructuras de datos, clases ni módulos. Todo lo que no esté claro márcalo como [NEEDS CLARIFICATION] en vez de suponerlo."
 

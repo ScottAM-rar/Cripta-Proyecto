@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-07
 
-**Estado**: Borrador
+**Estado**: Implementada (T001 a T033)
 
 **Entrada**: Capacidad de la línea de tiempo (Parte II, §3.6): guardar copias completas del estado de la partida a intervalos configurables. Requisitos con prefijo FR-4xx, continuando desde FR-414.
 

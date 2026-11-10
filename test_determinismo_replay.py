@@ -12,6 +12,7 @@ from DTO.EventoDTO import EventoDTO
 from DTO.ResultadoReplayHastaDTO import ResultadoReplayHastaDTO
 from Logica.ActorLogica import ActorLogica
 from Logica.EstadoJuegoLogica import EstadoJuegoLogica
+from Logica.ordenamiento import ordenar_adaptativo
 from Logica.RetrocesoLogica import RetrocesoLogica
 import main
 from tests_labs.api_falsa import HttpConfigurable
@@ -89,7 +90,7 @@ class TestDeterminismoReplay(unittest.TestCase):
             for e in j_completo.estadoJuego.salas[sala_ref].enemigos
             if e.vida_actual > 0
         ]
-        enemigos_ref.sort(key=lambda t: t[0])
+        enemigos_ref = ordenar_adaptativo(enemigos_ref, key=lambda t: t[0])
 
         # Continuamos la partida hasta el final para armar el log completo
         esperar(j_completo, 2)

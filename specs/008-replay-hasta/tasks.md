@@ -126,8 +126,8 @@
 - [X] T027 Ejecutar `python main.py --bench replay --bench-csv bench_replay_resultados.csv` y registrar los resultados en `specs/008-replay-hasta/mediciones.md`. (Principio VII)
 - [X] T028 Ejecutar las pruebas manuales de consola descritas en `quickstart.md` §3 comprobando los mensajes exactos de error y formatos de salida para `--hasta`.
 - [X] T029 Actualizar `DECISIONES.md` documentando la ratificación de la Opción b respaldada por los resultados empíricos de `--bench replay`. (Principio VII)
-- [ ] T030 Actualizar `README.md` con el comando `python main.py --replay NOMBRE.log --hasta T` (qué hace y qué muestra), las pruebas de aceptación de esta capacidad (`python -m unittest test_replay_hasta test_determinismo_replay test_rendimiento_replay`) y el agente de Spec Kit realmente usado. (FR-401, FR-409; enunciado §7.2)
-- [ ] T031 Registrar en `PROMPTS_LLM.md` una fila por cada comando `/speckit-…` con texto propio de esta capacidad (specify, clarify, el prompt de corrección de la especificación, plan, tasks, analyze, el prompt de alineación y, al ejecutarlos, implement), con herramienta, modelo y fecha, y no en archivos separados. (Principio XI)
+- [X] T030 Actualizar `README.md` con el comando `python main.py --replay NOMBRE.log --hasta T` (qué hace y qué muestra), las pruebas de aceptación de esta capacidad (`python -m unittest test_replay_hasta test_determinismo_replay test_rendimiento_replay`) y el agente de Spec Kit realmente usado. (FR-401, FR-409; enunciado §7.2)
+- [X] T031 Registrar en `PROMPTS_LLM.md` una fila por cada comando `/speckit-…` con texto propio de esta capacidad (specify, clarify, el prompt de corrección de la especificación, plan, tasks, analyze, el prompt de alineación y, al ejecutarlos, implement), con herramienta, modelo y fecha, y no en archivos separados. (Principio XI)
 
 ---
 
