@@ -169,30 +169,30 @@ class TestValidacion(unittest.TestCase):
 
 class TestVersiones(unittest.TestCase):
     def test_FR221_la_numeracion_acordada_por_el_grupo(self):
-        self.assertEqual(modulo_partida.VERSION_FORMATO, 7)
-        self.assertEqual(modulo_estado.VERSION_ESTADO, 4)
+        self.assertEqual(modulo_partida.VERSION_FORMATO, 8)
+        self.assertEqual(modulo_estado.VERSION_ESTADO, 5)
 
-    def test_FR221_un_archivo_de_la_001_se_rechaza_con_la_version_encontrada_y_la_esperada(self):
+    def test_FR221_un_archivo_sin_niebla_se_rechaza_con_la_version_encontrada_y_la_esperada(self):
         logica = nueva_partida(cripta())
         carpeta = tempfile.mkdtemp()
         archivo = os.path.join(carpeta, "partida.bin")
         AlmacenPartidaBinario(archivo).guardar(logica.exportar_estado())
-        with open(archivo, "r+b") as f:                                       # lo que habría escrito la 001: formato 6
-            f.write(modulo_partida._ENCABEZADO.pack(modulo_partida.MAGIA, 6))
+        with open(archivo, "r+b") as f:                                       # lo que habría escrito la versión sin niebla: formato 7
+            f.write(modulo_partida._ENCABEZADO.pack(modulo_partida.MAGIA, 7))
         with self.assertRaises(ErrorPartida) as contexto:
             AlmacenPartidaBinario(archivo).cargar()
         mensaje = str(contexto.exception)
-        self.assertIn("6", mensaje)
         self.assertIn("7", mensaje)
+        self.assertIn("8", mensaje)
 
     def test_FR221_un_estado_de_la_version_anterior_se_rechaza_con_la_version_encontrada_y_la_esperada(self):
         estado = nueva_partida(cripta()).exportar_estado()
-        estado.version_estado = 3
+        estado.version_estado = 4
         with self.assertRaises(ValueError) as contexto:
             nueva_partida(cripta()).restaurar_estado(estado)
         mensaje = str(contexto.exception)
-        self.assertIn("3", mensaje)
         self.assertIn("4", mensaje)
+        self.assertIn("5", mensaje)
 
 
 if __name__ == "__main__":

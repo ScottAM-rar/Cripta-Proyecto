@@ -3,6 +3,8 @@ import uuid
 import time
 
 from adaptadores.Interfaz import ClienteInterfaz
+from adaptadores.llaves import leer_llaves
+from Logica.FuenteCripta import LlavesNoDisponibles
 
 # Veces que se reintenta una solicitud rechazada con 429 antes de rendirse.
 MAX_REINTENTOS_429 = 10
@@ -32,7 +34,7 @@ class ClienteCripta(ClienteInterfaz):
         """Solicitudes que llegaron al servidor (incluye los 429)."""
         return self._solicitudes
 
-    def _solicitar(self, ruta: str) -> dict:
+    def _solicitar(self, ruta: str, max_reintentos_429: int = MAX_REINTENTOS_429) -> dict:
 
         url = f"{self.base_url}{ruta}"
 
@@ -53,6 +55,11 @@ class ClienteCripta(ClienteInterfaz):
 
             if respuesta.status_code == 429:
                 reintentos += 1
+                if reintentos > max_reintentos_429 and max_reintentos_429 < MAX_REINTENTOS_429:
+                    # Límite propio de la consulta (capacidad 009): no queda presupuesto para otro intento.
+                    raise RuntimeError(
+                        f"429 sin presupuesto para reintentar {url} ({max_reintentos_429} reintentos permitidos)"
+                    )
                 if reintentos > MAX_REINTENTOS_429:
                     raise RuntimeError(
                         f"El servidor sigue rechazando {url} (429) tras {MAX_REINTENTOS_429} reintentos"
@@ -109,3 +116,15 @@ class ClienteCripta(ClienteInterfaz):
 
     def obtener_version_catalogo(self) -> str:
         return self._solicitar("/catalogo/version")["version"]
+
+    def obtener_llaves(self, cripta_id: str, solo_guardadas: bool = False,
+                       limite_solicitudes: int | None = None) -> list[dict]:
+        """GET /criptas/<id>/llaves: una solicitud, contada por _solicitar (capacidad 009). El HTTP no tiene disco:
+        con solo_guardadas no hay nada que devolver. Con limite_solicitudes, un 429 solo se reintenta mientras
+        no se llegue a ese límite."""
+        if solo_guardadas:
+            raise LlavesNoDisponibles(f"no queda presupuesto y no hay llaves guardadas de la cripta {cripta_id}")
+        max_reintentos = MAX_REINTENTOS_429
+        if limite_solicitudes is not None:
+            max_reintentos = max(limite_solicitudes - 1, 0)
+        return leer_llaves(self._solicitar(f"/criptas/{cripta_id}/llaves", max_reintentos_429=max_reintentos))

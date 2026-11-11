@@ -3,10 +3,13 @@ from collections import deque
 from dataclasses import dataclass
  
 from DTO.ActorDTO import JugadorDTO
+from DTO.LlavesDTO import UbicacionLlavesDTO
 from DTO.MapaDTO import AristaMapaDTO, MapaDTO, SalaMapaDTO
 from DTO.SalaDTO import SalaDTO, SalidaDTO
 from adaptadores.cliente_offline import ErrorOffline
+from adaptadores.llaves import LlavesInvalidas, validar_llaves
 from adaptadores.resolucion import resolver_botin, resolver_sala, resolver_salas
+from Logica.FuenteCripta import LlavesNoDisponibles
  
  
 def _nombre_direccion(letra: str) -> str:
@@ -157,6 +160,8 @@ class ServicioCripta:
         self._datos: dict | None = None              # respuesta cruda de /criptas/{id}
         self._listas_id: str | None = None           # cripta a la que pertenecen las salas ya precargadas
         self._listas: list[int] = []                 # salas ya traídas (y guardadas) en esta sesión
+        self._llaves_id: str | None = None           # cripta a la que pertenece la ubicación de llaves memorizada
+        self._llaves: UbicacionLlavesDTO | None = None
  
     # ------------------------------------------------------------------
     # Criptas
@@ -217,6 +222,16 @@ class ServicioCripta:
         Sale de los datos generales, que ya se piden una sola vez por cripta."""
         return self.datos_cripta(cripta_id)["sala_salida"]
 
+    def obtener_sala_inicial(self, cripta_id: str) -> int:
+        """Id de la sala donde empieza la partida (capacidad 003, verificación de resolubilidad).
+        Sale de los datos generales, que ya se piden una sola vez por cripta: no agrega solicitudes (FR-341)."""
+        return self.datos_cripta(cripta_id)["sala_inicial"]
+
+    def obtener_llave_salida(self, cripta_id: str) -> str | None:
+        """Id de la llave de salida de la cripta, o None si los datos generales no la traen (capacidad 003).
+        Sale de los datos generales, que ya se piden una sola vez por cripta: no agrega solicitudes (FR-341)."""
+        return self.datos_cripta(cripta_id).get("llave_salida")
+
     def presupuesto_solicitudes(self, cripta_id: str) -> int:
         """Cuántas solicitudes permite la API para jugar esta cripta."""
         return self.datos_cripta(cripta_id)["presupuesto_solicitudes"]
@@ -240,7 +255,7 @@ class ServicioCripta:
     def total_salas(self, cripta_id: str) -> int:
         return len(self._cargar_esqueleto(cripta_id))
 
-    def obtener_mapa(self, cripta_id: str) -> MapaDTO:
+    def esqueleto(self, cripta_id: str) -> MapaDTO:
         """Esqueleto completo con el costo de cada salida y el estado inicial de las puertas. Sale del esqueleto que
         ya se descarga al iniciar: no gasta solicitudes ni depende de qué salas tengan contenido traído."""
         esqueleto = self._cargar_esqueleto(cripta_id)
@@ -256,9 +271,63 @@ class ServicioCripta:
                 if letra in salidas_api:
                     datos = salidas_api[letra]
                     aristas.append(AristaMapaDTO(_nombre_direccion(letra), datos["sala"], datos["costo"],
-                                                 datos.get("cerrada", False)))
+                                                 datos.get("cerrada", False), llave=datos.get("llave")))
             salas[sala["id"]] = SalaMapaDTO(sala["id"], aristas, sala.get("nombre", ""))
         return MapaDTO(salas, list(self.advertencias))
+
+    def obtener_mapa(self, cripta_id: str) -> MapaDTO:
+        """Lo mismo que esqueleto() (capacidad 001); se conserva para quien ya lo usa."""
+        return self.esqueleto(cripta_id)
+
+    def ubicacion_llaves(self, cripta_id: str) -> UbicacionLlavesDTO:
+        """Dónde está cada llave y qué enemigo la suelta (capacidad 009). Una sola consulta por cripta y sesión,
+        contada en el presupuesto; si no queda presupuesto solo sirve lo guardado. Cualquier fallo se entrega como
+        LlavesNoDisponibles con la cripta en el mensaje, y no queda nada memorizado."""
+        if self._llaves_id == cripta_id and self._llaves is not None:
+            return self._llaves
+        try:
+            restante = self.presupuesto_solicitudes(cripta_id) - self.solicitudes_realizadas
+            solo_guardadas = restante < 1
+            crudas = self.cliente.obtener_llaves(cripta_id, solo_guardadas, limite_solicitudes=restante)
+
+            esqueleto = self._cargar_esqueleto(cripta_id)
+            mayor = -1
+            for sala in esqueleto:
+                if sala["id"] > mayor:
+                    mayor = sala["id"]
+            existe = [False] * (mayor + 1)
+            for sala in esqueleto:
+                existe[sala["id"]] = True
+
+            contenido_en_disco = getattr(self.cliente, "contenido_en_disco", None)
+            if contenido_en_disco is None:
+                def contenido_guardado(_sala):
+                    return None
+            else:
+                def contenido_guardado(sala):
+                    return contenido_en_disco(cripta_id, sala)
+
+            ids, salas, enemigos = validar_llaves(crudas, existe, contenido_guardado)
+            llaves = UbicacionLlavesDTO(cripta_id, self.version_cripta(cripta_id), ids, salas, enemigos)
+        except LlavesNoDisponibles as error:
+            # Viene del cliente (sin presupuesto y sin llaves guardadas): mismo aviso que los demás fallos (FR-313).
+            # Si el motivo ya nombra la cripta, no se repite.
+            motivo = str(error).rstrip('.')
+            prefijo = "No se pudieron obtener las llaves"
+            if cripta_id not in motivo:
+                prefijo += f" de la cripta {cripta_id}"
+            raise LlavesNoDisponibles(
+                f"{prefijo}: {motivo}. La verificación de resolubilidad no está disponible."
+            ) from error
+        except (RuntimeError, LlavesInvalidas) as error:
+            # RuntimeError cubre ErrorOffline, ErrorSinConexion y los demás errores del HTTP, que heredan de él.
+            raise LlavesNoDisponibles(
+                f"No se pudieron obtener las llaves de la cripta {cripta_id}: {str(error).rstrip('.')}. "
+                "La verificación de resolubilidad no está disponible."
+            ) from error
+        self._llaves_id = cripta_id
+        self._llaves = llaves
+        return llaves
  
     def construir_sala(self, cripta_id: str, numero_sala: int) -> SalaDTO:
         """Arma una SalaDTO completa: esqueleto (nombre y salidas) + contenido."""

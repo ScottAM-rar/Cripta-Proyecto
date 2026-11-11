@@ -14,14 +14,16 @@ _SIN_ARISTAS: list = []
 
 
 class AristaCripta:
-    __slots__ = ("origen", "direccion", "destino", "costo", "cerrada_inicial")
+    __slots__ = ("origen", "direccion", "destino", "costo", "cerrada_inicial", "llave")
 
-    def __init__(self, origen: int, direccion: str, destino: int, costo: int, cerrada_inicial: bool) -> None:
+    def __init__(self, origen: int, direccion: str, destino: int, costo: int, cerrada_inicial: bool,
+                 llave: str | None = None) -> None:
         self.origen = origen
         self.direccion = direccion
         self.destino = destino
         self.costo = costo
         self.cerrada_inicial = cerrada_inicial
+        self.llave = llave                                  # llave que abre la puerta de esta salida (capacidad 003) o None
 
 
 class MapaCripta:
@@ -35,7 +37,7 @@ class MapaCripta:
                 continue
             self.existe[sala.id] = True
             for a in sala.salidas:
-                arista = AristaCripta(sala.id, a.direccion, a.destino, a.costo, a.cerrada_inicial)
+                arista = AristaCripta(sala.id, a.direccion, a.destino, a.costo, a.cerrada_inicial, a.llave)
                 self.salientes[sala.id].append(arista)
                 if 0 <= a.destino < self.tamano:
                     self.entrantes_por_sala[a.destino].append(arista)

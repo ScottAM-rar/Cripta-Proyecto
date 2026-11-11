@@ -1,0 +1,31 @@
+seccion,medicion,resultado,unidad
+"Red, caché y disco (§4.2–§4.4, §5.1): 1. Solicitudes al recorrer un pasillo de 60 salas",sala por sala (sin precarga),63,solicitudes (~25.2 s de espera)
+"Red, caché y disco (§4.2–§4.4, §5.1): 1. Solicitudes al recorrer un pasillo de 60 salas",actual + vecinas en cada paso (prof. 2),61,solicitudes (~24.4 s de espera)
+"Red, caché y disco (§4.2–§4.4, §5.1): 1. Solicitudes al recorrer un pasillo de 60 salas","perezosa, prof. 2",33,solicitudes (~13.2 s de espera)
+"Red, caché y disco (§4.2–§4.4, §5.1): 1. Solicitudes al recorrer un pasillo de 60 salas","perezosa, por defecto (lote de 10)",9,solicitudes (~3.6 s de espera)
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","deque lineal, 25 fichas, acierto",1.12,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","deque lineal, 25 fichas, fallo",0.6,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","tabla hash propia, 25 fichas, acierto (descartada)",0.19,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","deque lineal, 100 fichas, acierto",3.42,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","deque lineal, 100 fichas, fallo",1.92,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","tabla hash propia, 100 fichas, acierto (descartada)",0.21,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","deque lineal, 1000 fichas, acierto",30.95,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","deque lineal, 1000 fichas, fallo",18.31,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","tabla hash propia, 1000 fichas, acierto (descartada)",0.31,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","deque lineal, 5000 fichas, acierto",176.7,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","deque lineal, 5000 fichas, fallo",106.76,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)","tabla hash propia, 5000 fichas, acierto (descartada)",0.35,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 3. Recuperar una ficha liberada desde disco",catálogo con 25 fichas,0.109,ms por lectura (una solicitud real: ~400 ms)
+"Red, caché y disco (§4.2–§4.4, §5.1): 3. Recuperar una ficha liberada desde disco",catálogo con 200 fichas,0.202,ms por lectura (una solicitud real: ~400 ms)
+"Red, caché y disco (§4.2–§4.4, §5.1): 3. Recuperar una ficha liberada desde disco",catálogo con 1000 fichas,0.511,ms por lectura (una solicitud real: ~400 ms)
+"Red, caché y disco (§4.2–§4.4, §5.1): 4. Guardar 10 fichas nuevas (reescribe el archivo completo)",catálogo con 25 fichas,3.547,ms
+"Red, caché y disco (§4.2–§4.4, §5.1): 4. Guardar 10 fichas nuevas (reescribe el archivo completo)",catálogo con 200 fichas,11.968,ms
+"Red, caché y disco (§4.2–§4.4, §5.1): 4. Guardar 10 fichas nuevas (reescribe el archivo completo)",catálogo con 1000 fichas,12.707,ms
+"Red, caché y disco (§4.2–§4.4, §5.1): 5. Planear la vecindad en una cripta de 1000 salas","salas_vecinas, 1 paso",38.4,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 5. Planear la vecindad en una cripta de 1000 salas","salas_vecinas, 2 pasos",98.1,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 5. Planear la vecindad en una cripta de 1000 salas",precargar_vecinas cuando no hace falta nada,59.4,µs
+"Red, caché y disco (§4.2–§4.4, §5.1): 6. Caché en una partida completa (150 pasos por una rejilla de 10x10)",capacidad    5,82 aciertos / 938 fallos (8.0 %),19 solicitudes de red
+"Red, caché y disco (§4.2–§4.4, §5.1): 6. Caché en una partida completa (150 pasos por una rejilla de 10x10)",capacidad   10,316 aciertos / 704 fallos (31.0 %),19 solicitudes de red
+"Red, caché y disco (§4.2–§4.4, §5.1): 6. Caché en una partida completa (150 pasos por una rejilla de 10x10)",capacidad   25,487 aciertos / 533 fallos (47.7 %),19 solicitudes de red
+"Red, caché y disco (§4.2–§4.4, §5.1): 6. Caché en una partida completa (150 pasos por una rejilla de 10x10)",capacidad  100,950 aciertos / 70 fallos (93.1 %),19 solicitudes de red
+"Red, caché y disco (§4.2–§4.4, §5.1): 6. Caché en una partida completa (150 pasos por una rejilla de 10x10)",capacidad 1000,950 aciertos / 70 fallos (93.1 %),19 solicitudes de red

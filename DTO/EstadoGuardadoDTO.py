@@ -8,7 +8,7 @@ los nombra por su posición en esa tabla, así al restaurar vuelven a ser el mis
 from __future__ import annotations
 from dataclasses import dataclass, field
 
-VERSION_ESTADO = 4   # versión de la estructura de este DTO (4: conocimiento del jugador, niebla de guerra; 3: costo por salida y rango por enemigo)
+VERSION_ESTADO = 5   # versión de la estructura de este DTO (5: conocimiento del jugador, niebla de guerra; 4: puntos de control y k_checkpoint; 3: costo por salida y rango por enemigo; 2: anterior)
 
 
 @dataclass
@@ -166,5 +166,9 @@ class EstadoGuardadoDTO:
     # --- historiales ---
     bitacora: list = field(default_factory=list)       # últimos mensajes list[MensajeGuardadoDTO]
     acciones_log: list = field(default_factory=list)   # líneas de la bitácora de reproducción (acciones del jugador)
+    # --- puntos de control ---
+    k_checkpoint: int = 10
+    acciones_linea_tiempo: int = 0
+    puntos_control: list = field(default_factory=list)  # lista de PuntoControlDTO (sin tipo para evitar import circular)
     # --- conocimiento del jugador (002): siempre al final de la clase; restaurar rechaza un valor ausente ---
     conocimiento: ConocimientoGuardadoDTO | None = None

@@ -149,6 +149,7 @@ class TestConsultarNoEsUnaAccion(unittest.TestCase):
 
         class ServicioFalso:
             acciones = 0
+            k_checkpoint = 0
             def advertenciasDeDatos(self): return []
             def getJudador(self): return jugador
             def terminado(self): return (False, None)
@@ -157,7 +158,7 @@ class TestConsultarNoEsUnaAccion(unittest.TestCase):
             def mapaConocido(self): return logica.instantaneaMapaConocido()
             def objetoActualInventario(self): return None
             def ultimosMensajes(self): return []
-            def cargarPartida(self, nombre): pass
+            def cargarPartida(self, nombre, **kw): pass
             def accionJugador(self, evento): ServicioFalso.acciones += 1
 
         entradas = iter(["n", "s", "archivo", "mapa", "salir", "n"])

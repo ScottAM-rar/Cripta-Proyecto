@@ -78,7 +78,9 @@ servicio.precargar(cid)                 # trae TODAS las salas de golpe (ver 2.3
 sala = servicio.construir_sala(cid, 3)  # SalaDTO de la sala 3 (los ids de sala empiezan en 1)
 
 servicio.obtener_sala_salida(cid)       # id de la sala donde se gana
-servicio.datos_cripta(cid)["llave_salida"]   # id de la llave que hace falta para ganar
+servicio.obtener_sala_inicial(cid)      # id de la sala donde empieza la partida (capacidad 003)
+servicio.obtener_llave_salida(cid)      # id de la llave que hace falta para ganar, o None (capacidad 003)
+                                        # (lo mismo que datos_cripta(cid).get("llave_salida"))
 
 servicio.solicitudes_realizadas         # solicitudes de red usadas hasta ahora (0 si es offline)
 servicio.presupuesto_solicitudes(cid)   # el máximo permitido (9)
@@ -142,6 +144,7 @@ pasa del límite de 9. Con `precargar`, las `construir_sala` siguientes salen de
 | `obtener_contenido(id, [salas])` | `GET /criptas/{id}/contenido?salas=1,2,..` | `list[dict]`: qué hay en cada sala |
 | `obtener_catalogo([ids])` | `GET /catalogo?ids=a,b,..` | `list[dict]`: fichas completas |
 | `obtener_version_catalogo()` | `GET /catalogo/version` | `str` |
+| `obtener_llaves(id, solo_guardadas=False, limite_solicitudes=None)` | `GET /criptas/{id}/llaves` | `list[dict]`: cada llave con `id`, `sala` y, si la suelta un enemigo, `enemigo` (capacidad 009). Con `solo_guardadas=True` no hace la solicitud y lanza `LlavesNoDisponibles` («no queda presupuesto y no hay llaves guardadas de la cripta X»). Con `limite_solicitudes`, un 429 solo se reintenta mientras no se llegue a ese límite; si se llega, `RuntimeError("429 sin presupuesto para reintentar …")` |
 
 Todas las llamadas llevan el header `X-Cripta-Client-Id`.
 
@@ -151,7 +154,7 @@ Todas las llamadas llevan el header `X-Cripta-Client-Id`.
   3 solicitudes (10 + 10 + 5).
 - **Paginación.** `obtener_salas` repite hasta llegar a `total_paginas`.
 - **Error 429** (demasiadas solicitudes): espera `reintentar_en` segundos y reintenta, hasta
-  `MAX_REINTENTOS_429 = 5` veces; después lanza `RuntimeError`. El reintento **también cuenta** como solicitud.
+  `MAX_REINTENTOS_429 = 10` veces; después lanza `RuntimeError`. El reintento **también cuenta** como solicitud.
 - **Sin conexión o tiempo agotado:** lanza `ErrorSinConexion` con un mensaje que sugiere `--offline`.
   Una solicitud que nunca llegó al servidor no suma al contador.
 - **Otros errores** (400, 404, 500): `RuntimeError` con la URL y el código.
@@ -239,18 +242,136 @@ Recibe un cliente (online u offline) y una caché por el constructor; `crear_ser
 | `datos_cripta(id)` | Datos generales de la cripta (una vez por cripta) | 1 (la primera vez) |
 | `crear_jugador(id)` | `JugadorDTO` con las stats de la API, vida llena, en la sala inicial | 0 extra |
 | `obtener_sala_salida(id)` | Id de la sala donde se gana | 0 extra |
+| `obtener_sala_inicial(id)` | Id de la sala donde empieza la partida (capacidad 003, de los datos generales) | 0 extra |
+| `obtener_llave_salida(id)` | Id de la llave de salida, o `None` si los datos generales no la traen (capacidad 003) | 0 extra |
 | `presupuesto_solicitudes(id)` | Máximo de solicitudes permitido | 0 extra |
 | `total_salas(id)` | Cantidad de salas | 1 (la primera vez) |
 | `construir_sala(id, n)` | `SalaDTO` de una sala (nueva cada vez) | 0 si hubo `precargar` |
 | `construir_salas(id, [n])` | Varias `SalaDTO` en lote | las mínimas |
 | `construir_todas(id)` | Todas las salas de la cripta | las mínimas |
 | `precargar(id, [n]=None)` | Trae todo (o esas salas) de golpe y lo deja en disco | las mínimas |
+| `esqueleto(id)` | `MapaDTO` con el esqueleto completo, el costo de cada salida, el estado inicial de la puerta y, desde la capacidad 003, la llave que la abre (`AristaMapaDTO.llave`); `obtener_mapa(id)` devuelve lo mismo (capacidad 009) | 0 extra (usa el esqueleto ya descargado) |
+| `ubicacion_llaves(id)` | `UbicacionLlavesDTO` (listas paralelas `ids`, `salas`, `enemigos`) con la ubicación de las llaves, validada; se memoriza por sesión (ver §7.1) | 1 la primera vez sin llaves guardadas; 0 si están guardadas con la misma versión o ya se pidió en la sesión |
 | `solicitudes_realizadas` | Contador de solicitudes de red (propiedad) | |
 
 Cómo arma una `SalaDTO`: toma el esqueleto (`nombre`, `salidas` en letras N/S/E/O) y el contenido ya
 resuelto. Las salidas van en un `deque(maxlen=4)` con el orden N, S, E, O, solo con las que existen, con
 la dirección como `"norte"`, `"sur"`, `"este"`, `"oeste"` y los campos `cerrada`, `llave` y
 `cierre_automatico` si la API los trae.
+
+### 7.1 Ubicación de las llaves (capacidad 009)
+
+`ubicacion_llaves(id)` calcula lo que queda del presupuesto (`presupuesto_solicitudes(id) - solicitudes_realizadas`) y
+pide `cliente.obtener_llaves(id, solo_guardadas, limite_solicitudes=restante)`, con `solo_guardadas` en `True` si no
+queda presupuesto. Después valida la lista contra el esqueleto (`adaptadores/llaves.py`) y la memoriza para la sesión.
+
+- **Cada cliente**: el persistente devuelve lo guardado si la versión coincide; si no, consulta, valida y guarda solo
+  si es válida. El offline devuelve lo guardado o lanza `ErrorOffline("Faltan las llaves de la cripta X. Juega una vez
+  con conexión.")`. El HTTP siempre consulta.
+- **Fallos**: `ErrorOffline`, `ErrorSinConexion`, los `RuntimeError` del HTTP y `LlavesInvalidas` se entregan como
+  `LlavesNoDisponibles("No se pudieron obtener las llaves de la cripta X: <motivo>. La verificación de resolubilidad no
+  está disponible.")`. Un `LlavesNoDisponibles` que ya viene del cliente pasa tal cual. Tras un fallo no se memoriza
+  nada: la siguiente llamada vuelve a intentar.
+- **Aviso en la partida (FR-313)**: `EstadoJuegoLogica.iniciarJuego` llama a `obtenerLlaves()`. Si falla, `llaves`
+  queda en `None`, `avisoLlaves` guarda el mensaje y la partida sigue. `EstadoJuegoServicio.avisoLlaves()` lo entrega
+  y `ControladorJuego` lo muestra como `AVISO: …` justo después de iniciar una partida nueva (no al cargar ni en
+  `--replay`).
+- **Aviso sin presupuesto (T055)**: cuando no queda presupuesto y no hay llaves guardadas, el `LlavesNoDisponibles` del
+  cliente se vuelve a lanzar con la misma forma que los demás fallos: nombra la cripta una sola vez (no la repite si el
+  motivo ya la nombra), da el motivo sin punto final repetido y termina con «La verificación de resolubilidad no está
+  disponible.».
+- **Reproducción (T058)**: `repetirPartida` llama a `iniciarJuego(cripta, semilla, pedir_llaves=False)`, así que
+  `--replay` no consulta las llaves ni emite el aviso; si después hacen falta, se piden bajo demanda con
+  `obtenerLlaves()`. Lo mismo vale para `--hasta`, que todavía no existe en `main.py` (capacidad 007).
+- **Partida cargada (FR-325)**: restaurar una partida deja `llaves` y `avisoLlaves` en `None` sin pedir nada. Las
+  llaves se piden la primera vez que hacen falta, con `obtenerLlaves()`. Ni las llaves ni el aviso se guardan en el
+  archivo de partida.
+
+### 7.2 Verificación de resolubilidad (capacidad 003)
+
+Decide, antes de jugar, si la cripta se puede completar: llegar a la sala de salida con la llave de salida obtenible,
+abriendo puertas solo con llaves que se puedan conseguir antes. Especificación, plan y mediciones en
+`specs/003-verificacion-resolubilidad/`. **No hace solicitudes nuevas**: usa el esqueleto ya descargado, los datos
+generales y la ubicación de llaves de la 009 (§7.1). Nunca pide el contenido de las salas.
+
+**La llave de cada puerta en el mapa.** `AristaMapaDTO` (`DTO/MapaDTO.py`) y `AristaCripta` (`Logica/MapaCripta.py`)
+tienen un último campo `llave: str | None = None`, con el id de catálogo de la llave que abre la puerta de esa salida,
+tal como lo publica la API en la salida. Es `None` si la salida no tiene puerta o la puerta no tiene llave.
+`ServicioCripta.esqueleto()` la copia, y `--offline` y `FuenteSoloLocal` la heredan. Quien construye una arista con
+cuatro argumentos sigue funcionando.
+
+```python
+AristaMapaDTO(direccion, destino, costo, cerrada_inicial=False, llave=None)
+AristaCripta(origen, direccion, destino, costo, cerrada_inicial, llave=None)
+```
+
+**Contrato del modelo.** `FuenteCripta` (`Logica/FuenteCripta.py`) gana `obtener_sala_inicial(cripta_id) -> int` y
+`obtener_llave_salida(cripta_id) -> str | None`, junto a `obtener_sala_salida`. Las implementan `ServicioCripta` (§7)
+y `FuenteSoloLocal` (§8.6), las dos con 0 solicitudes extra.
+
+**La operación.**
+
+```python
+from Logica.VerificacionResolubilidad import verificar, verificar_resolubilidad, CriptaNoResoluble
+from Logica.ReporteVerificacion import lineas_reporte, aviso_forzado
+
+resultado = verificar(fuente, "cripta-04")                # fuente: cualquier FuenteCripta
+resultado = verificar(fuente, "cripta-04", llaves=llaves)  # reutiliza las llaves ya pedidas (no las vuelve a pedir)
+resultado = servicio_juego.verificar("cripta-04")          # EstadoJuegoServicio.verificar(cripta_id, offline=None)
+for linea in lineas_reporte(resultado):
+    print(linea)
+codigo = resultado.codigo_salida()                         # 0, 1 o 2
+```
+
+| Función o método | Firma | Qué hace |
+|---|---|---|
+| `verificar` (Logica) | `verificar(fuente, cripta_id: str, llaves: UbicacionLlavesDTO \| None = None) -> ResultadoVerificacion` | Junta el mapa, la sala inicial, la sala de salida, la llave de salida y las llaves desde la fuente, y llama a la función pura. **Nunca lanza por falta de datos**: `LlavesNoDisponibles`, `DatoLocalFaltante`, `RuntimeError` y `OSError` salen como `resoluble=None` con `motivo_error`; también unos datos generales sin `sala_inicial` o sin `sala_salida` (`motivo_error="Datos inválidos en la cripta X: faltan los datos generales «sala_inicial»."`). Una cripta inexistente da `motivo_error="La cripta X no existe."`; con `--offline`, también una cripta que no está guardada completa |
+| `verificar_resolubilidad` (Logica) | `verificar_resolubilidad(mapa: MapaCripta, sala_inicial: int, sala_salida: int, llave_salida: str \| None, llaves: UbicacionLlavesDTO, cripta_id: str = "") -> ResultadoVerificacion` | La función pura: sin E/S ni solicitudes, mismo resultado para los mismos datos. Un solo recorrido incremental por oleadas, O(S + E + L log L + (L + E) log K) |
+| `EstadoJuegoServicio.verificar` | `verificar(cripta_id: str, offline: bool \| None = None) -> ResultadoVerificacion` | La misma operación sobre la fuente del servicio. No inicia partida, no abre log ni crea la vista |
+| `lineas_reporte` | `lineas_reporte(resultado: ResultadoVerificacion) -> list[str]` | El texto del reporte (`Logica/ReporteVerificacion.py`). La primera línea es `Verificación de la cripta X: RESOLUBLE.`, `NO RESOLUBLE.` o `NO SE PUDO VERIFICAR.`. Resoluble: el orden de llaves con sala, enemigo y la marca «(llave de salida)». No resoluble: motivos, puertas bloqueadas, salas alcanzables y cantidad de no alcanzables. Error: una segunda línea con `motivo_error`. Dos resultados iguales dan el mismo texto carácter por carácter |
+| `aviso_forzado` | `aviso_forzado(resultado: ResultadoVerificacion) -> str` | El aviso de una línea para una partida forzada: `AVISO: la cripta X no es resoluble (<primera causa>); la partida se inicia porque se usó --forzar.`. Lanza `ValueError` si el resultado no es no resoluble |
+
+**El resultado** (`DTO/ResultadoVerificacionDTO.py`, dataclasses con listas comunes):
+
+| Clase | Campos |
+|---|---|
+| `ResultadoVerificacion` | `cripta_id: str`; `resoluble: bool \| None` (`None` = error de datos); `orden: list[PasoLlaveDTO]` (solo si resoluble; la llave de salida exactamente una vez); `salas_alcanzables: list[int]` (ids crecientes); `salas_no_alcanzables: int`; `bloqueos: list[BloqueoDTO]` y `causas: list[str]` (solo si no resoluble); `llave_salida: str \| None`; `sala_salida: int \| None`; `motivo_error: str \| None` (solo si `resoluble is None`). Método `codigo_salida() -> int` |
+| `PasoLlaveDTO` | `llave: str`; `sala: int` (sala del suelo o sala inicial del enemigo que la suelta); `enemigo: str \| None = None` (instancia del enemigo, o `None` si está en el suelo; con suelo y enemigo en la misma sala se informa el suelo y, entre enemigos, la menor instancia) |
+| `BloqueoDTO` | `sala_origen: int` (alcanzable); `direccion: str`; `sala_destino: int` (no alcanzable); `llave: str \| None`; `salas_de_la_llave: list[int]` (crecientes, sin repetir; vacía si la llave no existe); `tipo: str` |
+
+Tipos de bloqueo (constantes del mismo módulo): `SIN_LLAVE` (puerta cerrada sin llave asignada), `LLAVE_INEXISTENTE`
+(ninguna ubicación tiene esa llave), `CICLO` (la llave está en una sala a la que se llegaría abriendo todas las
+puertas), `LLAVE_SIN_CAMINO` (ninguna ubicación tiene camino desde la sala inicial, ni abriendo todas las puertas).
+Causas, en el orden fijo `CAUSAS_EN_ORDEN`: `LLAVE_SALIDA_INEXISTENTE`, `SALIDA_SIN_CAMINO`, `SALIDA_BLOQUEADA`,
+`LLAVE_SALIDA_INALCANZABLE`.
+
+**Códigos de salida de `--verificar`** (`codigo_salida()`): **0** resoluble, **1** no resoluble, **2** error de datos
+(no se pudo verificar; nunca se inventa un resultado). Conectar `--verificar` y `--forzar` a la línea de comandos y
+mostrar el reporte y los avisos es de la capacidad de Fernanda, sobre esta interfaz.
+
+**Inicio de partida con verificación.**
+
+```python
+EstadoJuegoLogica.iniciarJuego(cripta, semilla=None, pedir_llaves=True, forzar=False)
+EstadoJuegoServicio.iniciarJuego(cripta, semilla=None, offline=None, nombre_log=None, forzar=False)
+EstadoJuegoServicio.avisoResolubilidad() -> str | None
+```
+
+Una partida nueva pide las llaves (`obtenerLlaves()`) y, con ellas, verifica con la misma operación que `--verificar`,
+sin volver a pedir las llaves:
+
+| Situación | Qué pasa |
+|---|---|
+| Sin llaves (FR-313) | No verifica; queda el aviso de la 009 en `avisoLlaves` y la partida sigue |
+| Resoluble | Inicia sin aviso (con o sin `forzar`) |
+| No resoluble, sin `forzar` | `CriptaNoResoluble(resultado)` **antes** de marcar la partida como iniciada: no se abre el log ni se escribe ninguna acción. El mensaje es el reporte |
+| No resoluble, con `forzar` | Inicia; `avisoResolubilidad` = `aviso_forzado(resultado)`, que se muestra solo al iniciar |
+| Error de datos (por ejemplo, la sala de salida no existe o falta en los datos generales) | Inicia; `avisoResolubilidad` = `motivo_error` + « La verificación de resolubilidad no está disponible.». Excepción: si los datos generales no traen `sala_inicial`, la partida no llega a verificar, porque `crear_jugador` (Parte I) falla antes al ubicar al jugador (límite conocido, fuera de la 003) |
+| `pedir_llaves=False` (`--replay`) o partida cargada | No verifica; `resultadoVerificacion` y `avisoResolubilidad` quedan en `None` |
+
+`EstadoJuegoLogica.resultadoVerificacion` guarda el `ResultadoVerificacion` del inicio, o `None`.
+`EstadoJuegoServicio.avisoResolubilidad()` devuelve el aviso, o `None` si no hay partida o no hay aviso; solo lee. Ni
+el resultado ni el aviso entran al log ni al archivo de partida.
 
 ---
 
@@ -291,7 +412,7 @@ Solo guarda y lee; no habla con la red. Organización de la carpeta (`datos_crip
 datos_cripta/
     criptas.bin            clave "lista"
     catalogo.bin           clave "version" + una clave "ficha:<id>" por ficha
-    cripta_<id>.bin        "version" + "datos" + "salas" + "contenido:<n>" por sala
+    cripta_<id>.bin        "version" + "datos" + "salas" + "contenido:<n>" por sala + "llaves"
 ```
 
 Cada archivo del catálogo y de las criptas recuerda la **versión** con la que se descargó:
@@ -302,6 +423,10 @@ Cada archivo del catálogo y de las criptas recuerda la **versión** con la que 
 - Los ids de cripta forman parte del nombre del archivo, por eso se rechazan los peligrosos (`..`, `/`, `\`, `:`,
   etc.) con `ValueError`.
 - `cripta_completa(id, numeros)` dice si hay en disco todo lo necesario para jugar esa cripta sin red.
+- `guardar_llaves(id, llaves)` / `leer_llaves(id)` (capacidad 009): la clave `llaves` guarda la lista cruda ya
+  validada, en el mismo archivo de la cripta, así que se invalida junto con lo demás cuando cambia la versión.
+  `leer_llaves` devuelve `None` si la clave no está (nunca se pidió, o el archivo es de la Parte I) y `[]` si la
+  cripta no tiene llaves.
 
 ### 8.3 `ClientePersistente`: disco primero, red solo si falta
 
@@ -346,6 +471,41 @@ crear_servicio(offline=False, cache_size=25, carpeta="datos_cripta", url=URL_API
 - Sin conexión: `ServicioCripta(ClienteOffline(AlmacenDisco(carpeta)), CacheLRU(n))`.
 - `cache_size < 1` lanza `ValueError`. `cliente_http` solo sirve para pruebas (inyectar uno falso).
 
+### 8.6 `FuenteSoloLocal` y `crear_fuente_solo_local` (capacidad 009)
+
+```python
+crear_fuente_solo_local(carpeta="datos_cripta", version_vigente=None, version_catalogo_vigente=None)
+```
+
+Arma `ServicioCripta(ClienteOffline(AlmacenDisco(carpeta)), CacheLRU(TAMANO_CACHE))` y lo envuelve en
+`FuenteSoloLocal` (`adaptadores/fuente_solo_local.py`). La usa la consulta histórica de la capacidad 004. Lee solo de
+disco, **no hace solicitudes** y **no modifica nada** de lo guardado: nunca llama a `validar_cripta` ni a ningún
+`guardar_*`. No usa ni crea el cliente de red compartido. Con `version_vigente` o `version_catalogo_vigente` en `None`
+sirve la versión guardada.
+
+| Operación | Qué hace |
+|---|---|
+| `esqueleto(id)`, `obtener_mapa(id)` | El esqueleto (`obtener_mapa` es lo mismo) |
+| `construir_sala(id, n)` | La sala `n`; si su contenido no está en disco, `DatoLocalFaltante("Falta en disco sala n de la cripta X")` |
+| `ubicacion_llaves(id)`, `datos_cripta(id)`, `crear_jugador(id)`, `version_cripta(id)`, `total_salas(id)`, `obtener_sala_salida(id)` | Delegan en el servicio |
+| `obtener_sala_inicial(id)`, `obtener_llave_salida(id)` | Capacidad 003: delegan en el servicio (datos generales guardados, sin solicitudes) |
+| `existe_cripta(id)` | Solo existencia, **sin comparar versión**: mira la lista de criptas guardada. Sin lista en disco lanza `DatoLocalFaltante` |
+| `version_catalogo()` | La versión guardada del catálogo; distinta de `version_catalogo_vigente`, o sin versión guardada, lanza `DatoLocalFaltante` nombrando las dos |
+| `objetos_que_suelta(enemigo)` | Comprueba la versión de la última cripta consultada por esta fuente (si no hay ninguna, `DatoLocalFaltante`); una ficha ausente sale como `DatoLocalFaltante` con su id y la cripta |
+| `fijar_fichas_en_uso(ids)` | Delega en el servicio: solo toca la caché en memoria |
+| `precargar_vecinas(id, …)` | No hace nada y devuelve 0 |
+| `reporte(id)` | El reporte del servicio: 0 solicitudes |
+
+Antes de cada operación que recibe una cripta (salvo `existe_cripta`) se compara la versión guardada con
+`version_vigente`. Si no coincide: `DatoLocalFaltante("La cripta X está guardada con la versión v1; se necesita v2")`.
+Si no hay versión guardada: `DatoLocalFaltante("La cripta X no tiene versión guardada en disco (guardada: ninguna);
+se necesita …")`. `ErrorOffline` y `LlavesNoDisponibles` del interior salen como `DatoLocalFaltante("Falta en disco
+<dato> de la cripta X: <motivo>")`, con la excepción original como causa. Desde T056, una cripta que no está en la
+lista de criptas guardada (el `ValueError("La cripta 'X' no existe")` del servicio) sale como
+`DatoLocalFaltante("La cripta X no está en la lista de criptas guardada en disco")`; los demás `ValueError` no se
+convierten, y `existe_cripta` sigue devolviendo `False` para esa cripta. `listar_criptas` y `obtener_id_cripta` no se
+exponen.
+
 ---
 
 ## 9. Presupuesto de solicitudes (§5.1)
@@ -355,7 +515,7 @@ Límite: **9 por cripta**.
 | Forma de cargar | Solicitudes (cripta de 6 salas) |
 |---|---|
 | Sala por sala, sin persistencia | 14 (medido con la API real). **Se pasa del límite** |
-| `precargar` en la primera partida | 6 (medido con la API falsa) |
+| `precargar` en la primera partida | 7 (medido con la API falsa): las 6 de antes más la consulta de llaves de la capacidad 009. Lo comprueba `test_llaves_presupuesto` (`PrimeraPartida`): «Solicitudes a la API: 7 de 9» |
 | `precargar`, partidas siguientes | 3 (medido con la API falsa) |
 | Modo offline | 0 |
 
@@ -373,6 +533,7 @@ Pendiente: confirmar con la API real la cuenta de `precargar` y que `datos["vers
 | `RuntimeError` | `cliente_http` | Código HTTP inesperado, o 429 repetido más de 5 veces | Mostrar el mensaje |
 | `ValueError` | varios | Cripta o sala inexistente, id de archivo no válido, `cache_size < 1`, clase de objeto desconocida | Es un error de uso o de datos |
 | `ErrorArchivo` | `Archivo_indexado` | Archivo dañado | `AlmacenDisco` lo trata como "no hay nada guardado" y lo vuelve a pedir |
+| `CriptaNoResoluble` (`RuntimeError`) | `Logica/VerificacionResolubilidad.py`, lanzada por `EstadoJuegoLogica.iniciarJuego` | Partida nueva sin `forzar` en una cripta no resoluble (capacidad 003, FR-339) | La partida no inicia y no hay log. Mostrar `str(error)` (es el reporte); `error.resultado` trae el `ResultadoVerificacion`. Para jugar igual, `iniciarJuego(..., forzar=True)` (§7.2) |
 
 ---
 
@@ -491,3 +652,19 @@ apropiada hacia varios miles de fichas (cientos de µs por consulta); entonces c
 **Recuperar una ficha liberada desde disco:** 0.03 ms con 25 fichas, 0.09 ms con 200 y 0.37 ms con 1000, contra
 ~400 ms de una solicitud de red. **Guardar 10 fichas** (reescribe el archivo completo): 1.7 a 2.9 ms.
 **Planear la vecindad** en una cripta de 1000 salas: 25 µs (1 paso) a 59 µs (2 pasos); si no falta nada, 38 µs.
+
+---
+
+## 15. Consulta histórica (capacidad 004: `historia <t>` e `historia #k`)
+
+`EstadoJuegoServicio.consultarHistoria(instante=None, accion=None) -> ResumenEstadoDTO`
+
+- Exactamente uno de los dos argumentos. `instante=t` es el estado en el instante virtual `t` (después de todos los eventos con tiempo `<= t`; si el jugador tenía que decidir en `t`, justo antes de esa decisión). `accion=k` es el estado justo antes de la acción `k` de la línea de tiempo vigente (`k = 1` es el inicio; `k = N + 1`, con `N` acciones vigentes, es el estado actual).
+- **No es una acción**: no consume tiempo, no entra al log ni a la bitácora, no toca el azar, el historial del pergamino ni la red. Se puede pedir con la partida en curso o ya terminada.
+- **Errores** (`ValueError`): partida no iniciada; faltan o sobran argumentos; valor `bool` o no entero; `instante < 0`; `accion < 1`; `instante` mayor que el reloj actual ("El instante N aún no ha ocurrido (reloj actual: T)."); `accion > N + 1` ("La acción #N aún no ha ocurrido (acciones vigentes: M).").
+- **`ResumenEstadoDTO`** (`DTO/ResumenEstadoDTO.py`): `instante`, `acciones_jugador`, `id_sala_jugador`, `vida_jugador`, `ataque_jugador`, `defensa_jugador`, `velocidad_jugador`, `inventario_llaves`, `inventario_objetos`, `efectos_activos`, `enemigos_sala` (`(id, nombre, vida)` ordenados por id, solo vivos), `partida_terminada`, `motivo_terminacion` y `mapa_conocido`. `mapa_conocido` es `None` hasta que se integre la capacidad 002 (niebla de guerra); el gancho está en `EstadoJuegoLogica._extraerResumenEstadoActual`.
+- **Cómo se calcula**: se busca por bisección (escrita a mano) el último punto de control con `acciones_linea_tiempo <= k - 1` o `instante_reloj <= t`, se hidrata una instancia aislada de `EstadoJuegoLogica` y se reproduce el tramo de log hasta el punto de control siguiente. El log no se trunca con el pergamino (conserva las acciones revertidas y el uso del pergamino, que no restaura el azar), así que una pasada previa con una pila local decide cuáles acciones siguen vigentes y la reproducción es fiel. El singleton `RetrocesoLogica` se guarda y se restituye en `try/finally`.
+- **Casos de borde**: si la última acción termina la partida, `historia <t>` en ese instante muestra el estado final y `historia #N` el estado previo. Las acciones revertidas por un pergamino no aparecen; un instante que solo existió en la parte revertida es futuro y se rechaza.
+- **Formato de partida**: sin cambios (v7 / estado 4). La línea de tiempo viaja en los puntos de control y en el log ya guardados.
+- **Para quien amplíe el estado** (por ejemplo la niebla de guerra): lo que se agregue al estado del juego debe entrar en `EstadoGuardadoLogica` y, por tanto, en los puntos de control; su lógica corre dentro de la instancia aislada, así que no puede tocar la fuente de datos ni estado global fuera de ella y debe ser determinista.
+- Pruebas: `test_historia_*.py` en la raíz; medición: `python main.py --bench historia`.
