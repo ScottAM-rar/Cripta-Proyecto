@@ -119,6 +119,15 @@ class EstadoJuegoServicio:
         inventario = self._estadoJuegoLogica.obtenerJugador().inventario
         return None if inventario.actual is None else inventario.mostrar_objeto_actual()
 
+    def mapaConocido(self):
+        """Mapa conocido del jugador (MapaConocidoDTO): solo salas exploradas con sus salidas; las avistadas, como destino sin
+        nombre. Consultarlo no es una acción: no avanza el reloj, no entra al historial del pergamino ni al log (FR-218)."""
+        return self._estadoJuegoLogica.instantaneaMapaConocido()
+
+    def vistaSalaActual(self):
+        """La sala actual en formato de conocimiento (SalaConocidaDTO), para mostrar sus salidas sin revelar lo no explorado."""
+        return self._estadoJuegoLogica.vistaSalaActual()
+
     def getJudador(self):
         return self._estadoJuegoLogica.obtenerJugador()
 
