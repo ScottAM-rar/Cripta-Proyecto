@@ -9,8 +9,11 @@
   F. Registro           elegida: dos marcas + pasos normales        | descartada: repetir el log sin marcas (diferencia)
   G. Paso, peor caso    FR-250: mediana y máximo por paso <= 5 ms
   H. Equivalencia       reutilizar el campo decide igual que recalcularlo desde cero (principio III)
+  I. Mapa completo      FR-250/FR-251: el paso con TODAS las salas exploradas (enunciado §6.1), mediana y máximo <= 5 ms
 
-El límite de 5 ms (G) es duro por tiempo porque lo exige la especificación, en las criptas de 400 y 2 000 salas; los demás
+El límite de 5 ms (G) es duro por tiempo porque lo exige la especificación, en las criptas de 400 y 2 000 salas con el 10 %
+explorado; con el mapa conocido COMPLETO (I, el criterio del enunciado §6.1) es duro en 400 salas (la mayor cripta publicada
+tiene 300) y se informa en 2 000 y 20 000, donde el recálculo tras una puerta cerrada supera 5 ms. Los demás
 criterios son por CONTEO (lección de la 005). En 20 000 salas (2 000 exploradas) el paso sin captura cumple, pero dos casos
 superan 5 ms y se informan sin ocultarlos: el paso en que se captura un punto de control (capacidad 007, cada K acciones;
 copia el estado completo y crece con el tamaño de la cripta) y el recálculo desde cero tras una puerta cerrada, que no admite
@@ -51,6 +54,7 @@ SECCION_E = "Ir a (E): pergamino, un nodo por paso frente a una acción por viaj
 SECCION_F = "Ir a (F): registro del viaje, marcas y repetición"
 SECCION_G = "Ir a (G): un paso en el peor caso (FR-250, límite 5 ms)"
 SECCION_H = "Ir a (H): equivalencia con recalcular desde cero (principio III)"
+SECCION_I = "Ir a (I): un paso con el mapa conocido completo (FR-250, enunciado §6.1, límite 5 ms)"
 
 TAMANOS = ((20, 20), (20, 100), (100, 200))          # 400, 2 000 y 20 000 salas: el mayor, 50 veces el menor
 LIMITE_MS = 5.0
@@ -489,6 +493,44 @@ def seccion_h(filas: list) -> bool:
     return cumple
 
 
+# ---------------------------------------------------------------- I. mapa conocido completo
+
+def seccion_i(filas: list) -> bool:
+    """El criterio del enunciado §6.1 es sobre el mapa conocido COMPLETO: aquí todas las salas están exploradas. Duro en 400
+    salas (más que la mayor cripta publicada, de 300); en 2 000 y 20 000 se informa sin ocultar lo que supera 5 ms."""
+    cumple = True
+    for (ancho, alto), repeticiones in zip(TAMANOS, (5, 3, 1)):
+        total = ancho * alto
+        for cerrada in (False, True):
+            etiqueta = "con una puerta cerrada en la ruta (recálculo sin cota)" if cerrada else "sin puertas cerradas"
+            por_paso = []
+            for repeticion in range(repeticiones):
+                logica, destino = _partida(ancho, alto, semilla=repeticion, antorcha=True, explorado=total)
+                viaje = _viaje(logica, destino)
+                if cerrada:
+                    ruta = _ruta_del_viaje(logica, destino)
+                    if len(ruta) > 3:
+                        _cerrar_lejos(logica, ruta[2], ruta[3])
+                tiempos, capturas = _recorrer(logica, viaje)
+                for indice in range(len(tiempos)):
+                    if not capturas[indice]:
+                        while len(por_paso) <= indice:
+                            por_paso.append([])
+                        por_paso[indice].append(tiempos[indice])
+            medianas = [_mediana(v) for v in por_paso if v]
+            todos = [x for v in por_paso for x in v]
+            mediana, maximo_por_paso, maximo = _mediana(todos), _maximo(medianas), _maximo(todos)
+            nota(filas, SECCION_I, f"{total} salas exploradas (100 %), {etiqueta}: mediana {texto(mediana * 1000)}; "
+                                   f"máximo de las medianas por paso {texto(maximo_por_paso * 1000)}; máximo absoluto {texto(maximo * 1000)}")
+            ok = maximo_por_paso <= LIMITE_MS
+            if total <= TAMANOS[0][0] * TAMANOS[0][1]:
+                cumple = verificar(filas, SECCION_I, f"{total} salas, mapa completo, {etiqueta}: el paso cumple <= {LIMITE_MS:g} ms", ok) and cumple
+            elif not ok:
+                nota(filas, SECCION_I, f"{total} salas, mapa completo, {etiqueta}: SUPERA {LIMITE_MS:g} ms (informativo, fuera del criterio duro de "
+                                       f"FR-251): recalcular el campo de las {total} salas conocidas cuesta más que el límite")
+    return cumple
+
+
 def ejecutar(filas: list) -> bool:
     with contextlib.redirect_stdout(salida_muda()):
         cumple = seccion_a(filas)
@@ -499,4 +541,5 @@ def ejecutar(filas: list) -> bool:
         cumple = seccion_f(filas) and cumple
         cumple = seccion_g(filas) and cumple
         cumple = seccion_h(filas) and cumple
+        cumple = seccion_i(filas) and cumple
     return cumple

@@ -20,10 +20,11 @@ El criterio de 5 ms de FR-250 es **duro por tiempo** (lo exige la especificació
 | F. Registro | Escribir `IR_A`/`FIN_IR_A` y repetir viajes de 10, 100 y 1 000 pasos | Repetir sin marcas | **Duro**: la diferencia es de 2 registros, constante en L |
 | G. **Paso, peor caso** | Un paso con antorcha encendida (la versión sube al entrar a salas nuevas), destino lejano, 10 % explorado, y un paso que descubre una puerta cerrada y recalcula sin cota. Los pasos que capturan un punto de control (007) se miden aparte | — | **Duro (FR-250) en 400 y 2 000 salas: el máximo de las medianas por paso ≤ 5 ms, también para el paso con captura y para el paso que recalcula tras una puerta cerrada.** En 20 000 salas (2 000 exploradas) el paso sin captura es duro; la captura (~8 ms) y el recálculo tras una puerta cerrada (~12 ms) superan 5 ms y se informan sin decidir el veredicto (ver `DECISIONES.md`). Pasos medidos con el recolector de basura apagado |
 | H. Equivalencia | Reutilizar el campo (políticas B y C) frente a recalcular desde cero en cada paso, sobre viajes con y sin antorcha, puertas que cambian y pergamino | — | 100 % de decisiones idénticas (constitución III) |
+| I. **Paso con el mapa conocido completo** | Un paso con antorcha encendida y **todas** las salas exploradas (criterio del enunciado §6.1), con y sin una puerta cerrada en la ruta, en 400, 2 000 y 20 000 salas | — | **Duro (FR-250, FR-251) en 400 salas: el máximo de las medianas por paso ≤ 5 ms**. En 2 000 y 20 000 salas se informa; lo que supera 5 ms se anota sin ocultarlo |
 
 ## Salida
 
-`bench/__init__.py` registra el bloque `("ir_a", ir_a.ejecutar)` y su criterio de salida: el código de retorno global es 1 si G supera 5 ms en los tamaños de criterio duro o si falla cualquier verificación de A a F o H. La salida imprime, igual que el bloque `mapa`: «Ir a (paso ≤ 5 ms y equivalencias): CUMPLE / NO CUMPLE».
+`bench/__init__.py` registra el bloque `("ir_a", ir_a.ejecutar)` y su criterio de salida: el código de retorno global es 1 si G supera 5 ms en los tamaños de criterio duro o si I supera 5 ms en 400 salas o si falla cualquier verificación de A a F, H o I. La salida imprime, igual que el bloque `mapa`: «Ir a (paso ≤ 5 ms y equivalencias): CUMPLE / NO CUMPLE».
 
 ## Se repiten en esta capacidad con la carga nueva
 

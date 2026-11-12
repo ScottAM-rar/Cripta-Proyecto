@@ -41,7 +41,7 @@ Comprueba: dos ejecuciones dan el mismo `partida.log`, con y sin contenido de sa
 python main.py --bench ir_a
 ```
 
-Esperado: sección G con mediana y máximo ≤ 5 ms por paso en 400 y 2 000 salas (criterio duro); en 20 000 salas se informan, sin decidir, el paso con captura de punto de control y el recálculo tras una puerta cerrada; secciones A a F y H con sus verificaciones en OK; cierre «Ir a (paso ≤ 5 ms y equivalencias): CUMPLE». Después: `python main.py --bench ciclo` (informativo; debe seguir bajo 20 ms).
+Esperado: sección G con mediana y máximo ≤ 5 ms por paso en 400 y 2 000 salas con el 10 % explorado, y sección I con lo mismo en 400 salas con el mapa completo (criterio duro; en 2 000 y 20 000 salas con el mapa completo se informa); en 20 000 salas se informan, sin decidir, el paso con captura de punto de control y el recálculo tras una puerta cerrada; secciones A a F, H e I con sus verificaciones en OK; cierre «Ir a (paso ≤ 5 ms y equivalencias): CUMPLE». Después: `python main.py --bench ciclo` (informativo; debe seguir bajo 20 ms).
 
 ## 5. Prueba manual en consola
 

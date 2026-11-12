@@ -33,11 +33,11 @@ Lo que **no** cambia: `BuscadorRutas`, `VistaMapaConocido`, `MapaConocido`, `Map
 
 **Tipo de proyecto**: aplicación de consola por capas (Controlador → Servicio → Lógica + adaptadores).
 
-**Objetivos de rendimiento** (FR-250, FR-251, constitución VII): un paso de «ir a» en **5 ms o menos**, medido con `--bench` en el peor caso (antorcha encendida, recálculo tras una puerta cerrada, criptas de 400 y 2 000 salas con el 10 % explorado; criterio duro). Con 20 000 salas se mide como informativo: el paso que captura un punto de control (007) y el recálculo desde cero tras una puerta cerrada superan 5 ms. El ciclo de eventos sigue bajo 20 ms.
+**Objetivos de rendimiento** (FR-250, FR-251, constitución VII): un paso de «ir a» en **5 ms o menos**, medido con `--bench` en el peor caso (antorcha encendida, recálculo tras una puerta cerrada, criptas de 400 y 2 000 salas con el 10 % explorado, y con el mapa conocido completo en 400 salas, el criterio del enunciado §6.1; criterio duro). Con 20 000 salas, y con el mapa completo en 2 000 y 20 000 salas, se mide como informativo: el paso que captura un punto de control (007) y el recálculo desde cero tras una puerta cerrada superan 5 ms. El ciclo de eventos sigue bajo 20 ms.
 
 **Restricciones**: sin `dict`/`set` como índice, sin `heapq`/`bisect`/`collections`/`networkx`; sin `sorted()` ni `list.sort()`. El modelo no importa red, disco ni vista. 0 solicitudes nuevas: la ruta sale del esqueleto que ya se descargó (FR-248).
 
-**Escala/alcance**: criptas sintéticas deterministas por semilla en tres tamaños (400, 2 000 y 20 000 salas), el mayor 50 veces el menor; el criterio duro rige en 400 y 2 000 salas.
+**Escala/alcance**: criptas sintéticas deterministas por semilla en tres tamaños (400, 2 000 y 20 000 salas), el mayor 50 veces el menor; el criterio duro rige en 400 y 2 000 salas con el 10 % explorado y en 400 salas con el mapa completo.
 
 ## Verificación de la constitución
 
