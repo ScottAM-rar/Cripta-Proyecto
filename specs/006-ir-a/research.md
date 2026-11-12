@@ -106,7 +106,7 @@ El contador `activaciones_enemigos` es un entero de ejecución que `_activarEnem
 
 **Decisión**: el log gana dos **marcas informativas**. Una orden aceptada escribe: (1) la marca `IR_A` con el destino, (2) un registro normal `MOVER_JUGADOR` por cada paso dado (los que el flujo normal ya escribe) y (3) la marca `FIN_IR_A` con el resultado, el motivo y la sala final. Un comando rechazado no escribe nada (FR-238). Las marcas llevan costo 0, no son eventos del reloj ni acciones, y las rutas que recorren el log las saltan igual que ya saltan o ejecutan los de cursor. Formato en [contracts/registro-viaje.md](contracts/registro-viaje.md).
 
-La reproducción **rehace el viaje porque repite sus pasos** (movimientos normales, deterministas) y **verifica las marcas**: tras `FIN_IR_A` comprueba que el jugador está en la sala final anotada; si no, falla con «La reproducción no es fiel».
+La reproducción **rehace el viaje porque repite sus pasos** (movimientos normales, deterministas) y **verifica las marcas**: tras `FIN_IR_A` comprueba que el jugador está en la sala final anotada; si no, falla con «La reproducción no es fiel». **Detalle (hallazgo C2 de `analyze`)**: en vivo el viaje llama a `ingresarEnSala` tras cada paso, incluido el último; en la repetición esa llamada solo ocurre antes del siguiente movimiento. Por eso, al procesar `FIN_IR_A`, la repetición llama a `ingresarEnSala` con la sala actual antes de comprobar la sala final, para que los enemigos dormidos de la sala de llegada queden activados igual que en vivo (caso B-N3).
 
 | Alternativa | Complejidad | Módulos | Veredicto |
 |---|---|---|---|
