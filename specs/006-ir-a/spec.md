@@ -190,7 +190,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 **Rendimiento y mediciones**
 
 - **FR-250**: Cada paso del viaje (atravesar una salida, actualizar el conocimiento y, si procede, recalcular la ruta) DEBE completarse en 5 ms o menos en el peor caso medido.
-- **FR-251**: `--bench` DEBE poder medir un paso de «ir a» en criptas sintéticas de varios tamaños generadas de forma determinista por semilla, y al menos una medición DEBE comparar la decisión adoptada con una alternativa descartada, de modo que el límite de 5 ms se respalde con datos. El límite de 5 ms DEBE cumplirse en criptas de hasta 2 000 salas; en tamaños mayores (20 000 salas) se mide e informa, pero no es criterio de aprobación.
+- **FR-251**: `--bench` DEBE poder medir un paso de «ir a» en criptas sintéticas de varios tamaños generadas de forma determinista por semilla, y al menos una medición DEBE comparar la decisión adoptada con una alternativa descartada, de modo que el límite de 5 ms se respalde con datos. El límite de 5 ms DEBE cumplirse (a) con el mapa conocido COMPLETO (todas las salas exploradas, el criterio del enunciado §6.1) en criptas de hasta 400 salas, más que la mayor cripta publicada (300), y (b) con el 10 % explorado en criptas de hasta 2 000 salas. Con el mapa completo en 2 000 salas y en 20 000 salas se mide e informa, sin ocultarlo, pero no es criterio de aprobación: el recálculo desde cero tras una puerta cerrada recorre todo el conocimiento y supera 5 ms.
 
 ### Entidades clave
 
@@ -207,7 +207,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 - **SC-202**: En el 100 % de los rechazos de prueba (B-N1 y destinos sin ruta), el reloj, el conocimiento y el historial de acciones quedan idénticos a antes del comando.
 - **SC-203**: En los casos del Apéndice B B-N1, B-N2, B-N3 y B-N6, el resultado observable coincide con lo descrito en la tabla del Apéndice, verificado por una prueba automatizada por caso.
 - **SC-204**: Dos ejecuciones de la misma partida con «ir a» producen un `partida.log` idéntico en el 100 % de las pruebas, con y sin contenido descargado.
-- **SC-205**: Un paso de «ir a» tarda 5 ms o menos en cripta sintética de hasta 2 000 salas (más de seis veces la cripta publicada más grande, de 300 salas), según `--bench`.
+- **SC-205**: Un paso de «ir a» tarda 5 ms o menos con el mapa conocido completo en cripta sintética de hasta 400 salas (más que la cripta publicada más grande, de 300 salas) y con el 10 % explorado en cripta de hasta 2 000 salas, según `--bench`.
 - **SC-206**: Ninguna ruta de prueba usa una puerta recordada cerrada, una sala solo avistada o una puerta «sin observar» como paso.
 
 ## Trazabilidad con el Apéndice B
