@@ -185,7 +185,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 
 - **FR-247**: Misma cripta, misma semilla y mismas acciones DEBEN producir el mismo viaje: la misma secuencia de salas, el mismo tiempo, el mismo mapa conocido y el mismo registro, con independencia de si la partida se guardó y cargó por el camino.
 - **FR-248**: El cálculo de la ruta NO DEBE depender de qué contenido de sala ya fue descargado ni requerir descargar contenido no necesario; solo usa el mapa conocido.
-- **FR-252**: El registro de la partida DEBE contener, por cada «ir a» ejecutado, una entrada con la orden y su destino y, bajo ella, una línea por cada paso dado y una línea final con el resultado (llegó, o el motivo de la detención o del rechazo). La reproducción DEBE rehacer el viaje a partir de la orden.
+- **FR-252**: El registro de la partida DEBE contener, por cada «ir a» ejecutado, una entrada con la orden y su destino y, bajo ella, una línea por cada paso dado y una línea final con el resultado (llegó, o el motivo de la detención o del rechazo). La reproducción DEBE reproducir el mismo viaje paso a paso y comprobar que su resultado coincide con el registrado.
 
 **Rendimiento y mediciones**
 
