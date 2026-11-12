@@ -2,7 +2,7 @@
 
 **Rama**: `006-ir-a` | **Fecha**: 2026-11-11 | **Especificación**: [spec.md](spec.md)
 
-**Entrada**: `specs/006-ir-a/spec.md` (FR-231 a FR-252, con las 3 clarificaciones de la sesión 2026-11-11)
+**Entrada**: `specs/006-ir-a/spec.md` (FR-231 a FR-252, con las 5 clarificaciones de la sesión 2026-11-11)
 
 ## Resumen
 
@@ -12,8 +12,8 @@ El enfoque técnico, justificado en [research.md](research.md), tiene seis pieza
 
 1. Un módulo nuevo `Logica/ViajeLogica.py` que **orquesta** pasos del jugador. No tiene reglas de movimiento propias: construye el mismo evento `MOVER_JUGADOR` que el controlador y lo entrega a `accionJugador`.
 2. **Ruta con `BuscadorRutas` sobre `VistaMapaConocido`** (contrato [vista-buscador](../002-niebla-de-guerra/contracts/vista-buscador.md)), sin modificar ninguno de los dos. `distancias_hacia(destino)` más `siguiente_paso(sala)` dan exactamente el desempate de FR-234 (se demuestra en research D1).
-3. **Recálculo solo cuando cambia `version_conocimiento`** (equivalente a recalcular en cada paso, se demuestra en research D3). Una puerta recordada abierta que resulta cerrada actualiza el conocimiento al entrar a la sala (002, FR-207); el recálculo no encuentra ruta y el viaje se detiene sin dar el paso.
-4. **Detención por comprobaciones tras cada paso**: muerte, llegada, daño, enemigos dormidos activados y enemigo activo en la sala. El motivo viaja en un resultado con datos simples.
+3. **Recálculo solo cuando cambia `version_conocimiento`** (equivalente a recalcular en cada paso, se demuestra en research D3) y **con cota de costo** (el parámetro `limite` de `BuscadorRutas`, adoptado tras medir: sin cota, un recálculo cerca del destino costaba 10 a 15 ms en 20 000 salas). Una puerta recordada abierta que resulta cerrada actualiza el conocimiento al entrar a la sala (002, FR-207); el recálculo no encuentra ruta y el viaje se detiene sin dar el paso.
+4. **Detención por comprobaciones tras cada paso**: en este orden, muerte, llegada, enemigos dormidos activados, enemigo activo en la sala y daño. El motivo viaja en un resultado con datos simples.
 5. **Pergamino**: cada paso es una acción deshacible; `accionJugador` avisa al viaje en curso cuando se usa el pergamino y el viaje se cancela.
 6. **Registro**: dos marcas informativas en el log (`IR_A` con el destino y `FIN_IR_A` con el resultado) alrededor de los pasos, que son registros normales de movimiento. La reproducción repite los pasos y verifica las marcas.
 
@@ -33,11 +33,11 @@ Lo que **no** cambia: `BuscadorRutas`, `VistaMapaConocido`, `MapaConocido`, `Map
 
 **Tipo de proyecto**: aplicación de consola por capas (Controlador → Servicio → Lógica + adaptadores).
 
-**Objetivos de rendimiento** (FR-250, FR-251, constitución VII): un paso de «ir a» en **5 ms o menos**, medido con `--bench` en el peor caso (antorcha encendida, recálculo en cada paso, cripta de 20 000 salas con el 10 % explorado). El ciclo de eventos sigue bajo 20 ms.
+**Objetivos de rendimiento** (FR-250, FR-251, constitución VII): un paso de «ir a» en **5 ms o menos**, medido con `--bench` en el peor caso (antorcha encendida, recálculo tras una puerta cerrada, criptas de 400 y 2 000 salas con el 10 % explorado; criterio duro). Con 20 000 salas se mide como informativo: el paso que captura un punto de control (007) y el recálculo desde cero tras una puerta cerrada superan 5 ms. El ciclo de eventos sigue bajo 20 ms.
 
 **Restricciones**: sin `dict`/`set` como índice, sin `heapq`/`bisect`/`collections`/`networkx`; sin `sorted()` ni `list.sort()`. El modelo no importa red, disco ni vista. 0 solicitudes nuevas: la ruta sale del esqueleto que ya se descargó (FR-248).
 
-**Escala/alcance**: criptas sintéticas deterministas por semilla en tres tamaños (400, 2 000 y 20 000 salas), el mayor 50 veces el menor.
+**Escala/alcance**: criptas sintéticas deterministas por semilla en tres tamaños (400, 2 000 y 20 000 salas), el mayor 50 veces el menor; el criterio duro rige en 400 y 2 000 salas.
 
 ## Verificación de la constitución
 

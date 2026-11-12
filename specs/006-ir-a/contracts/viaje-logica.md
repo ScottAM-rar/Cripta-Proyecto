@@ -32,8 +32,8 @@ Si pasa todo: escribe `IR_A`, guarda `version_vista` y queda `EN_CURSO` sin habe
 3. Si `costo(sala_actual)` es `None`: `DETENIDO(SIN_RUTA)`, escribe `FIN_IR_A`, **no da el paso**.
 4. `arista = siguiente_paso(sala_actual)` (desempate de FR-234).
 5. Construye `EventoDTO(costo de la salida, 0, jugador, "MOVER_JUGADOR", [sala_actual, dirección])` y llama `accionJugador`. Si el resultado no fue exitoso: `DETENIDO(MOVIMIENTO_RECHAZADO)` sin tiempo.
-6. Llama `ingresarEnSala(sala nueva)` (activa enemigos dormidos, §2.4), anota la sala en `recorrido`, sube `pasos`.
-7. Evalúa, en este orden, MUERTE → LLEGADA → DANO → ENEMIGOS_DORMIDOS → ENEMIGO_ACTIVO ([research.md](../research.md) D4). Si ninguna se cumple, sigue `EN_CURSO`.
+6. Llama `ingresarEnSala(sala nueva)` (lo que hace el controlador al empezar su turno; los enemigos dormidos ya se activaron dentro del movimiento, §2.4), anota la sala en `recorrido`, sube `pasos`.
+7. Evalúa, en este orden, MUERTE → LLEGADA → ENEMIGOS_DORMIDOS → ENEMIGO_ACTIVO → DANO ([research.md](../research.md) D4). Si la partida terminó antes de llegar al destino (por ejemplo, el jugador alcanzó la sala de salida), `DETENIDO(FIN_PARTIDA)`. Si ninguna se cumple, sigue `EN_CURSO`.
 8. Al terminar (cualquier motivo) escribe `FIN_IR_A`.
 
 Garantías:

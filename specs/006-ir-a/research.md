@@ -9,7 +9,7 @@ Cada decisión lista al menos dos alternativas con su complejidad, los módulos 
 1. **`BuscadorRutas` ya hace lo necesario** (`Logica/BuscadorRutas.py`): `distancias_hacia(destino, vista, limite)` es un Dijkstra desde el destino por aristas entrantes y `siguiente_paso(origen)` elige, entre las salidas con `costo(u,v) + costo(v) = costo(u)`, la de menor id de destino. Reinicia por época (O(1)), así que el trabajo es proporcional a la región alcanzada.
 2. **`VistaMapaConocido` cumple su contrato** (`Logica/MapaConocido.py`): `salidas`/`entrantes` vacías para salas no exploradas, `transitable` solo con origen y destino explorados y puerta recordada «abierta», y `version_conocimiento` que sube con todo cambio (también al deshacer).
 3. **Un movimiento normal es `accionJugador(EventoDTO "MOVER_JUGADOR")`** (`Logica/EstadoJuegoLogica.py`): el gestor mueve, carga la sala, llama a `MapaConocido.entrar(sala, antorcha)` (observa puertas y explora con antorcha, FR-204/FR-210), activa trampas, programa el turno y avanza el reloj hasta la próxima decisión, y registra la acción en el log.
-4. **La activación de enemigos dormidos NO ocurre dentro de `accionJugador`**: ocurre en `ingresarEnSala(sala)` cuando la sala es la del jugador, y el controlador la dispara al empezar cada turno con `servicio.obtenerSala(...)`. Por eso el viaje debe hacer esa misma llamada tras cada paso (D2, D4).
+4. **La activación de enemigos dormidos ocurre DENTRO del movimiento** (corregido durante la implementación): al mover, el gestor llama a `cargar_sala`, que es `ingresarEnSala(sala)` de la lógica, y esa llama a `_activarEnemigos` cuando la sala es la del jugador. Los enemigos despiertan en la misma acción del jugador y su primera acción puede ocurrir antes de la siguiente decisión, de modo que el daño que causen cae en el mismo paso. El controlador vuelve a llamar a `ingresarEnSala` al empezar cada turno (idempotente), y el viaje hace lo mismo tras cada paso.
 5. **El log es una lista de registros JSON** y varias rutas lo recorren registro por registro: repetición, repetición hasta un instante, y las pasadas 1 y 2 de los segmentos de puntos de control (`_repetirPartidaInterno`, `_planificarSegmento`, `_ejecutarPasada2`). Hoy solo conocen los registros de cursor de inventario (`TIPOS_CURSOR_INVENTARIO`) como excepción.
 6. **El pergamino se resuelve dentro de `accionJugador`** (`GestorEventos.es_uso_de_pergamino`); es el único punto desde el cual se puede avisar a un viaje en curso.
 
@@ -60,8 +60,8 @@ Cada decisión lista al menos dos alternativas con su complejidad, los módulos 
 | Alternativa | Complejidad por paso | Veredicto |
 |---|---|---|
 | A. Recalcular en cada paso | O((V+E) log V) de la región alcanzada | Descartada: es el patrón más caro y no cambia ninguna decisión (se mide para demostrarlo) |
-| **B. Recalcular solo si la versión cambió** (elegida) | O(g) si no cambió; recálculo completo si cambió | Elegida en principio |
-| C. B + `limite` = costo restante de la ruta vigente cuando la ruta aún es válida | Recálculo acotado a la bola de radio igual al costo restante | **Condicional**: se adopta solo si la medición del peor caso (antorcha, V grande) de B supera 5 ms. No modifica `BuscadorRutas` (usa su parámetro `limite`); la ruta vigente es válida si ninguna salida pendiente dejó de ser transitable, y solo entonces el límite es seguro (con puerta cerrada se recalcula sin límite) |
+| B. Recalcular solo si la versión cambió, sin cota | O(g) si no cambió; recálculo completo si cambió | Descartada tras medir: cerca del destino un recálculo costaba 10 a 15 ms en 20 000 salas |
+| **C. B + `limite` = costo restante de la ruta vigente cuando la ruta aún es válida** (elegida tras medir) | Recálculo acotado a la bola de radio igual al costo restante; sin cota si la ruta dejó de valer o es el primer cálculo | Adoptada en `ViajeLogica._calcular` (T042). Usa el parámetro `limite` que ya existe; `BuscadorRutas` no se modificó. `--bench ir_a` C y G: con cota el máximo del paso sin captura en 20 000 salas es 1,3 ms; H: decide igual que recalcular cada paso. Límite que queda: tras una puerta cerrada no hay cota y recalcular 2 000 salas exploradas cuesta ~12 ms (ver `DECISIONES.md`, 006, hallazgo 1) |
 
 **Medición** (sección C): número de recálculos y de salas fijadas (`salas_fijadas` del buscador) por viaje con A, B y C; tiempo del paso en el peor caso. Criterio duro por conteo: B recalcula 0 veces en un viaje sin cambios de conocimiento; **y** la decisión de B coincide con la de A en cada paso (sección H).
 
@@ -73,9 +73,9 @@ Cada decisión lista al menos dos alternativas con su complejidad, los módulos 
 |---|---|---|---|
 | 1 | La partida terminó (el jugador murió, FR-249c) | `MUERTE` | `fin` de la lógica |
 | 2 | La sala actual es el destino | `LLEGADA` (no es detención: el viaje termina bien) | comparación de ids; aunque haya enemigos dormidos, se activaron y el viaje terminó (Historia 4, escenario 2) |
-| 3 | La vida del jugador bajó respecto de antes del paso (FR-249b) | `DANO` | vida antes y después del paso |
-| 4 | Se activaron enemigos dormidos en este paso (FR-242, FR-243) | `ENEMIGOS_DORMIDOS` | contador `activaciones_enemigos` de la lógica antes y después de `ingresarEnSala` |
-| 5 | Hay un enemigo vivo y activo en la sala (FR-249a) | `ENEMIGO_ACTIVO` | recorrido de los enemigos de la sala actual |
+| 3 | Se activaron enemigos dormidos en este paso (FR-242, FR-243) | `ENEMIGOS_DORMIDOS` | contador `activaciones_enemigos` de la lógica antes y después del paso |
+| 4 | Hay un enemigo vivo y activo en la sala (FR-249a) | `ENEMIGO_ACTIVO` | recorrido de los enemigos de la sala actual |
+| 5 | La vida del jugador bajó respecto de antes del paso (FR-249b): trampas, veneno | `DANO` | vida antes y después del paso |
 | 6 | No hay ruta conocida desde la sala actual (D3) | `SIN_RUTA` | `costo(sala_actual)` es `None` tras recalcular |
 
 Cada motivo tiene un texto fijo para el jugador. Un viaje que se rechaza antes de empezar usa los motivos `DESTINO_INEXISTENTE`, `NO_EXPLORADO` y `SIN_RUTA_INICIAL` (FR-237). Un pergamino usa `PERGAMINO`.
@@ -106,7 +106,7 @@ El contador `activaciones_enemigos` es un entero de ejecución que `_activarEnem
 
 **Decisión**: el log gana dos **marcas informativas**. Una orden aceptada escribe: (1) la marca `IR_A` con el destino, (2) un registro normal `MOVER_JUGADOR` por cada paso dado (los que el flujo normal ya escribe) y (3) la marca `FIN_IR_A` con el resultado, el motivo y la sala final. Un comando rechazado no escribe nada (FR-238). Las marcas llevan costo 0, no son eventos del reloj ni acciones, y las rutas que recorren el log las saltan igual que ya saltan o ejecutan los de cursor. Formato en [contracts/registro-viaje.md](contracts/registro-viaje.md).
 
-La reproducción **rehace el viaje porque repite sus pasos** (movimientos normales, deterministas) y **verifica las marcas**: tras `FIN_IR_A` comprueba que el jugador está en la sala final anotada; si no, falla con «La reproducción no es fiel». **Detalle (hallazgo C2 de `analyze`)**: en vivo el viaje llama a `ingresarEnSala` tras cada paso, incluido el último; en la repetición esa llamada solo ocurre antes del siguiente movimiento. Por eso, al procesar `FIN_IR_A`, la repetición llama a `ingresarEnSala` con la sala actual antes de comprobar la sala final, para que los enemigos dormidos de la sala de llegada queden activados igual que en vivo (caso B-N3).
+La reproducción **rehace el viaje porque repite sus pasos** (movimientos normales, deterministas) y **verifica las marcas**: tras `FIN_IR_A` comprueba que el jugador está en la sala final anotada; si no, falla con «La reproducción no es fiel». **Detalle (hallazgo C2 de `analyze`, resuelto en la implementación)**: se temió que, tras el último paso, la repetición no activara a los enemigos dormidos de la sala de llegada. No ocurre: la activación sucede dentro del propio movimiento (`cargar_sala`), así que repetir el movimiento ya los activa, y `test_viaje_registro.py` lo comprueba con B-N3 (el estado repetido es idéntico). La repetición solo verifica la sala final de `FIN_IR_A` y vuelve a escribir las dos marcas en el log repetido.
 
 | Alternativa | Complejidad | Módulos | Veredicto |
 |---|---|---|---|

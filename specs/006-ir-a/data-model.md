@@ -43,6 +43,7 @@ Todo estado distinto de `EN_CURSO` es final: no se reanuda (supuesto del spec).
 | `DANO` | `DETENIDO` | FR-249b | «Recibiste daño.» |
 | `MUERTE` | `DETENIDO` | FR-249c | «Moriste durante el viaje.» |
 | `PERGAMINO` | `DETENIDO` | FR-245 | «El pergamino canceló el viaje.» |
+| `FIN_PARTIDA` | `DETENIDO` | defensa | «La partida terminó.» |
 | `MOVIMIENTO_RECHAZADO` | `DETENIDO` | defensa (D3) | «No se pudo dar el siguiente paso.» |
 | `CANCELADO_POR_JUGADOR` | `DETENIDO` | `cancelarViaje` (solo pruebas) | «Viaje cancelado.» |
 
