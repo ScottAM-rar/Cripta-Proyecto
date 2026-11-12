@@ -22,6 +22,9 @@ Quien juega debe poder confiar en que el viaje respeta lo que sabe: no usa salas
 
 ### Sesión 2026-11-11
 
+- Q: Con rutas de igual costo, ¿cómo se elige con «menor id»? → A: Se comparan las listas de ids de sala de cada ruta, de la primera a la última, y gana la de menor id en la primera diferencia.
+- Q: ¿Cómo se registra un viaje en `partida.log`? → A: Una entrada para la orden «ir a» con su destino, una línea por paso dado y una línea final con el resultado o motivo de detención.
+- Q: ¿Qué eventos, además de entrar a sala con enemigos dormidos, detienen el viaje? → A: Un enemigo ya activo en la misma sala, recibir daño (por ejemplo, de una trampa) o morir; ningún otro.
 - Q: ¿Cuándo se considera que una puerta recordada abierta «resulta cerrada»? → A: Cuando, al entrar a una sala del viaje, el jugador observa (002, FR-207) una puerta de esa sala cuyo estado real es cerrada y la ruta pendiente la usaba como abierta.
 - Q: ¿Qué pasa con el tiempo del paso que no se pudo dar por una puerta cerrada? → A: No se consume; el tiempo solo se consume por salidas efectivamente atravesadas.
 
@@ -38,7 +41,7 @@ Quien juega indica una sala ya explorada y el personaje camina hasta ella, paso 
 **Escenarios de aceptación**:
 
 1. **Dado** el jugador en una sala y una sala explorada alcanzable por dos rutas conocidas de costo distinto, **cuando** ejecuta «ir a» esa sala, **entonces** recorre la de menor costo total y el reloj avanza la suma de los costos de las salidas atravesadas. *(FR-231, FR-232, FR-233)*
-2. **Dado** dos rutas conocidas de igual costo total, **cuando** ejecuta «ir a», **entonces** elige la que desempata por menor id de sala según la regla de desempate de la ruta más barata, y repetirlo da siempre la misma. *(FR-234)*
+2. **Dado** dos rutas conocidas de igual costo total, **cuando** ejecuta «ir a», **entonces** elige la que tenga el menor id de sala en la primera posición en que difieren, y repetirlo da siempre la misma. *(FR-234)*
 3. **Dado** el jugador ya en la sala indicada, **cuando** ejecuta «ir a» esa misma sala, **entonces** no se mueve ni consume tiempo y se le informa de que ya está allí. *(FR-231)*
 4. **Dado** una ruta conocida que pasa por una puerta recordada como cerrada, **cuando** ejecuta «ir a», **entonces** esa puerta no se considera atravesable al calcular la ruta. *(FR-235)*
 5. **Dado** un viaje que termina con éxito, **cuando** el jugador llega, **entonces** queda en la sala destino con el conocimiento actualizado como si hubiera caminado cada entrada a mano. *(FR-236)*
@@ -124,7 +127,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 **Escenarios de aceptación**:
 
 1. **Dado** dos ejecuciones idénticas con «ir a», **cuando** se comparan, **entonces** el recorrido, el tiempo, el mapa conocido y el registro son idénticos. *(FR-247)*
-2. **Dado** una partida guardada y cargada a mitad de la partida, **cuando** se ejecuta el mismo «ir a», **entonces** el resultado es el mismo que sin guardar. *(FR-247)*
+2. **Dado** una partida guardada y cargada a mitad de la partida, **cuando** se ejecuta el mismo «ir a», **entonces** el resultado es el mismo que sin guardar. *(FR-247, FR-252)*
 3. **Dado** una sala del trayecto cuyo contenido aún no se ha descargado, **cuando** se calcula la ruta, **entonces** el cálculo no depende de ese contenido ni lo requiere. *(FR-248)*
 
 ---
@@ -134,7 +137,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 - ¿Qué pasa si el destino es una sala explorada solo por la antorcha, a la que el jugador nunca ha entrado? Es explorada para este comando: se puede viajar a ella si hay ruta conocida. *(FR-231)*
 - ¿Qué pasa si una puerta de la ruta aparece «sin observar»? No se considera atravesable al calcular la ruta, porque el jugador nunca ha visto su estado; la ruta solo usa puertas recordadas abiertas. *(FR-235)*
 - ¿Qué pasa si el cierre automático cierra una puerta en medio del viaje, justo tras atravesarla? Solo importa lo que el jugador observa al llegar a cada sala; el cierre a su espalda actualiza la puerta solo si la observa (002, FR-207). *(FR-239)*
-- ¿Qué pasa si hay un enemigo ya activo que alcanza al jugador en medio del viaje? Rige la regla vigente de combate; el viaje se detiene si el jugador sufre un evento que, de ocurrir caminando a mano, le exigiría decidir. *(FR-249)*
+- ¿Qué pasa si hay un enemigo ya activo que alcanza al jugador en medio del viaje? Rige la regla vigente de combate; el viaje se detiene en cuanto un enemigo ya activo comparte sala con el jugador, y también si el jugador recibe daño (por ejemplo, de una trampa) o muere. *(FR-249)*
 - ¿Qué pasa si el pergamino se usa antes del primer paso del viaje? No hay paso del viaje que revertir: deshace la acción anterior al comando, que no llegó a mover al jugador. *(FR-244)*
 - ¿Qué pasa si no quedan pasos que revertir en el pergamino (máximo de 5 acciones)? Rige la regla vigente del pergamino.
 - ¿Qué pasa si el destino cambia de estado de puerta mientras se viaja a él? Se resuelve igual que cualquier puerta: por observación al llegar.
@@ -148,7 +151,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 - **FR-231**: El jugador DEBE disponer de un comando «ir a» que reciba una sala destino y lo lleve hasta ella. El destino DEBE estar explorada (002, FR-201), tanto si el jugador entró a ella como si la exploró la antorcha. Si el jugador ya está en el destino, el comando DEBE informarlo sin mover al jugador ni consumir tiempo.
 - **FR-232**: La ruta del viaje DEBE ser la de menor costo total entre las que conecta el mapa conocido del jugador, donde el costo de una ruta es la suma de los costos de sus salidas (001).
 - **FR-233**: El viaje DEBE avanzar paso a paso: cada paso atraviesa una salida de la ruta, consume el tiempo de esa salida y deja al jugador en la sala siguiente, con el mismo efecto sobre la partida que un movimiento normal a esa sala (incluida la actualización del conocimiento de 002).
-- **FR-234**: Cuando dos o más rutas tengan el mismo costo total, o dos salidas lleven al mismo costo parcial, el desempate DEBE ser por menor id de sala, aplicado de forma explícita y fija.
+- **FR-234**: Cuando dos o más rutas tengan el mismo costo total, el desempate DEBE ser explícito y fijo: se comparan las listas de ids de sala de las rutas, de la primera a la última, y gana la ruta con el menor id en la primera posición en que difieren.
 - **FR-235**: La ruta DEBE calcularse solo con lo que el jugador conoce: salas exploradas, salidas conocidas con su costo y puertas recordadas abiertas. NO DEBE usar salas avistadas o desconocidas como paso intermedio, puertas recordadas como cerradas ni puertas «sin observar», ni el estado real de las puertas.
 - **FR-236**: Al llegar al destino, el jugador DEBE quedar en esa sala con el conocimiento resultante de haber entrado a cada sala de la ruta, y el reloj DEBE haber avanzado exactamente la suma de los costos de las salidas atravesadas.
 
@@ -167,7 +170,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 
 - **FR-242**: Al entrar a una sala con enemigos dormidos, ya sea intermedia o destino, estos DEBEN activarse exactamente según la regla de la Parte I (§2.4), igual que en una entrada a mano.
 - **FR-243**: El viaje DEBE detenerse al entrar a una sala con enemigos dormidos (FR-242), dejando al jugador en esa sala; NO DEBE continuar con los pasos restantes. Una sala sin enemigos dormidos NO DEBE detener el viaje.
-- **FR-249**: El viaje DEBE detenerse en cuanto ocurra un evento que, de caminar a mano, exigiría al jugador una nueva decisión (por ejemplo, ser alcanzado por un enemigo ya activo); el mensaje DEBE indicar el motivo.
+- **FR-249**: Además de entrar a una sala con enemigos dormidos (FR-243), el viaje DEBE detenerse en cuanto (a) un enemigo ya activo comparta sala con el jugador, (b) el jugador reciba daño (por ejemplo, de una trampa) o (c) el jugador muera. Ningún otro evento detiene el viaje. El mensaje DEBE indicar el motivo.
 
 **Pergamino**
 
@@ -182,6 +185,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 
 - **FR-247**: Misma cripta, misma semilla y mismas acciones DEBEN producir el mismo viaje: la misma secuencia de salas, el mismo tiempo, el mismo mapa conocido y el mismo registro, con independencia de si la partida se guardó y cargó por el camino.
 - **FR-248**: El cálculo de la ruta NO DEBE depender de qué contenido de sala ya fue descargado ni requerir descargar contenido no necesario; solo usa el mapa conocido.
+- **FR-252**: El registro de la partida DEBE contener, por cada «ir a» ejecutado, una entrada con la orden y su destino y, bajo ella, una línea por cada paso dado y una línea final con el resultado (llegó, o el motivo de la detención o del rechazo). La reproducción DEBE rehacer el viaje a partir de la orden.
 
 **Rendimiento y mediciones**
 
@@ -221,7 +225,7 @@ B-N4 y B-N5 (antorcha y pergamino sin viaje) pertenecen a la especificación 002
 
 - «Explorada» incluye las salas exploradas por la antorcha, aunque el jugador nunca haya entrado a ellas.
 - El mapa conocido de 002 es la única fuente de la ruta: el estado real de las puertas solo entra al jugador por observación (FR-239).
-- El desempate «menor id» es el mismo que usa la ruta más barata del cazador (001) para mantener una sola regla en el proyecto.
+- El desempate de FR-234 es propio de esta capacidad (comparación de ids por posición); puede diferir del desempate del cazador (001).
 - La numeración FR-249 se asigna a la regla de eventos que exigen decisión para mantener los ids estables; los FR-23x/24x/25x son los de esta capacidad (constitución IX).
 - Los casos B-N4 y B-N5 quedan cubiertos por 002 y aquí solo se verifica la interacción con el viaje (Historia 5).
 - No se admite encadenar varios destinos en un solo comando ni reanudar un viaje cancelado: se pide un nuevo «ir a».
