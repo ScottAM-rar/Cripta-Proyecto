@@ -10,7 +10,7 @@ from Logica.GestorEventos import GestorEventos, PERIODO_REGENERACION
 from Logica.ActorLogica import ActorLogica
 from Logica.JugadorLogica import JugadorLogica
 from DTO.LogPartidaDTO import LogPartidaDTO
-from Logica.LogEventos import LogEventos, ReferenciaEvento, RegistroEvento, TIPOS_CURSOR_INVENTARIO
+from Logica.LogEventos import LogEventos, ReferenciaEvento, RegistroEvento, TIPOS_CURSOR_INVENTARIO, TIPOS_MARCA_VIAJE
 from Logica.BitacoraLogica import BitacoraLogica
 from Logica.RelojVirtual import RelojVirtual
 from Logica.RetrocesoLogica import RetrocesoLogica
@@ -22,6 +22,8 @@ from DTO.LlavesDTO import UbicacionLlavesDTO
 from Logica.CampoDeCostos import CampoDeCostos
 from Logica.MapaCripta import MapaCripta
 from Logica.MapaConocido import MapaConocido
+from Logica.ViajeLogica import ViajeLogica
+from DTO.ResultadoViajeDTO import EN_CURSO, CANCELADO_POR_JUGADOR
 from Logica.ordenamiento import ordenar_adaptativo
 from DTO.EstadoGuardadoDTO import EstadoGuardadoDTO
 from DTO.PuntoControlDTO import PuntoControlDTO
@@ -48,6 +50,8 @@ class EstadoJuegoLogica:
         self.registrador_log = None    # opcional: algo con agregar(linea); el modelo solo le avisa cada acción
         self.llaves = None             # UbicacionLlavesDTO de la cripta, o None si no se pidió o no se pudo (capacidad 009)
         self.avisoLlaves = None        # mensaje del último LlavesNoDisponibles, para mostrarlo (FR-313)
+        self.viaje_activo = None       # viaje de «ir a» en curso (capacidad 006); transitorio: no se guarda ni se deshace
+        self.activaciones_enemigos = 0  # enemigos despertados en total; el viaje lo compara antes y después de un paso
         
         if(cripta is not None):
             self.iniciarJuego(cripta)
@@ -296,6 +300,9 @@ class EstadoJuegoLogica:
                 idx = inicio_log + offset
                 reloj_antes = aislada.estadoJuego.reloj.tiempo_actual
 
+                if reg.tipo_accion in TIPOS_MARCA_VIAJE:     # marca informativa de «ir a»: ni se ejecuta ni cuenta
+                    continue
+
                 if reg.tipo_accion in TIPOS_CURSOR_INVENTARIO:
                     aislada._repetirMovimientoDeCursor(reg.tipo_accion)
                     marcas.append((idx, "cursor", reloj_antes))
@@ -401,6 +408,9 @@ class EstadoJuegoLogica:
                 idx = inicio_log + offset
                 if aislada.fin:
                     break
+
+                if reg.tipo_accion in TIPOS_MARCA_VIAJE:     # marca informativa de «ir a»: ni se ejecuta ni cuenta
+                    continue
 
                 if reg.tipo_accion in TIPOS_CURSOR_INVENTARIO:
                     aislada._repetirMovimientoDeCursor(reg.tipo_accion)
@@ -557,6 +567,7 @@ class EstadoJuegoLogica:
             acciones_prefijo = self.logEventos.obtener_acciones_cronologicas()[:punto.longitud_acciones_log]
 
         EstadoGuardadoLogica.restaurar(self, punto.estado)
+        self.viaje_activo = None        # un viaje no sobrevive a una restauración (capacidad 006)
         self.acciones_linea_tiempo = punto.acciones_linea_tiempo
         self._actualizarFichasEnUso()
 
@@ -573,6 +584,7 @@ class EstadoJuegoLogica:
         """Deja la partida como estaba cuando se exportó `estado`. El historial del pergamino empieza vacío."""
         self._exigirServicio()
         EstadoGuardadoLogica.restaurar(self, estado)
+        self.viaje_activo = None        # un viaje no sobrevive a una carga (capacidad 006)
         self.k_checkpoint = getattr(estado, "k_checkpoint", 10)
         self.acciones_linea_tiempo = getattr(estado, "acciones_linea_tiempo", 0)
         self.puntos_control = list(getattr(estado, "puntos_control", []))
@@ -631,6 +643,7 @@ class EstadoJuegoLogica:
             self._verificarAlIniciar(cripta, forzar)   # capacidad 003; puede lanzar CriptaNoResoluble (FR-339)
         self.iniciado = True
         self.registrador_log = None
+        self.viaje_activo = None
         self.fin = False
         self.motivoFin = None
 
@@ -750,6 +763,9 @@ class EstadoJuegoLogica:
         if hasta is None:
             resultados = []
             for registro in log_original.obtener_registros_cronologicos():
+                if registro.tipo_accion in TIPOS_MARCA_VIAJE:
+                    self._verificarMarcaViaje(registro)
+                    continue
                 if registro.tipo_accion in TIPOS_CURSOR_INVENTARIO:
                     self._repetirMovimientoDeCursor(registro.tipo_accion)
                     continue
@@ -770,6 +786,9 @@ class EstadoJuegoLogica:
         for registro in log_original.obtener_registros_cronologicos():
             if self.fin or reloj.tiempo_actual >= hasta:
                 break
+            if registro.tipo_accion in TIPOS_MARCA_VIAJE:
+                self._verificarMarcaViaje(registro)
+                continue
             if registro.tipo_accion in TIPOS_CURSOR_INVENTARIO:
                 self._repetirMovimientoDeCursor(registro.tipo_accion)
                 continue
@@ -1063,6 +1082,7 @@ class EstadoJuegoLogica:
                     menor = candidato
             pendientes.remove(menor)
             menor.activo = True
+            self.activaciones_enemigos += 1
             self.jugadorLogica.retroceso.registrar_cambio([CambioDTO(
                 tipo_accion="ACTIVAR_ENEMIGO",
                 objeto_afectado=menor,
@@ -1085,6 +1105,47 @@ class EstadoJuegoLogica:
         if self.mapaConocido is None:
             raise ValueError("Esta cripta no entrega el esqueleto: no hay mapa conocido")
         return self.mapaConocido.instantanea()
+
+    # --- «ir a» (capacidad 006) ---
+
+    def iniciarViaje(self, destino):
+        """Valida la orden «ir a destino» y, si procede, deja el viaje EN_CURSO sin haber dado ningún paso. Una orden
+        rechazada no cambia nada (FR-238). Devuelve un ResultadoViajeDTO."""
+        if not self.iniciado:
+            raise ValueError("El juego no ha sido iniciado")
+        if self.mapaConocido is None:
+            raise ValueError("Esta cripta no entrega el esqueleto: no hay mapa conocido")
+        if self.fin:
+            raise ValueError("El juego ha finalizado, no se generan más acciones")
+        viaje = ViajeLogica(self)
+        resultado = viaje.iniciar(destino)
+        self.viaje_activo = viaje if viaje.estado == EN_CURSO else None
+        return resultado
+
+    def avanzarViaje(self):
+        """Da un paso del viaje en curso (o lo termina). Sin viaje en curso lanza ValueError."""
+        if self.viaje_activo is None:
+            raise ValueError("No hay un viaje en curso")
+        viaje = self.viaje_activo
+        resultado = viaje.avanzar()
+        if viaje.estado != EN_CURSO:
+            self.viaje_activo = None
+        return resultado
+
+    def ejecutarViaje(self):
+        """Repite pasos hasta que el viaje termine."""
+        if self.viaje_activo is None:
+            raise ValueError("No hay un viaje en curso")
+        viaje = self.viaje_activo
+        resultado = viaje.ejecutar()
+        self.viaje_activo = None
+        return resultado
+
+    def cancelarViaje(self) -> None:
+        """Cancela el viaje en curso (no hace nada si no hay)."""
+        if self.viaje_activo is not None:
+            self.viaje_activo.cancelar(CANCELADO_POR_JUGADOR)
+            self.viaje_activo = None
 
     def vistaSalaActual(self):
         """La sala actual con sus salidas según lo que el jugador conoce (FR-219)."""
@@ -1239,6 +1300,9 @@ class EstadoJuegoLogica:
             return accion                       # rechazada: sin tiempo, sin historial y fuera del log
         if GestorEventos.es_uso_de_pergamino(evento):
             self._registrarAccionEnLog(evento)  # el retroceso no consume tiempo, pero sí es parte de la partida
+            if self.viaje_activo is not None:   # un viaje en curso se cancela; el pergamino ya revirtió el último paso (FR-245)
+                self.viaje_activo.cancelar("PERGAMINO")
+                self.viaje_activo = None
             self.acciones_linea_tiempo = max(0, self.acciones_linea_tiempo - 1)
             self._podarPuntosControlPosteriores(self.acciones_linea_tiempo)
             self.tiempoMovimientoJugador = reloj.tiempo_actual
@@ -1312,6 +1376,26 @@ class EstadoJuegoLogica:
         movido = self.siguienteObjetoInventario() if tipo_accion == "SIGUIENTE_OBJETO" else self.anteriorObjetoInventario()
         if not movido:
             raise ValueError(f"El log pide {tipo_accion} pero el cursor no se pudo mover: la reproducción no es fiel")
+
+    def _registrarMarcaViaje(self, tipo: str, datos: list) -> None:
+        """Escribe una marca informativa de «ir a» (IR_A o FIN_IR_A) en el log y, si hay, en el archivo de la partida."""
+        self.logEventos.registrar_marca(tipo, datos)
+        if self.registrador_log is not None:
+            self.registrador_log.agregar(self.logEventos.cola.accion)
+
+    def _verificarMarcaViaje(self, registro: RegistroEvento) -> None:
+        """En la repetición: IR_A no se ejecuta (sus pasos son movimientos normales que se repiten solos); FIN_IR_A comprueba
+        que el viaje terminó donde el registro dice (FR-252). Ambas marcas se vuelven a escribir en el log repetido."""
+        datos = registro.datos_extra
+        if registro.tipo_accion == "FIN_IR_A":
+            if len(datos) != 3 or isinstance(datos[2], bool) or not isinstance(datos[2], int):
+                raise ValueError("El registro del log no contiene una marca de fin de viaje válida")
+            sala = self.estadoJuego.jugador.id_sala_actual
+            if sala != datos[2]:
+                raise ValueError(
+                    f"La reproducción no es fiel: el viaje terminó en la sala {sala} y el registro dice la sala {datos[2]}"
+                )
+        self._registrarMarcaViaje(registro.tipo_accion, datos)     # el log de la partida repetida conserva las marcas
 
     def _registrarAccionEnLog(self, evento: EventoDTO) -> None:
         self.logEventos.registrar_evento(evento)

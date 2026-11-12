@@ -149,12 +149,15 @@ class ControladorJuego:
                 entrada_usuario = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
                 "\n usar[objeto actual],siguiente[objeto],anterior[objeto]," \
                 "\n soltar, atacar, esperar, abrir[puerta], cerrar[puerta]," \
-                "\n inventario[peso/valor/nombre], mapa," \
+                "\n inventario[peso/valor/nombre], mapa, ir a <sala>," \
                 "\n historia <t> | historia #k, salir: ").strip()
             except (EOFError, KeyboardInterrupt):
                 break
 
             if self._procesar_comando_historia(entrada_usuario):
+                continue
+
+            if self._procesar_comando_ir_a(entrada_usuario):
                 continue
 
             accion = entrada_usuario.lower()
@@ -184,6 +187,24 @@ class ControladorJuego:
                 self.servicio.accionJugador(evento)
             else:
                 print("Acción no reconocida o comando inválido.")
+
+    def _procesar_comando_ir_a(self, comando: str) -> bool:
+        """Interpreta «ir a <id de sala>» (capacidad 006, FR-231). Devuelve True si la entrada era ese comando (con éxito
+        o con un mensaje de error) y False si no lo era. Solo interpreta: el viaje lo decide el modelo y la vista imprime.
+        No es un evento del reloj: un rechazo no consume tiempo ni cuenta como acción (FR-238)."""
+        partes = comando.strip().lower().split()
+        if len(partes) < 2 or partes[0] != "ir" or partes[1] != "a":
+            return False
+        if len(partes) != 3 or not partes[2].isdigit():
+            print("El destino debe ser el número de una sala.")      # no hay orden que el modelo pueda rechazar
+            return True
+        try:
+            resultado = self.servicio.irA(int(partes[2]))
+        except ValueError as error:
+            print(f"No se puede viajar: {error}")
+            return True
+        self.vista.mostrar_viaje(resultado)
+        return True
 
     def _procesar_comando_historia(self, comando: str) -> bool:
         """Interpreta comandos 'historia <t>', 'historia t', 'historia #k'.

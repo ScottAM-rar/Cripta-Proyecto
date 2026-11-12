@@ -9,6 +9,10 @@ from DTO.LogPartidaDTO import LogPartidaDTO
 # "usar" y "soltar": por eso queda en el log y la repetición lo reproduce.
 TIPOS_CURSOR_INVENTARIO = ("SIGUIENTE_OBJETO", "ANTERIOR_OBJETO")
 
+# «Ir a» (capacidad 006): dos marcas informativas rodean los pasos de un viaje. Son registros de costo 0 que no son eventos
+# del reloj ni acciones; los pasos entre ellas son movimientos normales (contracts/registro-viaje.md).
+TIPOS_MARCA_VIAJE = ("IR_A", "FIN_IR_A")
+
 
 class RegistroEvento:
     """Datos de un evento cargado desde un archivo de repetición."""
@@ -94,6 +98,17 @@ class LogEventos:
             "tiempo_ejecucion": 0,
             "actor": {"tipo": "jugador"},
             "datos_extra": [],
+        }, ensure_ascii=False))
+
+    def registrar_marca(self, tipo: str, datos_extra: list) -> None:
+        """Guarda una marca informativa de un viaje de «ir a» (costo 0; no es evento del reloj ni acción)."""
+        if tipo not in TIPOS_MARCA_VIAJE:
+            raise ValueError(f"Tipo de marca de viaje no válido: {tipo!r}")
+        self.agregar(json.dumps({
+            "tipo_accion": tipo,
+            "tiempo_ejecucion": 0,
+            "actor": {"tipo": "jugador"},
+            "datos_extra": list(datos_extra),
         }, ensure_ascii=False))
 
     def registrar_evento(self, evento) -> None:

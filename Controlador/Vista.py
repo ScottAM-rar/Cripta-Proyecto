@@ -109,6 +109,19 @@ class VistaConsola:
                 print(f"     {salida.direccion:<6} -> {destino:<34} costo {salida.costo:<5} {salida.puerta}")
         print("=" * 55)
 
+   def mostrar_viaje(self, resultado):
+        """Resultado de «ir a» (capacidad 006, contracts/comando-ir-a.md §3): solo imprime lo que viene en `resultado`
+        (ResultadoViajeDTO). Un rechazo es una sola línea; un viaje terminado, su resumen."""
+        if resultado.estado == "RECHAZADO":
+            print(resultado.mensaje)
+            return
+        if resultado.estado == "LLEGADO":
+            print(f"Llegaste a la sala {resultado.sala_final} tras {resultado.pasos} pasos (tiempo {resultado.tiempo}).")
+            return
+        if resultado.mensaje:
+            print(resultado.mensaje)
+        print(f"Te detuviste en la sala {resultado.sala_final} tras {resultado.pasos} pasos (tiempo {resultado.tiempo}).")
+
    def mostrar_inventario(self, objetos, jugador, criterio=None):
         """Lista de objetos del inventario (§4.5, §10.2): en su orden real o ordenada por `criterio`."""
         orden = "orden real" if criterio is None else f"ordenado por {criterio}"

@@ -13,7 +13,7 @@ import sys
 import tempfile
 from datetime import datetime
 
-from bench import agenda, bitacora, ciclo, guardado, historia, inventario, mapa, ordenamiento, puntos_control, recorrido, replay, retroceso, salas, terreno
+from bench import agenda, bitacora, ciclo, guardado, historia, inventario, ir_a, mapa, ordenamiento, puntos_control, recorrido, replay, retroceso, salas, terreno
 from bench import llaves
 from bench import resolubilidad
 from bench.datos import SEMILLA
@@ -47,6 +47,7 @@ BLOQUES = (
     ("terreno", terreno.ejecutar),
     ("recorrido", recorrido.ejecutar),
     ("mapa", mapa.ejecutar),
+    ("ir_a", ir_a.ejecutar),
     ("replay", replay.ejecutar),
     ("puntos_control", puntos_control.ejecutar),
     ("llaves", llaves.ejecutar),
@@ -73,6 +74,7 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
     cumple = True
     cumple_recorrido = True
     cumple_mapa = True
+    cumple_ir_a = True
     cumple_llaves = True
     cumple_resolubilidad = True
     for nombre, funcion in BLOQUES:
@@ -86,6 +88,8 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
             cumple_recorrido = False
         if nombre == "mapa" and resultado is False:
             cumple_mapa = False
+        if nombre == "ir_a" and resultado is False:
+            cumple_ir_a = False
         if nombre == "llaves" and resultado is False:
             cumple_llaves = False
         if nombre == "resolubilidad" and resultado is False:
@@ -108,6 +112,9 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
     if "mapa" in pedidos:
         imprimir("\nMapa conocido (criterios duros por conteo y equivalencia con la referencia): "
                  + ("CUMPLE." if cumple_mapa else "NO CUMPLE; la razón de tiempos solo informa, no decide."))
+    if "ir_a" in pedidos:
+        imprimir("\nIr a (paso <= 5 ms y equivalencias): "
+                 + ("CUMPLE." if cumple_ir_a else "NO CUMPLE: un paso supera 5 ms (G) o falla una verificación de A a F o H."))
     if "llaves" in pedidos:
         imprimir("\nLlaves (SC-001, SC-002): "
                  + ("CUMPLE." if cumple_llaves else "NO CUMPLE: 1/0/0 en D, la verificación de B o C, o guardar con "
@@ -116,4 +123,4 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
         imprimir("\nResolubilidad (FR-345, FR-346): "
                  + ("CUMPLE." if cumple_resolubilidad else "NO CUMPLE: los resultados de A difieren, C supera 200 ms o "
                     "la razón de D del incremental supera 20."))
-    return 0 if cumple and cumple_recorrido and cumple_mapa and cumple_llaves and cumple_resolubilidad else 1
+    return 0 if cumple and cumple_recorrido and cumple_mapa and cumple_ir_a and cumple_llaves and cumple_resolubilidad else 1

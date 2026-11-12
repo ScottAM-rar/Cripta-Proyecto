@@ -188,6 +188,25 @@ class EstadoJuegoServicio:
         nombre. Consultarlo no es una acción: no avanza el reloj, no entra al historial del pergamino ni al log (FR-218)."""
         return self._estadoJuegoLogica.instantaneaMapaConocido()
 
+    def iniciarViaje(self, destino: int):
+        """Valida la orden «ir a» y deja el viaje en curso sin dar pasos (API paso a paso; ver avanzarViaje)."""
+        return self._estadoJuegoLogica.iniciarViaje(destino)
+
+    def avanzarViaje(self):
+        """Da un paso del viaje en curso. Para pruebas, la API falsa y --bench; la consola usa irA."""
+        return self._estadoJuegoLogica.avanzarViaje()
+
+    def cancelarViaje(self) -> None:
+        self._estadoJuegoLogica.cancelarViaje()
+
+    def irA(self, destino: int):
+        """Viaja hasta la sala explorada `destino` por la ruta más barata conocida (capacidad 006). Una orden rechazada
+        no consume tiempo ni cuenta como acción. Devuelve un ResultadoViajeDTO."""
+        resultado = self._estadoJuegoLogica.iniciarViaje(destino)
+        if self._estadoJuegoLogica.viaje_activo is None:
+            return resultado
+        return self._estadoJuegoLogica.ejecutarViaje()
+
     def vistaSalaActual(self):
         """La sala actual en formato de conocimiento (SalaConocidaDTO), para mostrar sus salidas sin revelar lo no explorado."""
         return self._estadoJuegoLogica.vistaSalaActual()
