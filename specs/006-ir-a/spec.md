@@ -170,12 +170,12 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 
 - **FR-242**: Al entrar a una sala con enemigos dormidos, ya sea intermedia o destino, estos DEBEN activarse exactamente según la regla de la Parte I (§2.4), igual que en una entrada a mano.
 - **FR-243**: El viaje DEBE detenerse al entrar a una sala con enemigos dormidos (FR-242), dejando al jugador en esa sala; NO DEBE continuar con los pasos restantes. Una sala sin enemigos dormidos NO DEBE detener el viaje.
-- **FR-249**: Además de entrar a una sala con enemigos dormidos (FR-243), el viaje DEBE detenerse en cuanto (a) un enemigo ya activo comparta sala con el jugador, (b) el jugador reciba daño (por ejemplo, de una trampa) o (c) el jugador muera. Ningún otro evento detiene el viaje. El mensaje DEBE indicar el motivo.
+- **FR-249**: Además de entrar a una sala con enemigos dormidos (FR-243), el viaje DEBE detenerse en cuanto (a) un enemigo ya activo comparta sala con el jugador, (b) el jugador reciba daño (por ejemplo, de una trampa) o (c) el jugador muera. Ningún otro evento detiene el viaje. Si el jugador llega al destino, el viaje termina como llegada aunque se cumplan las demás condiciones. El mensaje DEBE indicar el motivo.
 
 **Pergamino**
 
 - **FR-244**: Cada paso del viaje DEBE contar como una acción propia para el pergamino. Usar el pergamino durante o tras un viaje DEBE revertir únicamente el último paso (la última entrada a una sala y lo ocurrido hasta su siguiente decisión, incluido su conocimiento, 002 FR-214), de modo que revertir varias veces recorre los pasos al revés uno por uno, dentro del máximo vigente.
-- **FR-245**: Tras usar el pergamino, el viaje en curso DEBE quedar cancelado: NO DEBE continuar con los pasos restantes ni reanudarse solo.
+- **FR-245**: Tras usar el pergamino, el viaje en curso DEBE quedar cancelado: NO DEBE continuar con los pasos restantes ni reanudarse solo. El viaje puede interrumpirse entre pasos mediante una interfaz programática paso a paso (la usan las pruebas, la API falsa y `--bench`); en la consola «ir a» termina antes de devolver el control, de modo que el pergamino actúa después, sobre el último paso dado.
 
 **Antorcha**
 
@@ -185,7 +185,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 
 - **FR-247**: Misma cripta, misma semilla y mismas acciones DEBEN producir el mismo viaje: la misma secuencia de salas, el mismo tiempo, el mismo mapa conocido y el mismo registro, con independencia de si la partida se guardó y cargó por el camino.
 - **FR-248**: El cálculo de la ruta NO DEBE depender de qué contenido de sala ya fue descargado ni requerir descargar contenido no necesario; solo usa el mapa conocido.
-- **FR-252**: El registro de la partida DEBE contener, por cada «ir a» ejecutado, una entrada con la orden y su destino y, bajo ella, una línea por cada paso dado y una línea final con el resultado (llegó, o el motivo de la detención o del rechazo). La reproducción DEBE reproducir el mismo viaje paso a paso y comprobar que su resultado coincide con el registrado.
+- **FR-252**: El registro de la partida DEBE contener, por cada «ir a» aceptado, una entrada con la orden y su destino y, bajo ella, una línea por cada paso dado y una línea final con el resultado (llegó, o el motivo de la detención). Un comando rechazado no escribe nada en el registro (FR-238). La reproducción DEBE reproducir el mismo viaje paso a paso y comprobar que su resultado coincide con el registrado.
 
 **Rendimiento y mediciones**
 
@@ -197,7 +197,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 - **Viaje**: orden de ir a una sala destino explorada; tiene un origen, un destino, una ruta pendiente y un estado (en curso, llegado o detenido con motivo). Se cancela con el pergamino o por una detención.
 - **Ruta conocida**: secuencia de salas y salidas de menor costo calculada solo sobre el mapa conocido del jugador.
 - **Paso del viaje**: una entrada a una sala siguiendo una salida; cuenta como una acción para el pergamino y consume el tiempo de la salida.
-- **Motivo de detención**: razón por la que un viaje no termina (puerta cerrada sin alterna, enemigos dormidos, evento que exige decisión, pergamino).
+- **Motivo de detención**: razón por la que un viaje no termina (puerta cerrada sin alterna, enemigos dormidos, enemigo activo en la sala, daño, muerte, pergamino).
 
 ## Criterios de éxito *(obligatorio)*
 
@@ -207,7 +207,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 - **SC-202**: En el 100 % de los rechazos de prueba (B-N1 y destinos sin ruta), el reloj, el conocimiento y el historial de acciones quedan idénticos a antes del comando.
 - **SC-203**: En los casos del Apéndice B B-N1, B-N2, B-N3 y B-N6, el resultado observable coincide con lo descrito en la tabla del Apéndice, verificado por una prueba automatizada por caso.
 - **SC-204**: Dos ejecuciones de la misma partida con «ir a» producen un `partida.log` idéntico en el 100 % de las pruebas, con y sin contenido descargado.
-- **SC-205**: Un paso de «ir a» tarda 5 ms o menos en cripta sintética del tamaño máximo medido, según `--bench`.
+- **SC-205**: Un paso de «ir a» tarda 5 ms o menos en cripta sintética del tamaño máximo definido en FR-251, según `--bench`.
 - **SC-206**: Ninguna ruta de prueba usa una puerta recordada cerrada, una sala solo avistada o una puerta «sin observar» como paso.
 
 ## Trazabilidad con el Apéndice B
