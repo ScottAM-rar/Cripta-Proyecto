@@ -170,7 +170,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 
 - **FR-242**: Al entrar a una sala con enemigos dormidos, ya sea intermedia o destino, estos DEBEN activarse exactamente según la regla de la Parte I (§2.4), igual que en una entrada a mano.
 - **FR-243**: El viaje DEBE detenerse al entrar a una sala con enemigos dormidos (FR-242), dejando al jugador en esa sala; NO DEBE continuar con los pasos restantes. Una sala sin enemigos dormidos NO DEBE detener el viaje.
-- **FR-249**: Además de entrar a una sala con enemigos dormidos (FR-243), el viaje DEBE detenerse en cuanto (a) un enemigo ya activo comparta sala con el jugador, (b) el jugador reciba daño (por ejemplo, de una trampa) o (c) el jugador muera. Ningún otro evento detiene el viaje. Si el jugador llega al destino, el viaje termina como llegada aunque se cumplan las demás condiciones. El mensaje DEBE indicar el motivo.
+- **FR-249**: Además de entrar a una sala con enemigos dormidos (FR-243), el viaje DEBE detenerse en cuanto (a) un enemigo ya activo comparta sala con el jugador, (b) el jugador reciba daño (por ejemplo, de una trampa) o (c) el jugador muera. Ningún otro evento detiene el viaje. Si se cumplen varias condiciones a la vez, el motivo informado sigue este orden: muerte, llegada al destino, sala con enemigos dormidos, enemigo activo, daño. El mensaje DEBE indicar el motivo.
 
 **Pergamino**
 
@@ -190,11 +190,11 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 **Rendimiento y mediciones**
 
 - **FR-250**: Cada paso del viaje (atravesar una salida, actualizar el conocimiento y, si procede, recalcular la ruta) DEBE completarse en 5 ms o menos en el peor caso medido.
-- **FR-251**: `--bench` DEBE poder medir un paso de «ir a» en criptas sintéticas de varios tamaños generadas de forma determinista por semilla, y al menos una medición DEBE comparar la decisión adoptada con una alternativa descartada, de modo que el límite de 5 ms se respalde con datos.
+- **FR-251**: `--bench` DEBE poder medir un paso de «ir a» en criptas sintéticas de varios tamaños generadas de forma determinista por semilla, y al menos una medición DEBE comparar la decisión adoptada con una alternativa descartada, de modo que el límite de 5 ms se respalde con datos. El límite de 5 ms DEBE cumplirse en criptas de hasta 2 000 salas; en tamaños mayores (20 000 salas) se mide e informa, pero no es criterio de aprobación.
 
 ### Entidades clave
 
-- **Viaje**: orden de ir a una sala destino explorada; tiene un origen, un destino, una ruta pendiente y un estado (en curso, llegado o detenido con motivo). Se cancela con el pergamino o por una detención.
+- **Viaje**: orden de ir a una sala destino explorada; tiene un origen, un destino, el campo de costos hacia el destino (de él se pregunta el siguiente paso) y un estado (en curso, llegado o detenido con motivo). Se cancela con el pergamino o por una detención.
 - **Ruta conocida**: secuencia de salas y salidas de menor costo calculada solo sobre el mapa conocido del jugador.
 - **Paso del viaje**: una entrada a una sala siguiendo una salida; cuenta como una acción para el pergamino y consume el tiempo de la salida.
 - **Motivo de detención**: razón por la que un viaje no termina (puerta cerrada sin alterna, enemigos dormidos, enemigo activo en la sala, daño, muerte, pergamino).
@@ -207,7 +207,7 @@ La misma cripta, la misma semilla y las mismas acciones producen siempre el mism
 - **SC-202**: En el 100 % de los rechazos de prueba (B-N1 y destinos sin ruta), el reloj, el conocimiento y el historial de acciones quedan idénticos a antes del comando.
 - **SC-203**: En los casos del Apéndice B B-N1, B-N2, B-N3 y B-N6, el resultado observable coincide con lo descrito en la tabla del Apéndice, verificado por una prueba automatizada por caso.
 - **SC-204**: Dos ejecuciones de la misma partida con «ir a» producen un `partida.log` idéntico en el 100 % de las pruebas, con y sin contenido descargado.
-- **SC-205**: Un paso de «ir a» tarda 5 ms o menos en cripta sintética del tamaño máximo definido en FR-251, según `--bench`.
+- **SC-205**: Un paso de «ir a» tarda 5 ms o menos en cripta sintética de hasta 2 000 salas (más de seis veces la cripta publicada más grande, de 300 salas), según `--bench`.
 - **SC-206**: Ninguna ruta de prueba usa una puerta recordada cerrada, una sala solo avistada o una puerta «sin observar» como paso.
 
 ## Trazabilidad con el Apéndice B
