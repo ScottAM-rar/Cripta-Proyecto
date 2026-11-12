@@ -155,7 +155,7 @@ class MapaConocido:
             if origen is None:
                 continue
             for candidata in origen.salidas:
-                if candidata is salida:
+                if candidata is salida and candidata.sala_destino == actual:      # solo las que llegan a la sala del jugador (FR-207)
                     return arista.origen * 4 + self.indice_direccion(candidata.direccion)
         return -1
 

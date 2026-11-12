@@ -7,6 +7,7 @@ import unittest
 from DTO.EventoDTO import EventoDTO
 from Logica.MapaConocido import MapaConocido, DESCONOCIDA, AVISTADA, EXPLORADA, SIN_OBSERVAR, ABIERTA, CERRADA
 from Logica.MapaCripta import MapaCripta
+from Logica.PuertasLogica import fijar_cerrada
 from tests_labs.cripta_sintetica import (esqueleto_de_conexiones, esqueleto_rejilla, ficha_enemigo,
                                          mapa_dto_desde_esqueleto)
 from tests_labs.partida_prueba import esperar, jugar, nueva_partida
@@ -346,6 +347,26 @@ class TestSinProhibidos(unittest.TestCase):
             codigo = "\n".join(l.split("#")[0] for l in texto.splitlines())
             self.assertIsNone(self.PROHIBIDOS.search(codigo), ruta)
             self.assertIsNone(self.MODELO.search(codigo), ruta)
+
+
+class TestPuertaQueNoConectaLaSalaDelJugador(unittest.TestCase):
+    """FR-207: el jugador solo observa las puertas de las dos salas que conecta cada una."""
+
+    def test_FR207_una_puerta_ajena_no_se_observa_y_una_que_llega_a_la_sala_actual_si(self):
+        logica = nueva_partida(esqueleto_de_conexiones([(1, 2, None, "E", "O"), (2, 3, None, "E", "O")]))
+        mover(logica, "este")
+        mover(logica, "oeste")                                              # la 2 queda explorada y el jugador en la 1
+        c = logica.mapaConocido
+        sala2 = logica.estadoJuego.salas[2]
+        hacia_3 = [s for s in sala2.salidas if s.sala_destino == 3][0]      # no conecta con la sala 1
+        hacia_1 = [s for s in sala2.salidas if s.sala_destino == 1][0]      # llega a la sala 1
+        self.assertEqual(c.puerta_recordada(2, ESTE), ABIERTA)
+        version = c.version_conocimiento
+        fijar_cerrada(hacia_3, True, avisar=c.puerta_cambio)
+        self.assertEqual(c.puerta_recordada(2, ESTE), ABIERTA)              # sigue recordando la anterior
+        self.assertEqual(c.version_conocimiento, version)
+        fijar_cerrada(hacia_1, True, avisar=c.puerta_cambio)
+        self.assertEqual(c.puerta_recordada(2, OESTE), CERRADA)             # esta sí se observa desde la sala 1
 
 
 if __name__ == "__main__":
