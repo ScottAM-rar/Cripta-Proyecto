@@ -57,7 +57,7 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 
 **Escenarios de aceptación**:
 
-1. **Dado** un turno cualquiera, **cuando** se muestra la sala, **entonces** aparecen siempre en el mismo orden: la sala actual, sus salidas (dirección, costo y estado abierta, cerrada o sin observar), los enemigos presentes (activos o dormidos), los objetos y el estado del jugador (vida, tiempo, antorcha). *(FR-306)*
+1. **Dado** un turno cualquiera, **cuando** se muestra la sala, **entonces** aparecen siempre en el mismo orden: la sala actual, sus salidas (dirección, costo y estado abierta, cerrada o sin observar), los enemigos presentes (activos o dormidos), los objetos, las trampas, el estado del jugador (vida, tiempo, antorcha), el inventario y los últimos mensajes. *(FR-306)*
 2. **Dado** una sala sin enemigos o sin objetos, **cuando** se muestra, **entonces** la sección aparece con una indicación explícita de que está vacía, sin cambiar el orden de las demás. *(FR-306)*
 3. **Dado** una partida que termina (llegada a la salida, muerte u otro motivo), **cuando** termina, **entonces** se muestra un resumen con el motivo del fin, el puntaje, las acciones, el tiempo transcurrido, la vida final y las salas exploradas. *(FR-307)*
 4. **Dado** el comando de ayuda, **cuando** el jugador lo escribe, **entonces** ve la lista de todos los comandos con su sintaxis. *(FR-309)*
@@ -71,6 +71,7 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 - Cripta no resoluble con `--forzar`: la advertencia debe verse antes del primer turno, no perderse entre el reporte.
 - `--verificar` sin cripta indicada, con cripta inexistente o ilegible: mensaje claro y código de salida 2.
 - `--verificar` combinado con `--forzar`: la verificación no abre partida, por lo que `--forzar` no tiene efecto.
+- `--verificar` combinado con `--replay` o `--bench`: no se combinan; el programa dice qué pasó y qué hacer (usar cada argumento por separado) y termina con código 2.
 - Partida cargada o reproducida (`--replay`): no es una partida nueva; no se muestra el reporte de inicio.
 - Sala con muchas salidas, enemigos u objetos: el orden y el formato no cambian.
 - Fin de partida por un motivo no previsto: el resumen muestra un motivo genérico en español, nunca un texto vacío.
@@ -89,10 +90,10 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 
 **Pantallas de consola**
 
-- **FR-306**: En cada turno la consola DEBE mostrar, siempre en el mismo orden y formato: la sala actual; sus salidas con dirección, costo y estado (abierta, cerrada o sin observar: una puerta que el jugador aún no ha visto no se muestra como abierta ni como cerrada, para respetar la niebla de guerra de la 002); los enemigos presentes (activos o dormidos); los objetos; y el estado del jugador (vida, tiempo, antorcha).
-- **FR-307**: Al terminar la partida la consola DEBE mostrar un resumen con el motivo del fin (llegada a la salida, muerte u otro), el puntaje, la cantidad de acciones, el tiempo virtual transcurrido, la vida final y la cantidad de salas exploradas, en ese orden y con rótulos fijos.
-- **FR-308**: Todos los textos mostrados al jugador DEBEN estar en español y mostrarse sin caracteres dañados por la codificación (hoy los mensajes de error de `--cache-size` salen como «tamaÃ±o de la cachÃ©» en `main.py`).
-- **FR-309**: DEBE existir un comando de ayuda que liste todos los comandos con su sintaxis, incluidos mover, mapa, ir a e historia.
+- **FR-306**: En cada turno la consola DEBE mostrar, siempre en el mismo orden y formato: la sala actual; sus salidas con dirección, costo y estado (abierta, cerrada o sin observar: una puerta que el jugador aún no ha visto no se muestra como abierta ni como cerrada, para respetar la niebla de guerra de la 002); los enemigos presentes (activos o dormidos); los objetos; las trampas; el estado del jugador (vida, tiempo, antorcha); el inventario (objeto actual); y los últimos mensajes. Cada sección aparece siempre, aunque esté vacía, y el conjunto y el orden de las secciones no cambian de un turno a otro.
+- **FR-307**: Al terminar la partida la consola DEBE mostrar un resumen con el motivo del fin (llegada a la salida, muerte u otro), el puntaje, la cantidad de acciones, el tiempo virtual transcurrido, la vida final y la cantidad de salas exploradas, en ese orden y con rótulos fijos. Después del resumen se muestra una línea final con la cripta, su versión y los enemigos derrotados, como ya hace hoy el juego.
+- **FR-308**: Todos los textos mostrados al jugador DEBEN estar en español y mostrarse sin caracteres dañados por la codificación (hoy algunos mensajes de error de los argumentos de línea de comandos salen con letras como «Ã±» en lugar de «ñ»).
+- **FR-309**: DEBE existir un comando de ayuda que liste todos los comandos con su sintaxis, incluidos mover, mapa, ir a e historia. La ayuda también está disponible cuando la partida ya terminó y entonces lista solo los comandos que siguen valiendo (historia y salir, además de la propia ayuda).
 - **FR-310**: Todo mensaje de error o rechazo DEBE decir qué pasó y qué puede hacer el jugador.
 - **FR-311**: Una pantalla construida con los mismos datos DEBE verse idéntica cada vez; la salida es texto plano, sin colores ni secuencias de control.
 - **FR-312**: La vista DEBE presentar solo lo que recibe del controlador: no decide reglas ni calcula nada del juego.
@@ -123,7 +124,7 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 - **SC-301**: El 100 % de las partidas nuevas muestran el reporte de resolubilidad antes del primer turno, con cripta resoluble o no.
 - **SC-302**: `--verificar` termina sin abrir partida en el 100 % de los casos, con códigos 0, 1 y 2 según resoluble, no resoluble y error.
 - **SC-303**: Sin `--forzar`, el 100 % de las criptas no resolubles se rechazan; con `--forzar`, el 100 % se abren con advertencia visible.
-- **SC-304**: Las pantallas de sala de cualquier turno tienen las mismas cinco secciones en el mismo orden (comprobado con pruebas de texto sobre al menos 5 situaciones distintas, incluidas salas vacías).
+- **SC-304**: Las pantallas de sala de cualquier turno tienen las mismas secciones (las de FR-306) en el mismo orden (comprobado con pruebas de texto sobre al menos 5 situaciones distintas, incluidas salas vacías).
 - **SC-305**: Dos construcciones de la misma pantalla con los mismos datos producen texto idéntico en el 100 % de los casos.
 - **SC-306**: El 100 % de los comandos existentes aparece en la ayuda con su sintaxis, y el 100 % de los mensajes de error o rechazo existentes indica qué pasó y qué hacer.
 - **SC-307**: Ningún texto mostrado al jugador contiene secuencias de color ni palabras en otro idioma que no sean términos del propio juego (comprobado con pruebas de texto).
