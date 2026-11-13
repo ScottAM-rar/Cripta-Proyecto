@@ -82,8 +82,8 @@ COMANDOS DISPONIBLES
 Los comandos no distinguen mayúsculas de minúsculas.
 ```
 
-Una fila por entrada de `COMANDOS`, en este orden: movimiento (`norte`, `sur`, `este`, `oeste`), `atacar`, `abrir`, `cerrar`*, `recoger`, `soltar`, `usar`, `siguiente`, `anterior`, `esperar`, `inventario [peso|valor|nombre]`, `mapa`, `ir a <id de sala>`, `historia <t>`, `historia #k`, `ayuda`, `salir`.
-(*) solo si el controlador lo reconoce; se comprueba al implementar y no se inventa (research D3).
+Una fila por entrada de `COMANDOS`, en este orden: movimiento (`norte`, `sur`, `este`, `oeste`), `atacar`, `abrir`, `recoger`, `soltar`, `usar`, `siguiente`, `anterior`, `esperar`, `inventario [peso|valor|nombre]`, `mapa`, `ir a <id de sala>`, `historia <t>`, `historia #k`, `ayuda`, `salir`.
+Nota: `cerrar` aparece en el prompt actual pero el mapeo del controlador no lo reconoce, y `guardar` no es un comando (la partida se guarda al salir); por eso ninguno figura en la ayuda (hallazgo T1 del análisis; T004 lo confirma leyendo el controlador).
 
 `ayuda`, `mapa`, `historia …` e `inventario` no consumen tiempo ni cuentan como acción. El comando de ayuda de la fase **post-partida** muestra solo `historia <t>`, `historia #k`, `ayuda` y `salir`.
 

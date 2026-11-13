@@ -67,7 +67,7 @@ Cada decisión indica la elegida, al menos dos alternativas con su complejidad y
 | B. `dict` de comandos | O(1) por búsqueda | `Controlador/Pantallas.py` | **Prohibido** como índice (constitución I). Con ≈15 filas una búsqueda lineal no se nota. |
 | C. Derivar la ayuda de la cadena `if/elif` del controlador | — | `Controlador/ControladorJuego.py` | No se puede leer una cadena de `if` como datos; habría que reescribir el mapeo de comandos, y los comandos existentes deben conservar su sintaxis (FR-313). |
 
-**Lista de comandos (sintaxis actual, sin cambios)**: `norte|sur|este|oeste`, `atacar`, `abrir`, `cerrar` (si existe), `recoger`, `soltar`, `usar`, `siguiente`/`sig`, `anterior`/`ant`, `esperar`, `inventario [peso|valor|nombre]`, `mapa`, `ir a <id de sala>`, `historia <t>`, `historia #k`, `guardar`/`salir`, y el nuevo `ayuda`. La lista exacta se fija al implementar leyendo el mapeo real del controlador (tarea de revisión: `cerrar` aparece hoy en el prompt, y debe comprobarse si el mapeo lo reconoce; si no, se informa y no se inventa).
+**Lista de comandos (sintaxis actual, sin cambios)**: `norte|sur|este|oeste`, `atacar`, `abrir`, `recoger`, `soltar`, `usar`, `siguiente`/`sig`, `anterior`/`ant`, `esperar`, `inventario [peso|valor|nombre]`, `mapa`, `ir a <id de sala>`, `historia <t>`, `historia #k`, `salir`, y el nuevo `ayuda`. La lista exacta se fija al implementar leyendo el mapeo real del controlador (`cerrar` aparece hoy en el prompt pero el mapeo no lo reconoce, y `guardar` no es un comando: ninguno va en la ayuda; la tarea T004 lo confirma leyendo el controlador).
 
 **El comando nuevo `ayuda` no consume tiempo, no cuenta como acción y no entra al log** (igual que `mapa`).
 
@@ -87,6 +87,8 @@ Cada decisión indica la elegida, al menos dos alternativas con su complejidad y
 | C. `ReporteVerificacion` guarda el código | O(1) | `Logica/ReporteVerificacion.py` | Hay que no modificar la verificación ni su reporte (FR-315). |
 
 **Casos del código 2** (clarificación de FR-302): argumento faltante (argparse ya sale con 2: `--verificar` es `nargs=None`, obligatorio al usarse), cripta inexistente o ilegible (`resultado.resoluble is None`), datos no disponibles. Un `OSError`/`RuntimeError` al crear el servicio con `--verificar` también devuelve 2 (hoy el bloque general devuelve 1; con `--verificar` el bloque debe devolver 2).
+
+**Una sola fuente de verdad (hallazgo D1 del análisis)**: `ResultadoVerificacion.codigo_salida()` (003) ya devuelve 0, 1 y 2; `verificar_cripta` devuelve ese valor y las constantes `SALIDA_*` solo dan nombre a esos números, sin repetir la lógica.
 
 **Reporte antes de salir**: se imprime siempre, también cuando `resoluble is None` (las líneas incluyen «NO SE PUDO VERIFICAR» y el motivo).
 

@@ -124,7 +124,7 @@ Contrato en [contracts/bench-pantallas.md](contracts/bench-pantallas.md). Resume
 - **Sala**: 0, 10 y 100 enemigos (y objetos en proporción), elegida (lista + `join`) contra descartada (`+=`); verificación previa de que ambas producen el mismo texto.
 - **Resumen final**: elegida contra descartada.
 - **Ayuda**: construcción y validación de sintaxis sobre la tabla (informativo).
-- **Criterio duro**: la sala con 100 enemigos se construye en menos de 20 ms (mediana y máximo); el texto elegido es idéntico al descartado.
+- **Criterio duro**: la sala con 100 enemigos se construye en menos de 20 ms (mediana y máximo; es un criterio local del plan, constitución VII, no un requisito de la spec); el texto elegido es idéntico al descartado.
 - **Ciclo**: se vuelve a correr `--bench ciclo` completo y debe seguir cumpliendo 20 ms (las pantallas no están en el ciclo, pero se confirma que nada cambió en el camino de eventos).
 - Resultados y antes/después en `DECISIONES.md`.
 

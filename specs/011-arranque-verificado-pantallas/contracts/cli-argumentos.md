@@ -36,6 +36,7 @@ El reporte se imprime **siempre antes de salir**. El texto es el de `ReporteVeri
 | No resoluble, con `--forzar` | reporte y, aparte, la línea `AVISO: …` de `aviso_forzado` | se abre | 0 al terminar |
 | Resoluble, con `--forzar` | reporte; sin aviso de forzar | se abre | 0 al terminar |
 | No se pudo verificar | reporte `NO SE PUDO VERIFICAR` y aviso de la 003 | se abre | 0 al terminar |
+| Sin criptas disponibles | mensaje «No se encontraron criptas disponibles…» con qué hacer (`pantallas.md` §5) | **no** se abre | 1 |
 | Partida cargada de archivo | sin reporte | se abre | 0 al terminar |
 
 Guía de un rechazo (texto exacto en [pantallas.md](pantallas.md) §5).
