@@ -57,7 +57,7 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 
 **Escenarios de aceptación**:
 
-1. **Dado** un turno cualquiera, **cuando** se muestra la sala, **entonces** aparecen siempre en el mismo orden: la sala actual, sus salidas (dirección, costo y estado abierta o cerrada), los enemigos presentes (activos o dormidos), los objetos y el estado del jugador (vida, tiempo, antorcha). *(FR-306)*
+1. **Dado** un turno cualquiera, **cuando** se muestra la sala, **entonces** aparecen siempre en el mismo orden: la sala actual, sus salidas (dirección, costo y estado abierta, cerrada o sin observar), los enemigos presentes (activos o dormidos), los objetos y el estado del jugador (vida, tiempo, antorcha). *(FR-306)*
 2. **Dado** una sala sin enemigos o sin objetos, **cuando** se muestra, **entonces** la sección aparece con una indicación explícita de que está vacía, sin cambiar el orden de las demás. *(FR-306)*
 3. **Dado** una partida que termina (llegada a la salida, muerte u otro motivo), **cuando** termina, **entonces** se muestra un resumen con el motivo del fin, el puntaje, las acciones, el tiempo transcurrido, la vida final y las salas exploradas. *(FR-307)*
 4. **Dado** el comando de ayuda, **cuando** el jugador lo escribe, **entonces** ve la lista de todos los comandos con su sintaxis. *(FR-309)*
@@ -89,9 +89,9 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 
 **Pantallas de consola**
 
-- **FR-306**: En cada turno la consola DEBE mostrar, siempre en el mismo orden y formato: la sala actual; sus salidas con dirección, costo y estado (abierta o cerrada); los enemigos presentes (activos o dormidos); los objetos; y el estado del jugador (vida, tiempo, antorcha).
+- **FR-306**: En cada turno la consola DEBE mostrar, siempre en el mismo orden y formato: la sala actual; sus salidas con dirección, costo y estado (abierta, cerrada o sin observar: una puerta que el jugador aún no ha visto no se muestra como abierta ni como cerrada, para respetar la niebla de guerra de la 002); los enemigos presentes (activos o dormidos); los objetos; y el estado del jugador (vida, tiempo, antorcha).
 - **FR-307**: Al terminar la partida la consola DEBE mostrar un resumen con el motivo del fin (llegada a la salida, muerte u otro), el puntaje, la cantidad de acciones, el tiempo virtual transcurrido, la vida final y la cantidad de salas exploradas, en ese orden y con rótulos fijos.
-- **FR-308**: Todos los textos mostrados al jugador DEBEN estar en español.
+- **FR-308**: Todos los textos mostrados al jugador DEBEN estar en español y mostrarse sin caracteres dañados por la codificación (hoy los mensajes de error de `--cache-size` salen como «tamaÃ±o de la cachÃ©» en `main.py`).
 - **FR-309**: DEBE existir un comando de ayuda que liste todos los comandos con su sintaxis, incluidos mover, mapa, ir a e historia.
 - **FR-310**: Todo mensaje de error o rechazo DEBE decir qué pasó y qué puede hacer el jugador.
 - **FR-311**: Una pantalla construida con los mismos datos DEBE verse idéntica cada vez; la salida es texto plano, sin colores ni secuencias de control.
@@ -137,3 +137,4 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 - La palabra «acciones» del resumen final es la cantidad de acciones que el juego ya cuenta.
 - La ayuda se invoca con un comando dentro de la partida; su nombre exacto se decide en la planificación sin cambiar los comandos existentes.
 - Las pruebas de texto comparan la salida completa de las pantallas con textos esperados.
+- «Sin observar» es el estado que la niebla de guerra (002, FR-219) da a una puerta cuya última observación no existe; la pantalla no inventa un estado para ella.
