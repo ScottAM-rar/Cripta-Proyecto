@@ -18,6 +18,14 @@ Quien juega debe saber, antes del primer turno, si la cripta tiene solución; po
 
 **Fuera de alcance**: cambiar la verificación o el contenido de su reporte; cambiar el formato de guardado; colores ANSI o bibliotecas de interfaz nuevas; solicitudes de red adicionales.
 
+## Clarificaciones
+
+### Sesión 2026-11-13
+
+- Q: ¿Qué códigos de salida usa `--verificar`? → A: 0 resoluble, 1 no resoluble, 2 error de uso o de lectura; el reporte se muestra siempre antes de salir.
+- Q: ¿Se registra `--forzar` en `partida.log`? → A: No; la repetición no vuelve a verificar y el log conserva su formato. La advertencia solo se muestra al iniciar.
+- Q: ¿Qué detalle lleva el resumen final? → A: Motivo, puntaje, acciones, tiempo virtual transcurrido, vida final y salas exploradas, en ese orden y con rótulos fijos.
+
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
 ### Historia 1 — Arranque verificado (Prioridad: P1)
@@ -33,7 +41,7 @@ Al iniciar una partida nueva, el jugador ve el reporte de resolubilidad antes de
 1. **Dado** una cripta resoluble, **cuando** el jugador inicia una partida nueva, **entonces** ve el reporte de resolubilidad antes del primer turno y la partida se abre. *(FR-301)*
 2. **Dado** una cripta no resoluble y sin `--forzar`, **cuando** inicia una partida nueva, **entonces** ve el reporte, la partida se rechaza como hoy y se le indica qué puede hacer (por ejemplo, usar `--forzar` o elegir otra cripta). *(FR-301, FR-303, FR-310)*
 3. **Dado** una cripta no resoluble y `--forzar`, **cuando** inicia, **entonces** ve el reporte y una advertencia visible, y la partida se abre. *(FR-303, FR-304)*
-4. **Dado** `--verificar <cripta>`, **cuando** se ejecuta, **entonces** se muestra el reporte, no se abre ninguna partida y el programa termina con un código de salida distinto según la cripta sea resoluble o no. *(FR-302)*
+4. **Dado** `--verificar <cripta>`, **cuando** se ejecuta, **entonces** se muestra el reporte, no se abre ninguna partida y el programa termina con código de salida 0 (resoluble) o 1 (no resoluble). *(FR-302)*
 5. **Dado** `--forzar` sobre una cripta resoluble, **cuando** inicia, **entonces** la partida se abre normalmente sin advertencia de cripta no resoluble. *(FR-303)*
 6. **Dado** el argumento `--forzar` indicado en la línea de comandos, **cuando** se inicia la partida, **entonces** ese valor llega hasta la operación que abre la partida pasando por cada capa, y ninguna capa lo decide por su cuenta. *(FR-305)*
 
@@ -51,7 +59,7 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 
 1. **Dado** un turno cualquiera, **cuando** se muestra la sala, **entonces** aparecen siempre en el mismo orden: la sala actual, sus salidas (dirección, costo y estado abierta o cerrada), los enemigos presentes (activos o dormidos), los objetos y el estado del jugador (vida, tiempo, antorcha). *(FR-306)*
 2. **Dado** una sala sin enemigos o sin objetos, **cuando** se muestra, **entonces** la sección aparece con una indicación explícita de que está vacía, sin cambiar el orden de las demás. *(FR-306)*
-3. **Dado** una partida que termina (llegada a la salida, muerte u otro motivo), **cuando** termina, **entonces** se muestra un resumen con el motivo del fin, el puntaje y la cantidad de acciones. *(FR-307)*
+3. **Dado** una partida que termina (llegada a la salida, muerte u otro motivo), **cuando** termina, **entonces** se muestra un resumen con el motivo del fin, el puntaje, las acciones, el tiempo transcurrido, la vida final y las salas exploradas. *(FR-307)*
 4. **Dado** el comando de ayuda, **cuando** el jugador lo escribe, **entonces** ve la lista de todos los comandos con su sintaxis. *(FR-309)*
 5. **Dado** un comando inválido o rechazado, **cuando** se informa, **entonces** el mensaje dice qué pasó y qué puede hacer el jugador. *(FR-310)*
 6. **Dado** los mismos datos de partida, **cuando** se muestra la misma pantalla dos veces, **entonces** el texto es idéntico carácter por carácter. *(FR-311)*
@@ -61,7 +69,7 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 ### Casos límite
 
 - Cripta no resoluble con `--forzar`: la advertencia debe verse antes del primer turno, no perderse entre el reporte.
-- `--verificar` sin cripta indicada, con cripta inexistente o ilegible: mensaje claro y código de salida distinto de los de resoluble y no resoluble.
+- `--verificar` sin cripta indicada, con cripta inexistente o ilegible: mensaje claro y código de salida 2.
 - `--verificar` combinado con `--forzar`: la verificación no abre partida, por lo que `--forzar` no tiene efecto.
 - Partida cargada o reproducida (`--replay`): no es una partida nueva; no se muestra el reporte de inicio.
 - Sala con muchas salidas, enemigos u objetos: el orden y el formato no cambian.
@@ -74,15 +82,15 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 **Arranque verificado**
 
 - **FR-301**: Al iniciar una partida nueva, el sistema DEBE mostrar el reporte de resolubilidad de la cripta antes del primer turno, tanto si es resoluble como si no.
-- **FR-302**: El argumento `--verificar <cripta>` DEBE verificar la cripta indicada, mostrar su reporte y terminar sin abrir la partida, con un código de salida que distinga resoluble de no resoluble. [NEEDS CLARIFICATION: ¿qué códigos de salida usa `--verificar` para resoluble, no resoluble y error de uso o lectura?]
+- **FR-302**: El argumento `--verificar <cripta>` DEBE verificar la cripta indicada, mostrar su reporte y terminar sin abrir la partida, con código de salida 0 si la cripta es resoluble, 1 si no es resoluble y 2 si hay error de uso o de lectura (cripta inexistente, datos no disponibles, argumento faltante). El reporte se muestra siempre antes de salir.
 - **FR-303**: El argumento `--forzar` DEBE permitir jugar una cripta que la verificación declara no resoluble; sin `--forzar`, una cripta no resoluble DEBE seguir rechazándose como hoy.
-- **FR-304**: Al forzar una cripta no resoluble, el sistema DEBE mostrar una advertencia visible. [NEEDS CLARIFICATION: ¿el uso de `--forzar` queda registrado en `partida.log`? Afecta la reproducción y el determinismo.]
+- **FR-304**: Al forzar una cripta no resoluble, el sistema DEBE mostrar una advertencia visible. El uso de `--forzar` NO se registra en `partida.log`: la repetición de una partida no vuelve a verificar la resolubilidad (solo ocurre al iniciar una partida nueva) y el log conserva su formato. La advertencia se muestra únicamente al iniciar.
 - **FR-305**: El valor de forzar DEBE viajar desde el punto de entrada hasta el controlador del juego y de ahí a la operación que inicia la partida; ninguna capa DEBE decidirlo por su cuenta.
 
 **Pantallas de consola**
 
 - **FR-306**: En cada turno la consola DEBE mostrar, siempre en el mismo orden y formato: la sala actual; sus salidas con dirección, costo y estado (abierta o cerrada); los enemigos presentes (activos o dormidos); los objetos; y el estado del jugador (vida, tiempo, antorcha).
-- **FR-307**: Al terminar la partida la consola DEBE mostrar un resumen con el motivo del fin (llegada a la salida, muerte u otro), el puntaje y la cantidad de acciones. [NEEDS CLARIFICATION: ¿cuánto detalle lleva el resumen más allá de motivo, puntaje y acciones (por ejemplo, tiempo, vida final, salas exploradas)?]
+- **FR-307**: Al terminar la partida la consola DEBE mostrar un resumen con el motivo del fin (llegada a la salida, muerte u otro), el puntaje, la cantidad de acciones, el tiempo virtual transcurrido, la vida final y la cantidad de salas exploradas, en ese orden y con rótulos fijos.
 - **FR-308**: Todos los textos mostrados al jugador DEBEN estar en español.
 - **FR-309**: DEBE existir un comando de ayuda que liste todos los comandos con su sintaxis, incluidos mover, mapa, ir a e historia.
 - **FR-310**: Todo mensaje de error o rechazo DEBE decir qué pasó y qué puede hacer el jugador.
@@ -104,7 +112,7 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 
 - **Reporte de verificación**: resultado de la verificación de una cripta (resoluble o no y su detalle); ya existe, solo se muestra.
 - **Pantalla de sala**: texto del turno con secciones fijas (sala, salidas, enemigos, objetos, estado del jugador).
-- **Resumen de fin de partida**: texto final con motivo, puntaje y cantidad de acciones.
+- **Resumen de fin de partida**: texto final con motivo, puntaje, acciones, tiempo, vida final y salas exploradas.
 - **Indicador de forzar**: decisión del jugador de jugar una cripta no resoluble; nace en la línea de comandos y se transmite sin alterarse.
 - **Catálogo de comandos**: lista de comandos con su sintaxis que alimenta la ayuda.
 
@@ -113,7 +121,7 @@ La consola muestra en cada turno una pantalla de sala con siempre el mismo orden
 ### Resultados medibles
 
 - **SC-301**: El 100 % de las partidas nuevas muestran el reporte de resolubilidad antes del primer turno, con cripta resoluble o no.
-- **SC-302**: `--verificar` termina sin abrir partida en el 100 % de los casos, y los códigos de salida de resoluble y no resoluble difieren.
+- **SC-302**: `--verificar` termina sin abrir partida en el 100 % de los casos, con códigos 0, 1 y 2 según resoluble, no resoluble y error.
 - **SC-303**: Sin `--forzar`, el 100 % de las criptas no resolubles se rechazan; con `--forzar`, el 100 % se abren con advertencia visible.
 - **SC-304**: Las pantallas de sala de cualquier turno tienen las mismas cinco secciones en el mismo orden (comprobado con pruebas de texto sobre al menos 5 situaciones distintas, incluidas salas vacías).
 - **SC-305**: Dos construcciones de la misma pantalla con los mismos datos producen texto idéntico en el 100 % de los casos.

@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -31,4 +31,4 @@
 
 ## Notes
 
-- Quedan 3 marcadores [NEEDS CLARIFICATION] (FR-302 código de salida, FR-304 registro de forzar en el log, FR-307 detalle del resumen). El usuario pidió dejarlos explícitamente para `/speckit-clarify`; no se inventaron.
+- Los 3 marcadores se resolvieron en la sesión de clarificación 2026-11-13 (FR-302, FR-304, FR-307).
