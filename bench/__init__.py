@@ -15,6 +15,7 @@ from datetime import datetime
 
 from bench import agenda, bitacora, ciclo, guardado, historia, inventario, ir_a, mapa, ordenamiento, puntos_control, recorrido, replay, retroceso, salas, terreno
 from bench import llaves
+from bench import pantallas
 from bench import resolubilidad
 from bench.datos import SEMILLA
 from bench.salida import escribir_csv, imprimir_tabla
@@ -53,6 +54,7 @@ BLOQUES = (
     ("llaves", llaves.ejecutar),
     ("historia", historia.ejecutar),
     ("resolubilidad", resolubilidad.ejecutar),
+    ("pantallas", pantallas.ejecutar),
 )
 
 
@@ -77,6 +79,7 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
     cumple_ir_a = True
     cumple_llaves = True
     cumple_resolubilidad = True
+    cumple_pantallas = True
     for nombre, funcion in BLOQUES:
         if nombre not in pedidos:
             continue
@@ -94,6 +97,8 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
             cumple_llaves = False
         if nombre == "resolubilidad" and resultado is False:
             cumple_resolubilidad = False
+        if nombre == "pantallas" and resultado is False:
+            cumple_pantallas = False
     imprimir_tabla(filas, imprimir)
     if ruta_csv:
         escribir_csv(filas, ruta_csv)
@@ -123,4 +128,9 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
         imprimir("\nResolubilidad (FR-345, FR-346): "
                  + ("CUMPLE." if cumple_resolubilidad else "NO CUMPLE: los resultados de A difieren, C supera 200 ms o "
                     "la razón de D del incremental supera 20."))
-    return 0 if cumple and cumple_recorrido and cumple_mapa and cumple_ir_a and cumple_llaves and cumple_resolubilidad else 1
+    if "pantallas" in pedidos:
+        imprimir("\nPantallas (FR-311; constitución VII): "
+                 + ("CUMPLE." if cumple_pantallas else "NO CUMPLE: el texto elegido difiere del descartado o la sala con "
+                    "100 enemigos supera 20 ms."))
+    return 0 if (cumple and cumple_recorrido and cumple_mapa and cumple_ir_a and cumple_llaves and cumple_resolubilidad
+                 and cumple_pantallas) else 1
