@@ -5,8 +5,16 @@ import gc
 
 from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
 from Controlador.ControladorJuego import ControladorJuego
+from Controlador.Pantallas import texto_error
 from adaptadores.extension import CARPETA_LOGS
 from adaptadores.fabrica import crear_servicio, TAMANO_CACHE
+
+
+# Códigos de salida de `--verificar` (capacidad 011, FR-302). Los decide `ResultadoVerificacion.codigo_salida()` (003); aquí
+# solo se les da nombre, para no tener dos fuentes de verdad.
+SALIDA_RESOLUBLE = 0
+SALIDA_NO_RESOLUBLE = 1
+SALIDA_ERROR = 2
 
 
 def _tamano_de_cache(texto: str) -> int:
@@ -15,7 +23,7 @@ def _tamano_de_cache(texto: str) -> int:
     except ValueError:
         raise argparse.ArgumentTypeError(f"{texto!r} no es un número entero")
     if valor < 1:
-        raise argparse.ArgumentTypeError("el tamaÃ±o de la cachÃ© debe ser al menos 1")
+        raise argparse.ArgumentTypeError("el tamaño de la caché debe ser al menos 1")
     return valor
 
 
@@ -44,39 +52,44 @@ def leer_argumentos(argv=None) -> argparse.Namespace:
     parser.add_argument("--offline", action="store_true",
                         help="juega solo con los datos guardados en disco, sin conectarse a la red")
     parser.add_argument("--cache-size", type=_tamano_de_cache, default=TAMANO_CACHE, metavar="N",
-                        help=f"cantidad de fichas del catÃ¡logo que se mantienen en memoria (por defecto {TAMANO_CACHE})")
+                        help=f"cantidad de fichas del catálogo que se mantienen en memoria (por defecto {TAMANO_CACHE})")
     parser.add_argument("--bench", nargs="?", const="todo", metavar="BLOQUES",
                         help="mide el rendimiento con cargas sintéticas, sin red ni vista (todos los bloques, o una lista "
                              "separada por comas: agenda, cache, inventario, retroceso, ordenamiento, guardado, bitacora, ciclo, "
-                             "llaves, resolubilidad)")
+                             "llaves, resolubilidad, pantallas)")
     parser.add_argument("--bench-csv", metavar="ARCHIVO.csv", help="con --bench, guarda además los resultados en un CSV")
+    parser.add_argument("--verificar", metavar="CRIPTA",
+                        help="verifica si la cripta se puede resolver, muestra el reporte y termina sin abrir la partida "
+                             "(código de salida 0 resoluble, 1 no resoluble, 2 error)")
+    parser.add_argument("--forzar", action="store_true",
+                        help="juega una cripta aunque la verificación diga que no tiene solución (se muestra una advertencia)")
     parser.add_argument("--replay", metavar="PARTIDA.log",
                         help=f"reproduce una partida grabada, sin pedir nada al usuario (el log debe estar en {CARPETA_LOGS}/)")
     parser.add_argument("--hasta", type=_instante_hasta, metavar="T",
-                        help="instante del reloj virtual en el que se detiene la reproducciÃ³n acotada")
+                        help="instante del reloj virtual en el que se detiene la reproducción acotada")
     parser.add_argument("--checkpoint-cada", type=_intervalo_checkpoint, metavar="K",
                         help="intervalo de acciones del jugador entre puntos de control (entero >= 1)")
     return parser.parse_args(argv)
 
 
 def reproducir(servicio: EstadoJuegoServicio, archivo: str, hasta: int | None = None) -> int:
-    """--replay: reproduce el log completo o acotado hasta t sin vista ni interacciÃ³n."""
+    """--replay: reproduce el log completo o acotado hasta t sin vista ni interacción."""
     carpeta, nombre = os.path.split(archivo)
     if carpeta and os.path.abspath(carpeta) != os.path.abspath(CARPETA_LOGS):
-        print(f"El log debe estar en la carpeta {CARPETA_LOGS}/ (se indicÃ³ {archivo!r}).", file=sys.stderr)
+        print(f"El log debe estar en la carpeta {CARPETA_LOGS}/ (se indicó {archivo!r}).", file=sys.stderr)
         return 1
 
     if hasta is None:
         resultados = servicio.repetirPartida(nombre)
-        print(f"\nReproducciÃ³n terminada: {len(resultados)} acciones del jugador.")
+        print(f"\nReproducción terminada: {len(resultados)} acciones del jugador.")
         terminado, motivo = servicio.terminado()
-        print(f"Estado final: {motivo}" if terminado else "La partida no habÃ­a terminado al acabarse el log.")
+        print(f"Estado final: {motivo}" if terminado else "La partida no había terminado al acabarse el log.")
         return 0
 
     dto = servicio.repetirPartida(nombre, hasta=hasta)
 
     if dto.log_agotado:
-        print(f"Aviso: el log terminÃ³ en el instante {dto.instante_alcanzado} antes de alcanzar t={dto.instante_pedido}.\n")
+        print(f"Aviso: el log terminó en el instante {dto.instante_alcanzado} antes de alcanzar t={dto.instante_pedido}.\n")
 
     lista_efectos = ", ".join(dto.efectos_activos) if dto.efectos_activos else "(ninguno)"
     lista_llaves = ", ".join(dto.inventario_llaves) if dto.inventario_llaves else "(ninguna)"
@@ -87,13 +100,13 @@ def reproducir(servicio: EstadoJuegoServicio, archivo: str, hasta: int | None = 
     else:
         lineas_enemigos = "  (ninguno)"
 
-    print(f"ReproducciÃ³n hasta t={dto.instante_pedido} terminada.")
+    print(f"Reproducción hasta t={dto.instante_pedido} terminada.")
     print(f"Instante virtual alcanzado: {dto.instante_alcanzado}")
     print(f"Acciones del jugador reproducidas: {dto.acciones_reproducidas}")
     print("Estado del jugador:")
     print(f"  Sala actual: {dto.id_sala_jugador}")
     print(f"  Puntos de vida: {dto.vida_jugador}")
-    print(f"  EstadÃ­sticas: ataque {dto.ataque_jugador}, defensa {dto.defensa_jugador}, velocidad {dto.velocidad_jugador}")
+    print(f"  Estadísticas: ataque {dto.ataque_jugador}, defensa {dto.defensa_jugador}, velocidad {dto.velocidad_jugador}")
     print(f"  Efectos activos: {lista_efectos}")
     print(f"  Llaves: {lista_llaves}")
     print(f"  Objetos: {lista_objetos}")
@@ -101,7 +114,7 @@ def reproducir(servicio: EstadoJuegoServicio, archivo: str, hasta: int | None = 
     print(lineas_enemigos)
 
     if dto.log_agotado:
-        print("Estado de la partida: En curso (el log no contenÃ­a mÃ¡s acciones).")
+        print("Estado de la partida: En curso (el log no contenía más acciones).")
     elif dto.partida_terminada:
         if dto.instante_alcanzado < dto.instante_pedido:
             print(f"Estado de la partida: Terminada antes de alcanzar t={dto.instante_pedido}.")
@@ -114,15 +127,23 @@ def reproducir(servicio: EstadoJuegoServicio, archivo: str, hasta: int | None = 
     return 0
 
 
+def verificar_cripta(servicio: EstadoJuegoServicio, id_cripta: str) -> int:
+    """--verificar (FR-302): imprime el reporte de la cripta y devuelve su código de salida, sin abrir partida, log ni vista."""
+    resultado = servicio.verificar(id_cripta)
+    for linea in servicio.lineasDeReporte(resultado):
+        print(linea)
+    return resultado.codigo_salida()
+
+
 def mostrar_reporte(servicio: EstadoJuegoServicio) -> None:
-    """Â§5.1: al terminar se informan solicitudes, presupuesto y aciertos/fallos de cachÃ©.
-    Solo lee contadores (no hace solicitudes) y nunca debe tapar cÃ³mo terminÃ³ la partida."""
+    """§5.1: al terminar se informan solicitudes, presupuesto y aciertos/fallos de caché.
+    Solo lee contadores (no hace solicitudes) y nunca debe tapar cómo terminó la partida."""
     try:
         reporte = servicio.reporteSolicitudes()
     except Exception as error:
         print(f"No se pudo generar el reporte de solicitudes: {error}", file=sys.stderr)
         return
-    if reporte is not None:                      # None = nunca se llegÃ³ a elegir una cripta
+    if reporte is not None:                      # None = nunca se llegó a elegir una cripta
         print("\n--- Reporte de solicitudes ---")
         print(reporte.texto())
 UMBRAL_GC = (50_000, 20, 100)
@@ -135,6 +156,10 @@ def main(argv=None) -> int:
     if args.hasta is not None and not args.replay:
         print("Error: el argumento --hasta requiere especificar una partida con --replay.", file=sys.stderr)
         return 2
+    if args.verificar is not None and (args.replay or args.bench is not None):
+        print(texto_error("--verificar no se combina con --replay ni con --bench.", "Ejecuta cada argumento por separado."),
+              file=sys.stderr)
+        return SALIDA_ERROR
     ajustar_recolector_de_basura()           # vale para el juego, --replay y --bench
     if args.bench is not None:               # --bench no usa la red ni crea la vista interactiva
         from bench import ejecutar as ejecutar_bench
@@ -142,23 +167,25 @@ def main(argv=None) -> int:
         return ejecutar_bench(bloques, args.bench_csv)
     servicio = None
     try:
-        # El servicio de cripta se arma UNA vez aquÃ­ (un solo cliente de red y un solo UUID por ejecuciÃ³n)
+        # El servicio de cripta se arma UNA vez aquí (un solo cliente de red y un solo UUID por ejecución)
         # y se entrega al juego; --offline y --cache-size se aplican en este punto.
         comunicacion = crear_servicio(offline=args.offline, cache_size=args.cache_size)
         servicio = EstadoJuegoServicio(comunicacion=comunicacion, offline=args.offline, k_checkpoint=args.checkpoint_cada)
+        if args.verificar is not None:
+            return verificar_cripta(servicio, args.verificar)             # no se abre partida ni se crea la vista
         if args.replay:
             return reproducir(servicio, args.replay, hasta=args.hasta)     # no se crea la vista
         print("Inicializando Cripta...")
-        ControladorJuego(servicio, k_checkpoint=args.checkpoint_cada).iniciar()
-        return 0
+        # `forzar` viaja por parámetros hasta iniciarJuego; ninguna capa lo decide por su cuenta (FR-305)
+        return ControladorJuego(servicio, k_checkpoint=args.checkpoint_cada, forzar=args.forzar).iniciar()
     except KeyboardInterrupt:
         print("\nInterrumpido.")
         return 130
     except (ValueError, OSError, RuntimeError) as error:
         print(f"Error: {error}", file=sys.stderr)
-        return 1
+        return SALIDA_ERROR if args.verificar is not None else 1
     finally:
-        if servicio is not None:                 # tambiÃ©n si la partida terminÃ³ por un error o con Ctrl+C
+        if servicio is not None:                 # también si la partida terminó por un error o con Ctrl+C
             mostrar_reporte(servicio)
 
 

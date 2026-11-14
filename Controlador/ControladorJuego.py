@@ -1,13 +1,19 @@
 from DTO.EventoDTO import EventoDTO
-from Servicio.EstadoJuegoServicio import EstadoJuegoServicio
+from Servicio.EstadoJuegoServicio import EstadoJuegoServicio, CriptaNoResoluble
 from Controlador.Vista import VistaConsola
+from Controlador import Pantallas as P
 import random
 
+SALIDA_NORMAL = 0
+SALIDA_RECHAZADA = 1       # la partida no se abrió (sin criptas, cripta no resoluble sin --forzar)
+
+
 class ControladorJuego:
-    def __init__(self, servicio: EstadoJuegoServicio, k_checkpoint: int | None = None):
+    def __init__(self, servicio: EstadoJuegoServicio, k_checkpoint: int | None = None, forzar: bool = False):
         self.servicio = servicio
         self.vista = VistaConsola()
         self.k_checkpoint_cli = k_checkpoint
+        self.forzar = forzar           # lo recibe de main.py y lo pasa tal cual a iniciarJuego (FR-305); aquí no se decide
         self._advertencias_mostradas = 0
 
     def _mostrar_advertencias_nuevas(self):
@@ -17,7 +23,47 @@ class ControladorJuego:
             self.vista.mostrar_advertencias(todas[self._advertencias_mostradas:])
             self._advertencias_mostradas = len(todas)
 
-    def iniciar(self):
+    def _llaves_de_las_salidas(self, sala_actual, sala_conocida) -> list:
+        """La llave que pide cada salida cerrada de la sala actual, en el orden de `sala_conocida.salidas`. Es contenido de la
+        sala que el jugador ve (se cruza la sala real con su conocimiento); la vista solo la presenta (FR-312)."""
+        llaves = []
+        for salida in sala_conocida.salidas:
+            llave = None
+            if salida.puerta == "cerrada":
+                for real in sala_actual.salidas:
+                    if real.direccion == salida.direccion:
+                        llave = real.llave
+            llaves.append(llave)
+        return llaves
+
+    def _mostrar_arranque_verificado(self):
+        """Partida nueva (FR-301, FR-304): primero el reporte de resolubilidad, después el aviso de `--forzar` o de que la
+        verificación no está disponible, y recién entonces los avisos de llaves y de datos y el primer turno."""
+        reporte = self.servicio.reporteVerificacion()
+        if reporte is not None:
+            self.vista.mostrar_reporte_verificacion(reporte)
+        aviso = self.servicio.avisoResolubilidad()
+        if aviso is not None:
+            self.vista.mostrar_aviso(aviso)
+
+    def _mostrar_fin_de_partida(self, jugador):
+        """Resumen de fin de partida (FR-307): junta datos que el servicio ya entrega; la función de pantalla arma el texto."""
+        try:
+            fin_dto = self.servicio.finPartida()
+            _, motivo = self.servicio.terminado()
+            try:
+                mapa = self.servicio.mapaConocido()
+                salas_exploradas = None if mapa is None else len(mapa.salas)
+            except ValueError:                       # la cripta no entrega el esqueleto: no hay mapa conocido
+                salas_exploradas = None
+            self.vista.mostrar_fin_partida(motivo, self.servicio.puntaje(), fin_dto.acciones_jugador, fin_dto.tiempoReloj,
+                                           jugador.vida_actual, salas_exploradas, fin_dto.id_Cripta, fin_dto.vers_Cripta,
+                                           fin_dto.cantEnemigosDerrotados)
+        except Exception as e:
+            self.vista.mostrar_error(P.mensaje_resumen_fallido(e))
+
+    def iniciar(self) -> int:
+        """Bucle del juego. Devuelve el código de salida del programa: 0 normal; 1 si la partida no se abrió."""
         print("\n¡Bienvenido a Cripta!")
 
         if input("¿Deseas ver la tabla de puntajes? (s/n): ").strip().lower() == 's':
@@ -33,15 +79,15 @@ class ControladorJuego:
                 print("¡Partida cargada exitosamente!")
                 partida_cargada = True
             except Exception as e:
-                print(f"Error al cargar la partida: {e}. Se iniciará una nueva.")
+                self.vista.mostrar_error(P.mensaje_carga_fallida(e))
 
         # Si NO se cargó una partida, procedemos a seleccionar la cripta y la semilla con normalidad
         if not partida_cargada:
             # 1. Obtenemos las criptas disponibles desde el servicio
             criptas = self.servicio.listarCriptas()
             if not criptas:
-                print("No se encontraron criptas disponibles.")
-                return
+                self.vista.mostrar_error(P.mensaje_sin_criptas())
+                return SALIDA_RECHAZADA
 
             # 2. Mostramos el menú de selección al usuario
             print("\nSelecciona la cripta que deseas jugar:")
@@ -56,9 +102,9 @@ class ControladorJuego:
                         id_cripta = self.servicio.obtenerIdCripta(opcion)
                         break
                     else:
-                        print(f"Número inválido. Debe ser entre 1 y {len(criptas)}.")
+                        self.vista.mostrar_error(P.mensaje_numero_cripta_invalido(len(criptas)))
                 except ValueError:
-                    print("Por favor, ingresa un número válido.")
+                    self.vista.mostrar_error(P.mensaje_no_es_numero())
 
             # 4. Pedimos la semilla (opcional)
             entrada_semilla = input("Ingresa la semilla (deja en blanco para generar una aleatoria): ").strip()
@@ -72,7 +118,14 @@ class ControladorJuego:
                 print(f"-> No se ingresó semilla. Se generó automáticamente la semilla: {semilla}")
 
             # 5. Inicializamos el juego pasando la cripta y la semilla
-            self.servicio.iniciarJuego(id_cripta, semilla)
+            try:
+                self.servicio.iniciarJuego(id_cripta, semilla, forzar=self.forzar)
+            except CriptaNoResoluble as rechazo:
+                # Sin --forzar: se muestra el reporte, qué hacer, y la partida no se abre (FR-301, FR-303, FR-310).
+                self.vista.mostrar_reporte_verificacion(self.servicio.lineasDeReporte(rechazo.resultado))
+                self.vista.mostrar_error(P.mensaje_cripta_no_resoluble(id_cripta))
+                return SALIDA_RECHAZADA
+            self._mostrar_arranque_verificado()
             # Partida nueva: si no se pudo obtener la ubicación de las llaves, se avisa y la partida sigue (FR-313).
             aviso_llaves = self.servicio.avisoLlaves()
             if aviso_llaves is not None:
@@ -84,8 +137,8 @@ class ControladorJuego:
         while True:
             jugador = self.servicio.getJudador()
             if not jugador:
-                print("Error: No se pudo obtener el estado del jugador.")
-                break
+                self.vista.mostrar_error(P.mensaje_sin_jugador())
+                return SALIDA_RECHAZADA
             self._mostrar_advertencias_nuevas()
                 
             terminado, _ = self.servicio.terminado()
@@ -115,42 +168,35 @@ class ControladorJuego:
                 except Exception as e:
                     print(f"No se pudieron mostrar los mensajes: {e}")
 
-                # 3. Mostrar el resumen con FinPartidaDTO
-                try:
-                    fin_dto = self.servicio.finPartida()
-                    print("\n--- RESUMEN DE PARTIDA FINALIZADA ---")
-                    print(f"  > ID Cripta: {fin_dto.id_Cripta}")
-                    print(f"  > Versión Cripta: {fin_dto.vers_Cripta}")
-                    print(f"  > Acciones del jugador: {fin_dto.acciones_jugador}")
-                    print(f"  > Enemigos derrotados: {fin_dto.cantEnemigosDerrotados}")
-                    print(f"  > Tiempo total: {fin_dto.tiempoReloj}")
-                    print("=" * 50)
-                except Exception as e:
-                    print(f"Error al obtener el resumen: {e}")
+                # 3. Resumen de fin de partida (FR-307): motivo, puntaje, acciones, tiempo, vida final y salas exploradas
+                self._mostrar_fin_de_partida(jugador)
 
                 # Bucle interactivo post-partida (FR-427, plan.md §6)
                 print("\nPartida concluida. Puedes consultar la historia ('historia <t>', 'historia #k') o escribir 'salir'.")
                 while True:
                     try:
-                        linea_post = input("\n[Post-partida] historia <t> / historia #k / salir: ").strip()
+                        linea_post = input("\n[Post-partida] historia <t> / historia #k / ayuda / salir: ").strip()
                     except (EOFError, KeyboardInterrupt):
                         break
                     if linea_post.lower() == "salir":
                         break
+                    if linea_post.lower() == "ayuda":
+                        self.vista.mostrar_ayuda(P.texto_ayuda(post_partida=True))
+                        continue
                     if not self._procesar_comando_historia(linea_post):
-                        print("Comando no reconocido. Usa 'historia <t>', 'historia #k' o 'salir'.")
-                break
+                        self.vista.mostrar_error(P.mensaje_post_partida_desconocido())
+                return SALIDA_NORMAL
                 
             sala_actual = self.servicio.obtenerSala(jugador.id_sala_actual)
             
-            self.vista.mostrar_juego(jugador, sala_actual, self.servicio.vistaSalaActual(), self.servicio.objetoActualInventario(), self.servicio.ultimosMensajes())
+            sala_conocida = self.servicio.vistaSalaActual()
+            print()                      # una línea en blanco separa la pantalla de lo que se imprimió antes
+            self.vista.mostrar_juego(jugador, sala_actual, sala_conocida, self.servicio.objetoActualInventario(),
+                                     self.servicio.ultimosMensajes(), self.servicio.tiempoActual(),
+                                     self._llaves_de_las_salidas(sala_actual, sala_conocida))
 
             try:
-                entrada_usuario = input("\n¿Qué deseas hacer? Ir al (norte/sur/este/oeste, recoger[objeto], " \
-                "\n usar[objeto actual],siguiente[objeto],anterior[objeto]," \
-                "\n soltar, atacar, esperar, abrir[puerta], cerrar[puerta]," \
-                "\n inventario[peso/valor/nombre], mapa, ir a <sala>," \
-                "\n historia <t> | historia #k, salir: ").strip()
+                entrada_usuario = input("\n" + P.PROMPT).strip()
             except (EOFError, KeyboardInterrupt):
                 break
 
@@ -170,9 +216,14 @@ class ControladorJuego:
                         self.servicio.guardarPartida(nombre_archivo)
                         print("¡Partida guardada con éxito!")
                     except Exception as e:
-                        print(f"Error al guardar la partida: {e}")
+                        self.vista.mostrar_error(P.mensaje_guardado_fallido(e))
                 print("Saliendo del juego...")
                 break
+
+            if accion == "ayuda":
+                # No es una acción del jugador: no avanza el reloj ni entra al historial ni al log (FR-309)
+                self.vista.mostrar_ayuda(P.texto_ayuda())
+                continue
 
             if accion == "mapa":
                 # No es una acción del jugador: no pasa por accionJugador, no avanza el reloj ni entra al historial ni al log (FR-218)
@@ -185,8 +236,8 @@ class ControladorJuego:
                 continue  
             elif evento:
                 self.servicio.accionJugador(evento)
-            else:
-                print("Acción no reconocida o comando inválido.")
+            # evento None: el mensaje de rechazo ya lo mostró _mapear_entrada_a_evento
+        return SALIDA_NORMAL
 
     def _procesar_comando_ir_a(self, comando: str) -> bool:
         """Interpreta «ir a <id de sala>» (capacidad 006, FR-231). Devuelve True si la entrada era ese comando (con éxito
@@ -196,12 +247,12 @@ class ControladorJuego:
         if len(partes) < 2 or partes[0] != "ir" or partes[1] != "a":
             return False
         if len(partes) != 3 or not partes[2].isdigit():
-            print("El destino debe ser el número de una sala.")      # no hay orden que el modelo pueda rechazar
+            self.vista.mostrar_error(P.mensaje_ir_a_destino_invalido())      # no hay orden que el modelo pueda rechazar
             return True
         try:
             resultado = self.servicio.irA(int(partes[2]))
         except ValueError as error:
-            print(f"No se puede viajar: {error}")
+            self.vista.mostrar_error(P.mensaje_ir_a_rechazada(error))
             return True
         self.vista.mostrar_viaje(resultado)
         return True
@@ -217,7 +268,7 @@ class ControladorJuego:
             return False
 
         if len(partes) == 1:
-            print("Error: Parámetro de historia no reconocido. Usa 'historia <t>' o 'historia #k'.")
+            self.vista.mostrar_error(P.mensaje_historia_sin_parametro())
             return True
 
         param = partes[1].strip()
@@ -228,31 +279,29 @@ class ControladorJuego:
             if "." in resto:
                 try:
                     float(resto)
-                    print("Error: El parámetro debe ser un número entero.")
+                    self.vista.mostrar_error(P.mensaje_historia_no_entero())
                     return True
                 except ValueError:
                     pass
             try:
                 k = int(resto)
             except ValueError:
-                print("Error: Parámetro de historia no reconocido. Usa 'historia <t>' o 'historia #k'.")
+                self.vista.mostrar_error(P.mensaje_historia_sin_parametro())
                 return True
 
             if k < 0:
-                print("Error: El instante o número de acción no puede ser negativo.")
+                self.vista.mostrar_error(P.mensaje_historia_negativo())
                 return True
             if k == 0:
-                print("Error: El número de acción debe ser mayor o igual que 1.")
+                self.vista.mostrar_error(P.mensaje_historia_accion_cero())
                 return True
 
             try:
                 resumen = self.servicio.consultarHistoria(accion=k)
                 if self.vista is not None:
                     self.vista.mostrar_historia(resumen)
-            except ValueError as e:
-                print(f"Error: {e}")
             except Exception as e:
-                print(f"Error: {e}")
+                self.vista.mostrar_error(P.mensaje_historia_rechazada(e))
             return True
 
         # Caso historia <t> o historia t
@@ -263,7 +312,7 @@ class ControladorJuego:
         if "." in token:
             try:
                 float(token)
-                print("Error: El parámetro debe ser un número entero.")
+                self.vista.mostrar_error(P.mensaje_historia_no_entero())
                 return True
             except ValueError:
                 pass
@@ -271,21 +320,19 @@ class ControladorJuego:
         try:
             t = int(token)
         except ValueError:
-            print("Error: Parámetro de historia no reconocido. Usa 'historia <t>' o 'historia #k'.")
+            self.vista.mostrar_error(P.mensaje_historia_sin_parametro())
             return True
 
         if t < 0:
-            print("Error: El instante o número de acción no puede ser negativo.")
+            self.vista.mostrar_error(P.mensaje_historia_negativo())
             return True
 
         try:
             resumen = self.servicio.consultarHistoria(instante=t)
             if self.vista is not None:
                 self.vista.mostrar_historia(resumen)
-        except ValueError as e:
-            print(f"Error: {e}")
         except Exception as e:
-            print(f"Error: {e}")
+            self.vista.mostrar_error(P.mensaje_historia_rechazada(e))
         return True
 
     def _registrar_puntaje(self):
@@ -295,16 +342,16 @@ class ControladorJuego:
         while True:
             nombre = input(f"Ingresa tu nombre (máx. {maximo} caracteres): ").strip()
             if not nombre:
-                print("El nombre no puede estar vacío.")
+                self.vista.mostrar_error(P.mensaje_puntaje_nombre_vacio())
                 continue
             if len(nombre) > maximo:
-                print(f"El nombre no puede pasar de {maximo} caracteres (tiene {len(nombre)}).")
+                self.vista.mostrar_error(P.mensaje_puntaje_nombre_largo(maximo, len(nombre)))
                 continue
             try:
                 registro = self.servicio.registrarPuntaje(nombre)
                 print("¡Puntaje registrado!")
             except Exception as e:
-                print(f"No se pudo registrar el puntaje: {e}")
+                self.vista.mostrar_error(P.mensaje_puntaje_fallido(e))
                 return
             self._mostrar_puntajes(registro)
             return
@@ -314,7 +361,7 @@ class ControladorJuego:
         try:
             self.vista.mostrar_puntajes(self.servicio.tablaPuntajes(), resaltar=resaltar)
         except Exception as e:
-            print(f"No se pudo leer la tabla de puntajes: {e}")
+            self.vista.mostrar_error(P.mensaje_puntajes_ilegibles(e))
 
     def _mapear_entrada_a_evento(self, accion: str, sala_actual, jugador) -> EventoDTO | None:
        # Movimiento de salas
@@ -328,17 +375,14 @@ class ControladorJuego:
             )
 
             if salida is None:
-                print(f"No existe una salida hacia el '{accion}'.")
+                print(P.mensaje_sin_salida(accion))
                 return "IGNORAR"
 
             if salida.cerrada:
                 if salida.llave:
-                    print(
-                        f"La salida hacia el '{accion}' está cerrada. "
-                        f"Necesitas la llave: '{salida.llave}'."
-                    )
+                    print(P.mensaje_salida_cerrada_con_llave(accion, salida.llave))
                 else:
-                    print(f"La salida hacia el '{accion}' está cerrada.")
+                    print(P.mensaje_salida_cerrada(accion))
                 return "IGNORAR"
 
             return EventoDTO(
@@ -352,7 +396,7 @@ class ControladorJuego:
         # Atacar a un enemigo seleccionado
         elif accion == "atacar":
             if not sala_actual.enemigos:
-                print("No hay enemigos aquí para atacar.")
+                print(P.mensaje_sin_enemigos())
                 return None
             
             if len(sala_actual.enemigos) == 1:
@@ -367,15 +411,15 @@ class ControladorJuego:
                     if 0 <= opcion < len(sala_actual.enemigos):
                         objetivo = sala_actual.enemigos[opcion]
                     else:
-                        print("Número de enemigo inválido.")
+                        print(P.mensaje_enemigo_invalido())
                         return None
                 except ValueError:
-                    print("Por favor ingresa un número válido.")
+                    print(P.mensaje_no_es_numero())
                     return None
 
             # Validación de vida antes de crear el DTO de ataque
             if objetivo.vida_actual <= 0:
-                print(f"¡{objetivo.nombre} ya está derrotado!")
+                print(P.mensaje_enemigo_derrotado(objetivo.nombre))
                 return "IGNORAR"
 
             return EventoDTO(
@@ -389,7 +433,7 @@ class ControladorJuego:
         # Abrir puerta o salida bloqueada
         elif accion == "abrir":
             if not hasattr(sala_actual, "salidas") or not sala_actual.salidas:
-                print("No hay salidas en esta sala.")
+                print(P.mensaje_sin_salidas())
                 return "IGNORAR"
 
             # Mostramos únicamente las puertas cerradas
@@ -399,7 +443,7 @@ class ControladorJuego:
             ]
 
             if not puertas_cerradas:
-                print("No hay puertas cerradas en esta sala.")
+                print(P.mensaje_sin_puertas_cerradas())
                 return "IGNORAR"
 
             print("\n¿Qué puerta deseas abrir?")
@@ -417,7 +461,7 @@ class ControladorJuego:
             ).strip().lower()
 
             if not direccion:
-                print("Dirección no válida.")
+                print(P.mensaje_direccion_vacia())
                 return "IGNORAR"
 
             # Buscamos solamente entre las puertas cerradas mostradas
@@ -428,7 +472,7 @@ class ControladorJuego:
                     break
 
             if not salida_encontrada:
-                print(f"No hay ninguna puerta cerrada hacia el '{direccion}'.")
+                print(P.mensaje_sin_puerta_cerrada(direccion))
                 return "IGNORAR"
 
             # Validación de llave mediante el servicio
@@ -438,10 +482,7 @@ class ControladorJuego:
                 tiene_la_llave = self.servicio.tieneLlave(id_llave_necesaria)
 
                 if not tiene_la_llave:
-                    print(
-                        f"La puerta está cerrada. Necesitas la llave: "
-                        f"'{id_llave_necesaria}' para poder abrirla."
-                    )
+                    print(P.mensaje_falta_llave(id_llave_necesaria))
                     return "IGNORAR"
 
             # GestorEventos espera [sala_actual, direccion]
@@ -456,7 +497,7 @@ class ControladorJuego:
         # 1. RECOGER OBJETO (Menú interactivo por número basado en la sala)
         elif accion == "recoger":
             if not sala_actual.objetos:
-                print("No hay objetos aquí para recoger.")
+                print(P.mensaje_sin_objetos())
                 return "IGNORAR"
             
             print("\n¿Qué objeto deseas recoger?")
@@ -468,10 +509,10 @@ class ControladorJuego:
                 if 0 <= opcion < len(sala_actual.objetos):
                     obj_encontrado = sala_actual.objetos[opcion]
                 else:
-                    print("Número de objeto inválido.")
+                    print(P.mensaje_objeto_invalido())
                     return "IGNORAR"
             except ValueError:
-                print("Por favor ingresa un número válido.")
+                print(P.mensaje_no_es_numero())
                 return "IGNORAR"
 
             return EventoDTO(
@@ -491,7 +532,7 @@ class ControladorJuego:
                 else:
                     print("-> Ya estás en el último objeto del inventario.")
             except ValueError as e:
-                print(f"-> {e}")
+                print(P.mensaje_objeto_rechazado(e))
             return "IGNORAR"
 
         # 2. MOVERSE AL OBJETO ANTERIOR DEL INVENTARIO
@@ -503,14 +544,14 @@ class ControladorJuego:
                 else:
                     print("-> Ya estás en el primer objeto del inventario.")
             except ValueError as e:
-                print(f"-> {e}")
+                print(P.mensaje_objeto_rechazado(e))
             return "IGNORAR"
 
         # 3. USAR EL OBJETO ACTUAL
         elif accion == "usar":
             obj_actual = self.servicio.objetoActualInventario()
             if obj_actual is None:
-                print("Tu inventario está vacío.")
+                print(P.mensaje_inventario_vacio())
                 return "IGNORAR"
 
             return EventoDTO(
@@ -525,7 +566,7 @@ class ControladorJuego:
         elif accion == "soltar":
             obj_actual = self.servicio.objetoActualInventario()
             if obj_actual is None:
-                print("Tu inventario está vacío.")
+                print(P.mensaje_inventario_vacio())
                 return "IGNORAR"
 
             return EventoDTO(
@@ -550,16 +591,16 @@ class ControladorJuego:
         elif accion.split()[:1] == ["inventario"]:
             partes = accion.split()
             if len(partes) > 2:
-                print("Uso: inventario [peso|valor|nombre]")
+                print(P.mensaje_inventario_uso())
                 return "IGNORAR"
             criterio = partes[1] if len(partes) == 2 else None
             try:
                 objetos = self.servicio.vistaInventario(criterio)
             except ValueError as e:
-                print(f"-> {e}")
+                print(P.mensaje_inventario_rechazado(e))
                 return "IGNORAR"
             self.vista.mostrar_inventario(objetos, jugador, criterio)
             return "IGNORAR"
         
-        print("Comando no reconocido.")
+        print(P.mensaje_comando_desconocido(accion))
         return None

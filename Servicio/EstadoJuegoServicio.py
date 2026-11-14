@@ -2,6 +2,7 @@ from Logica.EstadoJuegoLogica import *
 from DTO.FinPartidaDTO import FinPartidaDTO
 from DTO.ResultadoVerificacionDTO import ResultadoVerificacion
 from Logica import VerificacionResolubilidad
+from Logica.ReporteVerificacion import lineas_reporte
 from adaptadores.AlmacenPartidaBinario import AlmacenPartidaBinario
 from adaptadores.AlmacenLogTexto import AlmacenLogTexto
 from adaptadores.AlmacenPuntajes import AlmacenPuntajes, MAX_NOMBRE
@@ -10,6 +11,10 @@ from DTO.ResumenEstadoDTO import ResumenEstadoDTO
 from Logica.ordenamiento import ordenar_adaptativo
 from adaptadores.fabrica import crear_servicio
 from adaptadores.extension import ruta_archivo, EXTENSION_PARTIDA, CARPETA_PARTIDAS
+
+
+# El controlador atrapa este rechazo sin importar la lógica (capacidad 011, research D1).
+CriptaNoResoluble = VerificacionResolubilidad.CriptaNoResoluble
 
 
 class EstadoJuegoServicio:
@@ -268,6 +273,28 @@ class EstadoJuegoServicio:
         if not logica.iniciado:
             return None
         return logica.avisoResolubilidad
+
+    def lineasDeReporte(self, resultado: ResultadoVerificacion) -> list[str]:
+        """Las líneas del reporte de resolubilidad de un resultado (capacidad 011, FR-301, FR-302). Es el mismo texto de la
+        003, sin cambios; sirve a `--verificar` (que ya tiene el resultado) y a la pantalla de inicio. Solo lee."""
+        return lineas_reporte(resultado)
+
+    def reporteVerificacion(self) -> list[str] | None:
+        """Líneas del reporte de la verificación de la partida recién iniciada (capacidad 011, FR-301), o None si no hay
+        partida o no se verificó (sin llaves, FR-313 de la 009; partida cargada o repetida). Solo lee."""
+        logica = self._estadoJuegoLogica
+        resultado = getattr(logica, "resultadoVerificacion", None)
+        if not logica.iniciado or resultado is None:
+            return None
+        return lineas_reporte(resultado)
+
+    def tiempoActual(self) -> int:
+        """Instante del reloj virtual de la partida en curso, para la pantalla de sala (capacidad 011, FR-306). Solo lee."""
+        return self._estadoJuegoLogica.estadoJuego.reloj.tiempo_actual
+
+    def puntaje(self) -> int:
+        """Puntaje de la partida en curso, para el resumen de fin de partida (capacidad 011, FR-307). Solo lee."""
+        return self._estadoJuegoLogica.obtenerPuntaje()
 
     def terminado(self) -> tuple[bool, str]:
         return self._estadoJuegoLogica.terminado()

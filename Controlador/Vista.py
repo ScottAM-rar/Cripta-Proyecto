@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 from typing import TYPE_CHECKING
+from Controlador.Pantallas import texto_error, texto_fin_partida, texto_sala
 if TYPE_CHECKING:
     from DTO.ResumenEstadoDTO import ResumenEstadoDTO
 
@@ -12,86 +13,34 @@ class VistaConsola:
         for advertencia in advertencias:
             print(f"AVISO: {advertencia}")
    
-   def mostrar_juego(self, jugador, sala_actual, sala_conocida, objeto_actual=None, mensajes=None):
-        """`sala_conocida`: la sala actual en el formato del conocimiento del jugador (SalaConocidaDTO). Las salidas salen
-        SOLO de ahí (FR-219): el destino lleva nombre únicamente si está explorado y nunca se muestra el id ni el nombre de
-        una sala avistada. El resto (objetos, enemigos, trampas) es contenido de la sala actual, que el jugador ve."""
+   def mostrar_reporte_verificacion(self, lineas):
+        """Reporte de resolubilidad al iniciar una partida nueva (capacidad 011, FR-301): solo imprime las líneas recibidas."""
+        for linea in lineas:
+            print(linea)
 
-        print("\n" + "="*50)
-        print(f"SALA: {sala_actual.nombre} (ID: {sala_actual.id})")
-        print(f"VIDA JUGADOR: {jugador.vida_actual}/{jugador.vida_max}")
+   def mostrar_aviso(self, texto):
+        """Un aviso de una línea (el de `--forzar` o el de verificación no disponible), con el prefijo AVISO si no lo trae."""
+        print(texto if texto.startswith("AVISO:") else f"AVISO: {texto}")
 
-        print("\n--- SALIDAS ---")
-        for salida in sala_conocida.salidas:
-            if salida.puerta == "cerrada":
-                llave = None
-                for real in sala_actual.salidas:         # la llave que pide una puerta de la sala actual es contenido de la sala
-                    if real.direccion == salida.direccion:
-                        llave = real.llave
-                estado_puerta = f"CERRADA (Requiere: {llave})" if llave else "CERRADA"
-            elif salida.puerta == "abierta":
-                estado_puerta = "Abierta"
-            else:
-                estado_puerta = "Sin observar"
-            destino = salida.destino_nombre if salida.destino_explorado else "sala sin explorar"
+   def mostrar_juego(self, jugador, sala_actual, sala_conocida, objeto_actual=None, mensajes=None, tiempo=None, llaves=None):
+        """Pantalla de sala (FR-306): imprime lo que arma `Pantallas.texto_sala`, siempre con las mismas secciones y el mismo
+        orden. No decide ni calcula nada: `sala_conocida` trae las salidas (FR-219), `llaves` la llave que pide cada salida
+        cerrada (la resuelve el controlador) y `tiempo` el instante del reloj, ya calculado por el modelo."""
+        print(texto_sala(jugador, tiempo, sala_actual, sala_conocida, llaves, objeto_actual, mensajes))
 
-            print(
-                f"  > {salida.direccion.capitalize()} -> "
-                f"{destino} [{estado_puerta}] costo {salida.costo}"
-            )
-        print("\n--- OBJETOS EN LA SALA ---")
-        if sala_actual.objetos:
-            for obj in sala_actual.objetos:
-                # Verificamos si el objeto es una instancia con atributos DTO
-                if hasattr(obj, 'nombre') and hasattr(obj, 'id_catalogo'):
-                    print(f"  - {obj.nombre.capitalize()} (ID: {obj.id_catalogo})")
-                else:
-                    # Por si acaso viene como texto plano
-                    nombre_limpio = str(obj).replace("itm_", "").replace("_", " ").capitalize()
-                    print(f"  - {nombre_limpio} (ID: {obj})")
-        else:
-            print("  (No hay objetos)")
-            
-        print("\n--- ENEMIGOS ---")
-        if sala_actual.enemigos:
-            for enm in sala_actual.enemigos:
-                marca = "[CAZADOR] " if enm.comportamiento == "cazador" else ""
-                print(f"  - {marca}{enm.nombre} (Vida: {enm.vida_actual}/{enm.vida_max})")
-        else:
-            print("  (No hay enemigos)")
-            
-        print("\n--- TRAMPAS ---")
-        if sala_actual.trampas:
-            for trampa in sala_actual.trampas:
-                # Verificamos si la trampa tiene un atributo de nombre o id_catalogo
-                nombre_trampa = getattr(trampa, 'nombre', None)
-                if not nombre_trampa and hasattr(trampa, 'id_catalogo'):
-                    # Limpiamos el id_catalogo (ej: 'trp_dardos' -> 'Dardos')
-                    nombre_trampa = str(trampa.id_catalogo).replace("trp_", "").replace("_", " ").capitalize()
-                elif not nombre_trampa:
-                    nombre_trampa = "Trampa desconocida"
+   def mostrar_fin_partida(self, motivo, puntaje, acciones, tiempo, vida_final, salas_exploradas,
+                            id_cripta, version, enemigos_derrotados):
+        """Resumen de fin de partida (FR-307): imprime lo que arma `Pantallas.texto_fin_partida`."""
+        print(texto_fin_partida(motivo, puntaje, acciones, tiempo, vida_final, salas_exploradas,
+                                id_cripta, version, enemigos_derrotados))
 
-                estado_t = "Armada" if getattr(trampa, 'armada', True) else "Desarmada"
-                daño = getattr(trampa, 'daño', 0)
-                
-                print(f"  - {nombre_trampa} [Daño: {daño}] - Estado: {estado_t}")
-        else:
-            print("  (Sin trampas)")
+   def mostrar_ayuda(self, texto):
+        """Lista de comandos (FR-309), tal como llega de `Pantallas.texto_ayuda`."""
+        print(texto)
 
-        print("\n--- INVENTARIO ---")
-        if objeto_actual is not None:
-            print(f"  > Objeto Actual: {objeto_actual.nombre} "
-                  f"(ID: {getattr(objeto_actual, 'id_catalogo', 'N/A')})")
-        else:
-            print("  > Objeto Actual: [Inventario vacío]")
-
-        # §4.8 y §10.2: la pantalla muestra únicamente los últimos 20 mensajes del juego
-        print("\n--- ÚLTIMOS MENSAJES (máx. 20) ---")
-        if mensajes:
-            for mensaje in mensajes:
-                print(f"  {mensaje}")
-        else:
-            print("  (sin mensajes)")
+   def mostrar_error(self, texto):
+        """Un rechazo o error (FR-310), tal como llega del catálogo de `Pantallas`."""
+        print(texto)
 
    def mostrar_mapa_conocido(self, mapa):
         """Mapa conocido (FR-216, FR-217, FR-219): solo lo que viene en `mapa` (MapaConocidoDTO). Las salas exploradas, en el
@@ -113,7 +62,7 @@ class VistaConsola:
         """Resultado de «ir a» (capacidad 006, contracts/comando-ir-a.md §3): solo imprime lo que viene en `resultado`
         (ResultadoViajeDTO). Un rechazo es una sola línea; un viaje terminado, su resumen."""
         if resultado.estado == "RECHAZADO":
-            print(resultado.mensaje)
+            print(texto_error(resultado.mensaje, "Escribe 'mapa' para ver las salas que conoces."))
             return
         if resultado.estado == "LLEGADO":
             print(f"Llegaste a la sala {resultado.sala_final} tras {resultado.pasos} pasos (tiempo {resultado.tiempo}).")
