@@ -4,7 +4,7 @@
 
 **Creada**: 2026-10-27
 
-**Estado**: Borrador
+**Estado**: Implementada (T001 a T028)
 
 **Entrada**: Capacidad transversal de la Parte II: visitar las salas de la cripta en orden de cercanía a partir de una sala. Requisitos con prefijo FR-5xx.
 

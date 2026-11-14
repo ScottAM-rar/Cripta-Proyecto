@@ -4,7 +4,7 @@
 
 **Creada**: 2026-10-27
 
-**Estado**: Borrador
+**Estado**: Implementada (T001 a T071)
 
 **Entrada**: Capacidad 1 de la Parte II — costo de las salidas (terreno) y enemigo cazador. Requisitos con prefijo FR-1xx.
 
