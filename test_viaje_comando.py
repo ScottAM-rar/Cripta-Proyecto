@@ -69,7 +69,7 @@ class TestComandoRechazado(unittest.TestCase):
             with self.subTest(linea=linea):
                 reconocido, texto = ejecutar(controlador, linea)
                 self.assertTrue(reconocido)
-                self.assertIn("El destino debe ser el número de una sala.", texto)
+                self.assertIn("El destino de 'ir a' debe ser el número de una sala. Ejemplo: ir a 12.", texto)   # texto de la 011 (FR-310)
 
 
 if __name__ == "__main__":

@@ -163,6 +163,19 @@ class TestVista(unittest.TestCase):
             VistaConsola().mostrar_juego(jugador, sala, logica.vistaSalaActual(), None, [])
         return salida.getvalue()
 
+    @staticmethod
+    def seccion(texto, titulo):
+        """Líneas de contenido de una sección de la pantalla de sala, hasta el siguiente título."""
+        lineas, dentro = [], False
+        for linea in texto.splitlines():
+            if linea.strip() == titulo:
+                dentro = True
+            elif dentro and linea.startswith("---"):
+                break
+            elif dentro and linea.strip():
+                lineas.append(linea)
+        return lineas
+
     def test_FR130_cada_salida_muestra_su_costo(self):
         salas = esqueleto_lineal([250, None])
         salas[1]["salidas"]["E"]["costo"] = 70
@@ -179,11 +192,14 @@ class TestVista(unittest.TestCase):
     def test_FR131_el_cazador_se_distingue_de_los_demas_enemigos(self):
         logica = nueva_partida(esqueleto_lineal([100]), [(1, "e-1", "ent_cazador", None), (1, "e-2", "ent_guardian", None)],
                                [ficha_cazador(), ficha_enemigo("ent_guardian", "guardián")])
-        lineas = [l for l in self.mostrar(logica).splitlines() if "Vida:" in l and "JUGADOR" not in l]
-        cazadores = [l for l in lineas if "[CAZADOR]" in l]
-        otros = [l for l in lineas if "[CAZADOR]" not in l]
+        # Formato de la 011 (contracts/pantallas.md §1): la sección ENEMIGOS lista «- [cazador] nombre [activo|dormido]  vida a/b»
+        lineas = self.seccion(self.mostrar(logica), "--- ENEMIGOS ---")
+        cazadores = [l for l in lineas if "[cazador]" in l]
+        otros = [l for l in lineas if "[cazador]" not in l]
         self.assertEqual(len(cazadores), 1)
         self.assertEqual(len(otros), 1)
+        for linea in lineas:
+            self.assertTrue("[activo]" in linea or "[dormido]" in linea, linea)   # FR-306: activos o dormidos
 
     def test_FR118_las_advertencias_de_datos_se_muestran_una_sola_vez(self):
         class ServicioFalso:

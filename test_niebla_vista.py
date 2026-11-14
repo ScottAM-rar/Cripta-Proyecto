@@ -127,6 +127,22 @@ class TestMapaConocido(unittest.TestCase):
         self.assertIn("sala sin explorar", texto)
         self.assertIn("costo 250", texto)
 
+    def test_FR306_una_puerta_sin_observar_se_muestra_en_la_sala_como_sin_observar(self):
+        """FR-306 y el supuesto de la 011: una puerta que el jugador no ha visto no se muestra ni abierta ni cerrada."""
+        dto = MapaConocidoDTO(1, [
+            SalaConocidaDTO(1, "Entrada", [SalidaConocidaDTO("este", 100, "abierta", True, 2, "Pasillo"),
+                                           SalidaConocidaDTO("sur", 250, "sin observar", False, None, "")]),
+            SalaConocidaDTO(2, "Pasillo", [SalidaConocidaDTO("oeste", 100, "abierta", True, 1, "Entrada")]),
+        ])
+        jugador = JugadorDTO(1, 1, 1, 1, 100, id_sala_actual=1)
+        texto = imprimir(VistaConsola().mostrar_juego, jugador, SalaDTO(1, "Entrada"), dto.salas[0], None, [])
+        linea_sur = [l for l in texto.splitlines() if "sur" in l.lower() and "costo" in l]
+        self.assertEqual(len(linea_sur), 1)
+        self.assertIn("sin observar", linea_sur[0].lower())
+        self.assertNotIn("abierta", linea_sur[0].lower())
+        self.assertNotIn("cerrada", linea_sur[0].lower())
+        self.assertNotIn("Secreta", texto)
+
 
 class TestConsultarNoEsUnaAccion(unittest.TestCase):
     def test_FR218_consultar_el_mapa_no_cambia_reloj_acciones_historial_ni_conocimiento(self):
@@ -158,6 +174,11 @@ class TestConsultarNoEsUnaAccion(unittest.TestCase):
             def mapaConocido(self): return logica.instantaneaMapaConocido()
             def objetoActualInventario(self): return None
             def ultimosMensajes(self): return []
+            def tiempoActual(self): return 0
+            def puntaje(self): return 0
+            def reporteVerificacion(self): return None
+            def avisoResolubilidad(self): return None
+            def avisoLlaves(self): return None
             def cargarPartida(self, nombre, **kw): pass
             def accionJugador(self, evento): ServicioFalso.acciones += 1
 
