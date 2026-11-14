@@ -183,3 +183,38 @@ Contrato en [contracts/bench-pantallas.md](contracts/bench-pantallas.md). Lo que
 | Ciclo de eventos | `--bench ciclo` sin cambios | — | < 20 ms (duro, ya existente) |
 
 Las pantallas no están dentro del ciclo de eventos (se construyen entre decisiones del jugador); aun así se vuelve a ejecutar `ciclo` para dejar constancia en `DECISIONES.md` de que el camino de eventos no cambió.
+
+---
+
+## Línea base (T001, T002; 2026-11-13, antes de cualquier cambio)
+
+Se usa el intérprete del entorno virtual del repositorio (`.venv/Scripts/python.exe`): con el Python del sistema falta `requests` y `test_sin_red.py` y otros 15 módulos no se importan (16 errores de importación ajenos a esta capacidad).
+
+**Suite completa** (`.venv/Scripts/python.exe -m unittest discover -p "test_*.py"`): **635 pruebas, todas OK**, 41 s. No hay pruebas fallando hoy. Pruebas que dependen del texto de la vista o del controlador (fase 2): `test_niebla_vista.py`, `test_terreno_costos.py`, `test_viaje_comando.py`, `test_resolubilidad_reporte.py`, `test_historia_tiempo.py`, `test_historia_accion.py`, `test_cazador.py`, `test_equivalencia_cazador.py`, `test_cli_checkpoint.py`, `test_replay_hasta.py`, `test_determinismo_replay.py`, `tests_labs/prueba_reporte_solicitudes.py`, `tests_labs/escenarios_terreno.py`, `bench/llaves.py`.
+
+**`--bench ciclo`** (antes):
+
+| Carga | Mediana | Máximo | Veredicto |
+|---|---|---|---|
+| 10 esbirros activos | 281,7 µs | 712,3 µs | CUMPLE |
+| 100 esbirros activos | 2,67 ms | 7,50 ms | CUMPLE |
+| 300 esbirros activos | 8,41 ms | 16,14 ms | CUMPLE |
+| 1 000 esbirros (estrés, informativo) | 30,96 ms | 101,26 ms | no decide |
+| 10 cazadores persiguiendo | 444,7 µs | 779,7 µs | CUMPLE |
+| 50 cazadores persiguiendo | 2,23 ms | 3,27 ms | CUMPLE |
+| Reproducir 300 acciones | 203,34 ms | 208,12 ms | informativo |
+
+## Pruebas en rojo esperadas (T016, fase 2 cerrada)
+
+Suite completa tras actualizar las pruebas existentes: 636 pruebas, **5 fallan, y son exactamente las anunciadas**:
+
+| Prueba | Texto que cambia | Se pone en verde en |
+|---|---|---|
+| `test_terreno_costos.TestVista.test_FR131_el_cazador_se_distingue_de_los_demas_enemigos` | filas de la sección `--- ENEMIGOS ---`: `[cazador]` en minúsculas y `[activo]`/`[dormido]` | T032 y T035 |
+| `test_viaje_comando.TestComandoRechazado.test_FR237_un_destino_que_no_es_un_numero_no_llama_al_servicio` (4 subcasos) | `El destino debe ser el número de una sala.` → `El destino de 'ir a' debe ser el número de una sala. Ejemplo: ir a 12.` | T034 y T036 |
+
+**Pruebas que ya pasaban y se amplían** (`test_niebla_vista.py`): la puerta «sin observar» en la **sala** (FR-306), y el `ServicioFalso` del comando `mapa` gana `tiempoActual`, `puntaje`, `reporteVerificacion`, `avisoResolubilidad` y `avisoLlaves` (el controlador nuevo los usa).
+
+**Revisadas, sin cambio de texto** (T009, T010, T011, T012, T013, T015): `test_resolubilidad_reporte.py` (los textos de `lineas_reporte` y `aviso_forzado` no cambian y ningún aserto depende de `Error:`), `test_historia_tiempo.py` (la secuencia de entradas sigue válida: el reporte no pide entrada), `test_historia_accion.py` (la revisión de `Controlador/*.py` recoge `Pantallas.py` sola; la comprobación de importaciones de `Pantallas.py` se hace solo en `test_pantallas_aislamiento.py`, T019, para no duplicarla), `test_cazador.py`, `test_equivalencia_cazador.py`, `tests_labs/escenarios_terreno.py`, `bench/llaves.py` (solo usan `ControladorJuego(None)._mapear_entrada_a_evento`), `test_cli_checkpoint.py` y `test_replay_hasta.py` (ningún aserto contiene los textos con caracteres dañados).
+
+**Hallazgo ajeno (T014)**: `tests_labs/prueba_reporte_solicitudes.py` es un script de laboratorio, no una prueba de la suite (`test_*.py`), y **ya falla hoy** por una causa anterior: sus teclas simuladas no incluyen la pregunta de la tabla de puntajes (`IndexError: pop from empty list`), así que nunca llega a su aserto de `Reproducción terminada`. No se arregla en esta capacidad; la corrección de los caracteres dañados (T037) sí deja correcto el texto que ese aserto espera.

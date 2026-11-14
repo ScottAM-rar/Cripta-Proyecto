@@ -11,8 +11,8 @@ Cómo comprobar la capacidad de punta a punta. Detalles de formato en [contracts
 ## 1. Pruebas automáticas
 
 ```text
-python -m unittest test_arranque_verificado test_pantallas_texto test_pantallas_aislamiento -v
-python -m unittest discover -p "test_*.py"          # toda la suite: nada de las capacidades anteriores se rompe
+python -m unittest test_arranque_verificado test_pantallas_texto test_pantallas_controlador test_pantallas_aislamiento bench.test_bench_pantallas -v
+.venv/Scripts/python.exe -m unittest discover -p "test_*.py"          # toda la suite (con el intérprete del entorno virtual: el del sistema no tiene `requests`): nada de las capacidades anteriores se rompe
 ```
 
 ## 2. Arranque verificado a mano

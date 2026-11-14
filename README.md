@@ -22,8 +22,13 @@ Proyecto 1 de Estructura de datos
    Consultar el pasado durante la partida (o al terminar): escribir historia <t> (estado en el instante virtual t) o historia #k (estado justo antes de tu acción k); no consume tiempo, no cuenta como acción ni queda en el log. Mediciones: python main.py --bench historia
    Mapa conocido (capacidad 002, niebla de guerra): escribir mapa; muestra solo lo que el jugador conoce (salas exploradas, avistadas, y la última observación de cada puerta) y no consume tiempo ni cuenta como acción. Mediciones: python main.py --bench mapa
    Viajar a una sala ya explorada (capacidad 006): escribir ir a <id de sala>; el personaje camina por la ruta más barata que conoce, un paso por vez, y se detiene si una puerta recordada abierta resulta cerrada y no hay otra ruta, al despertar enemigos, ante un enemigo activo, al recibir daño o al morir; una orden que no se puede cumplir (sala no explorada, sin ruta conocida) se rechaza sin consumir tiempo. Mediciones: python main.py --bench ir_a
-   Capacidad 003 (verificación de resolubilidad: si la cripta se puede completar con las llaves obtenibles; una partida nueva no inicia en una cripta no resoluble salvo con forzar): python main.py --bench resolubilidad; las opciones --verificar y --forzar las conecta la capacidad de Fernanda sobre esta interfaz (EstadoJuegoServicio.verificar e iniciarJuego(..., forzar))
+   Capacidad 003 (verificación de resolubilidad: si la cripta se puede completar con las llaves obtenibles): python main.py --bench resolubilidad
+   Capacidad 011 (arranque verificado y pantallas claras): al iniciar una partida nueva se muestra el reporte de resolubilidad de la cripta, sea o no resoluble, antes del primer turno.
+     Verificar una cripta sin jugar: python main.py --verificar CRIPTA (muestra el reporte y termina; no abre partida, ni log, ni vista). Código de salida: 0 resoluble, 1 no resoluble, 2 error de uso o de lectura (cripta inexistente, datos no disponibles, argumento faltante). No se combina con --replay ni con --bench.
+     Jugar una cripta no resoluble: python main.py --forzar (se muestra el reporte y una advertencia, y la partida se abre). Sin --forzar, una cripta no resoluble se rechaza, el programa dice qué hacer y sale con código 1. --forzar no se guarda en partida.log ni en el estado guardado.
+     En la partida: escribir ayuda muestra todos los comandos con su sintaxis (no consume tiempo ni cuenta como acción). Cada turno muestra siempre las mismas secciones, en el mismo orden: sala, salidas (dirección, costo y estado: abierta, cerrada o sin observar), enemigos (activos o dormidos), objetos, trampas, estado del jugador (vida, tiempo, antorcha), inventario y últimos mensajes. Al terminar, un resumen con motivo, puntaje, acciones, tiempo, vida final y salas exploradas. Mediciones: python main.py --bench pantallas
    Pruebas: python -m unittest discover -p "test_*.py"
+   Pruebas de aceptación de la capacidad 011 (arranque verificado y pantallas): python -m unittest test_arranque_verificado test_pantallas_texto test_pantallas_controlador test_pantallas_aislamiento bench.test_bench_pantallas -v
    Pruebas de replay acotado: python -m unittest test_replay_hasta test_determinismo_replay test_rendimiento_replay
    Datos generados: datos_cripta/, logs/, Partidas Guardadas/
 
@@ -37,7 +42,7 @@ Para la Parte II se usa **GitHub Spec Kit** con los agentes **Claude Code** y **
 
 | Herramienta | Versión |
 |---|---|
-| Spec Kit (`specify-cli`) | **1.2.3 o superior** |
+| Spec Kit (`specify-cli`) | **1.2.6** (la versión con la que se generó `.specify/`, ver `.specify/init-options.json`) |
 | Agente 1 | Claude Code |
 | Agente 2 | Antigravity |
 | Python | 3.11+ |
@@ -45,7 +50,9 @@ Para la Parte II se usa **GitHub Spec Kit** con los agentes **Claude Code** y **
 Instalación (todo el equipo debe usar exactamente esta versión):
 
 ```bash
-  # debe mostrar 1.2.3
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@v1.2.6
+specify version
+# debe mostrar 1.2.6
 ```
 
 Al clonar el repositorio no hace falta ejecutar `specify init`: la carpeta `.specify/` y los comandos `/speckit.*` ya están versionados.

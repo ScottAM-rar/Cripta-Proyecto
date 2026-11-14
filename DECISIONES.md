@@ -290,3 +290,30 @@ usa un `ClienteSintetico` propio, sin `obtener_llaves`, y llama directamente a `
 3. **Hallazgo en la 002 (no corregido aquí).** `MapaConocido._posicion_adyacente` compara por identidad contra todas las salidas de la sala origen de cada arista entrante, así que cerrar la puerta este de la sala 2 con el jugador en la sala 1 la marca cerrada en el mapa aunque esa puerta no conecta la sala 1 (FR-207 pide observarla solo en las dos salas que conecta). Las pruebas de B-N2 usan una puerta a dos salas del jugador.
 4. **Los bloques repetidos con la carga nueva** (`mapa`, `retroceso`, `ordenamiento`, `ciclo`) siguen en CUMPLE; ninguna decisión de la Parte I ni de la 002 dejó de servir. El ciclo con 10 y 50 cazadores quedó en 0,4 ms y 2 ms.
 5. **Entorno.** En esta máquina falta el paquete `requests`, por lo que 16 módulos de prueba de la línea base no se pueden importar (`ErrorSinConexion` de `adaptadores/cliente_http.py`); es anterior a esta capacidad y no cambió con ella.
+
+## 011 · Arranque verificado y pantallas de consola claras
+
+- Especificación: [`specs/011-arranque-verificado-pantallas/spec.md`](specs/011-arranque-verificado-pantallas/spec.md) (FR-301 a FR-317)
+- Plan: [`specs/011-arranque-verificado-pantallas/plan.md`](specs/011-arranque-verificado-pantallas/plan.md), con [`research.md`](specs/011-arranque-verificado-pantallas/research.md) (decisiones D1 a D8) y [`contracts/`](specs/011-arranque-verificado-pantallas/contracts/)
+- Mediciones: `python main.py --bench pantallas` (`bench/pantallas.py`, contrato en [`contracts/bench-pantallas.md`](specs/011-arranque-verificado-pantallas/contracts/bench-pantallas.md)) y `python main.py --bench ciclo` repetido
+- Estado: las dos historias implementadas; 711 pruebas en CUMPLE (635 de la línea base + 76 nuevas); `--bench pantallas` en CUMPLE.
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| D1. El servicio entrega las líneas del reporte (`reporteVerificacion`, `lineasDeReporte`); el controlador las pasa a la vista; un rechazo atrapa `CriptaNoResoluble` en el controlador | Sí | `test_arranque_verificado`: el reporte sale antes del primer turno con cripta resoluble, no resoluble, con y sin `--forzar` |
+| D2. Pantalla de sala como función pura (`Pantallas.texto_sala`), lista de líneas + `"\n".join` | Sí | `--bench pantallas` A: elegida 8,3 µs / 29,8 µs / 216,4 µs (0 / 10 / 100 enemigos); la **descartada** (`+=`) 12,7 / 41,1 / 280,5 µs, de 1,30 a 1,53 veces más lenta; texto idéntico; sala con 100 enemigos 0,22 ms (máx 0,30 ms), muy por debajo de 20 ms |
+| D3. Ayuda y validación de sintaxis desde una sola lista de tuplas `COMANDOS`, con búsqueda lineal | Sí | `--bench pantallas` C: la ayuda cuesta 7,5 µs; el texto fijo (descartado) 0,2 µs, pero se desactualiza; `test_pantallas_texto` comprueba que cada comando reconocido está en la tabla y al revés |
+| D4. Códigos de salida en `main.py`, con las constantes con nombre; el valor lo da `ResultadoVerificacion.codigo_salida()` (003) | **Sí, con un matiz**: el plan decía que `main.py` asignaba los códigos; como la 003 ya los decide en el DTO, `main.py` solo los nombra y devuelve `resultado.codigo_salida()` (una sola fuente de verdad; hallazgo D1 del análisis) | `test_arranque_verificado`: 0, 1 y 2 con cripta resoluble, no resoluble, inexistente y datos no disponibles |
+| D5. `forzar` viaja por parámetros: `main.py` → `ControladorJuego(..., forzar=)` → `iniciarJuego(..., forzar=)` | Sí | `test_arranque_verificado` (servicio espiado: llega `True` con `--forzar` y `False` sin él) |
+| D6. Datos del resumen final: el controlador junta valores que ya existen (`terminado`, `puntaje`, `finPartida`, vida, `mapaConocido`); no se amplió `FinPartidaDTO` | Sí | `test_pantallas_texto` (texto exacto) y `test_pantallas_controlador` (muerte y llegada) |
+| D7. Mensajes de rechazo y error con `texto_error(qué_pasó, qué_hacer)` y un catálogo de 39 mensajes en `Pantallas.py`; sin `print` suelto de rechazos en el controlador | Sí | `test_pantallas_texto` (dos partes, español, sin colores) y `test_pantallas_controlador` (el controlador no imprime rechazos con texto suelto) |
+| D8. La puerta que el jugador no ha observado se muestra «sin observar» | Sí (se añadió el supuesto a la spec antes del código, principio X) | `test_niebla_vista`, `test_pantallas_texto` |
+
+### Hallazgos y límites
+
+1. **`--bench ciclo` repetido con la carga nueva.** Antes del cambio: 100 esbirros 2,67 ms (máx 7,50), 300 esbirros 8,41 ms (máx 16,14), 50 cazadores 2,23 ms (máx 3,27). Después, tres ejecuciones: 100 esbirros 2,77 a 3,51 ms; 300 esbirros 8,43 a 12,63 ms (máx **14,24, 17,20 y 22,73 ms**); 50 cazadores 3,13 a 5,17 ms de máximo. **Una de las tres ejecuciones mostró 22,73 ms de máximo con 300 esbirros** (NO CUMPLE), con las medianas de todo el bloque unas 1,5 veces más altas, incluidas las cargas de cazadores; las dos ejecuciones siguientes dieron CUMPLE. El ciclo de eventos no se tocó (esta capacidad no modifica `Logica/`, `DTO/` ni `adaptadores/`) y las pantallas se construyen entre dos decisiones del jugador, fuera del ciclo; se atribuye a ruido de la máquina, pero queda registrado sin ocultarlo.
+2. **Códigos de salida.** `--verificar`: 0 resoluble, 1 no resoluble, 2 error de uso o lectura. Un rechazo por cripta no resoluble sin `--forzar` sale con 1 (igual que antes); sin criptas disponibles, también 1.
+3. **`cerrar` no es un comando.** El texto anterior del prompt lo anunciaba, pero el controlador nunca lo reconoció; la ayuda no lo lista. No se agregó el comando (no estaba en ninguna especificación).
+4. **Corrección de textos de `main.py` (FR-308).** Los mensajes de `--replay`, `--cache-size` y `--hasta` se guardaban con la codificación doble («tamaÃ±o», «ReproducciÃ³n»); se corrigieron a UTF-8 correcto.
+5. **Laboratorio roto, ajeno a la capacidad.** `tests_labs/prueba_reporte_solicitudes.py` falla desde antes: sus teclas simuladas no incluyen la pregunta de la tabla de puntajes. No se arregló aquí.
+6. **Entorno.** Con el Python del sistema falta `requests` (16 módulos no se importan); las pruebas se ejecutan con `.venv/Scripts/python.exe`.
