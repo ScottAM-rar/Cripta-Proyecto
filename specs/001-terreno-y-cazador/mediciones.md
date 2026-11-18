@@ -164,3 +164,16 @@ Terreno y cazador (E): búsqueda con vista del mapa frente al campo sin vista (T
    40000 salas, búsqueda fría de rango pequeño con vista (elegida)   32.9 µs  (32.2 µs – 37.5 µs)
    40000 salas, búsqueda fría de rango pequeño sin vista (descartada) 28.2 µs  (27.7 µs – 29.3 µs)
 ```
+
+## Agenda de eventos y `reajustar_velocidad` con decenas de actores (T072, §5.6)
+
+Generado con `python main.py --bench agenda` (sección «Agenda con decenas de actores (§5.6)»). Cada actor tiene una acción pendiente y hay además n/2 puertas con cierre automático (eventos sin actor). Se compara el **barrido del heap** (lo que hace `RelojVirtual.reajustar_velocidad`, elegido) con la alternativa descartada de **llevar por actor la lista de sus eventos pendientes**, que no recorre el heap pero debe mantener el índice en cada evento. Antes de medir se verifica que ambas agendas sacan los mismos eventos en el mismo orden después de reajustar.
+
+| Actores | Reajustar UN actor: barrido / por actor | Reajustar TODOS a la vez: barrido / por actor | 1 000 ciclos sacar+programar: barrido / por actor |
+|---|---|---|---|
+| 10 | 1,6 µs / 1,7 µs | 17,1 µs / 18,4 µs | 1,71 ms / 1,99 ms |
+| 30 | 3,2 µs / 3,0 µs | 69,3 µs / 58,6 µs | 2,20 ms / 2,48 ms |
+| 100 | 4,7 µs / 2,6 µs | 331 µs / 187 µs | 2,67 ms / 3,03 ms |
+| 1 000 | 32,4 µs / 3,2 µs | no se mide (no son «decenas») | 3,83 ms / 4,18 ms |
+
+**Conclusión**: el barrido crece con el tamaño del heap (4,7 µs con 100 actores y 32 µs con 1 000) y la alternativa lo evita, pero ni siquiera el peor caso, reajustar a todos los actores a la vez con 100, pasa de 0,33 ms frente al límite de 20 ms (FR-121). A cambio, la alternativa agrega entre un 9 % y un 16 % a cada ciclo sacar+programar, que ocurre en cada evento del juego, mientras que el reajuste ocurre solo al empezar o terminar un efecto. Se mantiene el barrido. Cifras de una sola máquina (Python 3.14, macOS), medianas de 7 repeticiones.

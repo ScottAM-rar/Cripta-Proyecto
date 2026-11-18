@@ -116,3 +116,124 @@ def ejecutar(filas: list) -> None:
             anotar(filas, SECCION, f"N={n:>6}  {CICLOS} ciclos sacar+programar   [{nombre}]",
                    medir(ciclo, preparar_llena, repeticiones=repeticiones))
     nota(filas, SECCION, "Los ciclos sacar+programar son lo que hace el juego en cada evento; con N grande se ve cómo escala cada estructura.")
+    _reajuste_velocidad(filas)
+
+
+# --- §5.6 (T072, FR-121): la agenda con decenas de actores y el reajuste de velocidad ---------------------------------
+
+SECCION_REAJUSTE = "Agenda con decenas de actores (§5.6): reajustar_velocidad, barrido del heap  vs  eventos por actor"
+ACTORES = (10, 30, 100, 1_000)      # actores con una acción pendiente cada uno (cazadores, errantes, jugador)
+TODOS_HASTA = 100                   # el reajuste de TODOS los actores a la vez solo se mide con decenas
+LIMITE_CICLO_US = 20_000            # FR-121: 20 ms
+
+
+class _Actor:
+    """Un actor mínimo: lo único que la agenda le pide es un número para la alternativa con índice."""
+
+    def __init__(self, numero: int) -> None:
+        self.numero = numero
+
+
+class AgendaConEventosPorActor(RelojVirtual):
+    """Alternativa descartada: cada actor lleva la lista de SUS eventos pendientes (lista de listas indexada por el
+    número del actor), así reajustar la velocidad no recorre el heap. A cambio, programar, sacar y reprogramar deben
+    mantener el índice. Existe SOLO aquí, para medir."""
+
+    def __init__(self, actores: int) -> None:
+        super().__init__()
+        self.por_actor: list[list[EventoDTO]] = [[] for _ in range(actores)]
+
+    def insertar_evento(self, evento: EventoDTO) -> None:
+        super().insertar_evento(evento)
+        if evento.actor is not None:
+            self.por_actor[evento.actor.numero].append(evento)
+
+    def _olvidar(self, evento: EventoDTO) -> None:
+        if evento.actor is None:
+            return
+        lista = self.por_actor[evento.actor.numero]
+        for i in range(len(lista)):
+            if lista[i] is evento:
+                del lista[i]
+                return
+
+    def quitar_evento(self, evento: EventoDTO) -> bool:
+        quitado = super().quitar_evento(evento)
+        if quitado:
+            self._olvidar(evento)
+        return quitado
+
+    def desencolar(self) -> EventoDTO | None:
+        evento = super().desencolar()
+        if evento is not None:
+            self._olvidar(evento)
+        return evento
+
+    def reajustar_velocidad(self, actor, velocidad_anterior: int, velocidad_nueva: int) -> None:
+        for evento in list(self.por_actor[actor.numero]):
+            restante = max(0, evento.tiempo_ejecucion - self.tiempo_actual)
+            nuevo_restante = self.restante_por_cambio_de_velocidad(restante, velocidad_anterior, velocidad_nueva)
+            self.reprogramar(evento, self.tiempo_actual + nuevo_restante)
+
+
+def _armar(fabrica, actores: int, intervalos: list[int]):
+    """Agenda con una acción por actor y, además, puertas con cierre automático (eventos sin actor)."""
+    agenda = fabrica(actores) if fabrica is AgendaConEventosPorActor else fabrica()
+    lista = [_Actor(i) for i in range(actores)]
+    for i, intervalo in enumerate(intervalos[:actores]):
+        agenda.programar(intervalo, lista[i], "MOVER")
+    for intervalo in intervalos[actores:]:
+        agenda.programar(intervalo, None, "CERRAR_PUERTA")
+    return agenda, lista
+
+
+def _reajuste_velocidad(filas: list, tamanos: tuple = ACTORES, todos_hasta: int = TODOS_HASTA, repeticiones: int = 7) -> None:
+    """Mide reajustar_velocidad con la carga de la Parte II (T072). Cambiar la velocidad de un actor ocurre al empezar
+    o terminar un efecto; con cazadores, un efecto que afecte a muchos actores a la vez es el peor caso."""
+    fabricas = (("barrido del heap (elegida)", RelojVirtual), ("eventos por actor (descartada)", AgendaConEventosPorActor))
+    for n in tamanos:
+        rng = azar(n + 31)
+        intervalos = [rng.randrange(100, 1000) for _ in range(n + n // 2)]
+
+        # Las dos agendas deben terminar con los mismos eventos, en el mismo orden, después de reajustar.
+        a, actores_a = _armar(RelojVirtual, n, intervalos)
+        b, actores_b = _armar(AgendaConEventosPorActor, n, intervalos)
+        for k in range(0, n, 3):
+            a.reajustar_velocidad(actores_a[k], 100, 150)
+            b.reajustar_velocidad(actores_b[k], 100, 150)
+        verificar(filas, SECCION_REAJUSTE, f"{n} actores: ambas agendas sacan los mismos eventos tras reajustar", _vaciar(a) == _vaciar(b))
+
+        for nombre, fabrica in fabricas:
+            def preparar(f=fabrica):
+                return _armar(f, n, intervalos)
+            anotar(filas, SECCION_REAJUSTE, f"{n:>5} actores  reajustar la velocidad de UN actor      [{nombre}]",
+                   medir(lambda estado: estado[0].reajustar_velocidad(estado[1][n // 2], 100, 150), preparar, repeticiones=repeticiones))
+
+        if n <= todos_hasta:
+            peor = {}
+            for nombre, fabrica in fabricas:
+                def preparar(f=fabrica):
+                    return _armar(f, n, intervalos)
+
+                def todos(estado):
+                    agenda, lista = estado
+                    for actor in lista:
+                        agenda.reajustar_velocidad(actor, 100, 150)
+                peor[nombre] = anotar(filas, SECCION_REAJUSTE, f"{n:>5} actores  reajustar a TODOS los actores a la vez [{nombre}]",
+                                      medir(todos, preparar, repeticiones=repeticiones))
+            verificar(filas, SECCION_REAJUSTE, f"{n} actores: reajustar a todos cabe en el límite de 20 ms (FR-121)",
+                      peor["barrido del heap (elegida)"] < LIMITE_CICLO_US)
+
+        for nombre, fabrica in fabricas:
+            def preparar_ciclo(f=fabrica):
+                return _armar(f, n, intervalos)
+
+            def ciclo(estado, r=azar(n + 77)):
+                agenda = estado[0]
+                for _ in range(CICLOS):
+                    evento = agenda.desencolar()
+                    agenda.programar(r.randrange(100, 1000), evento.actor, evento.tipo_accion)
+            anotar(filas, SECCION_REAJUSTE, f"{n:>5} actores  {CICLOS} ciclos sacar+programar              [{nombre}]",
+                   medir(ciclo, preparar_ciclo, repeticiones=repeticiones))
+    nota(filas, SECCION_REAJUSTE, "Cada actor tiene una acción pendiente y hay además n/2 puertas con cierre automático (sin actor). "
+                                  "La alternativa mantiene un índice por actor; su costo se ve en los ciclos sacar+programar.")
