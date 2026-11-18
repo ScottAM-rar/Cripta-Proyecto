@@ -177,3 +177,25 @@ flowchart TD
 1. Sumar User Story 2 (T015 a T019) para blindar la CLI contra entradas inválidas y asegurar paridad con `--replay`.
 2. Sumar User Story 3 (T020 a T025) para certificar determinismo y habilitar mediciones de laboratorio en `--bench replay`.
 3. Ejecutar suite global y registrar mediciones finales en `DECISIONES.md` (T026 a T031).
+
+---
+
+## Trazabilidad requisito → tareas
+
+| Requisito | Tareas |
+|---|---|
+| FR-401 | T005, T006, T008, T009, T011, T012, T013, T014 |
+| FR-402 | T005, T008, T009, T011, T014 |
+| FR-403 | T005, T008, T011, T014 |
+| FR-404 | T003, T006, T010, T011, T014 |
+| FR-405 | T006, T007, T010, T011, T014 |
+| FR-406 | T007, T011, T014 |
+| FR-407 | T004, T013, T015, T019 |
+| FR-408 | T015, T017, T019, T028 |
+| FR-409 | T016, T018, T019 |
+| FR-410 | T016, T019 |
+| FR-411 | T020, T025 |
+| FR-412 | T021, T025 |
+| FR-413 | T022, T023, T024, T025, T027 |
+
+T001 (estructuras prohibidas), T002 (generador de partidas), T026 (suite completa), T029 (DECISIONES), T030 (README) y T031 (registro de prompts) atienden a todos los requisitos de la capacidad. La matriz requisito → prueba está en `quickstart.md`.

@@ -1,5 +1,5 @@
 """Pruebas unitarias para la consulta histórica por instante de reloj `historia <t>`.
-User Story 1 (FR-427, FR-428, FR-430, FR-433, FR-437).
+User Story 1 (FR-427, FR-428, FR-430, FR-431, FR-433, FR-437, FR-439, FR-443).
 """
 from __future__ import annotations
 import tempfile
@@ -198,10 +198,63 @@ class TestHistoriaTiempo(unittest.TestCase):
         self.assertEqual(resumen.instante, t_previo)
         self.assertFalse(resumen.partida_terminada)
 
+    # 8. Contenido mínimo del estado reportado (FR-431)
+    def test_FR431_contenido_minimo_del_estado_en_el_dto_y_en_la_vista(self):
+        """FR-431: el estado trae instante, acciones, sala, vida, estadísticas, llaves, objetos, efectos y enemigos
+        de la sala, y la vista los muestra; mapa_conocido puede ser None sin romper la salida."""
+        import io
+        from contextlib import redirect_stdout
+        from Controlador.Vista import VistaConsola
+
+        self._esperar(100)
+        self._esperar(100)
+        resumen = self.servicio.consultarHistoria(instante=100)
+        self.assertEqual(resumen.instante, 100)
+        self.assertIsInstance(resumen.acciones_jugador, int)
+        for campo in ("id_sala_jugador", "vida_jugador", "ataque_jugador", "defensa_jugador", "velocidad_jugador"):
+            self.assertIsInstance(getattr(resumen, campo), int, campo)
+        for campo in ("inventario_llaves", "inventario_objetos", "efectos_activos", "enemigos_sala"):
+            self.assertIsInstance(getattr(resumen, campo), list, campo)
+        self.assertIsInstance(resumen.partida_terminada, bool)
+        salida = io.StringIO()
+        with redirect_stdout(salida):
+            VistaConsola().mostrar_historia(resumen)
+        texto = salida.getvalue()
+        for etiqueta in ("Instante <100>", "SALA:", "VIDA:", "ESTADÍSTICAS:", "Llaves:", "Objetos:",
+                         "EFECTOS ACTIVOS", "ENEMIGOS EN LA SALA"):
+            self.assertIn(etiqueta, texto)
+
+    # 9. Cota de acciones reproducidas por consulta (FR-439)
+    def test_FR439_reconstruir_no_aplica_mas_de_k_acciones_desde_el_punto_cercano(self):
+        """FR-439: cada instancia aislada aplica como máximo K acciones del jugador por consulta (la pasada de
+        planificación recorre el segmento hasta el punto de control siguiente; la de ejecución para antes; son dos
+        instancias distintas, cada una con su propio recuento)."""
+        from unittest.mock import patch
+
+        for _ in range(13):                                  # K=5: puntos de control en 0, 5 y 10
+            self._esperar(100)
+        k_cp = self.logica.k_checkpoint
+        self.assertEqual(k_cp, 5)
+        original = EstadoJuegoLogica.accionJugador
+        instancias = []
+
+        def contando(instancia, *args, **kwargs):
+            if instancia._es_aislada:
+                instancias.append(id(instancia))
+            return original(instancia, *args, **kwargs)
+
+        consultas = [("accion", n) for n in range(1, 15)] + [("instante", t) for t in range(0, 1301, 100)]
+        for tipo, valor in consultas:
+            instancias.clear()
+            with patch.object(EstadoJuegoLogica, "accionJugador", contando):
+                self.servicio.consultarHistoria(**{tipo: valor})
+            por_instancia = [instancias.count(i) for i in set(instancias)]
+            self.assertLessEqual(max(por_instancia, default=0), k_cp, f"{tipo}={valor}: {por_instancia}")
+
 
 class TestControladorHistoria(unittest.TestCase):
     def test_comandos_historia_en_controlador_no_alteran_partida(self):
-        """T011/T012: En el bucle de juego y post-partida, historia no avanza el reloj,
+        """FR-443, T011/T012: En el bucle de juego y post-partida, historia no avanza el reloj,
         no cuenta como acción, no escribe en el log y maneja errores de sintaxis/rango."""
         from unittest.mock import patch
         from Controlador.ControladorJuego import ControladorJuego

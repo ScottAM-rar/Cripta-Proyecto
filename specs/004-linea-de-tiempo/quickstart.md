@@ -77,23 +77,23 @@ Para medir el rendimiento frente al límite de 50 ms y contrastar con las altern
 
 | Requisito | Descripción | Componente | Prueba Automatizada | Escenario Apéndice B |
 |---|---|---|---|---|
-| **FR-427** | Comando `historia <t>` en partida interactiva y concluida | `EstadoJuegoServicio`, `ControladorJuego` | `test_historia_tiempo.py::test_consulta_instante_valido` | Caso 3 (múltiples eventos en $t$) |
-| **FR-428** | Estado en $t$ justo antes de la decisión del jugador | `EstadoJuegoLogica._reconstruirHastaInstante` | `test_historia_tiempo.py::test_decision_jugador_en_t_excluida` | Caso 3 |
-| **FR-429** | Comando `historia #k` en partida viva y concluida | `EstadoJuegoServicio`, `ControladorJuego` | `test_historia_tiempo.py::test_consulta_accion_valida` | — |
-| **FR-430** | `historia #1` y `historia 0` devuelven estado inicial | `EstadoJuegoLogica` | `test_historia_tiempo.py::test_estado_inicial_equivalencia` | — |
-| **FR-431** | Contenido mínimo del estado reportado (vida, sala, stats, inv, etc.) | `ResumenEstadoDTO`, `VistaConsola` | `test_historia_tiempo.py::test_contenido_minimo_dto` | — |
-| **FR-432** | Consulta no altera partida viva (reloj, log, pergamino, azar) | `EstadoJuegoLogica.consultarHistoria` | `test_historia_aislamiento.py::test_aislamiento_completo` | Caso 4 (consulta no altera partida) |
-| **FR-433** | Rechazo de $t > \text{reloj actual}$ con mensaje claro | `EstadoJuegoServicio`, `ControladorJuego` | `test_historia_tiempo.py::test_rechazo_tiempo_futuro` | Caso 1 (tiempo futuro) |
-| **FR-434** | Coherencia con pergamino: acciones revertidas no existen en la historia | `EstadoJuegoLogica`, `RetrocesoLogica` | `test_historia_aislamiento.py::test_pergamino_y_linea_vigente` | Caso 2 (coherencia con retroceso) |
-| **FR-435** | Rechazo de $k \le 0$ | `EstadoJuegoServicio` | `test_historia_tiempo.py::test_rechazo_accion_cero_o_negativa` | — |
-| **FR-436** | `k = N+1` da estado actual; `k > N+1` se rechaza | `EstadoJuegoServicio`, `EstadoJuegoLogica` | `test_historia_tiempo.py::test_accion_n_mas_uno_y_futura` | — |
-| **FR-437** | Rechazo de valores no numéricos, decimales o negativos | `EstadoJuegoServicio`, `ControladorJuego` | `test_historia_firma.py`, `test_historia_tiempo.py` | — |
-| **FR-438** | Partida sin acciones: `0` y `#1` permitidos, futuros rechazados | `EstadoJuegoLogica` | `test_historia_tiempo.py::test_partida_sin_acciones` | — |
-| **FR-439** | Reconstrucción no requiere más de $K$ acciones | `EstadoJuegoLogica` | `test_historia_tiempo.py::test_cota_k_acciones_reconstruccion` | — |
-| **FR-440** | Reconstrucción no hace solicitudes de red | `EstadoJuegoServicio` | `test_historia_aislamiento.py::test_cero_solicitudes_red` | — |
-| **FR-441** | Guardar y cargar (formato v7) conserva la línea de tiempo | `AlmacenPartidaBinario`, `EstadoJuegoServicio` | `test_historia_aislamiento.py::test_persistencia_linea_tiempo` | Caso 6 (persistencia v7) |
+| **FR-427** | Comando `historia <t>` en partida interactiva y concluida | `EstadoJuegoServicio`, `ControladorJuego` | `test_historia_tiempo.py::test_partida_terminada_acepta_consultas`, `test_historia_tiempo.py::test_comandos_historia_en_controlador_no_alteran_partida`, `test_historia_firma.py::test_por_instante_y_por_accion_devuelven_un_resumen` | Caso 3 (múltiples eventos en $t$) |
+| **FR-428** | Estado en $t$ justo antes de la decisión del jugador | `EstadoJuegoLogica._reconstruirHastaInstante` | `test_historia_tiempo.py::test_corte_instante_decision_jugador_y_eventos_enemigo` | Caso 3 |
+| **FR-429** | Comando `historia #k` en partida viva y concluida | `EstadoJuegoServicio`, `ControladorJuego` | `test_historia_accion.py::test_equivalencia_accion_instante_partida_40_acciones`, `test_historia_accion.py::test_partida_terminada_acepta_consultas_intermedias` | — |
+| **FR-430** | `historia #1` y `historia 0` devuelven estado inicial | `EstadoJuegoLogica` | `test_historia_tiempo.py::test_historia_cero_da_estado_inicial`, `test_historia_accion.py::test_historia_1_equivale_a_historia_cero` | — |
+| **FR-431** | Contenido mínimo del estado reportado (vida, sala, stats, inv, etc.) | `ResumenEstadoDTO`, `VistaConsola` | `test_historia_tiempo.py::test_FR431_contenido_minimo_del_estado_en_el_dto_y_en_la_vista` | — |
+| **FR-432** | Consulta no altera partida viva (reloj, log, pergamino, azar) | `EstadoJuegoLogica.consultarHistoria` | `test_historia_aislamiento.py::test_invariancia_reloj_acciones_y_puntaje`, `test_historia_aislamiento.py::test_invariancia_bitacora_y_log_memoria_y_disco`, `test_historia_aislamiento.py::test_invariancia_generadores_de_azar`, `test_historia_aislamiento.py::test_invariancia_singleton_retroceso_y_puntero_reloj`, `test_historia_aislamiento.py::test_invariancia_exportar_estado_completo` | Caso 4 (consulta no altera partida) |
+| **FR-433** | Rechazo de $t > \text{reloj actual}$ con mensaje claro | `EstadoJuegoServicio`, `ControladorJuego` | `test_historia_tiempo.py::test_t_igual_al_reloj_vivo_y_rechazo_de_futuro_y_tipos_invalidos`, `test_historia_pergamino.py::test_instante_revertido_rechazado_como_futuro` | Caso 1 (tiempo futuro) |
+| **FR-434** | Coherencia con pergamino: acciones revertidas no existen en la historia | `EstadoJuegoLogica`, `RetrocesoLogica` | `test_historia_pergamino.py::test_revertir_3_de_10_acciones_invisibilidad_revertidas_y_linea_vigente`, `test_historia_accion.py::test_secuencia_A1_A2_A3_P_A3p_A4` | Caso 2 (coherencia con retroceso) |
+| **FR-435** | Rechazo de $k \le 0$ | `EstadoJuegoServicio` | `test_historia_accion.py::test_accion_cero_rechazada`, `test_historia_accion.py::test_negativos_rechazados` | — |
+| **FR-436** | `k = N+1` da estado actual; `k > N+1` se rechaza | `EstadoJuegoServicio`, `EstadoJuegoLogica` | `test_historia_accion.py::test_historia_N_mas_1_devuelve_estado_vivo`, `test_historia_accion.py::test_historia_mayor_N_mas_1_rechazada` | — |
+| **FR-437** | Rechazo de valores no numéricos, decimales o negativos | `EstadoJuegoServicio`, `ControladorJuego` | `test_historia_firma.py::test_rechaza_negativos_y_no_enteros`, `test_historia_accion.py::test_floats_rechazados`, `test_historia_accion.py::test_strings_rechazados`, `test_historia_accion.py::test_bool_rechazado`, `test_historia_tiempo.py::test_t_igual_al_reloj_vivo_y_rechazo_de_futuro_y_tipos_invalidos` | — |
+| **FR-438** | Partida sin acciones: `0` y `#1` permitidos, futuros rechazados | `EstadoJuegoLogica` | `test_historia_accion.py::test_partida_sin_acciones_accion_1_es_inicial`, `test_historia_accion.py::test_partida_sin_acciones_accion_2_rechazada` | — |
+| **FR-439** | Reconstrucción no requiere más de $K$ acciones | `EstadoJuegoLogica` | `test_historia_tiempo.py::test_FR439_reconstruir_no_aplica_mas_de_k_acciones_desde_el_punto_cercano` | — |
+| **FR-440** | Reconstrucción no hace solicitudes de red | `EstadoJuegoServicio` | `test_historia_aislamiento.py::test_auditoria_red_cero_solicitudes_y_sin_llamadas_prohibidas`, `test_historia_movimiento.py::test_cache_muy_pequena_no_provoca_solicitudes` | — |
+| **FR-441** | Guardar y cargar (formato vigente, v7 o posterior) conserva la línea de tiempo | `AlmacenPartidaBinario`, `EstadoJuegoServicio` | `test_historia_persistencia.py::test_guardar_y_cargar_con_movimiento_pergamino_y_oraculo`, `test_historia_persistencia.py::test_consulta_no_modifica_ni_crea_archivo_guardado`, `test_historia_persistencia.py::test_cargar_con_otro_k_no_rompe_consultas` | Caso 6 (persistencia v7) |
 | **FR-442** | Rendimiento $\le 50$ ms con 5 000 acciones al $K$ por defecto | `bench/historia.py` | `bench/test_bench_historia.py` | — |
-| **FR-443** | Interfaz interactiva reconoce `historia <t>` e `historia #k` | `ControladorJuego`, `VistaConsola` | `test_historia_tiempo.py::test_parser_controlador` | — |
+| **FR-443** | Interfaz interactiva reconoce `historia <t>` e `historia #k` | `ControladorJuego`, `VistaConsola` | `test_historia_tiempo.py::test_comandos_historia_en_controlador_no_alteran_partida` | — |
 
 ---
 

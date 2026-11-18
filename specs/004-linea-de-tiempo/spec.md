@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-08
 
-**Estado**: Aprobado
+**Estado**: Implementada (T001 a T033)
 
 **Entrada**: Capacidad de la línea de tiempo (Parte II, §3.6 y §5.5): los comandos `historia <t>` e `historia #k` para consultar el estado del juego en un instante pasado. Requisitos con prefijo FR-4xx, continuando desde FR-427.
 

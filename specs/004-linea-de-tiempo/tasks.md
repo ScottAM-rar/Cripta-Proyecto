@@ -208,3 +208,29 @@ flowchart TD
 4. Añadir US5 (Fase 7): Pruebas de guardado y carga en formato binario v7.
 5. Añadir US6 (Fase 8): Medición de límite de 50 ms en `--bench historia` y contraste con alternativas descartadas.
 6. Fase 9: Pulido, verificación constitucional y ejecución completa de la suite de pruebas.
+
+---
+
+## Trazabilidad requisito → tareas
+
+| Requisito | Tareas |
+|---|---|
+| FR-427 | T007, T009, T011, T012, T031 |
+| FR-428 | T004, T007, T008 |
+| FR-429 | T013, T014, T015, T016 |
+| FR-430 | T013, T014, T017 |
+| FR-431 | T005, T007, T010 |
+| FR-432 | T006, T018, T019, T020, T023 |
+| FR-433 | T007, T009 |
+| FR-434 | T005b, T021, T022, T023 |
+| FR-435 | T013, T015 |
+| FR-436 | T013, T014, T015 |
+| FR-437 | T001, T007, T009, T011, T015, T016 |
+| FR-438 | T017 |
+| FR-439 | T003, T004, T008, T014 |
+| FR-440 | T018, T020 |
+| FR-441 | T024, T025 |
+| FR-442 | T026, T027, T028, T029, T033 |
+| FR-443 | T011, T012, T016, T031 |
+
+T002 (DTO de salida), T030 (suite completa) y T032 (auditoría del Principio I) atienden a todos los requisitos de la capacidad. La matriz requisito → prueba está en `quickstart.md`.

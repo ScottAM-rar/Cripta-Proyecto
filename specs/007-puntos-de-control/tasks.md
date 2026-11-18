@@ -195,3 +195,25 @@
 3. Añadir User Story 4 (T020..T024): formato v7 y rechazo explícito de versiones anteriores.
 4. Añadir User Story 5 (T025..T029): benchmark y medición de 20 ms.
 5. Finalizar con Polish y verificación global (T030..T033).
+
+---
+
+## Trazabilidad requisito → tareas
+
+| Requisito | Tareas |
+|---|---|
+| FR-414 | T004, T006, T007, T009 |
+| FR-415 | T004, T006, T009 |
+| FR-416 | T005, T006, T008, T009 |
+| FR-417 | T004, T006, T007, T009 |
+| FR-418 | T005, T010, T011, T012, T013, T015 |
+| FR-419 | T010, T012, T014, T015 |
+| FR-420 | T010, T012, T015 |
+| FR-421 | T002, T003, T010, T011, T015 |
+| FR-422 | T016, T017, T018, T019 |
+| FR-423 | T016, T018, T019 |
+| FR-424 | T020, T021, T022, T023, T024 |
+| FR-425 | T020, T021, T022, T024 |
+| FR-426 | T025, T026, T027, T028, T029, T031 |
+
+T001 (estructuras prohibidas), T030 (checklist), T032 (registro de prompts) y T033 (suite completa) atienden a todos los requisitos de la capacidad. La matriz requisito → prueba está en `quickstart.md`.
