@@ -47,37 +47,30 @@ class CacheLRU:
             claves.append(self._entradas[i][0])
         return claves
 
-    def _posicion(self, clave: str) -> int:
-        """Posición de la entrada con esa clave, o -1. Busca del final (más recientes) al inicio."""
-        for i in range(len(self._entradas) - 1, -1, -1):
-            if self._entradas[i][0] == clave:
-                return i
-        return -1
-
     def _buscar(self, clave: str) -> list | None:
-        i = self._posicion(clave)
-        return None if i < 0 else self._entradas[i]
-
-    def _al_final(self, i: int) -> list:
-        """Mueve la entrada de la posición i al final (pasa a ser la más reciente) y la devuelve."""
-        entrada = self._entradas[i]
-        del self._entradas[i]
-        self._entradas.append(entrada)
-        return entrada
+        """La entrada con esa clave, o None. Busca del final (más recientes) al inicio."""
+        for entrada in reversed(self._entradas):
+            if entrada[0] == clave:
+                return entrada
+        return None
 
     def obtener(self, clave: str) -> object | None:
-        i = self._posicion(clave)
-        if i < 0:
+        entrada = self._buscar(clave)
+        if entrada is None:
             self._fallos += 1
             return None
         self._aciertos += 1
-        return self._al_final(i)[1]
+        self._entradas.remove(entrada)        # las claves son únicas: quita exactamente esta entrada
+        self._entradas.append(entrada)        # pasa a ser la más reciente
+        return entrada[1]
 
     def insertar(self, clave: str, valor: object) -> bool:
         """Guarda el valor. Devuelve False si no hubo lugar (todo en uso)."""
-        i = self._posicion(clave)
-        if i >= 0:
-            self._al_final(i)[1] = valor
+        existente = self._buscar(clave)
+        if existente is not None:
+            existente[1] = valor
+            self._entradas.remove(existente)
+            self._entradas.append(existente)
             return True
 
         if len(self._entradas) >= self._capacidad:
