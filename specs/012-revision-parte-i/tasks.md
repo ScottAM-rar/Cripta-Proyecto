@@ -187,20 +187,20 @@
 
 ### Historias 1 y 2
 
-- [ ] T047 [US2] En `test_vecindad_equivalencia.py`, antes de cambiar el código, una prueba de proporcionalidad cuyo docstring cita FR-376 y la Historia 2, escenario 2:
+- [X] T047 [US2] En `test_vecindad_equivalencia.py`, antes de cambiar el código, una prueba de proporcionalidad cuyo docstring cita FR-376 y la Historia 2, escenario 2:
   - con profundidad 5, las búsquedas en el esqueleto que cuenta el espía son 1 más las salas expandidas (las de nivel menor que 5). En la rejilla 3 × 3 desde la sala 5 son 10;
   - una cripta de 1 000 salas contiene la misma rejilla en las salas 1 a 9, con las mismas salidas. Las salas 10 a 1 000 forman una fila y solo se conectan con la rejilla por una salida de un solo sentido de la sala 10 a la sala 1, así que desde la rejilla no se llega a ellas. La vecindad de la sala 5 con profundidad 5 y el número de búsquedas son los mismos que en la rejilla sola.
 
   Se ejecuta contra el código sin tocar y tiene que pasar. (FR-376)
-- [ ] T024 [US1] [US2] En `adaptadores/servicioCripta.py`, reescribir **solo el cuerpo** de `salas_vecinas` según [data-model.md](data-model.md) («Consulta de vecindad»):
+- [X] T024 [US1] [US2] En `adaptadores/servicioCripta.py`, reescribir **solo el cuerpo** de `salas_vecinas` según [data-model.md](data-model.md) («Consulta de vecindad»):
   - `if profundidad < 0: raise ValueError("La profundidad no puede ser negativa")` primero, y después `self._buscar_esqueleto(cripta_id, numero_sala)`;
   - `alcanzadas = [numero_sala]`, `lectura = 0`, `nivel = 0`, `fin_nivel = 1`;
   - mientras `lectura < len(alcanzadas)` y `nivel < profundidad`: expandir `alcanzadas[lectura]` (una llamada a `_buscar_esqueleto`, salidas en `_LETRAS_EN_ORDEN`, agregar los destinos que no están en `alcanzadas`) y avanzar `lectura`; cuando `lectura == fin_nivel`, `nivel += 1` y `fin_nivel = len(alcanzadas)`;
   - devolver `alcanzadas[1:]`.
 
   No quitar `from collections import deque` (lo usa `_armar_salidas`, uso justificado) y no tocar `precargar_vecinas`. (FR-370, FR-371, FR-372, FR-373, FR-374, FR-375, FR-376)
-- [ ] T025 [US1] Ejecutar `python -m unittest test_vecindad_equivalencia -v`: todo pasa, **incluidas T009 y T047**. (FR-370, FR-371, FR-372, FR-373, FR-374, FR-375, FR-376)
-- [ ] T026 [US2] Ejecutar `python main.py --bench cache` una vez y comprobar en la sección 5 que `salas_vecinas` a 1 y 2 pasos no supera 2 × su valor de M1. Es un control preliminar contra M1; el límite final de FR-383 se comprueba en T033 contra M0, con la mediana de las tres ejecuciones de M2. (FR-376, FR-383)
+- [X] T025 [US1] Ejecutar `python -m unittest test_vecindad_equivalencia -v`: todo pasa, **incluidas T009 y T047**. (FR-370, FR-371, FR-372, FR-373, FR-374, FR-375, FR-376)
+- [X] T026 [US2] Ejecutar `python main.py --bench cache` una vez y comprobar en la sección 5 que `salas_vecinas` a 1 y 2 pasos no supera 2 × su valor de M1. Es un control preliminar contra M1; el límite final de FR-383 se comprueba en T033 contra M0, con la mediana de las tres ejecuciones de M2. (FR-376, FR-383)
 
 ---
 

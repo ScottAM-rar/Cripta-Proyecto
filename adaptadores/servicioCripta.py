@@ -395,19 +395,23 @@ class ServicioCripta:
         if profundidad < 0:
             raise ValueError("La profundidad no puede ser negativa")
         self._buscar_esqueleto(cripta_id, numero_sala)       # valida que exista
+        # Recorrido por niveles sobre la propia lista de alcanzadas (012, D1): `lectura` es la próxima sala por
+        # expandir, las de [lectura, len) son las pendientes y `fin_nivel` marca dónde termina el nivel actual.
         alcanzadas: list[int] = [numero_sala]
-        pendientes: deque = deque([(numero_sala, 0)])         # (sala, nivel)
-        while pendientes:
-            actual, nivel = pendientes.popleft()
-            if nivel >= profundidad:
-                continue
-            salidas = self._buscar_esqueleto(cripta_id, actual).get("salidas") or {}
+        lectura = 0
+        nivel = 0
+        fin_nivel = 1
+        while lectura < len(alcanzadas) and nivel < profundidad:
+            salidas = self._buscar_esqueleto(cripta_id, alcanzadas[lectura]).get("salidas") or {}
             for letra in _LETRAS_EN_ORDEN:
                 if letra in salidas:
                     destino = salidas[letra]["sala"]
                     if destino not in alcanzadas:
                         alcanzadas.append(destino)
-                        pendientes.append((destino, nivel + 1))
+            lectura += 1
+            if lectura == fin_nivel:                          # se terminó el nivel: el siguiente llega hasta aquí
+                nivel += 1
+                fin_nivel = len(alcanzadas)
         return alcanzadas[1:]
 
     def precargar_vecinas(self, cripta_id: str, sala_actual: int, profundidad: int | None = None,

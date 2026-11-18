@@ -290,6 +290,45 @@ class Errores(unittest.TestCase):
         self.assertEqual(cliente.descargas, 0)
 
 
+# ---------------------------------------------------------------- proporcionalidad (T047)
+
+def rejilla_rodeada() -> list:
+    """Cripta de 1 000 salas que contiene la rejilla 3 × 3 en las salas 1 a 9, con las mismas salidas. Las salas 10
+    a 1 000 forman una fila (E y O) y solo se conectan con la rejilla por una salida de un solo sentido de la sala 10
+    a la sala 1, así que desde la rejilla no se llega a ellas."""
+    conexiones = []
+    for numero in range(1, 10):
+        if numero % 3 != 0:
+            conexiones.append((numero, numero + 1, None, "E", "O"))
+        if numero <= 6:
+            conexiones.append((numero, numero + 3, None, "S", "N"))
+    for numero in range(10, 1000):
+        conexiones.append((numero, numero + 1, None, "E", "O"))
+    conexiones.append((10, 1, None, "O", "E", {"un_sentido": True}))
+    return esqueleto_de_conexiones(conexiones, total=1000)
+
+
+class Proporcionalidad(unittest.TestCase):
+    """FR-376 (Historia 2, escenario 2): el trabajo de una consulta crece con las salas alcanzadas y sus salidas, no
+    con el total de salas de la cripta. Se mide con las búsquedas en el esqueleto, que no dependen de la máquina."""
+
+    def test_fr376_busquedas_proporcionales_a_las_salas_alcanzadas(self):
+        """FR-376 (Historia 2, escenario 2): con profundidad 5, 1 búsqueda más una por sala expandida (10 en la
+        rejilla desde la sala 5), y las mismas cuando la misma vecindad está dentro de una cripta de 1 000 salas."""
+        servicio_chica, _ = nuevo_servicio(rejilla())
+        respuesta_chica, busquedas_chica = consultar(servicio_chica, 5, 5)
+        self.assertEqual(busquedas_chica, 1 + 9)                     # las 9 salas tienen nivel menor que 5
+        self.assertEqual(busquedas_chica, referencia(rejilla(), 5, 5)[1])
+
+        grande = rejilla_rodeada()
+        self.assertEqual(len(grande), 1000)
+        servicio_grande, cliente = nuevo_servicio(grande)
+        respuesta_grande, busquedas_grande = consultar(servicio_grande, 5, 5)
+        self.assertEqual(respuesta_grande, respuesta_chica)
+        self.assertEqual(busquedas_grande, busquedas_chica)
+        self.assertEqual(cliente.descargas, 1)
+
+
 # ---------------------------------------------------------------- principio I (T009)
 
 PROHIBIDOS = ("deque", "collections", "OrderedDict", "defaultdict", "Counter", "heapq", "bisect", "networkx",
