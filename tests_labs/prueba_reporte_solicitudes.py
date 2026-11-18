@@ -58,8 +58,8 @@ with tempfile.TemporaryDirectory() as raiz:
     try:
         print("== 1) Partida completa por main: el reporte sale al final ==")
         http1 = HttpFalso()
-        # no cargar partida, cripta 1, semilla 7, ir al norte, salir sin guardar
-        codigo, texto = ejecutar([], ["n", "1", "7", "norte", "salir", "n"], datos, http1)
+        # no ver la tabla de puntajes, no cargar partida, cripta 1, semilla 7, ir al norte, salir sin guardar
+        codigo, texto = ejecutar([], ["n", "n", "1", "7", "norte", "salir", "n"], datos, http1)
         comprobar("termina bien", codigo == 0)
         comprobar("imprime el encabezado del reporte", "--- Reporte de solicitudes ---" in texto)
         comprobar("el reporte va DESPUÉS de despedirse",

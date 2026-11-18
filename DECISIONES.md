@@ -315,7 +315,7 @@ usa un `ClienteSintetico` propio, sin `obtener_llaves`, y llama directamente a `
 2. **Códigos de salida.** `--verificar`: 0 resoluble, 1 no resoluble, 2 error de uso o lectura. Un rechazo por cripta no resoluble sin `--forzar` sale con 1 (igual que antes); sin criptas disponibles, también 1.
 3. **`cerrar` no es un comando.** El texto anterior del prompt lo anunciaba, pero el controlador nunca lo reconoció; la ayuda no lo lista. No se agregó el comando (no estaba en ninguna especificación).
 4. **Corrección de textos de `main.py` (FR-308).** Los mensajes de `--replay`, `--cache-size` y `--hasta` se guardaban con la codificación doble («tamaÃ±o», «ReproducciÃ³n»); se corrigieron a UTF-8 correcto.
-5. **Laboratorio roto, ajeno a la capacidad.** `tests_labs/prueba_reporte_solicitudes.py` falla desde antes: sus teclas simuladas no incluyen la pregunta de la tabla de puntajes. No se arregló aquí.
+5. **Laboratorio roto, ajeno a la capacidad (arreglado después, 2026-11-18).** `tests_labs/prueba_reporte_solicitudes.py` fallaba desde antes: sus teclas simuladas no incluían la pregunta de la tabla de puntajes. No se arregló en esta capacidad; después se agregó la respuesta «n» al inicio de las teclas del caso 1 y el laboratorio pasa (17 de 17 comprobaciones, código 0).
 6. **Entorno.** Con el Python del sistema falta `requests` (16 módulos no se importan); las pruebas se ejecutan con `.venv/Scripts/python.exe`.
 
 ## 012 · Revisión de la Parte I con la carga nueva
