@@ -1,5 +1,5 @@
 """Corre con la red bloqueada las 9 pruebas nuevas de la capacidad 009 (T051, SC-006, FR-318) y las 8 de la capacidad 003
-(T055, SC-002).
+(T055, SC-002) y las 2 de equivalencia de la capacidad 012 (T044, FR-387: vecindad y caché).
 
     py -m tests_labs.sin_red
 
@@ -35,6 +35,9 @@ PRUEBAS = (
     "test_resolubilidad_datos",
     "test_resolubilidad_inicio",
     "test_resolubilidad_reporte",
+    # Capacidad 012 (revisión de la Parte I: equivalencia de la vecindad y de la caché)
+    "test_vecindad_equivalencia",
+    "test_cache_equivalencia",
 )
 
 

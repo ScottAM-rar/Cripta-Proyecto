@@ -292,14 +292,14 @@
 
 ## Fase 8: cierre
 
-- [ ] T044 [P] En `tests_labs/sin_red.py`, agregar `"test_vecindad_equivalencia"` y `"test_cache_equivalencia"` a `PRUEBAS` y actualizar el docstring para que nombre la capacidad 012. (FR-387)
-- [ ] T045 Cierre:
+- [X] T044 [P] En `tests_labs/sin_red.py`, agregar `"test_vecindad_equivalencia"` y `"test_cache_equivalencia"` a `PRUEBAS` y actualizar el docstring para que nombre la capacidad 012. (FR-387)
+- [X] T045 Cierre:
   - ejecutar `python -m unittest discover -p "test_*.py"`, `python -m tests_labs.sin_red`, `python main.py --bench cache` y `python main.py --bench guardado`, todos con código de salida 0;
   - anotar los totales y los códigos en la sección «Pruebas» de `specs/012-revision-parte-i/mediciones.md`;
   - confirmar que ninguna tarea tocó `DTO/SalaDTO.py`, `DTO/EstadoGuardadoDTO.py`, `Logica/EstadoGuardadoLogica.py`, `adaptadores/AlmacenPartidaBinario.py` ni `codec_partida` (`git diff --stat 0b031ec --` sobre esos archivos no muestra nada).
 
   Depende de T044. (FR-377, FR-383, FR-384, FR-387)
-- [ ] T046 En `specs/012-revision-parte-i/spec.md`, cambiar `**Estado**: Borrador` por `**Estado**: Implementada (T001 a T047)`. Depende de T045. (FR-370 a FR-388, cierre)
+- [X] T046 En `specs/012-revision-parte-i/spec.md`, cambiar `**Estado**: Borrador` por `**Estado**: Implementada (T001 a T047)`. Depende de T045. (FR-370 a FR-388, cierre)
 
 ---
 

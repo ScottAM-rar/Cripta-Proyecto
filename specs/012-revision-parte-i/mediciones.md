@@ -1176,6 +1176,33 @@ T009 y T012 pasan desde D1 y D2. `test_bench_puntos_control` no falló en ningun
 ajuste de margen de la caché (commit `70c9854`) se repitieron las tres: 9 de 9 en `test_cache_equivalencia`, 733 y
 180 sin fallos.
 
+### Cierre (T045)
+
+Código: `cebe5ca` más el cambio de T044 en `tests_labs/sin_red.py`, que agrega `test_vecindad_equivalencia` y
+`test_cache_equivalencia` a `PRUEBAS`. El código de producción y el de medición son los de M2 (`70c9854`). Los cuatro
+comandos se ejecutaron uno por uno, en primer plano y con `PYTHONIOENCODING=utf-8`, el 2026-11-18:
+
+| Comando | Hora | Ejecutadas | Fallos | Errores | Omitidas | Código de salida |
+|---|---|---|---|---|---|---|
+| `python -m unittest discover -p "test_*.py"` | 07:30:21 -0600 | 733 | 0 | 0 | 0 | 0 |
+| `python -m tests_labs.sin_red` | 07:30:46 -0600 | 202 | 0 | 0 | 0 | 0 |
+| `python main.py --bench cache` | 07:30:54 -0600 | — | — | — | — | 0 |
+| `python main.py --bench guardado` | 07:31:06 -0600 | — | — | — | — | 0 |
+
+- **`discover`**: 733 = las 711 de M0 + 13 de `test_vecindad_equivalencia` (con T047) + 9 de `test_cache_equivalencia`.
+  Hay 0 fallos; en M0 hubo 1 (`test_bench_puntos_control`, por tiempo). Esta vez `test_bench_puntos_control` pasó.
+- **`sin_red`**: 202 = las 180 de M0 + las 22 de los dos archivos agregados en T044 (13 + 9), todas con
+  `requests.get` bloqueado.
+- **`--bench cache`**: las filas de cuenta de las secciones 1 y 6 son iguales a M1 y M2. En la sección 1 da
+  64 / 62 / 56 / 46 solicitudes, con 45 / 44 / 44 / 39 disparadas por un cazador. En la sección 6, 64 solicitudes con
+  todas las capacidades; con capacidad 25, 553 aciertos y 630 fallos.
+- **`--bench guardado`**: las 8 verificaciones dan OK. Los tamaños (12,414, 46,646 y 400,347 bytes) y los bytes y
+  entradas leídos por sala son iguales a M1 y M2.
+- **Archivos que no se tocan**: `git diff --stat 0b031ec -- DTO/SalaDTO.py DTO/EstadoGuardadoDTO.py
+  Logica/EstadoGuardadoLogica.py adaptadores/AlmacenPartidaBinario.py adaptadores/codec_partida.py` no muestra nada.
+- **`adaptadores/servicioCripta.py`**: `git diff --stat 0b031ec` da 11 líneas agregadas y 7 quitadas, todas en el cuerpo
+  de `salas_vecinas` (D1). La importación de la línea 2 sigue, porque la usa `_armar_salidas` (uso 4, justificado).
+
 ## Tabla por bloque
 
 Antes = M0 y Carga = M1 (mediana en las filas de tiempo; valor común en las de cuenta). Después = M2, con el mismo criterio. **Límite** (T033, FR-383 y FR-384): 2 × M0; 2 × M1 en las filas nuevas (sin antes en M0) y en las filas de red que la carga ya llevó a más del doble de M0 (fila 4 y filas 26 a 30, corrección L1 de la spec). En las filas de cuenta de red el límite se aplica a las solicitudes. Los tamaños en disco no tienen límite (FR-384 limita guardar, cargar y leer). **Resultado: todas las filas cumplen.** La más cercana a su límite es la fila 3 (perezosa, prof. 2): 56 solicitudes contra 66 (2 × M0), 1.70 × M0, por la carga (+1 llaves y 44 disparadas por cazadores); el código no la mueve (M2 = M1).
