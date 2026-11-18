@@ -33,6 +33,14 @@ class TestBenchHistoria(unittest.TestCase):
         self.assertTrue(any("Búsqueda binaria vs lineal" in c for c in conceptos))
         self.assertTrue(any("Hacia adelante vs hacia atrás" in c for c in conceptos))
 
+    def test_resumen_tiempos_respeta_mediana_entre_minimo_y_maximo(self):
+        """La fila 'mediana (mín – máx)' debe cumplir mín <= mediana <= máx (antes se pasaba el p95 como mínimo)."""
+        mediana, minimo, maximo = historia._resumen_tiempos([9.0, 3.0, 7.0, 5.0, 100.0, 4.0, 6.0, 8.0, 2.0, 50.0])
+        self.assertEqual((minimo, maximo), (2.0, 100.0))
+        self.assertLessEqual(minimo, mediana)
+        self.assertLessEqual(mediana, maximo)
+        self.assertEqual(historia._resumen_tiempos([]), (0.0, 0.0, 0.0))
+
 
 if __name__ == "__main__":
     unittest.main()
