@@ -44,6 +44,14 @@ def _mediana(valores: list[float]) -> float:
     return ordenados[n // 2]
 
 
+def _resumen_tiempos(tiempos_us: list[float]) -> tuple[float, float, float]:
+    """(mediana, mínimo, máximo) en el orden que espera `anotar`: mediana (mín – máx)."""
+    ordenados = ordenar_adaptativo(tiempos_us)
+    if not ordenados:
+        return (0.0, 0.0, 0.0)
+    return (_mediana(ordenados), ordenados[0], ordenados[len(ordenados) - 1])
+
+
 def _resultado_k(resultados: list[tuple], k: int):
     """Búsqueda lineal de la fila de `k` en la lista de resultados (None si no existe)."""
     for fila in resultados:
@@ -189,7 +197,7 @@ def ejecutar(filas: list, imprimir=print, acciones: int = 5000) -> bool:
             cumple = cumple and ok
 
             anotar(filas, SECCION, f"K={k}: tiempo historia ({len(tiempos_us)} consultas en partida de {n_vigentes} acc)",
-                   (med_us, p95_us, max_us))
+                   _resumen_tiempos(tiempos_us))
             filas.append((SECCION, f"    ¿peor historia K={k} <= 50 ms? (FR-442)",
                           "CUMPLE" if ok else "NO CUMPLE", f"(máx {texto(max_us)})"))
             filas.append((SECCION, f"K={k}: memoria serializada de {puntos_totales} puntos de control",

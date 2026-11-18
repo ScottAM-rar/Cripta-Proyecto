@@ -232,7 +232,7 @@
 | FR-117 | T026, T029 a T031, T035, T046 |
 | FR-118, FR-119 | T003, T010, T011, T014, T015, T023, T037, T055 |
 | FR-120 | T046, T047 |
-| FR-121, FR-122, FR-123 | T032, T048 a T052 |
+| FR-121, FR-122, FR-123 | T032, T048 a T052 (T072 para FR-121: agenda con decenas de actores) |
 | FR-124 | T026 (`test_cazador.py`, escenario 10 de la Historia 2) |
 | FR-130, FR-131 | T053 a T055 |
 
@@ -247,3 +247,4 @@
 - [X] T069 Hacer que el cazador use `BuscadorRutas` sin cambiar su decisión. (FR-111, FR-114, FR-116)
 - [X] T070 Comprobar que las pruebas existentes siguen pasando y que `--bench terreno` da tiempos comparables. (FR-121, FR-122)
 - [X] T071 Medir la alternativa descartada de `BuscadorRutas` (mantener el campo de costos sin vista) en `bench/terreno.py`, anotar el antes y el después en `specs/001-terreno-y-cazador/mediciones.md` y en `DECISIONES.md`, y registrar en `PROMPTS_LLM.md` los comandos `/speckit` usados. (VII, XI)
+- [X] T072 [P] Medir la agenda de eventos y `reajustar_velocidad` con decenas de actores (§5.6 del enunciado): bloque nuevo en `bench/agenda.py` (10, 30, 100 y 1 000 actores; un actor y todos a la vez; costo de mantener la alternativa por actor en el ciclo sacar+programar), prueba `bench/test_bench_agenda.py`, y anotar el antes y el después en `specs/001-terreno-y-cazador/mediciones.md` y en `DECISIONES.md`. No cambia ninguna regla del juego. (FR-121, VII)
