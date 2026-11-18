@@ -6,13 +6,13 @@
 
 **Estado**: Borrador
 
-**Entrada**: Revisión de la Parte I con la carga nueva (§5.6 del enunciado): red, caché, guardado y planeación de la vecindad. Requisitos con prefijo FR-370 en adelante (comprobado con búsqueda: los FR-3xx existentes llegan a FR-346 en la 003 y FR-360 en la 010; FR-370 a FR-399 están libres).
+**Entrada**: Revisión de la Parte I con la carga nueva (§5.6 del enunciado): red, caché, guardado y planeación de la vecindad. Requisitos con prefijo FR-370 en adelante (comprobado con búsqueda: los FR-3xx existentes llegan a FR-346 en la 003 y FR-360 en la 009; FR-370 a FR-399 están libres).
 
 ## Contexto y motivación
 
-El enunciado (§5.6) pide repetir las mediciones de la Parte I con la carga de la Parte II (cazadores, costos de salida, llaves y partida de formato 8) y documentar el antes y el después de cada medición. Además, §6.2 y el principio I de la constitución prohíben usar colas, mapas y conjuntos de biblioteca en el código evaluado.
+El enunciado (§5.6) pide repetir las mediciones de la Parte I con la carga de la Parte II (cazadores, costos de salida, llaves y partida de formato 8) y documentar el antes y el después de cada medición. Además, §6.2 y el principio I de la constitución prohíben usar estructuras de biblioteca en el código evaluado.
 
-Hoy la planeación de la vecindad (qué salas rodean a una sala hasta cierta profundidad) usa una cola de biblioteca, y ninguna especificación cubre la revisión de red, caché y guardado con la carga nueva. La 009 ya repitió el bloque de caché tras agregar las llaves, pero lo midió con un cliente que no pide llaves y sin cazadores, así que no basta como revisión de §5.6.
+Hoy la planeación de la vecindad (qué salas rodean a una sala hasta cierta profundidad) usa una estructura de biblioteca prohibida por el principio I, y ninguna especificación cubre la revisión de red, caché y guardado con la carga nueva. La 009 ya repitió el bloque de caché tras agregar las llaves, pero lo midió con un cliente que no pide llaves y sin cazadores, así que no basta como revisión de §5.6.
 
 **Ya especificado, no se repite aquí**: el contrato v2, las llaves y el presupuesto (009), la verificación de resolubilidad (003), los costos de salida y el cazador (001), el rechazo de partidas de versión anterior y la lectura de una sala individual del archivo (FR-425 de la 004 y las pruebas de formato existentes). La regla de precarga **no cambia** (FR-324).
 
@@ -30,8 +30,16 @@ Hoy la planeación de la vecindad (qué salas rodean a una sala hasta cierta pro
 ### Corrección 2026-11-17 (originada en el plan, principio X)
 
 - H1: el orden vigente de las salidas es N, S, E, O, no N, E, S, O. Se corrigieron FR-371, la convención de las criptas, los escenarios 4, 5, 6 y 8 de la Historia 1 y el supuesto de la versión vigente. Los valores nuevos se verificaron ejecutando la planeación de la vecindad del código de `0b031ec`. Los escenarios 2, 3, 7 y 12 no cambian.
-- H2: la lectura de una sala hace búsqueda binaria en la tabla de entradas, así que los bytes leídos crecen con el logaritmo del número de salas. Se corrigieron el escenario 1 de la Historia 4, FR-382 y SC-006: se exigen menos bytes que el archivo completo y un crecimiento no mayor que logarítmico.
+- H2: en la lectura de una sala dentro del archivo, los bytes leídos crecen de forma logarítmica con el número de salas. Se corrigieron el escenario 1 de la Historia 4, FR-382 y SC-006: se exigen menos bytes que el archivo completo y un crecimiento no mayor que logarítmico.
 - H3: la versión vigente pasa a ser el código del commit `0b031ec` (el código de producción es idéntico al de `1f009a1`).
+
+### Corrección 2026-11-18 (originada en el analyze)
+
+- C1 (principio VIII): se quitaron los nombres de estructuras y algoritmos del contexto, de la Historia 2, de la nota H2 y de los supuestos. Las reglas no cambian.
+- A4: FR-378 aclara que la carga nueva no se mide en filas aparte y que las únicas filas nuevas son las que exigen FR-381 y FR-382 y las de alternativas descartadas (principio VII). FR-377 y FR-384 fijan el antes de una fila nueva: su medición con el código vigente y la carga nueva.
+- A5: FR-383 y FR-384 fijan que cada fila de tiempo se toma como la mediana de tres ejecuciones.
+- M10: los supuestos fijan que la cripta de referencia (§6.1) mide 1 000 salas.
+- C2: los supuestos explican el uso del prefijo FR-3xx en esta capacidad.
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
@@ -70,7 +78,7 @@ El juego pregunta qué salas rodean a la sala del jugador hasta cierta profundid
 
 ### Historia 2 · La planeación de la vecindad cumple el principio I (Prioridad: P1)
 
-Quien revisa el código busca usos de colas, mapas y conjuntos de biblioteca. La planeación de la vecindad no debe aparecer en esa búsqueda.
+Quien revisa el código busca usos de estructuras de biblioteca prohibidas por el principio I. La planeación de la vecindad no debe aparecer en esa búsqueda.
 
 **Por qué esta prioridad**: §6.2 lo exige en el código evaluado y hoy es un incumplimiento conocido.
 
@@ -169,8 +177,8 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 
 **Repetición de mediciones**
 
-- **FR-377**: Los bloques de medición de red/caché y de guardado DEBEN ejecutarse con el código vigente antes de cualquier cambio de esta capacidad («antes») y con el código revisado («después»), y ambos resultados DEBEN guardarse junto con el comando y la fecha. Si una fila no tiene antes comparable, DEBE marcarse así y decir por qué.
-- **FR-378**: El «después» DEBE medirse con la carga nueva: cazadores que se mueven, costos de salida, la consulta de llaves contada en el presupuesto y la partida de formato 8. La carga nueva entra en los mismos escenarios de los bloques: las filas son las mismas que en el antes, con la carga puesta, y no se agregan filas aparte. Por eso la causa de cada diferencia DEBE decir si viene del cambio de código o de la carga (FR-379).
+- **FR-377**: Los bloques de medición de red/caché y de guardado DEBEN ejecutarse con el código vigente antes de cualquier cambio de esta capacidad («antes») y con el código revisado («después»), y ambos resultados DEBEN guardarse junto con el comando y la fecha. Si una fila no tiene antes comparable, DEBE marcarse así y decir por qué. Para una fila nueva (FR-378), el antes es la medición de esa fila con el código vigente y la carga nueva.
+- **FR-378**: El «después» DEBE medirse con la carga nueva: cazadores que se mueven, costos de salida, la consulta de llaves contada en el presupuesto y la partida de formato 8. La carga nueva entra en los mismos escenarios de los bloques y no se mide en filas aparte: las filas son las mismas que en el antes, con la carga puesta. Las únicas filas nuevas son las que exigen FR-381 y FR-382 y las de alternativas descartadas (principio VII). Por eso la causa de cada diferencia DEBE decir si viene del cambio de código o de la carga (FR-379).
 - **FR-379**: Cada fila DEBE registrar el antes, el después, la diferencia (absoluta y en porcentaje) y la causa. Las filas de cuenta DEBEN salir idénticas en dos ejecuciones con la misma semilla; las de tiempo DEBEN marcarse como dependientes de la máquina.
 - **FR-380**: Para cada decisión de la Parte I sobre red, caché y guardado (estrategia de precarga, capacidad y búsqueda de la caché, catálogo en disco, formato binario de partida), el Documento de Decisiones DEBE decir si sigue siendo adecuada, citando las filas del después. Si deja de serlo, DEBE cambiarse y documentarse el cambio con la fila que lo motivó. La regla de precarga queda fuera (FR-324): solo se registran sus filas.
 - **FR-381**: El bloque de guardado DEBE medir guardar, cargar, tamaño en bytes y lectura de una sala individual con partidas de formato 8 de 10, 100 y 1 000 salas.
@@ -183,8 +191,8 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 
 **Rendimiento**
 
-- **FR-383**: Ninguna fila de red del después DEBE ser más del doble de su antes (en solicitudes o en tiempo).
-- **FR-384**: Guardar y cargar una partida NO DEBEN exceder sus límites actuales. El límite de cada fila de guardado (guardar, cargar y leer una sala, con 10, 100 y 1 000 salas) es el doble de su valor en el antes, la misma regla que en red (FR-383).
+- **FR-383**: Ninguna fila de red del después DEBE ser más del doble de su antes (en solicitudes o en tiempo). Cada fila de tiempo se toma como la mediana de tres ejecuciones.
+- **FR-384**: Guardar y cargar una partida NO DEBEN exceder sus límites actuales. El límite de cada fila de guardado (guardar, cargar y leer una sala, con 10, 100 y 1 000 salas) es el doble de su valor en el antes, la misma regla que en red (FR-383). Para una fila nueva, el antes es la medición de esa fila con el código vigente y la carga nueva (FR-377). Cada fila de tiempo se toma como la mediana de tres ejecuciones.
 
 **Inventario de usos prohibidos**
 
@@ -223,6 +231,7 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 - Los bloques de medición son los que ya existen: «red/caché» es el que se ejecuta como `--bench cache` (precarga, búsqueda en la caché, disco, catálogo, vecindad, aciertos por capacidad) y «guardado» es `--bench guardado`. Se repiten tal cual y se agrega solo lo que pide la carga nueva.
 - El antes de la caché puede tomarse de nuevo y no copiarse de la 009, porque la 009 midió con un cliente que no pide llaves. Las cifras de la 009 se citan como referencia, no como antes.
 - «Código de producción» es todo lo que ejecuta el juego, sin contar las pruebas, el código de medición ni los scripts de descarga auxiliares.
-- El dict que devuelve la lectura de JSON de la API puede seguir usándose solo para leer JSON (lo permite el principio I). No cuenta como índice ni entra en el inventario si solo se usa así.
-- «Cripta de referencia (§6.1)» fija el tamaño de la cripta sintética que generan los bloques de medición, como en la 004 y la 007. No es una cripta publicada concreta (principio V).
+- La respuesta en formato JSON de la API puede seguir usándose solo para leer JSON (lo permite el principio I). No cuenta como índice ni entra en el inventario si solo se usa así.
+- «Cripta de referencia (§6.1)» fija el tamaño de la cripta sintética que generan los bloques de medición, como en la 004 y la 007. No es una cripta publicada concreta (principio V). La cripta de referencia (§6.1) mide 1 000 salas.
+- FR-3xx es el prefijo que el reparto del grupo asigna a Scott. Esta capacidad usa FR-370 a FR-388 dentro de ese prefijo, igual que la 009.
 - Fuera de alcance: cambiar la regla de precarga (por costo, FR-324), el formato de partida y su rechazo de versiones anteriores, la verificación de resolubilidad y el replay.
