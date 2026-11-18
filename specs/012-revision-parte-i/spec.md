@@ -41,6 +41,10 @@ Hoy la planeación de la vecindad (qué salas rodean a una sala hasta cierta pro
 - M10: los supuestos fijan que la cripta de referencia (§6.1) mide 1 000 salas.
 - C2: los supuestos explican el uso del prefijo FR-3xx en esta capacidad.
 
+### Corrección 2026-11-18 (originada en la medición M1)
+
+- L1: con los cazadores activos desde el inicio (peor caso, research D3), la carga nueva sube varias filas de solicitudes por encima de 2 × M0 (sección 1, fila 4: de 9 a 46; sección 6: de 19 a 64). La causa es la carga, no el código. FR-383, el caso límite de la carga nueva y SC-004 pasan a medir el límite de esas filas contra M1 (misma carga), de modo que el límite sigue midiendo el efecto del código de la revisión. El aumento de M0 a M1 queda documentado con su causa y es un hallazgo de la revisión.
+
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
 Convenciones de las criptas de los escenarios (las salidas se recorren en el orden N, S, E, O):
@@ -105,7 +109,7 @@ El grupo vuelve a medir red, caché y guardado con cazadores, costos de salida, 
 1. **Dado** el código vigente antes de esta capacidad, **cuando** se ejecutan los bloques de red/caché y de guardado, **entonces** sus resultados se guardan como «antes», con la fecha y el comando usado. *(FR-377)*
 2. **Dado** el código revisado y la carga nueva (cazadores que se mueven, costos de salida, consulta de llaves, partida de formato 8), **cuando** se ejecutan los mismos bloques, **entonces** cada fila queda con su valor de antes, de después, la diferencia y la causa. *(FR-377, FR-378)*
 3. **Dado** una fila de cuenta de solicitudes, **cuando** el después difiere del antes, **entonces** la causa nombra el elemento de la carga nueva que la explica (por ejemplo, la consulta de llaves). *(FR-378, FR-379)*
-4. **Dado** cualquier fila de red, **cuando** se compara el después con el antes, **entonces** no es más del doble. *(FR-383)*
+4. **Dado** cualquier fila de red, **cuando** se compara el después con el antes, **entonces** no es más del doble. Si la carga nueva ya la hizo pasar del doble de M0, se compara contra M1 y la diferencia con M0 queda atribuida a la carga. *(FR-383)*
 5. **Dado** una decisión de la Parte I (estrategia de precarga, capacidad y búsqueda de la caché, formato y tamaño del catálogo en disco), **cuando** los datos muestran que dejó de ser adecuada, **entonces** se cambia y el cambio queda en el Documento de Decisiones con la fila que lo motivó. *(FR-380)*
 6. **Dado** una decisión de la Parte I que sigue siendo adecuada, **cuando** se documenta la revisión, **entonces** se cita la fila del después que lo muestra. *(FR-380)*
 7. **Dado** una decisión revisada (se mantenga o cambie), **cuando** se lee su apartado en el documento de la Parte I, **entonces** tiene una nota con el veredicto y un enlace a la sección «012» de `DECISIONES.md`, y la evidencia original sigue ahí. *(FR-388)*
@@ -155,7 +159,7 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 - Salida que lleva a la propia sala o dos salidas que llevan a la misma sala: la sala de destino aparece una sola vez, o ninguna si es la propia. *(FR-371)*
 - Salida en un solo sentido (A tiene salida a B, pero B no a A): desde A se llega a B; desde B no se llega a A. *(FR-370)*
 - Profundidad mayor que el tamaño de la cripta: el resultado es igual al de la profundidad suficiente para alcanzarlo todo. *(FR-370)*
-- La carga nueva cambia una cuenta de solicitudes por un motivo legítimo (la consulta de llaves): no se marca como regresión si la causa queda escrita y no se pasa del doble. *(FR-378, FR-383)*
+- La carga nueva cambia una cuenta de solicitudes por un motivo legítimo (la consulta de llaves): no se marca como regresión si la causa queda escrita y no se pasa del doble. Si la carga (por ejemplo, cazadores activos desde el inicio, el peor caso) la lleva a más del doble de M0, el límite de esa fila pasa a ser M1 y la causa queda escrita. *(FR-378, FR-383)*
 - Una fila del antes no puede reproducirse porque el bloque cambió de escenario: se marca como «sin antes comparable» con el motivo, no se inventa un valor. *(FR-377)*
 - Un uso de biblioteca solo está en código de medición o de pruebas: no entra al inventario de producción, pero se menciona el criterio de exclusión. *(FR-385)*
 
@@ -191,7 +195,7 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 
 **Rendimiento**
 
-- **FR-383**: Ninguna fila de red del después DEBE ser más del doble de su antes (en solicitudes o en tiempo). Cada fila de tiempo se toma como la mediana de tres ejecuciones.
+- **FR-383**: Ninguna fila de red del después DEBE ser más del doble de su antes (en solicitudes o en tiempo). El antes es M0. Cuando la carga nueva (M1) ya hace que una fila supere el doble de M0, la diferencia entre M0 y M1 se atribuye a la carga y se documenta con su causa, y el límite de esa fila se mide contra M1: el código de la revisión no DEBE cambiar su cuenta de solicitudes ni pasar del doble de su valor en M1. Cada fila de tiempo se toma como la mediana de tres ejecuciones.
 - **FR-384**: Guardar y cargar una partida NO DEBEN exceder sus límites actuales. El límite de cada fila de guardado (guardar, cargar y leer una sala, con 10, 100 y 1 000 salas) es el doble de su valor en el antes, la misma regla que en red (FR-383). Para una fila nueva, el antes es la medición de esa fila con el código vigente y la carga nueva (FR-377). Cada fila de tiempo se toma como la mediana de tres ejecuciones.
 
 **Inventario de usos prohibidos**
@@ -220,7 +224,7 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 - **SC-001**: En las 4 criptas de los escenarios × las profundidades 0, 1, 2 y 5 × todas sus salas, y en una cripta sintética de 1 000 salas, el 100 % de las respuestas, errores y cuentas de lecturas del esqueleto coinciden con la versión vigente.
 - **SC-002**: La búsqueda de estructuras prohibidas no encuentra ninguna en la planeación de la vecindad, y cada uso que encuentra en el resto del código de producción está en el inventario (0 sin registrar).
 - **SC-003**: El 100 % de las filas de los bloques de red/caché y guardado tienen su antes, su después, la diferencia y la causa (o la marca «sin antes comparable» con su motivo).
-- **SC-004**: Ninguna fila de red del después supera el doble de su antes.
+- **SC-004**: Ninguna fila de red del después supera el doble de su antes (M0; M1 en las filas que la carga nueva ya llevó a más del doble de M0, con la causa escrita).
 - **SC-005**: Guardar y cargar una partida de formato 8 con 10, 100 y 1 000 salas no superan el doble de su antes en ninguna fila (FR-384).
 - **SC-006**: Con la partida de formato 8 de la cripta sintética del tamaño de la cripta de referencia, y también con la de la cripta publicada más grande descargada, leer una sala individual lee menos bytes que el archivo completo (sin crecer más que logarítmicamente con el número de salas) y tarda menos que cargar la partida entera.
 - **SC-007**: Cada decisión de la Parte I sobre red, caché y guardado tiene su veredicto en la sección «012» de `DECISIONES.md`, respaldado por al menos una fila del después, y una nota con enlace en `DOCUMENTACION_DECISIONES_DISENO.md` (FR-388).

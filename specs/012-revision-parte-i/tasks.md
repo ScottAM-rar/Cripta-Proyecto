@@ -233,7 +233,7 @@
   - las secciones 1 y 6 del bloque `cache` son iguales en M1 y M2.
 
   Si algo difiere, se investiga antes de seguir. (FR-379, FR-387)
-- [ ] T033 [US3] Completar en `specs/012-revision-parte-i/mediciones.md`, para cada fila: «Después (M2)» (la mediana en las filas de tiempo), la diferencia absoluta y en %, el límite (2 × M0, o 2 × M1 en las filas nuevas), «Cumple» y la causa («código: …», «depende de la máquina» o «sin cambios»). (FR-379, FR-383, FR-384)
+- [ ] T033 [US3] Completar en `specs/012-revision-parte-i/mediciones.md`, para cada fila: «Después (M2)» (la mediana en las filas de tiempo), la diferencia absoluta y en %, el límite (2 × M0, o 2 × M1 en las filas nuevas y en las que la carga ya llevó a más del doble de M0, con la causa «carga» escrita), «Cumple» y la causa («código: …», «depende de la máquina» o «sin cambios»). (FR-379, FR-383, FR-384)
 - [ ] T034 [US5] **Solo si** en T033 una fila «lista propia lineal» de la sección 2 sigue pasando 2 × su antes: aplicar el criterio de cambio de D2 (pasar `adaptadores/cache.py` a la lista enlazada propia del prototipo de T019), repetir T028, T030 y T031 a T033, y anotarlo como cambio respecto del plan. Si no hace falta, marcar la tarea con «no aplica» y la fila que lo demuestra. (FR-383, FR-386, FR-387)
 
 ### Historia 4

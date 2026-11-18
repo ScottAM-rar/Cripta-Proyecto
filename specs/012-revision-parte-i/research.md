@@ -147,7 +147,7 @@ La salida de la consola se copia en `mediciones.md` con el comando, la fecha y e
 | **Cuenta** (deben ser idénticas entre dos ejecuciones con la misma semilla) | `cache` 1 (solicitudes), `cache` 6 (aciertos, fallos y solicitudes), `guardado` tamaño en bytes (binario y JSON), `guardado` bytes leídos, filas de verificación | iguales en las tres ejecuciones de cada paso. Cambiar el código no las mueve: M1 = M2 (FR-387) |
 | **Tiempo** (dependen de la máquina) | `cache` 2, 3, 4 y 5; `guardado` guardar, cargar y leer una sala (binario y JSON) | el valor de cada fila es la mediana de tres ejecuciones (FR-383, FR-384). Después ≤ 2 × antes en red (FR-383) y en guardado (FR-384); si la mediana pasa el límite, cuenta como regresión |
 
-**Límites**: FR-383 se compara contra M0 (antes oficial). Para las filas nuevas, contra M1. FR-384 vale para guardar, cargar y leer una sala del binario, en los tres tamaños.
+**Límites**: FR-383 se compara contra M0 (antes oficial). Para las filas nuevas, y para las filas de red que la carga nueva ya llevó a más del doble de M0 (con la causa escrita), contra M1. FR-384 vale para guardar, cargar y leer una sala del binario, en los tres tamaños.
 
 ---
 
