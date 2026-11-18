@@ -342,7 +342,19 @@ Ambas se ejecutaron con `PYTHONIOENCODING=utf-8`, por la misma razón que `guard
 
 ### Pruebas de equivalencia
 
-Pendiente: contra `0b031ec` (T013 y T014) y contra el código revisado (T025, T028 y T030).
+**Contra el código de `0b031ec`** (T013 y T014, 2026-11-18; `git diff --stat 0b031ec -- adaptadores` sin salida):
+
+| Comando | Ejecutadas | Pasan | Fallan | Errores | Omitidas | Fallan (cuáles) |
+|---|---|---|---|---|---|---|
+| `python -m unittest test_vecindad_equivalencia -v` | 12 | 11 | 1 | 0 | 0 | `PrincipioI.test_fr375_salas_vecinas_sin_estructuras_prohibidas` (T009): `salas_vecinas usa ['deque'] (principio I)` |
+| `python -m unittest test_cache_equivalencia -v` | 9 | 8 | 1 | 0 | 0 | `PrincipioI.test_fr386_cache_sin_importaciones_prohibidas` (T012): `adaptadores/cache.py importa ['collections'] (principio I)` |
+
+Los dos fallos son los esperados: comprueban el principio I y el código vigente todavía usa la cola de biblioteca. Tienen que pasar después de D1 (T025) y D2 (T028). Todo lo demás pasa, así que las referencias escritas en las pruebas reproducen lo vigente.
+
+- Corrección de la referencia durante T013 (la prueba, no el código): en la cripta con la puerta cerrada, la sala 2 con profundidad 1 da `[3, 1]` y no `[1, 3]`, porque la salida E se recorre antes que la O (orden N, S, E, O).
+- Cobertura de las secuencias aleatorias de T010: hay expulsiones en las cuatro capacidades (de 6 021 a 8 116 por capacidad) e inserciones rechazadas con todo en uso en las capacidades 1 (3 029) y 2 (526). Con 5 y 25 no hay rechazos; el caso dirigido de T011 los cubre.
+
+**Contra el código revisado**: pendiente (T025, T028 y T030).
 
 ## Tabla por bloque
 

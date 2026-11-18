@@ -66,21 +66,21 @@
 
 ### Historia 1 — La vecindad se planea igual que hoy
 
-- [ ] T005 [P] [US1] Crear `test_vecindad_equivalencia.py` en la raíz, solo con la infraestructura:
+- [X] T005 [P] [US1] Crear `test_vecindad_equivalencia.py` en la raíz, solo con la infraestructura:
   - un cliente sintético (como `ClienteSintetico` de `adaptadores/bench_red_mejorado.py`) que cuenta las llamadas a `obtener_salas`;
   - una subclase espía de `ServicioCripta` que redefine `_buscar_esqueleto` para contar las llamadas y delegar en la original;
   - constructores de criptas con `tests_labs.cripta_sintetica.esqueleto_de_conexiones`: lineal, rejilla 3 × 3, árbol y con ciclos, con las convenciones de la spec, más una cripta con una puerta cerrada, una con una salida de un solo sentido, una sala sin salidas, una salida a la propia sala, dos salidas a la misma sala y una de 1 000 salas (`esqueleto_dirigido_aleatorio` con semilla fija);
   - la **función de referencia escrita en la prueba**: recorrido por niveles con una lista de pares y un índice de lectura, salidas en el orden N, S, E, O, sin estructuras de biblioteca. Devuelve la lista de salas y el número de búsquedas (1 + salas expandidas).
 
   (FR-370, FR-371, FR-374)
-- [ ] T006 [US1] En `test_vecindad_equivalencia.py`, para cada cripta de T005, todas sus salas y las profundidades 0, 1, 2 y 5 (en la de 1 000 salas, 50 salas tomadas con la semilla), comprobar:
+- [X] T006 [US1] En `test_vecindad_equivalencia.py`, para cada cripta de T005, todas sus salas y las profundidades 0, 1, 2 y 5 (en la de 1 000 salas, 50 salas tomadas con la semilla), comprobar:
   - la lista de `salas_vecinas` es igual a la de la referencia;
   - las búsquedas contadas por el espía son iguales a las de la referencia;
   - después de la primera consulta por cripta, el cliente no recibe más llamadas a `obtener_salas`;
   - con profundidad 0, la respuesta es `[]` y hay 1 búsqueda.
 
   Cada caso cita sus FR en el docstring. (FR-370, FR-371, FR-372, FR-374)
-- [ ] T007 [US1] En `test_vecindad_equivalencia.py`, comprobar los valores literales de la Historia 1 corregida:
+- [X] T007 [US1] En `test_vecindad_equivalencia.py`, comprobar los valores literales de la Historia 1 corregida:
   - lineal, sala 3: [4,2], [4,2,5,1] y [4,2,5,1,6]; lineal, sala 1, prof. 5: [2,3,4,5,6];
   - rejilla, sala 5: [2,8,6,4] y [2,8,6,4,3,1,9,7]; rejilla, sala 1, prof. 2: [4,2,7,5,3];
   - árbol, sala 1: [2,3] y [2,3,4,5,6]; árbol, sala 4, prof. 5: [2,1,5,3,6];
@@ -88,7 +88,7 @@
   - búsquedas en la rejilla desde la sala 5: 1, 2 y 6 con profundidad 0, 1 y 2.
 
   (FR-371, FR-374)
-- [ ] T008 [US1] En `test_vecindad_equivalencia.py`, comprobar los errores:
+- [X] T008 [US1] En `test_vecindad_equivalencia.py`, comprobar los errores:
   - profundidad −1 → `ValueError("La profundidad no puede ser negativa")` con 0 búsquedas, también con una sala inexistente (se comprueba primero la profundidad);
   - sala inexistente con profundidad 0, 1, 2 y 5 → `ValueError` que nombra la sala;
   - cripta inexistente → `ValueError` de la carga del esqueleto.
@@ -97,17 +97,17 @@
 
 ### Historia 2 — La vecindad cumple el principio I
 
-- [ ] T009 [US2] En `test_vecindad_equivalencia.py`, una prueba que lee el código de `ServicioCripta.salas_vecinas` con `inspect.getsource` y comprueba que no aparece ninguno de `deque`, `collections`, `heapq`, `bisect`, `set(`, `dict(`, `sorted(` ni `.sort(`. Es la excepción: **falla contra `0b031ec`** y tiene que pasar después de T024. Se documenta en su docstring. (FR-375)
+- [X] T009 [US2] En `test_vecindad_equivalencia.py`, una prueba que lee el código de `ServicioCripta.salas_vecinas` con `inspect.getsource` y comprueba que no aparece ninguno de `deque`, `collections`, `heapq`, `bisect`, `set(`, `dict(`, `sorted(` ni `.sort(`. Es la excepción: **falla contra `0b031ec`** y tiene que pasar después de T024. Se documenta en su docstring. (FR-375)
 
 ### Historia 5 — Caché de fichas equivalente
 
-- [ ] T010 [P] [US5] Crear `test_cache_equivalencia.py` en la raíz:
+- [X] T010 [P] [US5] Crear `test_cache_equivalencia.py` en la raíz:
   - una **LRU de referencia escrita en la prueba**, con listas y la semántica de [contracts/vecindad-y-cache.md](contracts/vecindad-y-cache.md) (en uso, rechazo si todo está en uso, expulsión de la menos reciente libre, `claves()` de más a menos reciente);
   - 20 semillas × 2 000 operaciones aleatorias (`obtener`, `insertar`, `marcar_en_uso`, `marcar_libre`, `establecer_en_uso`, `en_uso`) con capacidades 1, 2, 5 y 25, sobre un universo de claves mayor que la capacidad;
   - después de cada operación se comparan el valor devuelto, `claves()`, `len`, `aciertos` y `fallos`, y en cada inserción con la caché llena, qué clave salió.
 
   (FR-386, FR-387)
-- [ ] T011 [US5] En `test_cache_equivalencia.py`, casos dirigidos:
+- [X] T011 [US5] En `test_cache_equivalencia.py`, casos dirigidos:
   - `CacheLRU(0)` → `ValueError("La capacidad de la caché debe ser al menos 1")`;
   - todo en uso → `insertar` devuelve `False` y `len ≤ capacidad`;
   - reinsertar una clave existente reemplaza el valor, la pone primera en `claves()` y no expulsa nada;
@@ -116,12 +116,12 @@
   - `establecer_en_uso` cuenta las repeticiones.
 
   (FR-386, FR-387)
-- [ ] T012 [US5] En `test_cache_equivalencia.py`, una prueba que usa `importaciones_prohibidas` de `test_monticulo_minimo.py` sobre `adaptadores/cache.py` y exige que no haya ninguna. Es la excepción: **falla contra `0b031ec`** y tiene que pasar después de T027. Se documenta en su docstring. (FR-386)
+- [X] T012 [US5] En `test_cache_equivalencia.py`, una prueba que usa `importaciones_prohibidas` de `test_monticulo_minimo.py` sobre `adaptadores/cache.py` y exige que no haya ninguna. Es la excepción: **falla contra `0b031ec`** y tiene que pasar después de T027. Se documenta en su docstring. (FR-386)
 
 ### Ejecución contra `0b031ec`
 
-- [ ] T013 [US1] Ejecutar `python -m unittest test_vecindad_equivalencia -v` con el código sin tocar. Todo pasa salvo T009. Anotar el resultado en la sección «Pruebas» de `specs/012-revision-parte-i/mediciones.md`. Si falla otra cosa, se corrige la referencia de la prueba, nunca el código. (FR-370, FR-371, FR-372, FR-373, FR-374)
-- [ ] T014 [US5] Ejecutar `python -m unittest test_cache_equivalencia -v` con el código sin tocar. Todo pasa salvo T012. Anotar el resultado en `specs/012-revision-parte-i/mediciones.md`. (FR-386, FR-387)
+- [X] T013 [US1] Ejecutar `python -m unittest test_vecindad_equivalencia -v` con el código sin tocar. Todo pasa salvo T009. Anotar el resultado en la sección «Pruebas» de `specs/012-revision-parte-i/mediciones.md`. Si falla otra cosa, se corrige la referencia de la prueba, nunca el código. (FR-370, FR-371, FR-372, FR-373, FR-374)
+- [X] T014 [US5] Ejecutar `python -m unittest test_cache_equivalencia -v` con el código sin tocar. Todo pasa salvo T012. Anotar el resultado en `specs/012-revision-parte-i/mediciones.md`. (FR-386, FR-387)
 
 **Punto de control**: las referencias reproducen lo vigente.
 
@@ -219,7 +219,7 @@
   (FR-386, FR-387)
 - [ ] T028 [US5] Ejecutar `python -m unittest test_cache_equivalencia -v`: todo pasa, **incluida T012**. (FR-386, FR-387)
 - [ ] T029 [US5] En `adaptadores/bench_red_mejorado.py`, cambiar el nombre de las filas de la sección 2 de «deque lineal» a «lista propia lineal», sin cambiar su posición ni su escenario, y actualizar el docstring del módulo. (FR-379)
-- [ ] T030 [US5] Con D1 y D2 hechos (T025 y T028), ejecutar `python -m unittest discover -p "test_*.py"` y `python -m tests_labs.sin_red`. `discover` da los totales de T003 más las pruebas de `test_vecindad_equivalencia.py` y `test_cache_equivalencia.py`, con 0 fallos y 0 errores; `sin_red` da los mismos totales que en T003. Ninguna prueba que pasaba en T003 falla ahora. (FR-387)
+- [ ] T030 [US5] Con D1 y D2 hechos (T025 y T028), ejecutar `python -m unittest discover -p "test_*.py"` y `python -m tests_labs.sin_red`. `discover` da los totales de T003 (711) más las pruebas de `test_vecindad_equivalencia.py` y `test_cache_equivalencia.py`; `sin_red` da los mismos totales que en T003. Ninguna prueba que pasaba en T003 falla ahora. En T003 la suite completa tuvo 1 fallo, `bench.test_bench_puntos_control` (límite de 20 ms, prueba de tiempo intermitente que pasa sola): si se repite, se registra aparte en `mediciones.md` como fallo intermitente de tiempo y no cuenta como regresión. (FR-387)
 
 ---
 
