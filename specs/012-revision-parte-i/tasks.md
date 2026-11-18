@@ -133,41 +133,41 @@
 
 ### Historia 3 — Carga nueva en el bloque `cache`
 
-- [ ] T015 [US3] En `adaptadores/bench_red_mejorado.py`, `ClienteSintetico`:
+- [X] T015 [US3] En `adaptadores/bench_red_mejorado.py`, `ClienteSintetico`:
   - cada salida de `obtener_salas` lleva `"costo"` entre 1 y 9, sacado de `random.Random(SEMILLA)` (importar `SEMILLA` de `bench.datos`) y simétrico en las dos direcciones de cada conexión;
   - agregar `obtener_llaves(cripta_id, solo_guardadas=False, limite_solicitudes=None)`, que suma 1 a `llamadas` y devuelve una llave con la misma forma que `tests_labs/api_falsa.py` (parámetro `llaves`).
 
   (FR-378)
-- [ ] T016 [US3] En `adaptadores/bench_red_mejorado.py`, `ClienteConCatalogo`:
+- [X] T016 [US3] En `adaptadores/bench_red_mejorado.py`, `ClienteConCatalogo`:
   - agregar un cazador cada 10 salas (posiciones sacadas de `random.Random(SEMILLA)`), con un tipo propio en `obtener_contenido`;
   - `obtener_catalogo` devuelve para ese tipo una ficha con `"comportamiento": "cazador"` y `"rango"` (la de `tests_labs.cripta_sintetica.ficha_cazador`, `rango=600`);
   - en la sección 3, una de las fichas del catálogo pasa a ser de cazador.
 
   (FR-378)
-- [ ] T017 [US3] En `adaptadores/bench_red_mejorado.py`, una función de medición `_mover_cazadores(servicio, cid, cazadores, sala_jugador)`:
+- [X] T017 [US3] En `adaptadores/bench_red_mejorado.py`, una función de medición `_mover_cazadores(servicio, cid, cazadores, sala_jugador)`:
   - cada cazador avanza una salida hacia la sala del jugador, por la menor cantidad de salidas, calculada con un recorrido por niveles sobre listas y con desempate en el orden N, S, E, O;
   - si entra en una sala cuyo contenido no está traído, llama a `servicio.construir_sala(cid, sala)` y suma las solicitudes que provocó;
   - los cazadores están activos desde el inicio (peor caso, research D3);
   - devuelve las solicitudes disparadas.
 
   Sin `dict` ni `set` como índice. (FR-378)
-- [ ] T018 [US3] En `adaptadores/bench_red_mejorado.py`, `solicitudes_por_estrategia` (sección 1) y `cache_en_partida` (sección 6):
+- [X] T018 [US3] En `adaptadores/bench_red_mejorado.py`, `solicitudes_por_estrategia` (sección 1) y `cache_en_partida` (sección 6):
   - llamar a `servicio.ubicacion_llaves(cid)` una vez después de `crear_jugador`;
   - llamar a `_mover_cazadores` después de cada paso del jugador;
   - en la columna de unidad, agregar «de ellas, X disparadas por un cazador».
 
   El recorrido (pasillo de 60 y serpiente de 150 pasos) no cambia. (FR-378, FR-379)
-- [ ] T019 [US3] En `adaptadores/bench_red_mejorado.py`, `busqueda_en_cache` (sección 2): un prototipo de **lista doblemente enlazada propia** (alternativa descartada de D2, que vive solo en el código de medición) y una fila «lista enlazada propia, N fichas, acierto (descartada)» por tamaño, después de las filas existentes de ese tamaño. No se cambia el nombre de ninguna fila existente. (FR-378: fila de alternativa descartada; principio VII, research D2)
+- [X] T019 [US3] En `adaptadores/bench_red_mejorado.py`, `busqueda_en_cache` (sección 2): un prototipo de **lista doblemente enlazada propia** (alternativa descartada de D2, que vive solo en el código de medición) y una fila «lista enlazada propia, N fichas, acierto (descartada)» por tamaño, al final del bloque (filas 31 a 34), para no mover el número de ninguna fila existente. No se cambia el nombre de ninguna fila existente. (FR-378: fila de alternativa descartada; principio VII, research D2)
 
 ### Historia 4 — Carga y filas nuevas en el bloque `guardado`
 
-- [ ] T020 [P] [US4] En `bench/guardado.py`, `estado_con_salas`:
+- [X] T020 [P] [US4] En `bench/guardado.py`, `estado_con_salas`:
   - el segundo enemigo de cada sala pasa a ser cazador (`comportamiento="cazador"`, `rango=600`);
   - cada `SalidaGuardadaDTO` recibe `costo` entre 1 y 9 del mismo `rng`;
   - se asigna un `ConocimientoGuardadoDTO` con `exploradas` = salas impares en orden ascendente (la mitad) y `avistadas` = las pares.
 
   Las clases DTO se usan sin modificarlas. (FR-378, FR-381)
-- [ ] T021 [US4] En `bench/guardado.py`:
+- [X] T021 [US4] En `bench/guardado.py`:
   - una subclase de medición de `AlmacenPartidaBinario` que redefine `_abrir` (devuelve un envoltorio que suma los bytes de cada `read`) y `_entrada` (cuenta las llamadas);
   - por tamaño, filas nuevas: «bytes leídos al cargar UNA sala» de la primera, la del medio y la última (unidad: «bytes de N del archivo»), y «cargar UNA sala (la primera / la última) [binario, acceso directo]» con `medir`;
   - con `verificar`: los bytes leídos son menos que el tamaño del archivo, y las entradas leídas son a lo sumo ⌊log₂ n⌋ + 1.
@@ -176,8 +176,8 @@
 
 ### M1
 
-- [ ] T022 [US3] Comprobar que `git diff --stat 0b031ec -- adaptadores/servicioCripta.py adaptadores/cache.py` no muestra nada. Ejecutar tres veces cada bloque, con `--bench-csv specs/012-revision-parte-i/bench-cache-M1-1.csv` y `bench-guardado-M1-1.csv` (y lo mismo con `-2` y `-3`). Copiar, para cada ejecución, la salida, los comandos, la fecha, el commit y el código de salida (0) en la sección M1 de `specs/012-revision-parte-i/mediciones.md`; cada fila de tiempo registra la mediana de las tres. Completar la columna «Carga (M1)» y anotar «carga: …» en la causa de cada fila que difiera de M0 (por ejemplo, «+1 consulta de llaves», «X disparadas por un cazador»). (FR-377, FR-378, FR-379, FR-383, FR-384)
-- [ ] T023 [US4] En `specs/012-revision-parte-i/mediciones.md`, marcar las filas nuevas de T019 y T021 con «sin antes en M0: fila nueva (FR-378)». Su antes es su medición con el código vigente y la carga nueva, es decir, M1 (la mediana en las filas de tiempo), y con ese antes se calcula el límite de 2×. (FR-377, FR-382, FR-384)
+- [X] T022 [US3] Comprobar que `git diff --stat 0b031ec -- adaptadores/servicioCripta.py adaptadores/cache.py` no muestra nada. Ejecutar tres veces cada bloque, con `--bench-csv specs/012-revision-parte-i/bench-cache-M1-1.csv` y `bench-guardado-M1-1.csv` (y lo mismo con `-2` y `-3`). Copiar, para cada ejecución, la salida, los comandos, la fecha, el commit y el código de salida (0) en la sección M1 de `specs/012-revision-parte-i/mediciones.md`; cada fila de tiempo registra la mediana de las tres. Completar la columna «Carga (M1)» y anotar «carga: …» en la causa de cada fila que difiera de M0 (por ejemplo, «+1 consulta de llaves», «X disparadas por un cazador»). (FR-377, FR-378, FR-379, FR-383, FR-384)
+- [X] T023 [US4] En `specs/012-revision-parte-i/mediciones.md`, marcar las filas nuevas de T019 y T021 con «sin antes en M0: fila nueva (FR-378)». Su antes es su medición con el código vigente y la carga nueva, es decir, M1 (la mediana en las filas de tiempo), y con ese antes se calcula el límite de 2×. (FR-377, FR-382, FR-384)
 
 **Punto de control**: el efecto de la carga está aislado del efecto del código.
 
