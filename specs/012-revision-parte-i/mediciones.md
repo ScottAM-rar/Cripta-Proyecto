@@ -1561,3 +1561,136 @@ M2, mediana de tres ejecuciones; entre paréntesis, las tres ejecuciones.
 | G46 | §4.10 | 1000 salas  cargar UNA sala (la última, la 1000)    [binario, acceso directo] | tiempo | 81.7 µs | 74.0 µs | 71.7 µs | 74.0 µs (mediana) |
 | G47 | §4.10 | verificación: 1000 salas: leer UNA sala lee menos bytes que el archivo | cuenta | OK | OK | OK | OK (igual en las tres) |
 | G48 | §4.10 | verificación: 1000 salas: entradas leídas (10) ≤ ⌊log₂ n⌋ + 1 = 10 | cuenta | OK | OK | OK | OK (igual en las tres) |
+
+## Anexo · Inventario de usos prohibidos (T037 a T039)
+
+### T037 · Búsqueda
+
+- Fecha y hora: 2026-11-18 07:24 -0600. Código: `aeb25a0`. Tiene el mismo código de producción y de medición que M2
+  (`70c9854`): el commit `aeb25a0` solo agrega documentos. Los comandos son los de [quickstart.md](quickstart.md#inventario),
+  ejecutados con Git Bash desde la raíz del repositorio:
+
+```
+P="adaptadores Controlador DTO Logica model Servicio main.py"
+X="--exclude=bench_red.py --exclude=bench_red_mejorado.py"
+grep -rnE "(import|from) +(heapq|bisect|collections|networkx)" $P --include=*.py $X
+grep -rnE "sorted\(|\.sort\(" $P --include=*.py $X
+grep -rnE "\bset\(|frozenset|\{[^}:]+\}" $P --include=*.py $X
+grep -rnE "\bdict\(|= \{\}|: dict\b" $P --include=*.py $X
+```
+
+**1. Importaciones** (4 líneas):
+
+```
+adaptadores/servicioCripta.py:2:from collections import deque
+DTO/SalaDTO.py:4:from collections import deque
+Logica/EstadoGuardadoLogica.py:10:from collections import deque
+Logica/GestorEventos.py:2:from collections.abc import Callable
+```
+
+**2. `sorted(` y `.sort(`** (2 líneas):
+
+```
+Logica/IndiceLlaves.py:9:`id_de` y `cantidad` O(1). Sin `bisect`, `sorted()`, `.sort()`, `dict` ni `set`.
+Logica/VerificacionResolubilidad.py:25:Sin dict, set, heapq, bisect, collections, sorted() ni .sort() (principio I).
+```
+
+**3. `set(`, `frozenset` y conjuntos literales**: 322 líneas. Ninguna es `set(` ni `frozenset`; todas salen del
+patrón de conjunto literal `\{[^}:]+\}`. Para separarlas se usó el tokenizador de Python 3.12: se descarta lo que
+está entre `FSTRING_START` y `FSTRING_END`, las cadenas y los comentarios, y se vuelve a buscar el patrón en lo que
+queda.
+
+- **Criterio «marcador de f-string no cuenta»**: descarta 317 líneas. En todas, el patrón solo aparece dentro de un
+  marcador `{x}` de una cadena con prefijo `f`.
+- **Criterio «marcador en un comentario no cuenta»**: descarta 1 línea,
+  `adaptadores/servicioCripta.py:160: self._datos: dict | None = None  # respuesta cruda de /criptas/{id}`. El `{id}`
+  está en el comentario. La línea sí entra en la búsqueda 4 por `: dict`.
+- **Quedan 4 líneas con un conjunto literal en el código**:
+
+```
+adaptadores/extension.py:20:    separadores = {os.sep, "/", "\\"}
+Logica/EstadoJuegoLogica.py:884:        if tipo in {"RECOGER_OBJETO", "USAR_OBJETO"}:
+Logica/EstadoJuegoLogica.py:900:        if tipo in {"ARMAR_TRAMPA", "ACTIVAR_TRAMPA"}:
+Logica/EstadoJuegoLogica.py:1248:        elif evento.tipo_accion in {"RECOGER_OBJETO", "USAR_OBJETO"} and evento.datos_extra:
+```
+
+**4. `dict(`, `= {}` y `: dict`** (18 líneas, las mismas 18 de `0b031ec` que cuenta research D5):
+
+```
+adaptadores/AlmacenDisco.py:74:    def guardar_datos(self, cripta_id: str, datos: dict) -> None:
+adaptadores/llaves.py:20:def leer_llaves(respuesta: dict) -> list[dict]:
+adaptadores/resolucion.py:30:def resolver_objeto(ficha: dict, id_sala: int | None = None) -> Objeto:
+adaptadores/resolucion.py:41:    datos = dict(ficha)
+adaptadores/resolucion.py:49:def _rango_de(ficha: dict, advertencias: list[str] | None) -> int:
+adaptadores/resolucion.py:68:def resolver_ficha_enemigo(ficha: dict, advertencias: list[str] | None = None) -> EnemigoCatalogoDTO:
+adaptadores/resolucion.py:72:    datos = dict(ficha)
+adaptadores/resolucion.py:80:def resolver_enemigo(colocacion: dict, ficha: EnemigoCatalogoDTO, id_sala: int) -> EnemigoDTO:
+adaptadores/resolucion.py:103:def resolver_trampa(colocacion: dict, ficha: dict, id_sala: int) -> Trampa:
+adaptadores/resolucion.py:123:def _ids_necesarios(contenido: dict) -> list[str]:
+adaptadores/resolucion.py:194:def _armar_sala(contenido: dict, fichas: list[dict], numero_sala: int, advertencias: list[str] | None = None):
+adaptadores/servicioCripta.py:46:def _costo_declarado(salida: dict, advertencias: list[str] | None, sala: int, letra: str) -> int | None:
+adaptadores/servicioCripta.py:90:        nueva = dict(sala)
+adaptadores/servicioCripta.py:93:            salidas_nuevas = {}
+adaptadores/servicioCripta.py:115:                copia = dict(salida)
+adaptadores/servicioCripta.py:160:        self._datos: dict | None = None              # respuesta cruda de /criptas/{id}
+adaptadores/servicioCripta.py:513:    def _ensamblar(self, esqueleto: dict, contenido) -> SalaDTO:
+adaptadores/servicioCripta.py:523:    def _armar_salidas(salidas_api: dict | None) -> deque[SalidaDTO]:
+```
+
+**Comprobaciones de FR-375**:
+- `adaptadores/cache.py` ya no aparece en ninguna de las cuatro búsquedas (D2).
+- `adaptadores/servicioCripta.py` aparece en la búsqueda 1 solo por la importación de la línea 2. Esa cola de
+  biblioteca solo se usa en `_armar_salidas` (líneas 523, 524 y 528), que es el uso 4, justificado. `salas_vecinas`
+  (líneas 391 a 415) no menciona ninguna estructura de la lista (D1).
+- La búsqueda 2 solo encuentra dos docstrings que dicen que el archivo **no** usa `sorted()` ni `.sort()`. No son usos.
+
+### T038 · Revisión a mano
+
+**Las 18 apariciones de `dict`**. Ninguna es índice, caché ni tabla de búsqueda. Todas son la respuesta JSON de la
+API o una copia con su misma forma (supuesto de la spec). Por eso, con el criterio de FR-386, ninguna pasa a la tabla
+del inventario.
+
+| # | Ubicación | Clasificación | Motivo |
+|---|---|---|---|
+| 1 | `adaptadores/AlmacenDisco.py:74` | lectura de JSON | anotación del parámetro: recibe la respuesta de `/criptas/{id}` y la escribe tal cual en el archivo indexado |
+| 2 | `adaptadores/llaves.py:20` | lectura de JSON | anotación: recibe la respuesta de la API de llaves y devuelve su lista `llaves` sin indexarla |
+| 3 | `adaptadores/resolucion.py:30` | lectura de JSON | anotación: la ficha cruda del catálogo, que se convierte en un objeto del juego |
+| 4 | `adaptadores/resolucion.py:41` | lectura de JSON | `dict(ficha)`: copia de la ficha para renombrar `id` y quitar `clase` antes de construir el objeto. Se descarta al salir |
+| 5 | `adaptadores/resolucion.py:49` | lectura de JSON | anotación: lee `comportamiento` y `rango` de la ficha cruda |
+| 6 | `adaptadores/resolucion.py:68` | lectura de JSON | anotación: la ficha cruda de un enemigo |
+| 7 | `adaptadores/resolucion.py:72` | lectura de JSON | `dict(ficha)`: copia para quitar las claves que el DTO no conoce. Se descarta al construir el DTO |
+| 8 | `adaptadores/resolucion.py:80` | lectura de JSON | anotación: la colocación cruda de `/contenido` |
+| 9 | `adaptadores/resolucion.py:103` | lectura de JSON | anotación: la colocación y la ficha crudas de una trampa |
+| 10 | `adaptadores/resolucion.py:123` | lectura de JSON | anotación: el contenido crudo de una sala. Los ids se juntan en una lista |
+| 11 | `adaptadores/resolucion.py:194` | lectura de JSON | anotación: el contenido crudo y la lista de fichas crudas. Las fichas se buscan en la lista, no por clave |
+| 12 | `adaptadores/servicioCripta.py:46` | lectura de JSON | anotación: una salida cruda del esqueleto, de la que se lee `costo` |
+| 13 | `adaptadores/servicioCripta.py:90` | lectura de JSON | `dict(sala)` en `normalizar_esqueleto`: copia de la sala cruda con la forma de la API (uso 7 de research D5) |
+| 14 | `adaptadores/servicioCripta.py:93` | lectura de JSON | `salidas_nuevas = {}`: el objeto `salidas` de la API rearmado con las mismas letras y el costo resuelto (uso 7) |
+| 15 | `adaptadores/servicioCripta.py:115` | lectura de JSON | `dict(salida)`: copia de una salida cruda para fijarle el costo (uso 7) |
+| 16 | `adaptadores/servicioCripta.py:160` | lectura de JSON | `self._datos`: la respuesta cruda de `/criptas/{id}` de la cripta actual. Si cambia la cripta se reemplaza entera, y nunca se busca por clave dentro |
+| 17 | `adaptadores/servicioCripta.py:513` | lectura de JSON | anotación: la sala cruda del esqueleto, que se ensambla en un `SalaDTO` |
+| 18 | `adaptadores/servicioCripta.py:523` | lectura de JSON | anotación: el objeto `salidas` de la API, que se recorre en el orden N, S, E, O |
+
+Los usos 7 y 8 de research D5 son las filas 13 a 15 (`normalizar_esqueleto` en `servicioCripta.py`) y las filas 4 y 7
+(`resolucion.py:41, 72`) de esta tabla.
+
+**Conjuntos literales** (las 4 líneas que quedan de la búsqueda 3):
+
+| Ubicación | Clasificación | Motivo |
+|---|---|---|
+| `adaptadores/extension.py:20` | constante de solo lectura (uso 9) | 3 separadores de ruta (4 si existe `os.altsep`) para comprobar que el nombre de archivo no trae carpetas. No guarda datos del juego |
+| `Logica/EstadoJuegoLogica.py:884` | constante de solo lectura (uso 10) | 2 tipos de acción para elegir cómo reconstruir un evento del log |
+| `Logica/EstadoJuegoLogica.py:900` | constante de solo lectura (uso 10) | 2 tipos de acción, igual que la anterior |
+| `Logica/EstadoJuegoLogica.py:1248` | constante de solo lectura (uso 10) | 2 tipos de acción para saber qué id quedó afectado |
+
+**Resultado**: no hay ningún índice ni caché nuevo. Los únicos usos que van a la tabla del inventario son los 10 de
+research D5: 2 corregidos (D1 y D2), 6 justificados (3 a 6, 9 y 10) y 2 excluidos por ser lectura de JSON (7 y 8).
+
+### T039 · Usos 9 y 10: se justifican tal cual
+
+No se cambia el código. Los cuatro conjuntos son constantes de 2 o 3 elementos (4 con `os.altsep`), escritas en la
+línea donde se usan, y solo sirven para comprobar pertenencia. No guardan datos del juego, no crecen y nadie los
+consulta como índice ni como caché. Pasarlos a tuplas costaría cuatro líneas, pero no cambia nada observable ni la
+complejidad: con 2 o 3 elementos, comprobar la pertenencia cuesta lo mismo. Además obligaría a repetir T030 sin
+ninguna ganancia. En `extension.py:20` habría que armar la tupla de otra forma, porque el conjunto agrega `os.altsep`
+con `add`. T030 no se repite.

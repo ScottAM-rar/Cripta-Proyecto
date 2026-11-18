@@ -165,6 +165,8 @@ Se simuló un recorrido de 150 pasos por una rejilla de 10×10 salas, con 40 tip
 
 La tasa de aciertos aumenta con la capacidad hasta cubrir las aproximadamente 70 fichas distintas de la cripta. Sin embargo, las solicitudes de red son las mismas con cualquier capacidad, porque lo que no conserva la caché se recupera desde el disco. En este caso, la capacidad reduce lecturas de disco, pero no solicitudes de red.
 
+> **Revisión 012 (veredicto):** la caché **cambia de estructura**: pasa a una lista propia con la más reciente al final, en lugar de la cola doble de biblioteca. La política LRU con contador de uso, la capacidad de 25, el catálogo en disco y la regla de precarga **se mantienen**. La búsqueda baja de 33.93 a 18.46 µs con 1 000 fichas y las cuentas no cambian. Detalle en [`DECISIONES.md` §012](DECISIONES.md#012--revisión-de-la-parte-i-con-la-carga-nueva).
+
 ## 3. Historial de retroceso (pergamino)
 
 El historial es una lista doblemente enlazada de nodos de cambio que se usa como una pila. Cada nodo guarda uno o más cambios, el valor anterior y el nuevo de lo que se modificó, y un nodo especial marca dónde empieza cada acción del jugador. Solo se conservan las últimas 5 acciones.
@@ -436,6 +438,8 @@ El binario devuelve exactamente el estado guardado y rechaza un archivo de otra 
 
 El binario gana en tamaño, guardado y recuperación de una sala. Sin embargo, cargar la partida completa resultó más lento: el binario construye los objetos de datos y `json.loads` solo analiza el texto en C. Con 1 000 salas son 47 ms contra 4 ms. Esta diferencia solo aparece al continuar una partida guardada.
 
+> **Revisión 012 (veredicto):** el formato binario **se mantiene** sin cambios. Con la carga nueva, todas las filas de tiempo quedan por debajo de 2 × su antes. Leer una sala de 1 000 lee 359 a 397 bytes de 400,347, y su tiempo crece solo con el logaritmo del número de salas. Detalle en [`DECISIONES.md` §012](DECISIONES.md#012--revisión-de-la-parte-i-con-la-carga-nueva).
+
 ## 7. Bitácora de partida y reproducción (`--replay`)
 
 Cada acción del jugador se guarda en dos lugares con roles distintos:
@@ -542,6 +546,8 @@ Agregar es `O(1)` y no reescribe el archivo. La tabla se ordena en memoria con l
 
 Con 200 consultas por número a salas ya cargadas, el arreglo indexado tarda 1.6 µs con 10, 100 y 1 000 salas. La lista enlazada tarda 26 µs, 162 µs y 1.56 ms, respectivamente. El recorrido por niveles a profundidad 3 cuesta 3.4 µs con 10 salas, 10.9 µs con 100 y 75 µs con 1 000.
 
+> **Revisión 012 (veredicto):** la planeación de la vecindad **cambia de estructura**: el recorrido por niveles usa la propia lista de salas alcanzadas como cola, con un índice de lectura y una marca de fin de nivel, en lugar de la cola doble de biblioteca. La respuesta es la misma (salas, orden N, S, E, O y lecturas) y tarda 18.6 µs a 1 paso y 46.6 µs a 2 pasos en 1 000 salas. Detalle en [`DECISIONES.md` §012](DECISIONES.md#012--revisión-de-la-parte-i-con-la-carga-nueva).
+
 ## 9. Qué se degrada primero si la cripta crece 50 veces
 
 Las decisiones anteriores están pensadas para la cripta de referencia. Si la cripta de la defensa tiene 50 veces más salas y actores, lo primero que probablemente se note no será la agenda de eventos, sino las búsquedas lineales sobre datos que crecen con la cripta.
@@ -573,13 +579,13 @@ El ciclo cumple con bastante margen hasta 300 esbirros y todavía cumple con 1 0
 | Problema | Estructura elegida | Alternativa considerada |
 |---|---|---|
 | Agenda de eventos | Heap binario con posición por evento | Lista ordenada con búsqueda binaria |
-| Caché de fichas | Cola doble LRU con contador de uso + archivo indexado | Tabla hash propia + lista doble |
+| Caché de fichas | Lista propia LRU (la más reciente al final) con contador de uso + archivo indexado; hasta la 012, cola doble LRU ([§012](DECISIONES.md#012--revisión-de-la-parte-i-con-la-carga-nueva)) | Tabla hash propia + lista doble; lista enlazada propia (012) |
 | Historial de retroceso | Lista doble como pila con marcadores de acción | Instantáneas en buffer circular |
 | Inventario | Lista doble con cursor | Arreglo contiguo con índice |
 | Ordenamiento | Inserción + mezcla según tamaño y orden previo | Un solo algoritmo, quicksort o heapsort |
 | Guardado binario | Bloques con marcas + tabla de salas ordenada + pie fijo | Registros fijos con `struct` |
 | Bitácora y reproducción | Lista doble en memoria + texto de solo anexado | Arreglo dinámico + log binario |
-| Salas, mensajes y puntajes | Arreglo indexado, cola enlazada, registros fijos | Lista enlazada, buffer circular, texto CSV/JSON |
+| Salas, mensajes y puntajes | Arreglo indexado, cola enlazada, registros fijos; vecindad por niveles sobre la propia lista de alcanzadas (antes, cola doble; [§012](DECISIONES.md#012--revisión-de-la-parte-i-con-la-carga-nueva)) | Lista enlazada, buffer circular, texto CSV/JSON; `ColaCircular` para la vecindad (012) |
 | Viaje «ir a» (capacidad 006) | Campo de costos con cota + siguiente paso; un movimiento normal por paso; marcas en el log | Enumerar rutas completas; camino propio; viaje como una sola acción |
 
 ## 10.1 Viaje «ir a» (capacidad 006)

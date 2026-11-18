@@ -253,19 +253,19 @@
 
 ### Historia 5 — Inventario
 
-- [ ] T037 [US5] Repetir la búsqueda de la sección «Inventario» de [quickstart.md](quickstart.md) sobre `adaptadores Controlador DTO Logica model Servicio main.py`, excluyendo `bench_red.py` y `bench_red_mejorado.py`, y pegar la salida en un anexo de `specs/012-revision-parte-i/mediciones.md`. `adaptadores/cache.py` ya no aparece. `adaptadores/servicioCripta.py` aparece solo por `_armar_salidas`. (FR-385, FR-375)
-- [ ] T038 [US5] Revisar a mano cada aparición de `dict(`, `= {}` o `: dict` (18 en `0b031ec`) y de los conjuntos literales. Clasificar cada una como «índice, caché o tabla de búsqueda» o como «lectura de JSON» (respuesta de la API o copia con su misma forma), con una línea de motivo, en el anexo de `mediciones.md`. Toda aparición que sea índice o caché pasa a la tabla del inventario con el criterio de FR-386. Las apariciones que la búsqueda de conjuntos literales encuentra en marcadores de f-string (`{x}` dentro de una cadena con prefijo `f`) se descartan con el criterio «marcador de f-string no cuenta», que se escribe en el anexo junto con cuántas líneas descartó. (FR-385, FR-386)
-- [ ] T039 [US5] Para los usos 9 y 10 de research D5 (`adaptadores/extension.py:20` y `Logica/EstadoJuegoLogica.py:884, 900, 1248`), decidir si se justifican tal cual o se pasan a tuplas. Si se pasan a tuplas, cambiar solo esas líneas y repetir T030. Anotar la decisión. (FR-386, FR-387)
+- [X] T037 [US5] Repetir la búsqueda de la sección «Inventario» de [quickstart.md](quickstart.md) sobre `adaptadores Controlador DTO Logica model Servicio main.py`, excluyendo `bench_red.py` y `bench_red_mejorado.py`, y pegar la salida en un anexo de `specs/012-revision-parte-i/mediciones.md`. `adaptadores/cache.py` ya no aparece. `adaptadores/servicioCripta.py` aparece solo por `_armar_salidas`. (FR-385, FR-375)
+- [X] T038 [US5] Revisar a mano cada aparición de `dict(`, `= {}` o `: dict` (18 en `0b031ec`) y de los conjuntos literales. Clasificar cada una como «índice, caché o tabla de búsqueda» o como «lectura de JSON» (respuesta de la API o copia con su misma forma), con una línea de motivo, en el anexo de `mediciones.md`. Toda aparición que sea índice o caché pasa a la tabla del inventario con el criterio de FR-386. Las apariciones que la búsqueda de conjuntos literales encuentra en marcadores de f-string (`{x}` dentro de una cadena con prefijo `f`) se descartan con el criterio «marcador de f-string no cuenta», que se escribe en el anexo junto con cuántas líneas descartó. (FR-385, FR-386)
+- [X] T039 [US5] **Se justifican tal cual** (constantes de solo lectura de 2 o 3 elementos; sin cambio de código, T030 no se repite; ver `mediciones.md`, anexo, T039). Para los usos 9 y 10 de research D5 (`adaptadores/extension.py:20` y `Logica/EstadoJuegoLogica.py:884, 900, 1248`), decidir si se justifican tal cual o se pasan a tuplas. Si se pasan a tuplas, cambiar solo esas líneas y repetir T030. Anotar la decisión. (FR-386, FR-387)
 
 ### Historias 3, 4 y 5 — Documento de Decisiones
 
-- [ ] T040 [US5] En `DECISIONES.md`, crear la sección «## 012 · Revisión de la Parte I con la carga nueva» con enlaces a `specs/012-revision-parte-i/spec.md`, `plan.md` y `mediciones.md`, y la subsección «Inventario de usos prohibidos». Esta lleva:
+- [X] T040 [US5] En `DECISIONES.md`, crear la sección «## 012 · Revisión de la Parte I con la carga nueva» con enlaces a `specs/012-revision-parte-i/spec.md`, `plan.md` y `mediciones.md`, y la subsección «Inventario de usos prohibidos». Esta lleva:
   - el criterio de exclusión (pruebas, código de medición y scripts auxiliares, por la función del archivo);
   - una tabla «Ubicación | Estructura | Para qué | ¿Problema evaluado de §5? | Destino | Texto», con los usos de research D5 y los de T038;
   - las justificaciones de los usos 3 a 6, 9 y 10 (qué hacen, por qué no son índice ni caché y qué costaría corregirlos).
 
   (FR-385, FR-386, FR-388)
-- [ ] T041 [US3] En `DECISIONES.md` §012, una tabla «Decisión | ¿Coincide con el plan? | Medición o motivo» con:
+- [X] T041 [US3] En `DECISIONES.md` §012, una tabla «Decisión | ¿Coincide con el plan? | Medición o motivo» con:
   - D1 (vecindad), con el motivo por el que no se reutiliza `ColaCircular` (research D1): guardaría una copia de lo que ya está en la lista de salas alcanzadas y, como solo guarda enteros, haría falta una segunda cola o codificar sala y nivel en un entero con una cota de salas;
   - D2 (caché, con el resultado de T034);
   - la capacidad de la caché (sección 6, aciertos y fallos por capacidad);
@@ -274,14 +274,14 @@
   - el formato binario de partida.
 
   Cada fila cita al menos una fila del después y dice si la decisión se mantiene o cambia. (FR-375, FR-380, FR-388)
-- [ ] T042 [US3] [US4] En `DECISIONES.md` §012, las tablas de antes y después de los dos bloques (copiadas de `mediciones.md`), el resultado de la medición manual (T036) y una subsección «Hallazgos y límites» con:
+- [X] T042 [US3] [US4] En `DECISIONES.md` §012, las tablas de antes y después de los dos bloques (copiadas de `mediciones.md`), el resultado de la medición manual (T036) y una subsección «Hallazgos y límites» con:
   - el orden N, S, E, O y la corrección de la spec (H1);
   - el crecimiento logarítmico de los bytes leídos (H2);
   - el commit de referencia (H3);
   - la aproximación del movimiento de los cazadores en el bloque `cache`.
 
   (FR-377, FR-382, FR-388)
-- [ ] T043 [P] [US3] En `DOCUMENTACION_DECISIONES_DISENO.md`, agregar una nota de una o dos líneas con el veredicto y un enlace a `DECISIONES.md` §012 en:
+- [X] T043 [P] [US3] En `DOCUMENTACION_DECISIONES_DISENO.md`, agregar una nota de una o dos líneas con el veredicto y un enlace a `DECISIONES.md` §012 en:
   - «## 2. Caché de fichas y almacenamiento en disco» (caché, catálogo y precarga);
   - «## 6. Guardado binario de la partida»;
   - «## 8. El mundo: salas, vecindad, mensajes recientes y puntajes» (vecindad).
