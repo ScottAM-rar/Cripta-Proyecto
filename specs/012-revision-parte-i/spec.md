@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-17
 
-**Estado**: Borrador
+**Estado**: Implementada (T001 a T047)
 
 **Entrada**: Revisión de la Parte I con la carga nueva (§5.6 del enunciado): red, caché, guardado y planeación de la vecindad. Requisitos con prefijo FR-370 en adelante (comprobado con búsqueda: los FR-3xx existentes llegan a FR-346 en la 003 y FR-360 en la 009; FR-370 a FR-399 están libres).
 
