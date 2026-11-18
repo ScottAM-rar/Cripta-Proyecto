@@ -9,6 +9,10 @@ from DTO.LogPartidaDTO import LogPartidaDTO
 # "usar" y "soltar": por eso queda en el log y la repetición lo reproduce.
 TIPOS_CURSOR_INVENTARIO = ("SIGUIENTE_OBJETO", "ANTERIOR_OBJETO")
 
+# «Ir a» (capacidad 006): dos marcas informativas rodean los pasos de un viaje. Son registros de costo 0 que no son eventos
+# del reloj ni acciones; los pasos entre ellas son movimientos normales (contracts/registro-viaje.md).
+TIPOS_MARCA_VIAJE = ("IR_A", "FIN_IR_A")
+
 
 class RegistroEvento:
     """Datos de un evento cargado desde un archivo de repetición."""
@@ -96,6 +100,17 @@ class LogEventos:
             "datos_extra": [],
         }, ensure_ascii=False))
 
+    def registrar_marca(self, tipo: str, datos_extra: list) -> None:
+        """Guarda una marca informativa de un viaje de «ir a» (costo 0; no es evento del reloj ni acción)."""
+        if tipo not in TIPOS_MARCA_VIAJE:
+            raise ValueError(f"Tipo de marca de viaje no válido: {tipo!r}")
+        self.agregar(json.dumps({
+            "tipo_accion": tipo,
+            "tiempo_ejecucion": 0,
+            "actor": {"tipo": "jugador"},
+            "datos_extra": list(datos_extra),
+        }, ensure_ascii=False))
+
     def registrar_evento(self, evento) -> None:
         """Guarda toda la información necesaria para reconstruir un evento."""
         registro = {
@@ -152,9 +167,22 @@ class LogEventos:
 
     def obtener_registros_cronologicos(self) -> list[RegistroEvento]:
         """Devuelve los eventos completos en el orden en que ocurrieron."""
+        return self.obtener_registros_rango(0, self.cantidad)
+
+    def obtener_registros_rango(self, inicio: int, fin: int) -> list[RegistroEvento]:
+        """Devuelve los RegistroEvento en el rango semiabierto [inicio, fin).
+        Recorre la lista enlazada y solo parsea JSON de los nodos dentro del rango."""
+        if inicio < 0:
+            inicio = 0
+        if fin <= inicio:
+            return []
         registros: list[RegistroEvento] = []
         actual = self.cabeza
-        while actual is not None:
+        idx = 0
+        while actual is not None and idx < inicio:
+            actual = actual.siguiente
+            idx += 1
+        while actual is not None and idx < fin:
             try:
                 datos = json.loads(actual.accion)
             except json.JSONDecodeError as error:
@@ -173,6 +201,7 @@ class LogEventos:
                 )
             )
             actual = actual.siguiente
+            idx += 1
         return registros
 
     @staticmethod

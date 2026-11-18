@@ -8,7 +8,7 @@ los nombra por su posición en esa tabla, así al restaurar vuelven a ser el mis
 from __future__ import annotations
 from dataclasses import dataclass, field
 
-VERSION_ESTADO = 3   # versión de la estructura de este DTO (3: costo por salida y rango por enemigo; 2: anterior)
+VERSION_ESTADO = 5   # versión de la estructura de este DTO (5: conocimiento del jugador, niebla de guerra; 4: puntos de control y k_checkpoint; 3: costo por salida y rango por enemigo; 2: anterior)
 
 
 @dataclass
@@ -122,6 +122,22 @@ class MensajeGuardadoDTO:
 
 
 @dataclass
+class PuertaRecordadaDTO:
+    """Estado recordado de la salida `direccion` de la sala `sala`. Solo se guardan las puertas observadas."""
+    sala: int
+    direccion: int          # 0 norte, 1 sur, 2 este, 3 oeste
+    cerrada: bool           # estado recordado (verdadero = cerrada); puede no coincidir con el real
+
+
+@dataclass
+class ConocimientoGuardadoDTO:
+    """Lo que el jugador sabe de la cripta (capacidad 002). Las salas desconocidas y las puertas sin observar no se guardan."""
+    exploradas: list = field(default_factory=list)    # ids de salas exploradas, en ORDEN DE DESCUBRIMIENTO (es el orden de deshacer)
+    avistadas: list = field(default_factory=list)     # ids de salas avistadas, ascendentes
+    puertas: list = field(default_factory=list)       # list[PuertaRecordadaDTO], ascendentes por (sala, direccion)
+
+
+@dataclass
 class EstadoGuardadoDTO:
     # --- identificación ---
     id_cripta: str
@@ -150,3 +166,9 @@ class EstadoGuardadoDTO:
     # --- historiales ---
     bitacora: list = field(default_factory=list)       # últimos mensajes list[MensajeGuardadoDTO]
     acciones_log: list = field(default_factory=list)   # líneas de la bitácora de reproducción (acciones del jugador)
+    # --- puntos de control ---
+    k_checkpoint: int = 10
+    acciones_linea_tiempo: int = 0
+    puntos_control: list = field(default_factory=list)  # lista de PuntoControlDTO (sin tipo para evitar import circular)
+    # --- conocimiento del jugador (002): siempre al final de la clase; restaurar rechaza un valor ausente ---
+    conocimiento: ConocimientoGuardadoDTO | None = None

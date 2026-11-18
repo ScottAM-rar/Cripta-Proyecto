@@ -14,3 +14,14 @@ env/
 
 # Datos guardados en disco por el juego (caché y modo offline)
 datos_cripta/
+
+# Benchmarks
+*.csv
+
+# Logs generados por las pruebas y los benchmarks (criptas sintéticas)
+logs/sintetica_*.log
+logs/test_*.log
+
+# Partidas guardadas y logs de partidas jugadas (se generan al jugar)
+Partidas Guardadas/*.bin
+logs/*.log

@@ -580,6 +580,18 @@ El ciclo cumple con bastante margen hasta 300 esbirros y todavía cumple con 1 0
 | Guardado binario | Bloques con marcas + tabla de salas ordenada + pie fijo | Registros fijos con `struct` |
 | Bitácora y reproducción | Lista doble en memoria + texto de solo anexado | Arreglo dinámico + log binario |
 | Salas, mensajes y puntajes | Arreglo indexado, cola enlazada, registros fijos | Lista enlazada, buffer circular, texto CSV/JSON |
+| Viaje «ir a» (capacidad 006) | Campo de costos con cota + siguiente paso; un movimiento normal por paso; marcas en el log | Enumerar rutas completas; camino propio; viaje como una sola acción |
+
+## 10.1 Viaje «ir a» (capacidad 006)
+
+El comando `ir a <id>` lleva al jugador hasta una sala explorada por la ruta más barata **que conoce**. Detalle y mediciones en `specs/006-ir-a/research.md` y en `DECISIONES.md`; aquí las decisiones con su alternativa:
+
+- **Ruta**: `BuscadorRutas.distancias_hacia` sobre la vista del conocimiento y, en cada paso, `siguiente_paso` (el menor id entre los pasos de una ruta óptima). Equivale a la ruta mínima lista a lista. Alternativa: enumerar las rutas completas; gana en 3x3 (163 µs frente a 496 µs) y pierde desde 4x4, con 8,1 ms frente a 1,4 ms en 5x5.
+- **Paso**: el mismo `MOVER_JUGADOR` que arma el controlador, entregado a `accionJugador`; así el reloj, la agenda, las trampas, la antorcha, la observación de puertas y el pergamino no se duplican. Alternativa: un camino propio, que solo habría movido al jugador (4 µs) sin ninguna de esas reglas.
+- **Recálculo**: solo cuando cambia la versión del conocimiento, con una cota igual al costo de lo que queda de la ruta mientras siga siendo transitable. Sin cota, un recálculo cerca del destino costaba 10 a 15 ms con 20 000 salas; con cota, el paso más lento sin captura de punto de control es de 1,3 ms.
+- **Detención**: se examinan solo los enemigos de la sala actual, con un contador de activaciones; revisar el contenido de las salas de la ruta habría examinado 12 000 enemigos con 100 por sala y 120 pasos y puede descargar salas.
+- **Pergamino**: un nodo del historial por paso; revertir uno cuesta unos 60 µs. **Registro**: dos marcas (`IR_A`, `FIN_IR_A`) alrededor de los pasos, que son movimientos normales.
+- **Límite conocido**: en 20 000 salas con 2 000 exploradas, el paso que captura un punto de control (capacidad 007) y el recálculo desde cero tras una puerta cerrada superan 5 ms (8 y 12 ms). Los pasos se miden con el recolector de basura apagado.
 
 ## 11. Pendientes antes de la defensa
 

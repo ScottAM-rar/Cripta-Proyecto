@@ -40,6 +40,68 @@ Por capacidad: enlace a su especificación y a su plan, si la decisión final co
 | FR-513: una salida hacia una sala que no existe se ignora | **Agregado a la especificación tras `/speckit-analyze` (S1)**; el plan ya lo suponía | `TestOrigenYSalasInexistentes` y la equivalencia con la referencia |
 | `ServicioCripta.salas_vecinas` no se modifica | Sí | Medido como referencia: con límite 5 en 40 000 salas tarda 11,75 ms frente a 0,02 ms del recorrido nuevo, porque busca cada sala con un recorrido lineal. Reemplazarlo le toca a la capacidad que adopte el recorrido |
 
+## 002 · Niebla de guerra y mapa conocido
+
+- Especificación: [`specs/002-niebla-de-guerra/spec.md`](specs/002-niebla-de-guerra/spec.md) (FR-201 a FR-226)
+- Plan: [`specs/002-niebla-de-guerra/plan.md`](specs/002-niebla-de-guerra/plan.md), con [`research.md`](specs/002-niebla-de-guerra/research.md)
+- Mediciones: [`specs/002-niebla-de-guerra/mediciones.md`](specs/002-niebla-de-guerra/mediciones.md)
+- Estado: las siete historias implementadas. **Pendiente abierto**: confirmar quién repite los bloques `retroceso` y `guardado` de la Parte I como responsable (la 002 solo los corrió de forma informativa; ver `mediciones.md`).
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| Estado por sala en un arreglo indexado por id | Sí | `--bench mapa` A: ≈ 110 µs por 1 000 consultas en 400, 2 000 y 20 000 salas, con k = 1 y k = N/10, y una posición leída por consulta. La lista de conocidas pasa de 0,66 ms a 33,8 ms con k = N/10; con k = 1 es 3× más rápida (límite) |
+| Memoria de puertas en una lista plana de 4·N; lectura al entrar y aviso al cambiar | Sí | `--bench mapa` F: aviso 122 µs frente a sondeo 20,5 ms por 1 000 eventos (cambios raros); 2,66 ms frente a 20,1 ms (frecuentes); 0 lecturas del esqueleto por evento con el aviso |
+| El aviso del pergamino no observa; la memoria se restaura con `OBSERVAR_PUERTA` | Sí | `test_mapa_conocido` (caminos de cambio de puertas) y `test_niebla_retroceso` (equivalencia con la referencia en recorridos aleatorios) |
+| Orden del comando `mapa`: ordenar al consultar con `ordenar_adaptativo` | Sí, **con una corrección a la evidencia preliminar** | `--bench mapa` D: el cruce con el escaneo del arreglo está cerca de k ≈ N/40 y no de N/8 como sugería la medición preliminar; el comando completo con 5 000 exploradas en 20 000 salas cuesta 22,2 ms. Se revisa si el k realista supera N/40 (híbrido) |
+| Antorcha con bucle directo sobre las salidas | Sí | `--bench mapa` C: 3,4 µs frente a 9,4 µs de `RecorridoPorNiveles` con límite 1 en 400 salas (la razón baja a 1,4× con 20 000 por una reserva O(N) común a ambos en el bench) |
+| Cambios deshacibles `EXPLORAR_SALA`, `AVISTAR_SALA` y `OBSERVAR_PUERTA` con valor anterior | Sí | `--bench mapa` E: 17 µs frente a 953 µs de la instantánea con 20 000 salas; con 400 salas y r ≥ 87 la instantánea gana (límite). `test_niebla_proporcional`: cambios revertidos = registrados |
+| Vista para `BuscadorRutas` con consulta directa a los arreglos | Sí | `--bench mapa` G: 1,89 ms frente a 6,84 ms con 20 000 salas; con 2 000 salas las dos se igualan (límite) |
+| La vista de consola recibe solo DTO de conocimiento (`mostrar_juego` exige las salidas conocidas) | Sí | `test_niebla_vista`: vista con el grafo completo apagado, sin fugas y búsqueda inversa en el texto |
+| Cada salida tiene su propia puerta (un par de salidas por conexión, estados independientes) | **Cambió respecto de la especificación original** | El supuesto de `spec.md` decía que una puerta era una sola; el modelo ya tenía un objeto por salida. Corregido en `spec.md` antes de implementar (principio X) |
+| El jugador entra a la sala en el instante de la acción; no hay estado «cruzando» | **Cambió respecto de la especificación original** | `accionJugador`: la acción ocurre ahora y el costo solo programa el siguiente turno. Corregido en `spec.md` |
+| `SalaMapaDTO.nombre`: el mapa del esqueleto conserva el nombre de cada sala | **Cambió respecto del plan original** (pendiente P2) | Permite mostrar el nombre de una sala explorada por la antorcha sin descargar su contenido; `MapaCripta` no se modificó |
+| `mostrar_juego` ya no muestra el id de las salas no exploradas | **Cambió una prueba de la 001**: `test_terreno_costos` esperaba `Sala 3` | FR-219; la prueba ahora espera «sala sin explorar» y que no aparezca el id |
+| Mediciones de la Parte I repetidas con la carga nueva (`ordenamiento`, `inventario`, `ciclo` informativo) | Sí: ninguna decisión de la Parte I dejó de servir | `mediciones.md`; `retroceso` y `guardado` los repiten sus responsables (por confirmar) |
+| Persistencia: `ConocimientoGuardadoDTO` (exploradas en orden de descubrimiento, avistadas ascendentes, puertas observadas) validado con V1 a V5 **antes** de tocar la partida | Sí | `test_niebla_guardado`: ida y vuelta exacta, continuación idéntica, cada validación con la partida actual intacta. ≈ 37 B por sala explorada (`mediciones.md`) |
+| Numeración del formato: `VERSION_FORMATO` 7 y `VERSION_ESTADO` 4 (pendiente P3); tras integrar con `main`, que ya usaba 7 y 4 para los puntos de control, **8 y 5** | **Resuelto por el grupo**: el plan solo recomendaba esa numeración | Un archivo sin niebla (formato 7) y un estado de la versión 4 se rechazan con la versión encontrada y la esperada (FR-221); `test_niebla_guardado` y `test_terreno_costos` (FR-119) |
+
+
+## 008 · Reproducción acotada hasta un instante dado (replay-hasta)
+
+- Especificación: [`specs/008-replay-hasta/spec.md`](specs/008-replay-hasta/spec.md) (FR-401 a FR-413)
+- Plan: [`specs/008-replay-hasta/plan.md`](specs/008-replay-hasta/plan.md), con [`research.md`](specs/008-replay-hasta/research.md)
+- Mediciones: [`specs/008-replay-hasta/mediciones.md`](specs/008-replay-hasta/mediciones.md)
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| **Opción b ratificada**: tope de tiempo en `_avanzarHastaProximoTurno`; ciclo de eventos se interrumpe antes de desapilar cualquier evento con `tiempo_ejecucion > tope` | Sí | `--bench replay` Sección A: razón de eventos = **0.500** en las tres escalas (250, 1 000 y 4 000 acciones), ≤ 0.55 (SC-003). **CUMPLE** |
+| Opción a descartada (corte solo entre acciones del jugador): `_avanzarHastaProximoTurno` sin tope procesa todos los eventos de enemigos hasta el próximo turno del jugador | Sí (descarte previsto en `research.md`) | `--bench replay` Sección B (t = 50 001 en 1 000 acciones): la opción a termina con el reloj en 50 100 > t y procesa 1503 eventos frente a 1500 de la opción b, que termina en 50 000; falla FR-402 |
+| Opción c descartada (reproducción total y recorte de salida): el log se lee completo antes de responder | Sí (descarte previsto en `research.md`) | `--bench replay` Sección B: Opción c procesa **el 100 %** de eventos independientemente de t (3 000 frente a 1 500 en 1 000 acciones); falla FR-412 |
+| Decisión del jugador en `t` no se ejecuta; `repetirPartida` comprueba `reloj.tiempo_actual < hasta` antes de cada registro del log | Sí | FR-403, FR-406; `TestTruncamientoTemporal.test_FR403_decision_jugador_en_tope_no_se_ejecuta` |
+| `_completarInstante(hasta)` ejecuta los eventos de otros actores con tiempo == `hasta` y número de secuencia posterior al `TURNO_JUGADOR` | Sí | FR-403; `TestTruncamientoTemporal.test_FR403_completar_instante_ejecuta_eventos_de_otros_actores_en_tope` |
+| Con `t=0` no se ejecuta ninguna acción sin regla especial; la misma comprobación `reloj.tiempo_actual < hasta` lo resuelve | Sí | FR-406; `TestCasosLimite.test_FR406_hasta_cero_no_ejecuta_ninguna_accion` |
+| `ResultadoReplayHastaDTO` como DTO puro; la lógica no escribe en `stdout` | Sí | Principio IV; `TestAislamientoReplay`: sin vista, sin log nuevo, sin puntajes |
+| `--hasta` sin `--replay` termina con código 2 antes de crear `EstadoJuegoServicio` | Sí | FR-408, SC-004; `TestArgumentosCLI.test_SC004_latencia_rechazo_menor_a_100ms`: latencia < 0.1 s |
+| Propiedad de prefijo verificada: estado en `t` con reproducción acotada == estado en `t` de la partida completa | Sí | FR-411; `TestDeterminismoReplay.test_FR411_propiedad_de_prefijo` |
+
+
+## 007 – Puntos de control de la partida
+
+- Especificación: [`specs/007-puntos-de-control/spec.md`](specs/007-puntos-de-control/spec.md) (FR-414 a FR-426)
+- Plan: [`specs/007-puntos-de-control/plan.md`](specs/007-puntos-de-control/plan.md), con [`research.md`](specs/007-puntos-de-control/research.md)
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| **Alternativa B ratificada**: el punto guarda las longitudes de la bitácora y del log de acciones, no sus copias | Sí | `--bench puntos_control` (partidas de 1 000 acciones, 50 esbirros): los puntos serializados ocupan 1 309 KB con $K=10$ y 12 956 KB con $K=1$; tiempo de una acción con punto de control 2.3 ms de mediana |
+| Alternativa A descartada: copia completa de bitácora y log en cada punto | Sí (descarte previsto en `research.md` §3) | Medida con $K=10$: 1 815 KB frente a 1 309 KB de B (1.4 veces); con la mitad de la partida la razón es 1.3, así que crece con la longitud de la partida. Con esta cripta sintética el historial por acción es corto y la diferencia es moderada; B no cuesta más y escala mejor |
+| Alternativa C descartada: sin puntos de control (reproducir desde el inicio) | Sí (descarte previsto en `research.md` §7) | Medida: llegar a la acción 999 desde el inicio tarda 2.2 a 2.8 s; desde el punto de control más cercano con $K=10$, 18 ms (más de 100 veces menos). Se comprueba que ambos caminos llegan al mismo estado |
+| Fijar $K=10$ como valor por defecto | Sí | Medido el peor caso de reconstrucción (restaurar y reaplicar $K-1$ acciones): $K=1$ 1 ms, $K=10$ 18 ms, $K=50$ 92 ms, $K=100$ 208 ms. $K=10$ es el mayor probado que cabe en los 50 ms de `historia` (§6). El tamaño crece al bajar $K$ (13 MB por 1 000 acciones con $K=1$) |
+| Límite de ciclo de eventos con $K=1 \le 20$ ms (FR-426) | Sí | `--bench puntos_control`: 999 acciones con punto de control en cada una; mediana 2.3 ms, máximo 3.1 a 3.5 ms (< 20 ms). **CUMPLE** |
+| Contador `acciones_linea_tiempo` independiente de `accionesJugador` | Sí | `self.accionesJugador` permanece intacto para puntaje acumulado (§2.12); `acciones_linea_tiempo` mide la línea de tiempo activa y retrocede con el pergamino (FR-418) |
+| Poda por retroceso mediante truncado con `pop()` en lista contigua | Sí | Principio I: sin `dict`, `set`, `heapq`, `bisect` ni `collections`. Complejidad $O(m)$ donde $m \le 5$ |
+| `repetirPartida` (`--replay`, `--hasta`) no toma puntos de control | Sí | Invarianza y aislamiento (Principio IV); suites `test_replay_hasta`, `test_determinismo_replay` y `test_rendimiento_replay` se preservan sin sobrecosto |
+| Formato de guardado v7 en `AlmacenPartidaBinario.py` (T021 a T024) | Sí | Confirmado e implementado (FR-424, FR-425): `VERSION_FORMATO = 7`, `VERSION_ESTADO = 4`; serialización de `k_checkpoint`, `acciones_linea_tiempo` y bloque de `puntos_control`; rechazo explícito de v6 y Parte I con `ErrorPartida` sin carga silenciosa (Principio VI). Reevaluación de `--bench guardado`: antes (v6/v3) vs después (v7/v4): 10 salas 8,237 B → 12,467 B (guardar 2.36 ms → 2.91 ms, cargar 2.38 ms → 3.63 ms); 100 salas 43,595 B → 47,828 B (guardar 7.36 ms → 7.84 ms); 1 000 salas 408 KB → 412 KB (guardar 56.8 ms → 57.7 ms, acceso directo a sala 318 µs → 324 µs). `--bench puntos_control` reevaluado: peor ciclo con K=1 2.68 ms (< 20 ms), K=10 reconstrucción 12.47 ms (< 50 ms). |
+
 ## 009 · Contrato de datos v2 y ubicación de llaves
 
 - Especificación: [`specs/009-contrato-datos-v2/spec.md`](specs/009-contrato-datos-v2/spec.md) (FR-301 a FR-325)
@@ -153,6 +215,25 @@ usa un `ClienteSintetico` propio, sin `obtener_llaves`, y llama directamente a `
    dependen de la carga de la máquina, y la decisión del guardado A se mantiene; ambas mediciones están en
    `specs/009-contrato-datos-v2/checklists/requirements.md`, «Implementación, cierre final (T044)».
 
+## 004 · Línea de tiempo — consulta de estados pasados
+
+- Especificación: [specs/004-linea-de-tiempo/spec.md](specs/004-linea-de-tiempo/spec.md) (FR-427 a FR-443)
+- Plan: [specs/004-linea-de-tiempo/plan.md](specs/004-linea-de-tiempo/plan.md), con [research.md](specs/004-linea-de-tiempo/research.md)
+- Benchmark: `bench/historia.py` (`python main.py --bench historia`). Cifras de una ejecución en Linux x86_64, Python 3.10, partida de 5 000 acciones con movimiento entre salas y 2 enemigos; en otra máquina cambian los valores absolutos, no las proporciones. Cada consulta se mide 10 veces por K (historia #k e historia <t> en inicio, mitad, cerca del final, justo en un punto de control y K-1 acciones después de uno).
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| **K = 10 por defecto** | Sí | Mediana 4.34 ms y máximo 5.25 ms con K=10 (límite FR-442: 50 ms). K=50: máximo 14.65 ms; K=100: máximo 27.42 ms. Los tres K cumplen en esta cripta sintética; el costo crece casi lineal con K (se reproducen hasta K-1 acciones, dos veces). Memoria: 501 puntos = 2 570.7 KB con K=10; 101 puntos = 518.4 KB con K=50; 51 puntos = 261.9 KB con K=100 (≈5.1 KB por punto). Con la cripta de 007 (50 esbirros por sala) el peor caso de reconstrucción fue K=50: 92 ms y K=100: 208 ms, que no caben en 50 ms; solo K=10 cabe en ambas. Por eso se conserva K=10 (menor latencia, ~2.5 MB por 5 000 acciones) y no depende de lo liviana que sea la cripta. |
+| **Búsqueda binaria manual de puntos (sin `bisect`)** | Sí | Principio I. Con 500 puntos: binaria 1.09 µs contra lineal 13.48 µs (12.3×); con 5 000 puntos: 1.52 µs contra 180.90 µs (119.1×). La lista es contigua y ordenada por acciones y por instante; la poda del pergamino conserva ese orden. |
+| **Reconstrucción hacia adelante desde el punto más cercano (§5.5)** | Sí | El historial del pergamino conserva solo `MAX_HISTORIAL = 5` acciones, así que reconstruir hacia atrás no es posible sin guardar cambios inversos de toda la partida. No se midió el costo hacia atrás porque el motor no lo permite. Hacia adelante: búsqueda en O(log M) y a lo más K-1 acciones vigentes. |
+| **Alternativa descartada: reconstruir desde el inicio sin puntos de control** | Sí | `--bench historia`: 648.12 ms para 5 000 acciones, 149.3× la mediana de historia con K=10 y más de 12 veces el límite de 50 ms. |
+| **Dos pasadas sobre el segmento entre dos puntos de control** | Distinto del plan inicial | El log no se trunca al usar un pergamino: conserva las acciones revertidas y el uso del pergamino, que además no restaura el azar. La pasada 1 simula el segmento en una instancia aislada y clasifica cada registro con `GestorEventos.es_uso_de_pergamino` (el catálogo no expone el tipo de un objeto por su id); una pila local deja las acciones vigentes. La pasada 2 vuelve a hidratar y reproduce fielmente hasta la acción o el instante pedido. El costo de ambas pasadas está incluido en las medidas anteriores. |
+| **Aislamiento de la consulta** | Sí | Instancia aparte con `_es_aislada`: sin log en disco, sin precarga ni fichas en uso, sin llaves, con su propio azar y con el singleton `RetrocesoLogica` guardado y restituido en `try/finally`. `test_historia_aislamiento.py`, `test_historia_movimiento.py` y `test_historia_persistencia.py`: reloj, acciones, bitácora, log, azar, historial del pergamino, puntos de control, estado exportado y reporte de red/caché idénticos antes y después, también con movimiento, combate, pergamino y caché de 3 fichas. |
+| **`historia <t>` en el instante de una decisión tras un pergamino** | Descubierto al implementar | El estado en ese instante incluye lo que ocurrió en la misma decisión (acciones revertidas y el pergamino ya consumido). La reconstrucción solo se detiene cuando el turno del jugador sigue pendiente en la agenda. |
+| **Última acción que termina la partida** | Detalle nuevo | La acción se decide en el instante t y termina la partida en ese mismo instante: `historia <t>` muestra el estado final y `historia #N` el estado previo a esa acción. Por eso SC-002 (equivalencia entre `#k` y `<t>`) no aplica a esa última acción. |
+| **Consulta en partida terminada** | Sí (clarificación aprobada) | `historia #N+1` entrega el estado final y las consultas funcionan en el bucle posterior a la partida. |
+
+
 ## 003 · Verificación de resolubilidad
 
 - Especificación: [`specs/003-verificacion-resolubilidad/spec.md`](specs/003-verificacion-resolubilidad/spec.md) (FR-330 a FR-346)
@@ -182,3 +263,57 @@ usa un `ClienteSintetico` propio, sin `obtener_llaves`, y llama directamente a `
 1. **El `--bench` completo se cortaba en los bloques `guardado` y `ciclo` (T064).** La cripta sintética de esos bloques (`ClienteDeBatalla`, en `bench/juego.py`) declara `itm_llave` como llave de salida en sus datos generales, pero no ubicaba esa llave en ninguna sala. Con FR-339, la partida del bench verificaba la cripta, la encontraba no resoluble y no iniciaba (`CriptaNoResoluble`). Se arregló en los datos del bench, no en el modelo: `obtener_llaves` devuelve `itm_llave` en el suelo de la sala 1, así que la cripta es resoluble y la partida del bench inicia y verifica igual que una real. Lo que miden los bloques no cambia: la ubicación de la llave no entra al estado guardado (1 000 salas: 408 092 B, igual que en la 001) ni cuenta como solicitud. No se vio antes porque T056 solo corrió `--bench resolubilidad`. Es la misma clase de fallo que la regresión de la 009 (T054, punto 7 de su sección): un cambio en el inicio de partida que el cliente sintético del bench no acompañaba.
 2. **Datos generales sin `sala_salida` o sin `sala_inicial` (T065).** `ServicioCripta.obtener_sala_inicial` y `obtener_sala_salida` leen esos campos con `[]`, y `verificar` dejaba escapar el `KeyError`. Ahora `verificar` lo traduce a un error de datos (`resoluble=None`, código 2) con el motivo «Datos inválidos en la cripta X: faltan los datos generales «campo».», sin cambiar el adaptador. Sin `sala_salida`, `iniciarJuego` inicia con aviso, como cualquier otro error de datos (FR-339, H4-5). Sin `sala_inicial`, `verificar` también da código 2, pero una partida nueva no puede iniciar: `ServicioCripta.crear_jugador` (Parte I) necesita la sala inicial para ubicar al jugador y falla antes de llegar a la verificación. No se cambió ese adaptador; queda como límite conocido, fuera de la 003. Pruebas: `ErroresDeDatos.test_fr343_t065_datos_generales_sin_sala_inicial_ni_sala_salida` y `ErroresDeDatos.test_fr339_h4_5_t065_sin_sala_salida_la_partida_inicia_con_aviso`.
 3. **Con `--offline`, la cripta tiene que estar guardada completa.** Aunque la verificación solo usa el mapa, los datos generales y las llaves, el modo sin red solo ve las criptas guardadas completas, contenido de todas las salas incluido (capacidad 009). Una cripta a la que le falta algo se informa como inexistente y `--verificar` termina con código 2. Lo encontró T065 con cripta-06 y quedó escrito en FR-342 y en el escenario H5-2 (commit `9d610a2`); el programa no cambió. Por esto mismo, la medición de cripta-06 se hizo sin `FuenteSoloLocal` (ver la tabla).
+
+## 006 · Comando «ir a»
+
+- Especificación: [`specs/006-ir-a/spec.md`](specs/006-ir-a/spec.md) (FR-231 a FR-252)
+- Plan: [`specs/006-ir-a/plan.md`](specs/006-ir-a/plan.md), con [`research.md`](specs/006-ir-a/research.md)
+- Mediciones: `python main.py --bench ir_a` (`bench/ir_a.py`, contrato en [`contracts/bench-ir-a.md`](specs/006-ir-a/contracts/bench-ir-a.md))
+- Estado: las seis historias implementadas; `--bench ir_a` en CUMPLE. **Pendientes abiertos**: en 20 000 salas (2 000 exploradas) el paso que captura un punto de control (007) y el recálculo desde cero tras una puerta cerrada superan 5 ms (ver Hallazgos y límites).
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| Ruta con `distancias_hacia` + `siguiente_paso`; el desempate de FR-234 sale de elegir el menor id entre los pasos de una ruta óptima | Sí | `--bench ir_a` A: coincide con la enumeración de rutas en 18 criptas (3x3, 4x4, 5x5). La enumeración gana en 3x3 (163 µs frente a 496 µs) y pierde desde 4x4 (1,25 ms frente a 0,85 ms) y claramente en 5x5 (8,09 ms frente a 1,37 ms); crece de forma exponencial |
+| Cada paso es un `MOVER_JUGADOR` entregado a `accionJugador`, más `ingresarEnSala` | Sí, **con una corrección de un supuesto del plan** | `--bench ir_a` B: viajar y caminar a mano dejan el mismo estado. El plan creía que los dormidos se activan solo al pedir la sala; en realidad se activan dentro del movimiento (`cargar_sala`), así que el daño de un enemigo recién despertado cae en el mismo paso. Por eso las causas de parada tienen el orden MUERTE, LLEGADA, DORMIDOS, ENEMIGO ACTIVO, DAÑO |
+| Recálculo solo si cambia `version_conocimiento`, **con cota de costo** (la ruta que queda cuesta `restante`) | **Cambió respecto del plan original** (el plan elegía la versión sin cota y dejaba la cota condicionada a la medición) | `--bench ir_a` C y G: sin cota, un recálculo cerca del destino costaba 10 a 15 ms en 20 000 salas; con cota, el máximo del paso sin captura es 1,3 ms. En C la cota fija 2 salas frente a 201 (antorcha, 2 000 salas). H: las tres políticas deciden igual |
+| Detención por comprobaciones de la sala actual con un contador de activaciones | Sí | `--bench ir_a` D: se examinan exactamente los enemigos de la sala en los tres tamaños (0, 10 y 100); revisar el contenido de la ruta examinaría 12 000 con 100 enemigos y 120 pasos |
+| Pergamino: un nodo del historial por paso y aviso de cancelación | Sí | `--bench ir_a` E: revertir un paso cuesta 57 µs (sin antorcha) y 70 µs (con antorcha) y quita exactamente una acción del historial |
+| Registro: marcas `IR_A` y `FIN_IR_A` y pasos como movimientos normales | Sí; **el detalle C2 del análisis no hizo falta** | `--bench ir_a` F: el registro crece en pasos + 2 y repetir con y sin marcas deja la misma partida (10, 100 y 1 000 pasos); repetir 100+100 pasos: 16,8 ms con marcas y 16,7 ms sin ellas |
+| Comando `ir a <id>` en el controlador; el rechazo no pasa por `accionJugador` | Sí | `test_viaje_comando`, `test_viaje_rechazo` |
+| No se guarda un viaje en curso; formato 8 y estado 5 sin cambios | Sí | `test_viaje_registro` (guardar y cargar con un viaje hecho) |
+
+### Hallazgos y límites
+
+1. **Los dos casos de 20 000 salas que superan 5 ms no son de la ruta.** (a) Un paso en que se captura un punto de control (capacidad 007, cada K = 10 acciones) cuesta 7 a 15 ms porque copia el estado completo, incluido el conocimiento (O(V)); aparece con cualquier acción, no solo con «ir a». (b) Recalcular desde cero el campo de 2 000 salas exploradas tras descubrir una puerta cerrada cuesta unos 12 ms: ahí no hay cota posible (la ruta anterior dejó de valer). Con 200 salas exploradas el mismo recálculo cuesta 0,8 ms. Arreglarlo exige un recálculo incremental o capturar puntos de control con costo proporcional a lo cambiado; ninguna de las dos cosas está en el alcance de esta capacidad.
+   **Mapa conocido completo (enunciado §6.1).** Medido con todas las salas exploradas (sección I de `--bench ir_a`): 400 salas, máximo de las medianas por paso 1,4 ms con una puerta cerrada en la ruta (cumple, criterio duro); 2 000 salas, 1,8 ms sin puertas cerradas y 6 a 10 ms con una puerta cerrada; 20 000 salas, 17 a 120 ms. La cripta de referencia aún no está publicada y la mayor publicada tiene 300 salas, así que FR-251/SC-205 exigen 5 ms con el mapa completo hasta 400 salas y con el 10 % explorado hasta 2 000; lo demás se informa. Antes de esta medición el criterio decía «hasta 2 000 salas» sin precisar cuánto estaba explorado.
+2. **Medición sin pausas del recolector de basura.** En 20 000 salas una pausa del recolector, de unos 10 ms, cae en un paso cualquiera; los pasos se miden con el recolector apagado (como `timeit`) y el bloque `ciclo` mide el ciclo completo.
+3. **Hallazgo en la 002 (no corregido aquí).** `MapaConocido._posicion_adyacente` compara por identidad contra todas las salidas de la sala origen de cada arista entrante, así que cerrar la puerta este de la sala 2 con el jugador en la sala 1 la marca cerrada en el mapa aunque esa puerta no conecta la sala 1 (FR-207 pide observarla solo en las dos salas que conecta). Las pruebas de B-N2 usan una puerta a dos salas del jugador.
+4. **Los bloques repetidos con la carga nueva** (`mapa`, `retroceso`, `ordenamiento`, `ciclo`) siguen en CUMPLE; ninguna decisión de la Parte I ni de la 002 dejó de servir. El ciclo con 10 y 50 cazadores quedó en 0,4 ms y 2 ms.
+5. **Entorno.** En esta máquina falta el paquete `requests`, por lo que 16 módulos de prueba de la línea base no se pueden importar (`ErrorSinConexion` de `adaptadores/cliente_http.py`); es anterior a esta capacidad y no cambió con ella.
+
+## 011 · Arranque verificado y pantallas de consola claras
+
+- Especificación: [`specs/011-arranque-verificado-pantallas/spec.md`](specs/011-arranque-verificado-pantallas/spec.md) (FR-301 a FR-317)
+- Plan: [`specs/011-arranque-verificado-pantallas/plan.md`](specs/011-arranque-verificado-pantallas/plan.md), con [`research.md`](specs/011-arranque-verificado-pantallas/research.md) (decisiones D1 a D8) y [`contracts/`](specs/011-arranque-verificado-pantallas/contracts/)
+- Mediciones: `python main.py --bench pantallas` (`bench/pantallas.py`, contrato en [`contracts/bench-pantallas.md`](specs/011-arranque-verificado-pantallas/contracts/bench-pantallas.md)) y `python main.py --bench ciclo` repetido
+- Estado: las dos historias implementadas; 711 pruebas en CUMPLE (635 de la línea base + 76 nuevas); `--bench pantallas` en CUMPLE.
+
+| Decisión | ¿Coincide con el plan original? | Medición o motivo |
+|---|---|---|
+| D1. El servicio entrega las líneas del reporte (`reporteVerificacion`, `lineasDeReporte`); el controlador las pasa a la vista; un rechazo atrapa `CriptaNoResoluble` en el controlador | Sí | `test_arranque_verificado`: el reporte sale antes del primer turno con cripta resoluble, no resoluble, con y sin `--forzar` |
+| D2. Pantalla de sala como función pura (`Pantallas.texto_sala`), lista de líneas + `"\n".join` | Sí | `--bench pantallas` A: elegida 8,3 µs / 29,8 µs / 216,4 µs (0 / 10 / 100 enemigos); la **descartada** (`+=`) 12,7 / 41,1 / 280,5 µs, de 1,30 a 1,53 veces más lenta; texto idéntico; sala con 100 enemigos 0,22 ms (máx 0,30 ms), muy por debajo de 20 ms |
+| D3. Ayuda y validación de sintaxis desde una sola lista de tuplas `COMANDOS`, con búsqueda lineal | Sí | `--bench pantallas` C: la ayuda cuesta 7,5 µs; el texto fijo (descartado) 0,2 µs, pero se desactualiza; `test_pantallas_texto` comprueba que cada comando reconocido está en la tabla y al revés |
+| D4. Códigos de salida en `main.py`, con las constantes con nombre; el valor lo da `ResultadoVerificacion.codigo_salida()` (003) | **Sí, con un matiz**: el plan decía que `main.py` asignaba los códigos; como la 003 ya los decide en el DTO, `main.py` solo los nombra y devuelve `resultado.codigo_salida()` (una sola fuente de verdad; hallazgo D1 del análisis) | `test_arranque_verificado`: 0, 1 y 2 con cripta resoluble, no resoluble, inexistente y datos no disponibles |
+| D5. `forzar` viaja por parámetros: `main.py` → `ControladorJuego(..., forzar=)` → `iniciarJuego(..., forzar=)` | Sí | `test_arranque_verificado` (servicio espiado: llega `True` con `--forzar` y `False` sin él) |
+| D6. Datos del resumen final: el controlador junta valores que ya existen (`terminado`, `puntaje`, `finPartida`, vida, `mapaConocido`); no se amplió `FinPartidaDTO` | Sí | `test_pantallas_texto` (texto exacto) y `test_pantallas_controlador` (muerte y llegada) |
+| D7. Mensajes de rechazo y error con `texto_error(qué_pasó, qué_hacer)` y un catálogo de 39 mensajes en `Pantallas.py`; sin `print` suelto de rechazos en el controlador | Sí | `test_pantallas_texto` (dos partes, español, sin colores) y `test_pantallas_controlador` (el controlador no imprime rechazos con texto suelto) |
+| D8. La puerta que el jugador no ha observado se muestra «sin observar» | Sí (se añadió el supuesto a la spec antes del código, principio X) | `test_niebla_vista`, `test_pantallas_texto` |
+
+### Hallazgos y límites
+
+1. **`--bench ciclo` repetido con la carga nueva.** Antes del cambio: 100 esbirros 2,67 ms (máx 7,50), 300 esbirros 8,41 ms (máx 16,14), 50 cazadores 2,23 ms (máx 3,27). Después, tres ejecuciones: 100 esbirros 2,77 a 3,51 ms; 300 esbirros 8,43 a 12,63 ms (máx **14,24, 17,20 y 22,73 ms**); 50 cazadores 3,13 a 5,17 ms de máximo. **Una de las tres ejecuciones mostró 22,73 ms de máximo con 300 esbirros** (NO CUMPLE), con las medianas de todo el bloque unas 1,5 veces más altas, incluidas las cargas de cazadores; las dos ejecuciones siguientes dieron CUMPLE. El ciclo de eventos no se tocó (esta capacidad no modifica `Logica/`, `DTO/` ni `adaptadores/`) y las pantallas se construyen entre dos decisiones del jugador, fuera del ciclo; se atribuye a ruido de la máquina, pero queda registrado sin ocultarlo.
+2. **Códigos de salida.** `--verificar`: 0 resoluble, 1 no resoluble, 2 error de uso o lectura. Un rechazo por cripta no resoluble sin `--forzar` sale con 1 (igual que antes); sin criptas disponibles, también 1.
+3. **`cerrar` no es un comando.** El texto anterior del prompt lo anunciaba, pero el controlador nunca lo reconoció; la ayuda no lo lista. No se agregó el comando (no estaba en ninguna especificación).
+4. **Corrección de textos de `main.py` (FR-308).** Los mensajes de `--replay`, `--cache-size` y `--hasta` se guardaban con la codificación doble («tamaÃ±o», «ReproducciÃ³n»); se corrigieron a UTF-8 correcto.
+5. **Laboratorio roto, ajeno a la capacidad.** `tests_labs/prueba_reporte_solicitudes.py` falla desde antes: sus teclas simuladas no incluyen la pregunta de la tabla de puntajes. No se arregló aquí.
+6. **Entorno.** Con el Python del sistema falta `requests` (16 módulos no se importan); las pruebas se ejecutan con `.venv/Scripts/python.exe`.

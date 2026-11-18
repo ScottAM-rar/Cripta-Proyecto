@@ -13,8 +13,9 @@ import sys
 import tempfile
 from datetime import datetime
 
-from bench import agenda, bitacora, ciclo, guardado, inventario, ordenamiento, recorrido, retroceso, salas, terreno
+from bench import agenda, bitacora, ciclo, guardado, historia, inventario, ir_a, mapa, ordenamiento, puntos_control, recorrido, replay, retroceso, salas, terreno
 from bench import llaves
+from bench import pantallas
 from bench import resolubilidad
 from bench.datos import SEMILLA
 from bench.salida import escribir_csv, imprimir_tabla
@@ -46,8 +47,14 @@ BLOQUES = (
     ("ciclo", ciclo.ejecutar),
     ("terreno", terreno.ejecutar),
     ("recorrido", recorrido.ejecutar),
+    ("mapa", mapa.ejecutar),
+    ("ir_a", ir_a.ejecutar),
+    ("replay", replay.ejecutar),
+    ("puntos_control", puntos_control.ejecutar),
     ("llaves", llaves.ejecutar),
+    ("historia", historia.ejecutar),
     ("resolubilidad", resolubilidad.ejecutar),
+    ("pantallas", pantallas.ejecutar),
 )
 
 
@@ -68,30 +75,51 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
     filas: list = []
     cumple = True
     cumple_recorrido = True
+    cumple_mapa = True
+    cumple_ir_a = True
     cumple_llaves = True
     cumple_resolubilidad = True
+    cumple_pantallas = True
     for nombre, funcion in BLOQUES:
         if nombre not in pedidos:
             continue
         imprimir(f"... midiendo {nombre}")
         resultado = funcion(filas)
-        if nombre in ("ciclo", "terreno") and resultado is False:
+        if nombre in ("ciclo", "terreno", "replay", "puntos_control") and resultado is False:
             cumple = False
         if nombre == "recorrido" and resultado is False:
             cumple_recorrido = False
+        if nombre == "mapa" and resultado is False:
+            cumple_mapa = False
+        if nombre == "ir_a" and resultado is False:
+            cumple_ir_a = False
         if nombre == "llaves" and resultado is False:
             cumple_llaves = False
         if nombre == "resolubilidad" and resultado is False:
             cumple_resolubilidad = False
+        if nombre == "pantallas" and resultado is False:
+            cumple_pantallas = False
     imprimir_tabla(filas, imprimir)
     if ruta_csv:
         escribir_csv(filas, ruta_csv)
         imprimir(f"\nResultados guardados en {ruta_csv}")
     if "ciclo" in pedidos or "terreno" in pedidos:
         imprimir("\n§5.2: " + ("el ciclo de eventos CUMPLE el límite de 20 ms." if cumple else "el ciclo de eventos NO cumple el límite de 20 ms."))
+    if "replay" in pedidos:
+        imprimir("\n§3.6 Replay acotado (SC-003, proporcionalidad temporal por conteo de eventos): "
+                 + ("CUMPLE." if cumple else "NO CUMPLE."))
+    if "puntos_control" in pedidos:
+        imprimir("\n§3.6 Puntos de control (FR-426, límite de 20 ms en captura y ciclo): "
+                 + ("CUMPLE." if cumple else "NO CUMPLE."))
     if "recorrido" in pedidos:
         imprimir("\nRecorrido por niveles (SC-004, equivalencia y verificaciones previas): "
                  + ("CUMPLE." if cumple_recorrido else "NO CUMPLE; la razón de tiempos solo informa, no decide."))
+    if "mapa" in pedidos:
+        imprimir("\nMapa conocido (criterios duros por conteo y equivalencia con la referencia): "
+                 + ("CUMPLE." if cumple_mapa else "NO CUMPLE; la razón de tiempos solo informa, no decide."))
+    if "ir_a" in pedidos:
+        imprimir("\nIr a (paso <= 5 ms y equivalencias): "
+                 + ("CUMPLE." if cumple_ir_a else "NO CUMPLE: un paso supera 5 ms (G) o falla una verificación de A a F o H."))
     if "llaves" in pedidos:
         imprimir("\nLlaves (SC-001, SC-002): "
                  + ("CUMPLE." if cumple_llaves else "NO CUMPLE: 1/0/0 en D, la verificación de B o C, o guardar con "
@@ -100,4 +128,9 @@ def ejecutar(nombres: list[str] | None = None, ruta_csv: str | None = None, impr
         imprimir("\nResolubilidad (FR-345, FR-346): "
                  + ("CUMPLE." if cumple_resolubilidad else "NO CUMPLE: los resultados de A difieren, C supera 200 ms o "
                     "la razón de D del incremental supera 20."))
-    return 0 if cumple and cumple_recorrido and cumple_llaves and cumple_resolubilidad else 1
+    if "pantallas" in pedidos:
+        imprimir("\nPantallas (FR-311; constitución VII): "
+                 + ("CUMPLE." if cumple_pantallas else "NO CUMPLE: el texto elegido difiere del descartado o la sala con "
+                    "100 enemigos supera 20 ms."))
+    return 0 if (cumple and cumple_recorrido and cumple_mapa and cumple_ir_a and cumple_llaves and cumple_resolubilidad
+                 and cumple_pantallas) else 1

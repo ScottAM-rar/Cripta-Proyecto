@@ -42,7 +42,8 @@ class GestorEventos:
             avisar_puerta=self._puerta_cambio,
         )
         self.objeto_logica = ObjetoLogica(jugador, self.pergamino_logica)
-        self.salas_logica = SalaLogica(None, avisar_puerta=self._puerta_cambio)
+        self.salas_logica = SalaLogica(None, avisar_puerta=self._puerta_cambio_adelante)
+        self._mapa_conocido = None     # conocimiento del jugador (002); None = sin niebla (Parte I y pruebas sin mapa)
         self.enemigo_logica = EnemigoLogica(None,semilla,self.azar)
 
     @property
@@ -56,6 +57,24 @@ class GestorEventos:
         mapa = campo.mapa if campo is not None else None      # los cambios de puerta suben la versión de ese mapa
         self.pergamino_logica.mapa_puertas = mapa
         self.salas_logica.mapa_puertas = mapa
+
+    @property
+    def mapa_conocido(self):
+        """Lo asigna quien arma la partida: el conocimiento del jugador (niebla de guerra, FR-204 y FR-207)."""
+        return self._mapa_conocido
+
+    @mapa_conocido.setter
+    def mapa_conocido(self, conocimiento) -> None:
+        self._mapa_conocido = conocimiento
+        self.pergamino_logica.mapa_conocido = conocimiento
+
+    def _puerta_cambio_adelante(self, salida) -> None:
+        """Aviso de las acciones hacia adelante (abrir, cerrar, cierre automático): además del campo de costos, el jugador
+        observa la puerta si cambió junto a él. El aviso del pergamino NO llega al conocimiento: lo restauran sus propios
+        cambios OBSERVAR_PUERTA (contracts/cambios-deshacibles.md)."""
+        self._puerta_cambio(salida)
+        if self._mapa_conocido is not None:
+            self._mapa_conocido.puerta_cambio(salida)
 
     def _puerta_cambio(self, salida) -> None:
         """Una puerta cambió de estado: el campo de costos de los cazadores decide si lo que guardó sigue valiendo."""
@@ -164,6 +183,8 @@ class GestorEventos:
                 )
                 if res.exito == True:
                     self.cargar_sala(jugador.id_sala_actual)
+                    if self._mapa_conocido is not None:      # el jugador ya está en el destino desde este instante (FR-204, FR-212)
+                        self._mapa_conocido.entrar(jugador.id_sala_actual, jugador.antorcha_encendida)
                     self._dejar_rastro_en_destino(self._ahora(evento))
                 return res 
             

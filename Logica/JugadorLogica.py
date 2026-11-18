@@ -136,7 +136,6 @@ class JugadorLogica(ActorLogica):
             indice=indice_original,
         )])
         return ResultadoEventoDTO(True, f"El jugador ha soltado el objeto {objeto.nombre}")
-        
     def tiene_llave(self, id_llave: int) -> bool:
         """Comprueba si el jugador posee en su inventario un objeto llave con el ID dado."""
         nodo = self.jugador.inventario.cabeza
