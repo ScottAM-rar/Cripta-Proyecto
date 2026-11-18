@@ -4,7 +4,7 @@
 
 **Creada**: 2026-10-31
 
-**Estado**: Borrador
+**Estado**: Implementada (T001 a T049)
 
 **Entrada**: Capacidad 2 de la Parte II (primera mitad) — niebla de guerra y mapa conocido del jugador. Requisitos con prefijo FR-2xx.
 

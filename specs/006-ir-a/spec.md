@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-11
 
-**Estado**: Borrador
+**Estado**: Implementada (T001 a T050)
 
 **Entrada**: Capacidad «ir a» de la Parte II (segunda mitad de la capacidad 2xx): viajar hasta una sala ya explorada por la ruta más barata conocida. Requisitos con prefijo FR-23x.
 

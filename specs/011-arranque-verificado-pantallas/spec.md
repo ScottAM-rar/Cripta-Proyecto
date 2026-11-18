@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-13
 
-**Estado**: Borrador
+**Estado**: Implementada (T001 a T047)
 
 **Entrada**: Mostrar el reporte de resolubilidad al iniciar una partida, conectar los argumentos `--verificar` y `--forzar`, y renovar la pantalla de sala y el resumen de fin de partida de la consola. Las dos historias tienen la misma prioridad y se especifican, planifican e implementan juntas.
 
