@@ -208,7 +208,7 @@
 
 ### Historia 5
 
-- [ ] T027 [US5] En `adaptadores/cache.py`, reescribir `CacheLRU` sobre una lista propia ordenada de **menos a más reciente** (la más reciente al final), según [data-model.md](data-model.md) («Entrada de la caché»):
+- [X] T027 [US5] En `adaptadores/cache.py`, reescribir `CacheLRU` sobre una lista propia ordenada de **menos a más reciente** (la más reciente al final), según [data-model.md](data-model.md) («Entrada de la caché»):
   - quitar `from collections import deque`;
   - un acierto o una reinserción sacan la entrada de su posición y la agregan al final;
   - `_desalojar` recorre desde el inicio y quita la primera con `veces_en_uso == 0`;
@@ -217,9 +217,9 @@
   - se conservan la interfaz, los mensajes de error y los docstrings; el de la clase se actualiza.
 
   (FR-386, FR-387)
-- [ ] T028 [US5] Ejecutar `python -m unittest test_cache_equivalencia -v`: todo pasa, **incluida T012**. (FR-386, FR-387)
-- [ ] T029 [US5] En `adaptadores/bench_red_mejorado.py`, cambiar el nombre de las filas de la sección 2 de «deque lineal» a «lista propia lineal», sin cambiar su posición ni su escenario, y actualizar el docstring del módulo. (FR-379)
-- [ ] T030 [US5] Con D1 y D2 hechos (T025 y T028), ejecutar `python -m unittest discover -p "test_*.py"` y `python -m tests_labs.sin_red`. `discover` da los totales de T003 (711) más las pruebas de `test_vecindad_equivalencia.py` y `test_cache_equivalencia.py`; `sin_red` da los mismos totales que en T003. Ninguna prueba que pasaba en T003 falla ahora. En T003 la suite completa tuvo 1 fallo, `bench.test_bench_puntos_control` (límite de 20 ms, prueba de tiempo intermitente que pasa sola): si se repite, se registra aparte en `mediciones.md` como fallo intermitente de tiempo y no cuenta como regresión. (FR-387)
+- [X] T028 [US5] Ejecutar `python -m unittest test_cache_equivalencia -v`: todo pasa, **incluida T012**. (FR-386, FR-387)
+- [X] T029 [US5] En `adaptadores/bench_red_mejorado.py`, cambiar el nombre de las filas de la sección 2 de «deque lineal» a «lista propia lineal», sin cambiar su posición ni su escenario, y actualizar el docstring del módulo. (FR-379)
+- [X] T030 [US5] Con D1 y D2 hechos (T025 y T028), ejecutar `python -m unittest discover -p "test_*.py"` y `python -m tests_labs.sin_red`. `discover` da los totales de T003 (711) más las pruebas de `test_vecindad_equivalencia.py` y `test_cache_equivalencia.py`; `sin_red` da los mismos totales que en T003. Ninguna prueba que pasaba en T003 falla ahora. En T003 la suite completa tuvo 1 fallo, `bench.test_bench_puntos_control` (límite de 20 ms, prueba de tiempo intermitente que pasa sola): si se repite, se registra aparte en `mediciones.md` como fallo intermitente de tiempo y no cuenta como regresión. (FR-387)
 
 ---
 

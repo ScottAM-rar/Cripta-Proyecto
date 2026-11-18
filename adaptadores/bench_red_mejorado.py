@@ -7,7 +7,9 @@ de Decisiones). Todo es sintético: no usa internet ni la API real.
 
 Cada sección responde una pregunta concreta de una decisión de diseño:
   1. ¿Cuántas solicitudes cuesta recorrer una cripta según la estrategia de precarga?
-  2. ¿Cuánto cuesta buscar en la caché? (y la alternativa descartada: tabla hash propia)
+  2. ¿Cuánto cuesta buscar en la caché? (y la alternativa descartada: tabla hash propia). Desde la 012 la caché
+     es una lista propia con la más reciente al final, y sus filas se llaman «lista propia lineal» (antes «deque
+     lineal»), en la misma posición y con el mismo escenario.
   3. ¿Cuánto cuesta recuperar de disco una ficha liberada de memoria?
   4. ¿Cuánto cuesta guardar un lote de fichas?
   5. ¿Cuánto cuesta planear la vecindad en una cripta grande?
@@ -316,9 +318,9 @@ def busqueda_en_cache(filas: list) -> None:
             contador[0] += 1
             tabla.obtener(clave)
 
-        filas.append(("2. Búsqueda en la caché (µs por operación)", f"deque lineal, {tamano} fichas, acierto",
+        filas.append(("2. Búsqueda en la caché (µs por operación)", f"lista propia lineal, {tamano} fichas, acierto",
                       round(_cronometrar(acierto_lru, repeticiones), 2), "µs"))
-        filas.append(("2. Búsqueda en la caché (µs por operación)", f"deque lineal, {tamano} fichas, fallo",
+        filas.append(("2. Búsqueda en la caché (µs por operación)", f"lista propia lineal, {tamano} fichas, fallo",
                       round(_cronometrar(fallo_lru, repeticiones), 2), "µs"))
         filas.append(("2. Búsqueda en la caché (µs por operación)", f"tabla hash propia, {tamano} fichas, acierto (descartada)",
                       round(_cronometrar(acierto_hash, repeticiones), 2), "µs"))
