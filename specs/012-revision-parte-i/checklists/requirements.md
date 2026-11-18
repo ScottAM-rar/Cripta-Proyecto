@@ -31,7 +31,8 @@
 
 ## Notes
 
-- Cobertura: FR-370 a FR-387 citados por al menos un escenario o caso límite. Cada escenario cita al menos un FR.
+- Clarificación 2026-11-17 (`/speckit-clarify`, 4 preguntas): alcance del inventario (B), lecturas del esqueleto (C), Documento de Decisiones (C, nuevo FR-388) y cripta para la partida v8 (C).
+- Cobertura: FR-370 a FR-388 citados por al menos un escenario o caso límite. Cada escenario cita al menos un FR.
 - No se nombran estructuras de datos, clases ni módulos. «Estructuras de biblioteca prohibidas por el principio I» remite a la constitución sin enumerarlas.
 - Los resultados esperados de vecindad de los escenarios se calcularon a mano con la regla vigente (por niveles, N, E, S, O). Conviene confirmarlos contra la versión vigente al escribir las pruebas.
 - Items marked incomplete require spec updates before `/speckit-clarify` or `/speckit-plan`
