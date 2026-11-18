@@ -43,6 +43,7 @@ Hoy la planeación de la vecindad (qué salas rodean a una sala hasta cierta pro
 
 ### Corrección 2026-11-18 (originada en la medición M1)
 
+- L2 (originada en la medición M2): el escenario 3 de la Historia 4 pedía que el tiempo de leer una sala no creciera con la cantidad de salas. La medición muestra que la primera sala crece cerca de 24 % de 10 a 1 000 salas (77 a 95 µs), de acuerdo con las entradas de la tabla que se leen (de 3 a 9) con la búsqueda binaria, y es de 100 a 600 veces menor que la carga completa. Se alinea el escenario con FR-382, que ya exigía un crecimiento no mayor que logarítmico para los bytes (corrección H2), y no se toca el código.
 - L1: con los cazadores activos desde el inicio (peor caso, research D3), la carga nueva sube varias filas de solicitudes por encima de 2 × M0 (sección 1, fila 4: de 9 a 46; sección 6: de 19 a 64). La causa es la carga, no el código. FR-383, el caso límite de la carga nueva y SC-004 pasan a medir el límite de esas filas contra M1 (misma carga), de modo que el límite sigue midiendo el efecto del código de la revisión. El aumento de M0 a M1 queda documentado con su causa y es un hallazgo de la revisión.
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
@@ -130,7 +131,7 @@ Al consultar una sala individual de una partida guardada, el juego sigue leyendo
 
 1. **Dado** una partida de formato 8 guardada a partir de la cripta sintética del tamaño de la cripta de referencia, **cuando** se lee una sala individual, **entonces** los bytes leídos son menos que el tamaño del archivo y, al comparar las partidas de 10, 100 y 1 000 salas, no crecen más que logarítmicamente con el número de salas. *(FR-382)*
 2. **Dado** la misma partida, **cuando** se mide la lectura de una sala y la carga completa, **entonces** ambas filas quedan con su antes y después, y la lectura de una sala es más rápida que la carga completa. *(FR-377, FR-382)*
-3. **Dado** una partida de formato 8 con 10, 100 y 1 000 salas, **cuando** se lee la primera, una del medio y la última, **entonces** el tiempo de lectura no crece con la cantidad de salas más allá de la variación de la máquina. *(FR-382)*
+3. **Dado** una partida de formato 8 con 10, 100 y 1 000 salas, **cuando** se lee la primera, una del medio y la última, **entonces** el tiempo de lectura no crece más que logarítmicamente con la cantidad de salas (como los bytes leídos y las entradas de la tabla que se leen) y sigue siendo mucho menor que el de la carga completa; la del medio y la última, además, no crecen más allá de la variación de la máquina. *(FR-382)*
 4. **Dado** la cripta publicada más grande descargada, **cuando** se guarda una partida de formato 8 sin gastar solicitudes y se lee una sala, **entonces** los bytes leídos son menos que el tamaño del archivo y el resultado queda en la sección «012» de `DECISIONES.md`. *(FR-382, FR-388)*
 
 ---
