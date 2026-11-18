@@ -4,19 +4,22 @@ Comandos desde la raíz del repositorio, con Python 3.12 y sin red. Las decision
 
 ## 0. Requisito previo: spec corregida
 
-Antes de las tareas hay que corregir la spec (research H1 y H2): el orden de las salidas es N, S, E, O, los valores de los escenarios 4 a 8 de la Historia 1 cambian, los bytes leídos crecen con log n y el commit de referencia es `0b031ec`. Va en un commit propio, anterior al código (principio X).
+La spec ya está corregida, en commits propios anteriores al código (principio X):
+- `5f38435` (research H1, H2 y H3): el orden de las salidas es N, S, E, O, cambian los valores de los escenarios 4 a 8 de la Historia 1, los bytes leídos crecen con log n y el commit de referencia es `0b031ec`;
+- `e746807` (analyze): filas nuevas y su antes, mediana de tres ejecuciones en las filas de tiempo y cripta de referencia de 1 000 salas.
 
 ## 1. M0: el antes (primer paso, sin tocar código)
 
 ```
 git rev-parse --short HEAD              # debe ser 0b031ec, o un commit posterior que solo cambie documentos
 git diff --stat 0b031ec -- adaptadores Logica DTO Controlador Servicio model main.py bench   # sin salida
-python main.py --bench cache    --bench-csv specs/012-revision-parte-i/bench-cache-M0.csv
-python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M0.csv
+python main.py --bench cache    --bench-csv specs/012-revision-parte-i/bench-cache-M0-1.csv
+python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M0-1.csv
+# se repiten con -2 y -3: tres ejecuciones de cada bloque (FR-383, FR-384)
 python -m unittest discover -p "test_*.py"
 ```
 
-**Esperado**: código de salida 0 en los dos bloques. La sección 1 da 63 / 61 / 33 / 9 solicitudes y la sección 6 da los aciertos y fallos de la 009 (T050). Se copian la salida, los comandos, la fecha y el commit en `mediciones.md` (FR-377).
+**Esperado**: código de salida 0 en las seis ejecuciones. La sección 1 da 63 / 61 / 33 / 9 solicitudes y la sección 6 da los aciertos y fallos de la 009 (T050), iguales en las tres ejecuciones. Se copian la salida, los comandos, la fecha y el commit en `mediciones.md`, y cada fila de tiempo registra la mediana de las tres (FR-377, FR-383, FR-384).
 
 ## 2. Las pruebas de equivalencia pasan con el código vigente
 
@@ -24,18 +27,19 @@ python -m unittest discover -p "test_*.py"
 python -m unittest test_vecindad_equivalencia test_cache_equivalencia -v
 ```
 
-**Esperado**: todo pasa **antes** de cambiar `salas_vecinas` y `cache.py`. Eso demuestra que las referencias escritas en las pruebas reproducen lo vigente (FR-370 a FR-374, FR-387).
+**Esperado**: todo pasa **antes** de cambiar `salas_vecinas` y `cache.py`, salvo las dos comprobaciones del principio I (T009 en la vecindad y T012 en la caché). Esas fallan contra `0b031ec` a propósito, porque el código vigente todavía usa la estructura prohibida, y pasan después de D1 y D2. Lo demás demuestra que las referencias escritas en las pruebas reproducen lo vigente (FR-370 a FR-374, FR-387).
 
 ## 3. M1: la carga nueva con el código vigente
 
 Con los cambios de medición hechos y sin tocar el código de producción (comprobar con `git diff --stat 0b031ec -- adaptadores/servicioCripta.py adaptadores/cache.py`, que no debe mostrar nada):
 
 ```
-python main.py --bench cache    --bench-csv specs/012-revision-parte-i/bench-cache-M1.csv
-python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M1.csv
+python main.py --bench cache    --bench-csv specs/012-revision-parte-i/bench-cache-M1-1.csv
+python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M1-1.csv
+# se repiten con -2 y -3; cada fila de tiempo registra la mediana
 ```
 
-**Esperado**: en la sección 1, cada fila tiene +1 solicitud por las llaves más las que disparen los cazadores (se ve en la unidad). En la sección 6, +1 en las solicitudes. Aparecen las filas nuevas del bloque de guardado. Toda diferencia con M0 se anota con la causa «carga: …».
+**Esperado**: en la sección 1, cada fila tiene +1 solicitud por las llaves más las que disparen los cazadores (se ve en la unidad). En la sección 6, +1 en las solicitudes. Aparecen las filas nuevas del bloque de guardado; su antes es su medición en M1, con el código vigente y la carga nueva (FR-377, FR-384). Toda diferencia con M0 se anota con la causa «carga: …».
 
 ## 4. Cambio de código y pruebas
 
@@ -44,21 +48,20 @@ python -m unittest test_vecindad_equivalencia test_cache_equivalencia -v
 python -m unittest discover -p "test_*.py"
 ```
 
-**Esperado**: el mismo resultado que en M0. No falla ninguna prueba que pasaba (FR-387).
+**Esperado**: los totales de M0 más las pruebas de los dos archivos nuevos, con 0 fallos y 0 errores (incluidas T009 y T012, una vez hechos D1 y D2). No falla ninguna prueba que pasaba (FR-387).
 
-## 5. M2: el después (dos veces)
+## 5. M2: el después (tres ejecuciones)
 
 ```
-python main.py --bench cache    --bench-csv specs/012-revision-parte-i/bench-cache-M2.csv
-python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M2.csv
-python main.py --bench cache    --bench-csv specs/012-revision-parte-i/bench-cache-M2b.csv
-python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M2b.csv
+python main.py --bench cache    --bench-csv specs/012-revision-parte-i/bench-cache-M2-1.csv
+python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M2-1.csv
+# se repiten con -2 y -3; cada fila de tiempo registra la mediana
 ```
 
 **Esperado**:
-- las filas de cuenta de M2 y M2b son idénticas (FR-379);
+- las filas de cuenta son idénticas en las tres ejecuciones de M2 (FR-379);
 - las secciones 1 y 6 de M2 son iguales a las de M1 (el código no mueve las cuentas, FR-387);
-- todas las filas de tiempo de red y de guardado quedan ≤ 2 × su antes (FR-383, FR-384). Si alguna lo pasa, se repite 3 veces y vale la mediana. En la sección 2, eso activa el criterio de cambio de D2;
+- la mediana de cada fila de tiempo de red y de guardado queda ≤ 2 × su antes (FR-383, FR-384). En la sección 2, si una fila lo pasa, se activa el criterio de cambio de D2;
 - los bytes leídos por sala son mucho menos que el tamaño del archivo y crecen como mucho con log n (FR-382).
 
 ## 6. Medición manual con la cripta publicada más grande
@@ -93,8 +96,8 @@ grep -rnE "\bdict\(|= \{\}|: dict\b" $P --include=*.py $X
 | FR-373 | H1-10, H1-11; caso límite | `test_vecindad_equivalencia` (errores y orden de comprobación) |
 | FR-374 | H1-1, H1-12, H1-13 | `test_vecindad_equivalencia` (espías de búsquedas y descargas) |
 | FR-375 | H2-1, H2-3 | `test_vecindad_equivalencia` (código fuente del método); research D1 |
-| FR-376 | H2-2 | `--bench cache` sección 5 (M0 y M2) |
-| FR-377, FR-379 | H3-1, H3-2, H3-9; caso límite | `mediciones.md` (M0, M1, M2 y M2b) |
+| FR-376 | H2-2 | `test_vecindad_equivalencia` (búsquedas con profundidad 5, en la rejilla sola y rodeada por una cripta de 1 000 salas); `--bench cache` sección 5 (M0 y M2) |
+| FR-377, FR-379 | H3-1, H3-2, H3-9; caso límite | `mediciones.md` (M0, M1 y M2, con tres ejecuciones cada una) |
 | FR-378 | H3-2, H3-3; caso límite | `mediciones.md`, columna de causa (M0 → M1) |
 | FR-380 | H3-5, H3-6 | `DECISIONES.md` §012, tabla de decisiones |
 | FR-381, FR-384 | H3-8 | `--bench guardado` (M0, M1 y M2) |

@@ -10,16 +10,20 @@ Esta capacidad revisa las decisiones de red, caché y guardado de la Parte I con
 
 - **Planeación de la vecindad** (`ServicioCripta.salas_vecinas`): deja la cola de biblioteca y recorre por niveles leyendo la propia lista de salas alcanzadas con un índice y una marca de fin de nivel (D1). El resultado, los errores y las búsquedas en el esqueleto son los mismos.
 - **Caché de fichas** (`adaptadores/cache.py`): pasa a una lista propia con la más reciente al final (D2), con los mismos aciertos, fallos y orden de expulsión.
-- **Mediciones**: se toman en tres pasos. M0 es el antes, con el código de `0b031ec` y **antes de tocar nada**. M1 es la carga nueva sobre el mismo código. M2 es el después. Así cada diferencia queda atribuida a la carga o al código (D3).
+- **Mediciones**: se toman en tres pasos. M0 es el antes, con el código de `0b031ec` y **antes de tocar nada**. M1 es la carga nueva sobre el mismo código. M2 es el después. Así cada diferencia queda atribuida a la carga o al código (D3). Cada paso son tres ejecuciones de cada bloque, y cada fila de tiempo registra la mediana de las tres (FR-383, FR-384).
 - **Inventario**: se corrigen 2 usos (la vecindad y la caché). Se justifican 6: el contenedor de salidas, su conversión desde la API, su reconstrucción al cargar la partida, `collections.abc.Callable` y dos grupos de conjuntos literales constantes. Se excluyen por ser lectura de JSON los dicts con la forma de la respuesta de la API; quedan 18 apariciones de `dict` por revisar a mano (D5).
 
-**Antes de `/speckit-tasks` hay que corregir la spec** (principio X). El orden vigente de las salidas es N, S, E, O, no N, E, S, O como dicen FR-371 y los escenarios 4 a 8 de la Historia 1 (research H1). Además, los bytes leídos de una sala crecen con log n, mientras que el escenario 1 de la Historia 4 dice que no dependen del tamaño (research H2). El plan no cambia ninguna regla: sigue a FR-370 («lo mismo que la versión vigente»).
+**La corrección de la spec ya está hecha** (principio X), en commits propios y anteriores al código:
+- `5f38435`: el orden vigente de las salidas es N, S, E, O (research H1), los bytes leídos de una sala crecen con log n (research H2) y la versión vigente es `0b031ec` (research H3);
+- `e746807`: lo que encontró el analyze (sin nombres de estructuras, filas nuevas y su antes, mediana de tres ejecuciones, cripta de referencia de 1 000 salas y prefijo FR-3xx).
+
+El plan no cambia ninguna regla: sigue a FR-370 («lo mismo que la versión vigente»).
 
 ## Contexto técnico
 
 **Lenguaje y versión**: Python 3.12 (el del proyecto; sin dependencias nuevas).
 
-**Dependencias principales**: biblioteca estándar permitida (`struct`, `json`, `os`, `tempfile`, `time`, `random` con semilla, `inspect` solo en pruebas). Sin `collections`, `heapq`, `bisect` ni `networkx` en lo que se toca.
+**Dependencias principales**: biblioteca estándar permitida (`struct`, `json`, `os`, `tempfile`, `time`, `random` con semilla, `inspect` solo en pruebas). Sin `collections`, `heapq`, `bisect` ni `networkx` en lo que se cambia.
 
 **Almacenamiento**: archivos de la caché persistente (`AlmacenDisco`, sin cambios) y partida binaria de formato 8 (`AlmacenPartidaBinario`, sin cambios). Los resultados van en `specs/012-revision-parte-i/` (`mediciones.md` y los CSV de M0, M1 y M2).
 
@@ -55,12 +59,12 @@ Esta capacidad revisa las decisiones de red, caché y guardado de la Parte I con
 | V. Sin datos de una cripta concreta | Las criptas de medición y de prueba son sintéticas y salen de una semilla. La medición manual con la cripta publicada más grande se hace a mano y no queda en el código | ✅ |
 | VI. Presupuesto y versiones | La consulta de llaves se cuenta en el bench (+1). El formato de partida no cambia | ✅ |
 | VII. Rendimiento medido | Antes y después con `--bench`. La sección 2 conserva la tabla hash descartada y agrega la lista enlazada descartada. Las criptas son sintéticas por semilla | ✅ |
-| VIII. La spec precede al código | El plan no agrega reglas. Encontró dos defectos de la spec (H1 y H2) y pide corregirlos antes de las tareas | ⚠️ pendiente de corregir la spec |
+| VIII. La spec precede al código | El plan no agrega reglas. Los defectos de la spec que encontró (H1 y H2) y los del analyze ya se corrigieron en la spec (`5f38435` y `e746807`) | ✅ |
 | IX. Trazabilidad | Cada prueba cita su FR. La tabla requisito → prueba o medición está en [quickstart.md](quickstart.md#trazabilidad) | ✅ |
-| X. Cambios de especificación | La corrección de H1 y H2 va en un commit de spec separado y anterior al código | ⚠️ pendiente |
+| X. Cambios de especificación | Las correcciones están en commits de spec separados y anteriores al código (`5f38435` y `e746807`) | ✅ |
 | XI. Uso de LLM | El prompt del plan se registra en `PROMPTS_Scott.md` (lo hace el grupo) | ✅ |
 
-**Resultado de la compuerta**: aprobada con dos pendientes de proceso (VIII y X), que no bloquean el diseño pero sí `/speckit-tasks`.
+**Resultado de la compuerta**: aprobada, sin pendientes.
 
 ## Decisiones (detalle en [research.md](research.md))
 
@@ -68,18 +72,18 @@ Esta capacidad revisa las decisiones de red, caché y guardado de la Parte I con
 |---|---|---|---|---|
 | D1 | Vecindad sin cola de biblioteca | Leer `alcanzadas` con un índice y una marca de fin de nivel. Se descartan `ColaCircular` (duplica los datos y no guarda el nivel) y las marcas por id (O(N) por consulta o estado entre consultas) | O(k·N) por las búsquedas en el esqueleto (sin cambios) + O(k²) de pertenencia; memoria O(k) | `--bench cache` sección 5; prueba de equivalencia D4-a |
 | D2 | Caché sin cola de biblioteca | Lista propia con la más reciente al final. Se descartan la inserción al frente (corre todo), la lista enlazada (no mejora el orden total sin un índice) y la tabla hash (ya descartada en la Parte I). Si la sección 2 pasa de 2×, se prueba la lista enlazada | O(n) en obtener, insertar y desalojar, igual que hoy | `--bench cache` secciones 2 y 6; prueba de equivalencia D4-b |
-| D3 | Mediciones | M0 (antes, el primer paso) → M1 (carga, mismo código) → M2 (después, dos veces). La carga va en los mismos escenarios. Filas de cuenta y de tiempo según la tabla de D3 | — | `mediciones.md`, CSV |
-| D4 | Pruebas | Espías de búsquedas y descargas contra una referencia escrita en la prueba; LRU de referencia con secuencias aleatorias de semilla fija. Ambas pasan primero contra `0b031ec` | — | `test_vecindad_equivalencia.py`, `test_cache_equivalencia.py`, suite completa |
+| D3 | Mediciones | M0 (antes, el primer paso) → M1 (carga, mismo código) → M2 (después), cada una con tres ejecuciones y la mediana en las filas de tiempo. La carga va en los mismos escenarios. Filas de cuenta y de tiempo según la tabla de D3 | — | `mediciones.md`, CSV |
+| D4 | Pruebas | Espías de búsquedas y descargas contra una referencia escrita en la prueba; LRU de referencia con secuencias aleatorias de semilla fija. Ambas pasan primero contra `0b031ec`, salvo las dos comprobaciones del principio I (T009 y T012), que fallan contra `0b031ec` a propósito y pasan después de D1 y D2 | — | `test_vecindad_equivalencia.py`, `test_cache_equivalencia.py`, suite completa |
 | D5 | Inventario y documentación | Búsqueda mecánica + revisión manual. 2 se corrigen, 6 se justifican, los dicts con forma de JSON se excluyen y 18 apariciones de `dict` se revisan a mano. Sección 012 en `DECISIONES.md` y notas en las secciones 2, 6 y 8 del documento de la Parte I | — | Repetir la búsqueda (quickstart) |
 
 ## Orden de trabajo
 
-1. **M0, antes de tocar cualquier archivo de código**: `--bench cache` y `--bench guardado` con `0b031ec`, más la suite completa. Se copian la salida, el comando, la fecha y el commit en `mediciones.md` (FR-377).
-2. Corrección de la spec (H1 y H2 y el commit del supuesto), en un commit propio. No es parte de este plan, pero lo bloquea.
-3. Pruebas D4-a y D4-b. Se comprueba que **pasan con el código de `0b031ec`**.
-4. Código de medición: carga nueva en `adaptadores/bench_red_mejorado.py` y `bench/guardado.py`, filas nuevas de guardado, filas de la lista enlazada descartada. Se ejecuta **M1** sin haber tocado el código de producción.
+1. **M0, antes de tocar cualquier archivo de código**: `--bench cache` y `--bench guardado` con `0b031ec`, tres ejecuciones de cada uno, más la suite completa. Se copian la salida, el comando, la fecha y el commit en `mediciones.md`, y cada fila de tiempo registra la mediana (FR-377, FR-383, FR-384).
+2. Corrección de la spec: hecha en `5f38435` y `e746807`, en commits propios anteriores al código.
+3. Pruebas D4-a y D4-b. Se comprueba que **pasan con el código de `0b031ec`**, salvo las dos comprobaciones del principio I (T009 y T012), que fallan a propósito y pasan después de D1 y D2.
+4. Código de medición: carga nueva en `adaptadores/bench_red_mejorado.py` y `bench/guardado.py`, filas nuevas de guardado, filas de la lista enlazada descartada. Se ejecuta **M1** (tres ejecuciones, mediana en las filas de tiempo) sin haber tocado el código de producción.
 5. D1 en `salas_vecinas` y D2 en `cache.py`. Pruebas D4 y la suite completa.
-6. **M2**, dos veces. Se comprueba que las filas de cuenta salen iguales y que se cumplen los límites de 2×. Medición manual de la cripta publicada más grande.
+6. **M2**, tres ejecuciones. Se comprueba que las filas de cuenta salen iguales en las tres y, con la mediana de las filas de tiempo, que se cumplen los límites de 2×. Medición manual de la cripta publicada más grande.
 7. Inventario final (repetir la búsqueda), sección 012 de `DECISIONES.md` y notas en `DOCUMENTACION_DECISIONES_DISENO.md`, indicando si cada decisión final coincide con este plan (FR-388).
 
 ## Estructura del proyecto
@@ -97,7 +101,7 @@ specs/012-revision-parte-i/
 │   ├── vecindad-y-cache.md  # comportamiento observable que no cambia
 │   └── filas-medicion.md    # catálogo de filas y formato de mediciones.md
 ├── mediciones.md            # se crea en M0 (paso 1)
-├── bench-*-M0|M1|M2.csv     # salidas de --bench-csv
+├── bench-*-M0|M1|M2-1|2|3.csv  # salidas de --bench-csv (tres ejecuciones por paso)
 └── tasks.md                 # lo genera /speckit-tasks
 ```
 
@@ -138,4 +142,4 @@ Se revisó cada elemento del plan contra la lista: `heapq`, `bisect`, `collectio
 
 ## Seguimiento de complejidad
 
-No hay violaciones de la constitución que justificar. Los dos pendientes (VIII y X) son correcciones de la spec, no excepciones.
+No hay violaciones de la constitución que justificar. Las correcciones de la spec (VIII y X) ya están hechas en `5f38435` y `e746807`; no eran excepciones.

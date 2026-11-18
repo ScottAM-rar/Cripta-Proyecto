@@ -51,7 +51,7 @@ El recorrido termina cuando `lectura == len(alcanzadas)` o `nivel == profundidad
 | `diferencia` | absoluta y % | M2 − M0, o M2 − M1 si la fila no está en M0 |
 | `causa` | texto | «carga: …» (M0 → M1), «código: …» (M1 → M2), «depende de la máquina» o «sin cambios» |
 | `limite` | número | 2 × M0, o 2 × M1 para las filas nuevas (FR-383, FR-384) |
-| `cumple` | sí/no | en las filas de tiempo, mediana de 3 repeticiones si la primera pasa del límite |
+| `cumple` | sí/no | en las filas de tiempo, la mediana de tres ejecuciones (FR-383, FR-384) |
 
 ## Revisión de decisión (FR-380, FR-388)
 

@@ -19,14 +19,40 @@
 - `Logica` y `DTO` no importan de `adaptadores`. `--bench` no instancia la vista ni usa la red.
 - Sin commits dentro de las tareas. Los hace el grupo, con la spec antes que el código (principio X).
 
+## Revisión contra la lista de prohibidos (principio I)
+
+**Hecha el 2026-11-18**, antes de implementar. Lista: `heapq`, `bisect`, `collections` (`deque`, `OrderedDict`, `defaultdict`, `Counter`), `networkx`, `dict` y `set` como índice o caché, `sorted()` y `.sort()`. Se revisan las tareas que escriben código nuevo.
+
+| Tarea | ¿Usa algo prohibido? | Comentario |
+|---|---|---|
+| T005 | No | El cliente sintético y el espía cuentan con enteros. Los esqueletos de `esqueleto_de_conexiones` tienen la forma del JSON de la API (lectura de JSON, permitida). La referencia recorre por niveles con una lista de pares y un índice de lectura; la pertenencia se comprueba recorriendo la lista |
+| T006 | No | **Muestreo de salas**: las 50 salas de la cripta de 1 000 salen de `random.Random(semilla).sample(...)`, que devuelve una lista; se recorren en el orden devuelto, sin ordenarlas |
+| T007 | No | Listas literales y comparaciones |
+| T008 | No | Solo `assertRaises` y contadores enteros |
+| T009 | No | Los nombres prohibidos aparecen solo como texto que se busca en el código fuente, guardado en una tupla constante; no se usan |
+| T010 | No | La LRU de referencia es una lista de listas `[clave, valor, veces]` con búsqueda lineal, sin `dict` por clave. Las secuencias salen de `random.Random(semilla)` |
+| T011 | No | Casos dirigidos sobre la misma referencia |
+| T012 | No | Reutiliza `importaciones_prohibidas` de `test_monticulo_minimo.py`, que recorre el árbol sintáctico y compara contra la tupla `MODULOS_PROHIBIDOS` |
+| T015 | No | Las salidas sintéticas tienen la forma del JSON de la API. El costo simétrico se lee de la salida opuesta ya armada, sin tabla aparte. `obtener_llaves` devuelve una lista con la forma de la API |
+| T016 | No | Las posiciones de los cazadores se guardan en una lista; la pertenencia se comprueba recorriéndola |
+| T017 | No | **Recorrido de los cazadores del bench**: por niveles, con una lista de pares (sala, primera salida) leída con un índice. La pertenencia se comprueba recorriendo la lista. El desempate sale de expandir las salidas en el orden N, S, E, O, sin ordenar |
+| T018 | No | Llamadas al servicio y contadores enteros |
+| T019 | No | **Lista enlazada de prototipo**: nodos propios con anterior y siguiente, y búsqueda lineal desde la cabeza. No hay índice por clave (eso sería la alternativa (d) de D2, ya descartada) |
+| T020 | No | Clases DTO sin modificar. `exploradas` y `avistadas` se arman con `range` y salen ya en orden ascendente, sin ordenar |
+| T021 | No | **Envoltorio que cuenta bytes**: guarda el archivo y un entero que suma lo que devuelve cada `read`; el contador de entradas es otro entero |
+| T024 | No | Lista `alcanzadas`, un índice de lectura y una marca de fin de nivel. La pertenencia se comprueba recorriendo la lista. `.get("salidas") or {}` es lectura de JSON |
+| T027 | No | Lista propia de listas, con `del` y `append`; se quita la importación de `collections` |
+| T039 | Quita o justifica | Pasar los conjuntos literales a tuplas quita dos usos de la lista. Si se dejan, quedan en el inventario con su justificación (FR-386) |
+| T047 | No | Usa la infraestructura de T005. La cripta de 1 000 salas se arma con `esqueleto_de_conexiones` a partir de una lista de conexiones |
+
 ---
 
 ## Fase 1: Preparación — el antes (M0, sin tocar código)
 
 **Objetivo**: dejar registrado el antes oficial con el código de `0b031ec` antes de cualquier cambio.
 
-- [ ] T001 Comprobar que el código de producción, de medición y de pruebas es el de `0b031ec`: `git diff --stat 0b031ec -- adaptadores Logica DTO Controlador Servicio model main.py bench tests_labs` no muestra nada. Crear `specs/012-revision-parte-i/mediciones.md` con las secciones de [contracts/filas-medicion.md](contracts/filas-medicion.md): M0, M1, M2, M2b, medición manual, pruebas y tabla por bloque. (FR-377)
-- [ ] T002 Ejecutar `python main.py --bench cache --bench-csv specs/012-revision-parte-i/bench-cache-M0.csv` y `python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M0.csv`. Copiar en la sección M0 de `specs/012-revision-parte-i/mediciones.md` la salida de consola, los dos comandos, la fecha y hora, el commit (`git rev-parse --short HEAD`) y el código de salida de cada uno (debe ser 0). (FR-377, FR-381)
+- [ ] T001 Comprobar que el código de producción, de medición y de pruebas es el de `0b031ec`: `git diff --stat 0b031ec -- adaptadores Logica DTO Controlador Servicio model main.py bench tests_labs` no muestra nada. Crear `specs/012-revision-parte-i/mediciones.md` con las secciones de [contracts/filas-medicion.md](contracts/filas-medicion.md): M0, M1 y M2 (cada una con sus tres ejecuciones), medición manual, pruebas y tabla por bloque. (FR-377)
+- [ ] T002 Ejecutar tres veces cada bloque: `python main.py --bench cache --bench-csv specs/012-revision-parte-i/bench-cache-M0-1.csv` y `python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M0-1.csv`, y lo mismo con `-2` y `-3`. Copiar en la sección M0 de `specs/012-revision-parte-i/mediciones.md`, para cada ejecución, la salida de consola, los comandos, la fecha y hora, el commit (`git rev-parse --short HEAD`) y el código de salida (debe ser 0). Cada fila de tiempo registra la mediana de las tres; las filas de cuenta deben salir iguales en las tres. (FR-377, FR-381, FR-383, FR-384)
 - [ ] T003 Ejecutar `python -m unittest discover -p "test_*.py"` y `python -m tests_labs.sin_red` con el mismo código y anotar en la sección «Pruebas» de `specs/012-revision-parte-i/mediciones.md` los totales (ejecutadas, fallos, errores y omitidas) de cada uno. Ese es el resultado que M2 tiene que repetir. (FR-387)
 - [ ] T004 Numerar las filas de M0 en las tablas de `specs/012-revision-parte-i/mediciones.md` según el catálogo de [contracts/filas-medicion.md](contracts/filas-medicion.md). Si la salida real difiere del catálogo, gana M0 y se ajusta el catálogo en `mediciones.md`. Marcar cada fila como «cuenta» o «tiempo» según la tabla de tipos de research D3. (FR-377, FR-379)
 
@@ -131,7 +157,7 @@
   - en la columna de unidad, agregar «de ellas, X disparadas por un cazador».
 
   El recorrido (pasillo de 60 y serpiente de 150 pasos) no cambia. (FR-378, FR-379)
-- [ ] T019 [US3] En `adaptadores/bench_red_mejorado.py`, `busqueda_en_cache` (sección 2): un prototipo de **lista doblemente enlazada propia** (alternativa descartada de D2, que vive solo en el código de medición) y una fila «lista enlazada propia, N fichas, acierto (descartada)» por tamaño, después de las filas existentes de ese tamaño. No se cambia el nombre de ninguna fila existente. (FR-386, FR-383)
+- [ ] T019 [US3] En `adaptadores/bench_red_mejorado.py`, `busqueda_en_cache` (sección 2): un prototipo de **lista doblemente enlazada propia** (alternativa descartada de D2, que vive solo en el código de medición) y una fila «lista enlazada propia, N fichas, acierto (descartada)» por tamaño, después de las filas existentes de ese tamaño. No se cambia el nombre de ninguna fila existente. (FR-378: fila de alternativa descartada; principio VII, research D2)
 
 ### Historia 4 — Carga y filas nuevas en el bloque `guardado`
 
@@ -150,8 +176,8 @@
 
 ### M1
 
-- [ ] T022 [US3] Comprobar que `git diff --stat 0b031ec -- adaptadores/servicioCripta.py adaptadores/cache.py` no muestra nada. Ejecutar los dos bloques con `--bench-csv specs/012-revision-parte-i/bench-cache-M1.csv` y `bench-guardado-M1.csv`. Copiar la salida, los comandos, la fecha, el commit y el código de salida (0) en la sección M1 de `specs/012-revision-parte-i/mediciones.md`. Completar la columna «Carga (M1)» y anotar «carga: …» en la causa de cada fila que difiera de M0 (por ejemplo, «+1 consulta de llaves», «X disparadas por un cazador»). (FR-377, FR-378, FR-379)
-- [ ] T023 [US4] En `specs/012-revision-parte-i/mediciones.md`, marcar las filas nuevas de T019 y T021 con «sin antes en M0: fila nueva (FR-381, FR-382)», y tomar M1 como su antes para el límite de 2×. (FR-377, FR-382)
+- [ ] T022 [US3] Comprobar que `git diff --stat 0b031ec -- adaptadores/servicioCripta.py adaptadores/cache.py` no muestra nada. Ejecutar tres veces cada bloque, con `--bench-csv specs/012-revision-parte-i/bench-cache-M1-1.csv` y `bench-guardado-M1-1.csv` (y lo mismo con `-2` y `-3`). Copiar, para cada ejecución, la salida, los comandos, la fecha, el commit y el código de salida (0) en la sección M1 de `specs/012-revision-parte-i/mediciones.md`; cada fila de tiempo registra la mediana de las tres. Completar la columna «Carga (M1)» y anotar «carga: …» en la causa de cada fila que difiera de M0 (por ejemplo, «+1 consulta de llaves», «X disparadas por un cazador»). (FR-377, FR-378, FR-379, FR-383, FR-384)
+- [ ] T023 [US4] En `specs/012-revision-parte-i/mediciones.md`, marcar las filas nuevas de T019 y T021 con «sin antes en M0: fila nueva (FR-378)». Su antes es su medición con el código vigente y la carga nueva, es decir, M1 (la mediana en las filas de tiempo), y con ese antes se calcula el límite de 2×. (FR-377, FR-382, FR-384)
 
 **Punto de control**: el efecto de la carga está aislado del efecto del código.
 
@@ -161,6 +187,11 @@
 
 ### Historias 1 y 2
 
+- [ ] T047 [US2] En `test_vecindad_equivalencia.py`, antes de cambiar el código, una prueba de proporcionalidad cuyo docstring cita FR-376 y la Historia 2, escenario 2:
+  - con profundidad 5, las búsquedas en el esqueleto que cuenta el espía son 1 más las salas expandidas (las de nivel menor que 5). En la rejilla 3 × 3 desde la sala 5 son 10;
+  - una cripta de 1 000 salas contiene la misma rejilla en las salas 1 a 9, con las mismas salidas. Las salas 10 a 1 000 forman una fila y solo se conectan con la rejilla por una salida de un solo sentido de la sala 10 a la sala 1, así que desde la rejilla no se llega a ellas. La vecindad de la sala 5 con profundidad 5 y el número de búsquedas son los mismos que en la rejilla sola.
+
+  Se ejecuta contra el código sin tocar y tiene que pasar. (FR-376)
 - [ ] T024 [US1] [US2] En `adaptadores/servicioCripta.py`, reescribir **solo el cuerpo** de `salas_vecinas` según [data-model.md](data-model.md) («Consulta de vecindad»):
   - `if profundidad < 0: raise ValueError("La profundidad no puede ser negativa")` primero, y después `self._buscar_esqueleto(cripta_id, numero_sala)`;
   - `alcanzadas = [numero_sala]`, `lectura = 0`, `nivel = 0`, `fin_nivel = 1`;
@@ -168,8 +199,8 @@
   - devolver `alcanzadas[1:]`.
 
   No quitar `from collections import deque` (lo usa `_armar_salidas`, uso justificado) y no tocar `precargar_vecinas`. (FR-370, FR-371, FR-372, FR-373, FR-374, FR-375, FR-376)
-- [ ] T025 [US1] Ejecutar `python -m unittest test_vecindad_equivalencia -v`: todo pasa, **incluida T009**. (FR-370, FR-371, FR-372, FR-373, FR-374, FR-375)
-- [ ] T026 [US2] Ejecutar `python main.py --bench cache` y comprobar en la sección 5 que `salas_vecinas` a 1 y 2 pasos no supera 2 × su valor de M1. Es un control preliminar; el oficial es T032. (FR-376, FR-383)
+- [ ] T025 [US1] Ejecutar `python -m unittest test_vecindad_equivalencia -v`: todo pasa, **incluidas T009 y T047**. (FR-370, FR-371, FR-372, FR-373, FR-374, FR-375, FR-376)
+- [ ] T026 [US2] Ejecutar `python main.py --bench cache` una vez y comprobar en la sección 5 que `salas_vecinas` a 1 y 2 pasos no supera 2 × su valor de M1. Es un control preliminar contra M1; el límite final de FR-383 se comprueba en T033 contra M0, con la mediana de las tres ejecuciones de M2. (FR-376, FR-383)
 
 ---
 
@@ -188,26 +219,26 @@
   (FR-386, FR-387)
 - [ ] T028 [US5] Ejecutar `python -m unittest test_cache_equivalencia -v`: todo pasa, **incluida T012**. (FR-386, FR-387)
 - [ ] T029 [US5] En `adaptadores/bench_red_mejorado.py`, cambiar el nombre de las filas de la sección 2 de «deque lineal» a «lista propia lineal», sin cambiar su posición ni su escenario, y actualizar el docstring del módulo. (FR-379)
-- [ ] T030 [US5] Ejecutar `python -m unittest discover -p "test_*.py"` y `python -m tests_labs.sin_red`: los mismos totales que T003, y ninguna prueba que pasaba ahora falla. (FR-387)
+- [ ] T030 [US5] Con D1 y D2 hechos (T025 y T028), ejecutar `python -m unittest discover -p "test_*.py"` y `python -m tests_labs.sin_red`. `discover` da los totales de T003 más las pruebas de `test_vecindad_equivalencia.py` y `test_cache_equivalencia.py`, con 0 fallos y 0 errores; `sin_red` da los mismos totales que en T003. Ninguna prueba que pasaba en T003 falla ahora. (FR-387)
 
 ---
 
-## Fase 6: el después (M2, dos veces) y los límites
+## Fase 6: el después (M2, tres ejecuciones) y los límites
 
 ### Historia 3
 
-- [ ] T031 [US3] Ejecutar los dos bloques con `--bench-csv specs/012-revision-parte-i/bench-cache-M2.csv` y `bench-guardado-M2.csv`, y copiar la salida, los comandos, la fecha, el commit (más «árbol con cambios») y el código de salida (0) en la sección M2 de `specs/012-revision-parte-i/mediciones.md`. (FR-377, FR-378)
-- [ ] T032 [US3] Repetirlos con `bench-cache-M2b.csv` y `bench-guardado-M2b.csv` (sección M2b) y comprobar en `mediciones.md`:
-  - las filas de cuenta de M2 y M2b son idénticas;
+- [ ] T031 [US3] Ejecutar tres veces cada bloque, con `--bench-csv specs/012-revision-parte-i/bench-cache-M2-1.csv` y `bench-guardado-M2-1.csv` (y lo mismo con `-2` y `-3`). Copiar, para cada ejecución, la salida, los comandos, la fecha, el commit (más «árbol con cambios») y el código de salida (0) en la sección M2 de `specs/012-revision-parte-i/mediciones.md`; cada fila de tiempo registra la mediana de las tres. (FR-377, FR-378, FR-383, FR-384)
+- [ ] T032 [US3] Comprobar en `mediciones.md`:
+  - las filas de cuenta son idénticas en las tres ejecuciones de M2;
   - las secciones 1 y 6 del bloque `cache` son iguales en M1 y M2.
 
   Si algo difiere, se investiga antes de seguir. (FR-379, FR-387)
-- [ ] T033 [US3] Completar en `specs/012-revision-parte-i/mediciones.md`, para cada fila, «Después (M2)», la diferencia absoluta y en %, el límite (2 × M0, o 2 × M1 en las filas nuevas), «Cumple» y la causa («código: …», «depende de la máquina» o «sin cambios»). Si una fila de tiempo pasa el límite, se repite 3 veces y vale la mediana, anotando las tres. (FR-379, FR-383, FR-384)
+- [ ] T033 [US3] Completar en `specs/012-revision-parte-i/mediciones.md`, para cada fila: «Después (M2)» (la mediana en las filas de tiempo), la diferencia absoluta y en %, el límite (2 × M0, o 2 × M1 en las filas nuevas), «Cumple» y la causa («código: …», «depende de la máquina» o «sin cambios»). (FR-379, FR-383, FR-384)
 - [ ] T034 [US5] **Solo si** en T033 una fila «lista propia lineal» de la sección 2 sigue pasando 2 × su antes: aplicar el criterio de cambio de D2 (pasar `adaptadores/cache.py` a la lista enlazada propia del prototipo de T019), repetir T028, T030 y T031 a T033, y anotarlo como cambio respecto del plan. Si no hace falta, marcar la tarea con «no aplica» y la fila que lo demuestra. (FR-383, FR-386, FR-387)
 
 ### Historia 4
 
-- [ ] T035 [US4] En `specs/012-revision-parte-i/mediciones.md`, registrar para 10, 100 y 1 000 salas los bytes leídos (primera, del medio y última), el tamaño del archivo y las entradas leídas frente a ⌊log₂ n⌋ + 1, y confirmar que las verificaciones de T021 dieron «ok» y que la lectura de una sala tarda menos que la carga completa. (FR-382, FR-384)
+- [ ] T035 [US4] En `specs/012-revision-parte-i/mediciones.md`, registrar para 10, 100 y 1 000 salas los bytes leídos (primera, del medio y última), el tamaño del archivo y las entradas leídas frente a ⌊log₂ n⌋ + 1, y confirmar que las verificaciones de T021 dieron «ok» y que la lectura de una sala tarda menos que la carga completa. Comparar además entre 10, 100 y 1 000 salas el tiempo de leer la primera, la del medio y la última sala, y confirmar que no crece con el número de salas más allá de la variación entre las tres ejecuciones (Historia 4, escenario 3). (FR-382, FR-384)
 - [ ] T036 [US4] Medición manual:
   1. Revisar qué criptas de `datos_cripta/` tienen esqueleto, contenido y catálogo, y elegir la más grande.
   2. Sin red (`--offline`, o armando el estado con `FuenteSoloLocal`), generar y guardar una partida de formato 8 en una carpeta temporal.
@@ -223,7 +254,7 @@
 ### Historia 5 — Inventario
 
 - [ ] T037 [US5] Repetir la búsqueda de la sección «Inventario» de [quickstart.md](quickstart.md) sobre `adaptadores Controlador DTO Logica model Servicio main.py`, excluyendo `bench_red.py` y `bench_red_mejorado.py`, y pegar la salida en un anexo de `specs/012-revision-parte-i/mediciones.md`. `adaptadores/cache.py` ya no aparece. `adaptadores/servicioCripta.py` aparece solo por `_armar_salidas`. (FR-385, FR-375)
-- [ ] T038 [US5] Revisar a mano cada aparición de `dict(`, `= {}` o `: dict` (18 en `0b031ec`) y de los conjuntos literales. Clasificar cada una como «índice, caché o tabla de búsqueda» o como «lectura de JSON» (respuesta de la API o copia con su misma forma), con una línea de motivo, en el anexo de `mediciones.md`. Toda aparición que sea índice o caché pasa a la tabla del inventario con el criterio de FR-386. (FR-385, FR-386)
+- [ ] T038 [US5] Revisar a mano cada aparición de `dict(`, `= {}` o `: dict` (18 en `0b031ec`) y de los conjuntos literales. Clasificar cada una como «índice, caché o tabla de búsqueda» o como «lectura de JSON» (respuesta de la API o copia con su misma forma), con una línea de motivo, en el anexo de `mediciones.md`. Toda aparición que sea índice o caché pasa a la tabla del inventario con el criterio de FR-386. Las apariciones que la búsqueda de conjuntos literales encuentra en marcadores de f-string (`{x}` dentro de una cadena con prefijo `f`) se descartan con el criterio «marcador de f-string no cuenta», que se escribe en el anexo junto con cuántas líneas descartó. (FR-385, FR-386)
 - [ ] T039 [US5] Para los usos 9 y 10 de research D5 (`adaptadores/extension.py:20` y `Logica/EstadoJuegoLogica.py:884, 900, 1248`), decidir si se justifican tal cual o se pasan a tuplas. Si se pasan a tuplas, cambiar solo esas líneas y repetir T030. Anotar la decisión. (FR-386, FR-387)
 
 ### Historias 3, 4 y 5 — Documento de Decisiones
@@ -235,13 +266,14 @@
 
   (FR-385, FR-386, FR-388)
 - [ ] T041 [US3] En `DECISIONES.md` §012, una tabla «Decisión | ¿Coincide con el plan? | Medición o motivo» con:
-  - D1 (vecindad);
+  - D1 (vecindad), con el motivo por el que no se reutiliza `ColaCircular` (research D1): guardaría una copia de lo que ya está en la lista de salas alcanzadas y, como solo guarda enteros, haría falta una segunda cola o codificar sala y nivel en un entero con una cota de salas;
   - D2 (caché, con el resultado de T034);
+  - la capacidad de la caché (sección 6, aciertos y fallos por capacidad);
   - la precarga (solo sus filas; la regla no cambia por FR-324);
   - el catálogo en disco (filas 17 a 22);
   - el formato binario de partida.
 
-  Cada fila cita al menos una fila del después y dice si la decisión se mantiene o cambia. (FR-380, FR-388)
+  Cada fila cita al menos una fila del después y dice si la decisión se mantiene o cambia. (FR-375, FR-380, FR-388)
 - [ ] T042 [US3] [US4] En `DECISIONES.md` §012, las tablas de antes y después de los dos bloques (copiadas de `mediciones.md`), el resultado de la medición manual (T036) y una subsección «Hallazgos y límites» con:
   - el orden N, S, E, O y la corrección de la spec (H1);
   - el crecimiento logarítmico de los bytes leídos (H2);
@@ -267,7 +299,7 @@
   - confirmar que ninguna tarea tocó `DTO/SalaDTO.py`, `DTO/EstadoGuardadoDTO.py`, `Logica/EstadoGuardadoLogica.py`, `adaptadores/AlmacenPartidaBinario.py` ni `codec_partida` (`git diff --stat 0b031ec --` sobre esos archivos no muestra nada).
 
   Depende de T044. (FR-377, FR-383, FR-384, FR-387)
-- [ ] T046 En `specs/012-revision-parte-i/spec.md`, cambiar `**Estado**: Borrador` por `**Estado**: Implementada (T001 a T046)`. Depende de T045. (FR-370 a FR-388, cierre)
+- [ ] T046 En `specs/012-revision-parte-i/spec.md`, cambiar `**Estado**: Borrador` por `**Estado**: Implementada (T001 a T047)`. Depende de T045. (FR-370 a FR-388, cierre)
 
 ---
 
@@ -279,21 +311,22 @@ T001 → T002 → T003 → T004                       (M0: antes de cualquier ca
   └─► T010 ─► T011, T012 ─────────────► T014     (caché contra 0b031ec)
 T013, T014 ─► T015 ─► T016 ─► T017 ─► T018 ─► T019 ┐
               T020 ─► T021 ─────────────────────────┴► T022 ─► T023   (M1)
-T023 ─► T024 ─► T025 ─► T026                     (D1)
+T023 ─► T047 ─► T024 ─► T025 ─► T026            (D1; T047 se ejecuta antes de cambiar el código)
 T023 ─► T027 ─► T028 ─► T029 ─► T030             (D2; puede ir en paralelo con D1, otro archivo)
+T025 ─► T030                                     (T030 espera también a D1)
 T026, T030 ─► T031 ─► T032 ─► T033 ─► T034 (condicional) ─► T035 ─► T036
 T036 ─► T037 ─► T038 ─► T039 ─► T040 ─► T041 ─► T042 ─► T043
 T043, T044 ─► T045 ─► T046
 ```
 
-- **Por historia**: US1 (T005–T008, T013, T024, T025) y US2 (T009, T024, T026) dependen de M0 y de M1. US5 (T010–T012, T014, T027–T030, T034, T037–T040) depende de M0 y de M1 para D2. US3 y US4 (T015–T023, T031–T036, T041–T043) dependen de que D1 y D2 estén hechos para M2.
+- **Por historia**: US1 (T005–T008, T013, T024, T025) y US2 (T009, T047, T024, T026) dependen de M0 y de M1. US5 (T010–T012, T014, T027–T030, T034, T037–T040) depende de M0 y de M1 para D2. US3 y US4 (T015–T023, T031–T036, T041–T043) dependen de que D1 y D2 estén hechos para M2.
 - **Bloqueo duro**: ninguna tarea de las fases 4 y 5 puede empezar antes de T022 (M1), porque M1 tiene que medir el código de producción sin tocar.
 
 ## Oportunidades de paralelismo
 
 - **Fase 2**: T005 (`test_vecindad_equivalencia.py`) y T010 (`test_cache_equivalencia.py`) son archivos distintos.
 - **Fase 3**: T020 y T021 (`bench/guardado.py`) en paralelo con T015 a T019 (`adaptadores/bench_red_mejorado.py`).
-- **Fases 4 y 5**: D1 (T024 a T026, `servicioCripta.py`) y D2 (T027 y T028, `cache.py`) tocan archivos distintos. T029 espera a T027, y T030 a ambas.
+- **Fases 4 y 5**: D1 (T047 y T024 a T026, `test_vecindad_equivalencia.py` y `servicioCripta.py`) y D2 (T027 y T028, `cache.py`) tocan archivos distintos. T029 espera a T027, y T030 a ambas.
 - **Fase 7 y 8**: T043 (`DOCUMENTACION_DECISIONES_DISENO.md`) y T044 (`tests_labs/sin_red.py`).
 
 ```text
@@ -309,15 +342,15 @@ T015..T019 [US3] adaptadores/bench_red_mejorado.py   |   T020..T021 [US4] bench/
 - **Incremento 2**: fase 5 (D2, US5 código).
 - **Incremento 3**: fase 6 (M2 y límites, US3 y US4).
 - **Incremento 4**: fases 7 y 8 (inventario y documentación, cierre).
-- Cada incremento deja la suite completa en verde.
+- Cada incremento deja la suite completa en verde, salvo T009 y T012, que fallan a propósito hasta que se hacen D1 y D2.
 
 ## Criterios de prueba independientes por historia
 
 | Historia | Cómo se prueba sola |
 |---|---|
 | US1 | `python -m unittest test_vecindad_equivalencia`: equivalencia con la referencia en salas, orden, errores, búsquedas y descargas |
-| US2 | T009 pasa (código fuente del método sin nada de la lista) + sección 5 del bloque `cache` |
-| US3 | `mediciones.md` con M0, M1, M2 y M2b, cada fila con causa y límite; `DECISIONES.md` §012 con un veredicto por decisión |
+| US2 | T009 pasa (código fuente del método sin nada de la lista) + T047 (búsquedas proporcionales a las salas alcanzadas) + sección 5 del bloque `cache` |
+| US3 | `mediciones.md` con M0, M1 y M2 (tres ejecuciones cada una, mediana en las filas de tiempo), cada fila con causa y límite; `DECISIONES.md` §012 con un veredicto por decisión |
 | US4 | Filas de bytes y entradas leídas del bloque `guardado` y medición manual |
 | US5 | `python -m unittest test_cache_equivalencia` + búsqueda del inventario sin apariciones fuera de la tabla |
 
@@ -330,18 +363,18 @@ T015..T019 [US3] adaptadores/bench_red_mejorado.py   |   T020..T021 [US4] bench/
 | FR-372 | T006, T013, T024, T025 |
 | FR-373 | T008, T013, T024, T025 |
 | FR-374 | T005, T006, T007, T013, T024, T025 |
-| FR-375 | T009, T024, T025, T037 |
-| FR-376 | T024, T026 |
+| FR-375 | T009, T024, T025, T037, T041 |
+| FR-376 | T024, T025, T026, T047 |
 | FR-377 | T001, T002, T004, T022, T023, T031, T042, T045 |
-| FR-378 | T015, T016, T017, T018, T020, T022, T031 |
+| FR-378 | T015, T016, T017, T018, T019, T020, T022, T031 |
 | FR-379 | T004, T018, T022, T029, T032, T033 |
 | FR-380 | T041 |
 | FR-381 | T002, T020, T021 |
 | FR-382 | T021, T023, T035, T036, T042 |
-| FR-383 | T019, T026, T033, T034, T045 |
-| FR-384 | T033, T035, T045 |
+| FR-383 | T002, T022, T026, T031, T033, T034, T045 |
+| FR-384 | T002, T022, T023, T031, T033, T035, T045 |
 | FR-385 | T037, T038, T040 |
-| FR-386 | T010, T011, T012, T014, T019, T027, T028, T034, T038, T039, T040 |
+| FR-386 | T010, T011, T012, T014, T027, T028, T034, T038, T039, T040 |
 | FR-387 | T003, T010, T011, T014, T027, T028, T030, T032, T034, T039, T044, T045 |
 | FR-388 | T040, T041, T042, T043 |
 

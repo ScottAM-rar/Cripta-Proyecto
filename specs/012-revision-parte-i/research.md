@@ -96,21 +96,22 @@ Las cuentas de búsquedas del escenario 12 (1, 2 y 6 en la rejilla desde la sala
 
 ## D3 · Mediciones: antes, carga nueva y después (FR-377 a FR-384)
 
-**Tres ejecuciones**, para poder atribuir cada diferencia (FR-378 pide decir si viene del código o de la carga):
+**Tres pasos**, para poder atribuir cada diferencia (FR-378 pide decir si viene del código o de la carga). Cada paso son tres ejecuciones de cada bloque, y el valor de cada fila de tiempo es la mediana de las tres (FR-383, FR-384):
 
 | Id | Código de producción | Código de medición | Para qué |
 |---|---|---|---|
 | **M0** | `0b031ec`, sin tocar | `0b031ec`, sin tocar | **Primer paso del plan, antes de cualquier cambio.** Es el «antes» oficial de cada fila (FR-377) |
 | **M1** | `0b031ec`, sin tocar | con la carga nueva y las filas nuevas de guardado | separa el efecto de la carga del efecto del código. Da el antes de las filas que no existen en M0 |
-| **M2** | revisado (D1 y D2) | el mismo que M1 | el «después» oficial (FR-378). Se ejecuta dos veces para comprobar que las filas de cuenta salen idénticas (FR-379) |
+| **M2** | revisado (D1 y D2) | el mismo que M1 | el «después» oficial (FR-378). Sus tres ejecuciones comprueban además que las filas de cuenta salen idénticas (FR-379) |
 
 **Atribución de la causa** en cada fila: M0 → M1 es la carga; M1 → M2 es el código. Las filas de tiempo llevan además «depende de la máquina». La tabla de `mediciones.md` y de `DECISIONES.md` muestra M0 (antes) y M2 (después). M1 aparece como columna auxiliar.
 
-**Comandos** (los mismos en M0, M1 y M2; solo cambia el nombre del CSV):
+**Comandos** (los mismos en M0, M1 y M2, tres veces cada uno; solo cambia el nombre del CSV):
 
 ```
-python main.py --bench cache    --bench-csv specs/012-revision-parte-i/bench-cache-M0.csv
-python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M0.csv
+python main.py --bench cache    --bench-csv specs/012-revision-parte-i/bench-cache-M0-1.csv
+python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M0-1.csv
+# se repiten con -2 y -3
 ```
 
 La salida de la consola se copia en `mediciones.md` con el comando, la fecha y el commit (`git rev-parse --short HEAD`, más «árbol con cambios» si los hay).
@@ -143,8 +144,8 @@ La salida de la consola se copia en `mediciones.md` con el comando, la fecha y e
 
 | Tipo | Filas | Regla |
 |---|---|---|
-| **Cuenta** (deben ser idénticas entre dos ejecuciones con la misma semilla) | `cache` 1 (solicitudes), `cache` 6 (aciertos, fallos y solicitudes), `guardado` tamaño en bytes (binario y JSON), `guardado` bytes leídos, filas de verificación | M2 = M2' (segunda ejecución). Cambiar el código no las mueve: M1 = M2 (FR-387) |
-| **Tiempo** (dependen de la máquina) | `cache` 2, 3, 4 y 5; `guardado` guardar, cargar y leer una sala (binario y JSON) | después ≤ 2 × antes en red (FR-383) y en guardado (FR-384). Si una fila pasa el límite, se repite la medición 3 veces y vale la mediana; si sigue pasando, cuenta como regresión |
+| **Cuenta** (deben ser idénticas entre dos ejecuciones con la misma semilla) | `cache` 1 (solicitudes), `cache` 6 (aciertos, fallos y solicitudes), `guardado` tamaño en bytes (binario y JSON), `guardado` bytes leídos, filas de verificación | iguales en las tres ejecuciones de cada paso. Cambiar el código no las mueve: M1 = M2 (FR-387) |
+| **Tiempo** (dependen de la máquina) | `cache` 2, 3, 4 y 5; `guardado` guardar, cargar y leer una sala (binario y JSON) | el valor de cada fila es la mediana de tres ejecuciones (FR-383, FR-384). Después ≤ 2 × antes en red (FR-383) y en guardado (FR-384); si la mediana pasa el límite, cuenta como regresión |
 
 **Límites**: FR-383 se compara contra M0 (antes oficial). Para las filas nuevas, contra M1. FR-384 vale para guardar, cargar y leer una sala del binario, en los tres tamaños.
 
@@ -165,17 +166,18 @@ La salida de la consola se copia en `mediciones.md` con el comando, la fecha y e
   - 0 descargas después de la primera (FR-374);
   - con profundidad negativa, `ValueError` sin búsquedas; con sala inexistente, `ValueError` (FR-373).
 - Valores literales de los escenarios de la spec (FR-371), una vez corregidos según H1.
+- Proporcionalidad (FR-376, Historia 2, escenario 2): con profundidad 5, las búsquedas son 1 más las salas expandidas, y no cambian al rodear la misma vecindad con una cripta de 1 000 salas.
 - Búsqueda de importaciones prohibidas en el código de `salas_vecinas` (FR-375): se lee el código fuente del método con `inspect.getsource` y se buscan los nombres prohibidos.
-- **Antes de cambiar el código, la prueba se ejecuta contra `0b031ec` y debe pasar.** Así se demuestra que la referencia reproduce lo vigente.
+- **Antes de cambiar el código, la prueba se ejecuta contra `0b031ec` y debe pasar**, salvo la búsqueda de nombres prohibidos (T009), que falla a propósito hasta D1. Así se demuestra que la referencia reproduce lo vigente.
 
 **b) `test_cache_equivalencia.py`**:
 - **Referencia escrita en la prueba**: una LRU de listas, con la misma semántica (en uso, rechazo si todo está en uso, orden).
 - **Secuencias aleatorias con semilla fija**: 20 semillas × 2 000 operaciones (`obtener`, `insertar`, `marcar_en_uso`, `marcar_libre`, `establecer_en_uso`, `en_uso`) sobre capacidades 1, 2, 5 y 25.
 - **Después de cada operación** se comparan los valores devueltos, `claves()`, `len`, `aciertos` y `fallos`. Cuando se expulsa, también qué clave se fue (FR-386, FR-387).
 - **Casos dirigidos**: todo en uso (devuelve `False` y no supera la capacidad), reinserción de una clave existente y expulsión de la menos reciente que esté libre.
-- También pasa contra `0b031ec` antes del cambio.
+- También pasa contra `0b031ec` antes del cambio, salvo la búsqueda de importaciones prohibidas en `cache.py` (T012), que falla a propósito hasta D2.
 
-**c) Pruebas existentes**: se ejecuta la suite completa (`python -m unittest discover -p "test_*.py"`) en M0 y en M2, y debe quedar con el mismo resultado (FR-387).
+**c) Pruebas existentes**: se ejecuta la suite completa (`python -m unittest discover -p "test_*.py"`) en M0 y en M2. En M2 debe dar los totales de M0 más las pruebas de los dos archivos nuevos, con 0 fallos y 0 errores (FR-387).
 
 Cada clase o caso de prueba cita su FR-3xx en la descripción.
 
