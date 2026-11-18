@@ -27,9 +27,15 @@ Hoy la planeación de la vecindad (qué salas rodean a una sala hasta cierta pro
 - P: ¿En qué documento van los veredictos, las tablas de antes y después y las justificaciones del inventario? → R: El detalle va en una sección «012» de `DECISIONES.md`. Además, cada decisión revisada en `DOCUMENTACION_DECISIONES_DISENO.md` lleva una nota breve con su veredicto y un enlace a esa sección (FR-380, FR-386, FR-388).
 - P: ¿Con qué cripta se genera la partida de formato 8 para medir la lectura de una sala individual? → R: Con una cripta sintética determinista por semilla, del tamaño de la cripta de referencia (§6.1), dentro del bloque de guardado. Además, se hace una medición manual documentada con la cripta publicada más grande que esté descargada, que no entra al bloque (FR-382).
 
+### Corrección 2026-11-17 (originada en el plan, principio X)
+
+- H1: el orden vigente de las salidas es N, S, E, O, no N, E, S, O. Se corrigieron FR-371, la convención de las criptas, los escenarios 4, 5, 6 y 8 de la Historia 1 y el supuesto de la versión vigente. Los valores nuevos se verificaron ejecutando la planeación de la vecindad del código de `0b031ec`. Los escenarios 2, 3, 7 y 12 no cambian.
+- H2: la lectura de una sala hace búsqueda binaria en la tabla de entradas, así que los bytes leídos crecen con el logaritmo del número de salas. Se corrigieron el escenario 1 de la Historia 4, FR-382 y SC-006: se exigen menos bytes que el archivo completo y un crecimiento no mayor que logarítmico.
+- H3: la versión vigente pasa a ser el código del commit `0b031ec` (el código de producción es idéntico al de `1f009a1`).
+
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
-Convenciones de las criptas de los escenarios (las salidas se recorren en el orden N, E, S, O):
+Convenciones de las criptas de los escenarios (las salidas se recorren en el orden N, S, E, O):
 
 - **Lineal**: salas 1 a 6 en fila; cada sala tiene salida E a la siguiente y O a la anterior.
 - **Rejilla**: 3 × 3, salas 1 a 9 por filas (1 2 3 / 4 5 6 / 7 8 9); N sube una fila, S baja, E y O se mueven en la fila.
@@ -49,11 +55,11 @@ El juego pregunta qué salas rodean a la sala del jugador hasta cierta profundid
 1. **Dado** cualquiera de las cuatro criptas y una sala que existe, **cuando** se pide su vecindad con profundidad 0, **entonces** la respuesta es vacía y solo se lee el esqueleto para comprobar que la sala existe. *(FR-370, FR-372, FR-374)*
 2. **Dado** la cripta lineal, **cuando** se pide la vecindad de la sala 3, **entonces** con profundidad 1 es [4, 2]; con 2, [4, 2, 5, 1]; con 5, [4, 2, 5, 1, 6]. *(FR-370, FR-371)*
 3. **Dado** la cripta lineal, **cuando** se pide la vecindad de la sala 1 con profundidad 5, **entonces** es [2, 3, 4, 5, 6] y no incluye la sala 1. *(FR-370, FR-371)*
-4. **Dado** la rejilla, **cuando** se pide la vecindad de la sala 5, **entonces** con profundidad 1 es [2, 6, 8, 4]; con 2 y con 5, [2, 6, 8, 4, 3, 1, 9, 7]. *(FR-370, FR-371)*
-5. **Dado** la rejilla, **cuando** se pide la vecindad de la sala 1 con profundidad 2, **entonces** es [2, 4, 3, 5, 7], sin la sala 1 aunque varias salidas vuelvan a ella. *(FR-370, FR-371)*
-6. **Dado** el árbol, **cuando** se pide la vecindad de la sala 1, **entonces** con profundidad 1 es [3, 2]; con 2 y con 5, [3, 2, 6, 4, 5]. *(FR-370, FR-371)*
+4. **Dado** la rejilla, **cuando** se pide la vecindad de la sala 5, **entonces** con profundidad 1 es [2, 8, 6, 4]; con 2 y con 5, [2, 8, 6, 4, 3, 1, 9, 7]. *(FR-370, FR-371)*
+5. **Dado** la rejilla, **cuando** se pide la vecindad de la sala 1 con profundidad 2, **entonces** es [4, 2, 7, 5, 3], sin la sala 1 aunque varias salidas vuelvan a ella. *(FR-370, FR-371)*
+6. **Dado** el árbol, **cuando** se pide la vecindad de la sala 1, **entonces** con profundidad 1 es [2, 3]; con 2 y con 5, [2, 3, 4, 5, 6]. *(FR-370, FR-371)*
 7. **Dado** el árbol, **cuando** se pide la vecindad de la sala 4 con profundidad 5, **entonces** es [2, 1, 5, 3, 6]. *(FR-370, FR-371)*
-8. **Dado** la cripta con ciclos, **cuando** se pide la vecindad de la sala 1, **entonces** con profundidad 1 es [2, 3]; con 2 y con 5, [2, 3, 4], sin repetir la sala 4 aunque se llegue a ella por dos caminos. *(FR-370, FR-371)*
+8. **Dado** la cripta con ciclos, **cuando** se pide la vecindad de la sala 1, **entonces** con profundidad 1 es [3, 2]; con 2 y con 5, [3, 2, 4], sin repetir la sala 4 aunque se llegue a ella por dos caminos. *(FR-370, FR-371)*
 9. **Dado** una sala con una salida cuya puerta está cerrada, **cuando** se pide su vecindad con profundidad 1, **entonces** la sala detrás de la puerta aparece igual que hoy. *(FR-370)*
 10. **Dado** cualquier cripta, **cuando** se pide una vecindad con profundidad negativa, **entonces** se rechaza con el mismo error que hoy y no se lee el esqueleto. *(FR-373)*
 11. **Dado** una sala que no existe en la cripta, **cuando** se pide su vecindad con profundidad 0, 1, 2 o 5, **entonces** se rechaza con el mismo error que hoy. *(FR-373)*
@@ -110,7 +116,7 @@ Al consultar una sala individual de una partida guardada, el juego sigue leyendo
 
 **Escenarios de aceptación**:
 
-1. **Dado** una partida de formato 8 guardada a partir de la cripta sintética del tamaño de la cripta de referencia, **cuando** se lee una sala individual, **entonces** los bytes leídos son menos que el tamaño del archivo y no dependen de cuántas salas tiene la partida. *(FR-382)*
+1. **Dado** una partida de formato 8 guardada a partir de la cripta sintética del tamaño de la cripta de referencia, **cuando** se lee una sala individual, **entonces** los bytes leídos son menos que el tamaño del archivo y, al comparar las partidas de 10, 100 y 1 000 salas, no crecen más que logarítmicamente con el número de salas. *(FR-382)*
 2. **Dado** la misma partida, **cuando** se mide la lectura de una sala y la carga completa, **entonces** ambas filas quedan con su antes y después, y la lectura de una sala es más rápida que la carga completa. *(FR-377, FR-382)*
 3. **Dado** una partida de formato 8 con 10, 100 y 1 000 salas, **cuando** se lee la primera, una del medio y la última, **entonces** el tiempo de lectura no crece con la cantidad de salas más allá de la variación de la máquina. *(FR-382)*
 4. **Dado** la cripta publicada más grande descargada, **cuando** se guarda una partida de formato 8 sin gastar solicitudes y se lee una sala, **entonces** los bytes leídos son menos que el tamaño del archivo y el resultado queda en la sección «012» de `DECISIONES.md`. *(FR-382, FR-388)*
@@ -152,7 +158,7 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 **Planeación de la vecindad**
 
 - **FR-370**: La planeación de la vecindad DEBE devolver, para toda cripta, sala existente y profundidad no negativa, exactamente las mismas salas que la versión vigente antes de esta capacidad: las que se alcanzan desde la sala por sus salidas (con la puerta abierta o cerrada) en a lo sumo esa cantidad de pasos.
-- **FR-371**: La respuesta DEBE conservar el orden de descubrimiento vigente: por niveles de distancia y, dentro de cada sala, por salidas en el orden N, E, S, O. No DEBE repetir salas ni incluir la sala de partida.
+- **FR-371**: La respuesta DEBE conservar el orden de descubrimiento vigente: por niveles de distancia y, dentro de cada sala, por salidas en el orden N, S, E, O. No DEBE repetir salas ni incluir la sala de partida.
 - **FR-372**: Con profundidad 0, la respuesta DEBE ser vacía para toda sala existente.
 - **FR-373**: Una profundidad negativa y una sala inexistente DEBEN rechazarse con los mismos errores y en el mismo orden de comprobación que hoy (primero la profundidad, después la existencia de la sala).
 - **FR-374**: Las lecturas del esqueleto de la cripta por consulta DEBEN ser iguales a las de la versión vigente para cada cripta, sala y profundidad de los escenarios. Se cuentan dos cosas, ambas con espías y comparadas con la versión vigente:
@@ -171,7 +177,7 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 
 **Lectura de una sala individual**
 
-- **FR-382**: Leer una sala individual de una partida guardada NO DEBE leer el archivo completo. DEBEN medirse los bytes leídos y el tiempo, frente al tamaño del archivo y al tiempo de la carga completa, en dos mediciones:
+- **FR-382**: Leer una sala individual de una partida guardada NO DEBE leer el archivo completo, y los bytes leídos NO DEBEN crecer más que logarítmicamente con el número de salas. DEBEN medirse los bytes leídos y el tiempo, frente al tamaño del archivo y al tiempo de la carga completa, en dos mediciones:
   - **En el bloque de guardado**, con una partida de formato 8 generada a partir de una cripta sintética determinista por semilla, del tamaño de la cripta de referencia (§6.1). Esta medición se repite igual en cualquier máquina y sin red.
   - **A mano**, con una partida de formato 8 de la cripta publicada más grande que esté descargada, sin gastar solicitudes. Su resultado se documenta en la sección «012» de `DECISIONES.md` y no entra al bloque. Si no hay ninguna cripta publicada completa descargada, se registra así y no se descarga ninguna.
 
@@ -208,12 +214,12 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 - **SC-003**: El 100 % de las filas de los bloques de red/caché y guardado tienen su antes, su después, la diferencia y la causa (o la marca «sin antes comparable» con su motivo).
 - **SC-004**: Ninguna fila de red del después supera el doble de su antes.
 - **SC-005**: Guardar y cargar una partida de formato 8 con 10, 100 y 1 000 salas no superan el doble de su antes en ninguna fila (FR-384).
-- **SC-006**: Con la partida de formato 8 de la cripta sintética del tamaño de la cripta de referencia, y también con la de la cripta publicada más grande descargada, leer una sala individual lee menos bytes que el archivo completo y tarda menos que cargar la partida entera.
+- **SC-006**: Con la partida de formato 8 de la cripta sintética del tamaño de la cripta de referencia, y también con la de la cripta publicada más grande descargada, leer una sala individual lee menos bytes que el archivo completo (sin crecer más que logarítmicamente con el número de salas) y tarda menos que cargar la partida entera.
 - **SC-007**: Cada decisión de la Parte I sobre red, caché y guardado tiene su veredicto en la sección «012» de `DECISIONES.md`, respaldado por al menos una fila del después, y una nota con enlace en `DOCUMENTACION_DECISIONES_DISENO.md` (FR-388).
 
 ## Supuestos
 
-- «Versión vigente» es el código de producción en el commit `1f009a1` (la punta de la rama al aclarar esta especificación, antes de cualquier cambio de la 012). Las mediciones del «antes» se toman con ese código. Su respuesta a la planeación de la vecindad es la referencia de equivalencia, y las salidas de los escenarios se calcularon con esa regla (por niveles, N, E, S, O).
+- «Versión vigente» es el código de producción en el commit `0b031ec`, antes de cualquier cambio de la 012. Su código de producción es idéntico al de `1f009a1`: entre los dos solo cambiaron documentos de la spec. Las mediciones del «antes» se toman con ese código. Su respuesta a la planeación de la vecindad es la referencia de equivalencia. Las salidas de los escenarios se calcularon con esa regla (por niveles, N, S, E, O) y se verificaron ejecutando la planeación de la vecindad de ese código sobre las criptas de los escenarios.
 - Los bloques de medición son los que ya existen: «red/caché» es el que se ejecuta como `--bench cache` (precarga, búsqueda en la caché, disco, catálogo, vecindad, aciertos por capacidad) y «guardado» es `--bench guardado`. Se repiten tal cual y se agrega solo lo que pide la carga nueva.
 - El antes de la caché puede tomarse de nuevo y no copiarse de la 009, porque la 009 midió con un cliente que no pide llaves. Las cifras de la 009 se citan como referencia, no como antes.
 - «Código de producción» es todo lo que ejecuta el juego, sin contar las pruebas, el código de medición ni los scripts de descarga auxiliares.
