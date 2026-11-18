@@ -700,17 +700,432 @@ Resultados guardados en specs/012-revision-parte-i/bench-guardado-M1-3.csv
 
 ## M2 · el después
 
-Pendiente (T031): tres ejecuciones de cada bloque con `bench-cache-M2-{1,2,3}.csv` y `bench-guardado-M2-{1,2,3}.csv`.
+- **Commit**: `70c9854` (`git rev-parse --short HEAD`). Árbol sin cambios en `adaptadores/` ni en `bench/`; solo
+  archivos ajenos a la capacidad (`bench_final.txt`, `descargar_cripta.py` y los fines de línea de `specs/003`).
+  Código revisado: D1 (`salas_vecinas` sobre su propia lista) y D2 (`CacheLRU` sobre una lista propia), con el
+  código de medición de M1.
+- **Ejecución**: en primer plano, una tras otra, con `PYTHONIOENCODING=utf-8`. Las seis ejecuciones terminaron con
+  código 0 al primer intento.
+
+### M2-1 · `cache`
+
+- Fecha y hora: 2026-11-18 07:13:53 -0600
+- Comando: `PYTHONIOENCODING=utf-8 python main.py --bench cache --bench-csv specs/012-revision-parte-i/bench-cache-M2-1.csv`
+- Código de salida: 0
+
+```
+CRIPTA --bench · Python 3.12.10 · Windows AMD64 · 2026-11-18 07:13 · semilla 2026
+... midiendo cache
+
+Red, caché y disco (§4.2–§4.4, §5.1): 1. Solicitudes al recorrer un pasillo de 60 salas
+  sala por sala (sin precarga)                                       64  solicitudes (~25.6 s de espera); de ellas, 45 disparadas por un cazador
+  actual + vecinas en cada paso (prof. 2)                            62  solicitudes (~24.8 s de espera); de ellas, 44 disparadas por un cazador
+  perezosa, prof. 2                                                  56  solicitudes (~22.4 s de espera); de ellas, 44 disparadas por un cazador
+  perezosa, por defecto (lote de 10)                                 46  solicitudes (~18.4 s de espera); de ellas, 39 disparadas por un cazador
+
+Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)
+  lista propia lineal, 25 fichas, acierto                            0.7  µs
+  lista propia lineal, 25 fichas, fallo                              0.6  µs
+  tabla hash propia, 25 fichas, acierto (descartada)                 0.2  µs
+  lista propia lineal, 100 fichas, acierto                           1.98  µs
+  lista propia lineal, 100 fichas, fallo                             1.91  µs
+  tabla hash propia, 100 fichas, acierto (descartada)                0.22  µs
+  lista propia lineal, 1000 fichas, acierto                          18.46  µs
+  lista propia lineal, 1000 fichas, fallo                            18.29  µs
+  tabla hash propia, 1000 fichas, acierto (descartada)               0.24  µs
+  lista propia lineal, 5000 fichas, acierto                          104.45  µs
+  lista propia lineal, 5000 fichas, fallo                            95.16  µs
+  tabla hash propia, 5000 fichas, acierto (descartada)               0.31  µs
+
+Red, caché y disco (§4.2–§4.4, §5.1): 3. Recuperar una ficha liberada desde disco
+  catálogo con 25 fichas                                             0.071  ms por lectura (una solicitud real: ~400 ms)
+  catálogo con 200 fichas                                            0.178  ms por lectura (una solicitud real: ~400 ms)
+  catálogo con 1000 fichas                                           0.456  ms por lectura (una solicitud real: ~400 ms)
+
+Red, caché y disco (§4.2–§4.4, §5.1): 4. Guardar 10 fichas nuevas (reescribe el archivo completo)
+  catálogo con 25 fichas                                             3.319  ms
+  catálogo con 200 fichas                                            9.793  ms
+  catálogo con 1000 fichas                                           11.038  ms
+
+Red, caché y disco (§4.2–§4.4, §5.1): 5. Planear la vecindad en una cripta de 1000 salas
+  salas_vecinas, 1 paso                                              17.6  µs
+  salas_vecinas, 2 pasos                                             44.2  µs
+  precargar_vecinas cuando no hace falta nada                        27.4  µs
+
+Red, caché y disco (§4.2–§4.4, §5.1): 6. Caché en una partida completa (150 pasos por una rejilla de 10x10)
+  capacidad    5                                                     83 aciertos / 1100 fallos (7.0 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad   10                                                     327 aciertos / 856 fallos (27.6 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad   25                                                     553 aciertos / 630 fallos (46.7 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad  100                                                     1112 aciertos / 71 fallos (94.0 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad 1000                                                     1112 aciertos / 71 fallos (94.0 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+
+Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)
+  lista enlazada propia, 25 fichas, acierto (descartada)             0.72  µs
+  lista enlazada propia, 100 fichas, acierto (descartada)            2.17  µs
+  lista enlazada propia, 1000 fichas, acierto (descartada)           18.94  µs
+  lista enlazada propia, 5000 fichas, acierto (descartada)           108.04  µs
+
+Resultados guardados en specs/012-revision-parte-i/bench-cache-M2-1.csv
+```
+
+### M2-2 · `cache`
+
+- Fecha y hora: 2026-11-18 07:14:01 -0600
+- Comando: `PYTHONIOENCODING=utf-8 python main.py --bench cache --bench-csv specs/012-revision-parte-i/bench-cache-M2-2.csv`
+- Código de salida: 0
+
+```
+CRIPTA --bench · Python 3.12.10 · Windows AMD64 · 2026-11-18 07:14 · semilla 2026
+... midiendo cache
+
+Red, caché y disco (§4.2–§4.4, §5.1): 1. Solicitudes al recorrer un pasillo de 60 salas
+  sala por sala (sin precarga)                                       64  solicitudes (~25.6 s de espera); de ellas, 45 disparadas por un cazador
+  actual + vecinas en cada paso (prof. 2)                            62  solicitudes (~24.8 s de espera); de ellas, 44 disparadas por un cazador
+  perezosa, prof. 2                                                  56  solicitudes (~22.4 s de espera); de ellas, 44 disparadas por un cazador
+  perezosa, por defecto (lote de 10)                                 46  solicitudes (~18.4 s de espera); de ellas, 39 disparadas por un cazador
+
+Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)
+  lista propia lineal, 25 fichas, acierto                            0.85  µs
+  lista propia lineal, 25 fichas, fallo                              0.66  µs
+  tabla hash propia, 25 fichas, acierto (descartada)                 0.24  µs
+  lista propia lineal, 100 fichas, acierto                           2.25  µs
+  lista propia lineal, 100 fichas, fallo                             2.18  µs
+  tabla hash propia, 100 fichas, acierto (descartada)                0.23  µs
+  lista propia lineal, 1000 fichas, acierto                          20.26  µs
+  lista propia lineal, 1000 fichas, fallo                            20.16  µs
+  tabla hash propia, 1000 fichas, acierto (descartada)               0.28  µs
+  lista propia lineal, 5000 fichas, acierto                          116.68  µs
+  lista propia lineal, 5000 fichas, fallo                            101.23  µs
+  tabla hash propia, 5000 fichas, acierto (descartada)               0.3  µs
+
+Red, caché y disco (§4.2–§4.4, §5.1): 3. Recuperar una ficha liberada desde disco
+  catálogo con 25 fichas                                             0.071  ms por lectura (una solicitud real: ~400 ms)
+  catálogo con 200 fichas                                            0.277  ms por lectura (una solicitud real: ~400 ms)
+  catálogo con 1000 fichas                                           0.437  ms por lectura (una solicitud real: ~400 ms)
+
+Red, caché y disco (§4.2–§4.4, §5.1): 4. Guardar 10 fichas nuevas (reescribe el archivo completo)
+  catálogo con 25 fichas                                             2.087  ms
+  catálogo con 200 fichas                                            9.975  ms
+  catálogo con 1000 fichas                                           10.758  ms
+
+Red, caché y disco (§4.2–§4.4, §5.1): 5. Planear la vecindad en una cripta de 1000 salas
+  salas_vecinas, 1 paso                                              20.0  µs
+  salas_vecinas, 2 pasos                                             54.5  µs
+  precargar_vecinas cuando no hace falta nada                        31.8  µs
+
+Red, caché y disco (§4.2–§4.4, §5.1): 6. Caché en una partida completa (150 pasos por una rejilla de 10x10)
+  capacidad    5                                                     83 aciertos / 1100 fallos (7.0 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad   10                                                     327 aciertos / 856 fallos (27.6 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad   25                                                     553 aciertos / 630 fallos (46.7 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad  100                                                     1112 aciertos / 71 fallos (94.0 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad 1000                                                     1112 aciertos / 71 fallos (94.0 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+
+Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)
+  lista enlazada propia, 25 fichas, acierto (descartada)             0.71  µs
+  lista enlazada propia, 100 fichas, acierto (descartada)            2.08  µs
+  lista enlazada propia, 1000 fichas, acierto (descartada)           20.98  µs
+  lista enlazada propia, 5000 fichas, acierto (descartada)           103.79  µs
+
+Resultados guardados en specs/012-revision-parte-i/bench-cache-M2-2.csv
+```
+
+### M2-3 · `cache`
+
+- Fecha y hora: 2026-11-18 07:14:08 -0600
+- Comando: `PYTHONIOENCODING=utf-8 python main.py --bench cache --bench-csv specs/012-revision-parte-i/bench-cache-M2-3.csv`
+- Código de salida: 0
+
+```
+CRIPTA --bench · Python 3.12.10 · Windows AMD64 · 2026-11-18 07:14 · semilla 2026
+... midiendo cache
+
+Red, caché y disco (§4.2–§4.4, §5.1): 1. Solicitudes al recorrer un pasillo de 60 salas
+  sala por sala (sin precarga)                                       64  solicitudes (~25.6 s de espera); de ellas, 45 disparadas por un cazador
+  actual + vecinas en cada paso (prof. 2)                            62  solicitudes (~24.8 s de espera); de ellas, 44 disparadas por un cazador
+  perezosa, prof. 2                                                  56  solicitudes (~22.4 s de espera); de ellas, 44 disparadas por un cazador
+  perezosa, por defecto (lote de 10)                                 46  solicitudes (~18.4 s de espera); de ellas, 39 disparadas por un cazador
+
+Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)
+  lista propia lineal, 25 fichas, acierto                            0.8  µs
+  lista propia lineal, 25 fichas, fallo                              0.57  µs
+  tabla hash propia, 25 fichas, acierto (descartada)                 0.19  µs
+  lista propia lineal, 100 fichas, acierto                           2.71  µs
+  lista propia lineal, 100 fichas, fallo                             2.14  µs
+  tabla hash propia, 100 fichas, acierto (descartada)                0.2  µs
+  lista propia lineal, 1000 fichas, acierto                          18.14  µs
+  lista propia lineal, 1000 fichas, fallo                            19.12  µs
+  tabla hash propia, 1000 fichas, acierto (descartada)               0.26  µs
+  lista propia lineal, 5000 fichas, acierto                          107.81  µs
+  lista propia lineal, 5000 fichas, fallo                            96.46  µs
+  tabla hash propia, 5000 fichas, acierto (descartada)               0.29  µs
+
+Red, caché y disco (§4.2–§4.4, §5.1): 3. Recuperar una ficha liberada desde disco
+  catálogo con 25 fichas                                             0.073  ms por lectura (una solicitud real: ~400 ms)
+  catálogo con 200 fichas                                            0.167  ms por lectura (una solicitud real: ~400 ms)
+  catálogo con 1000 fichas                                           0.436  ms por lectura (una solicitud real: ~400 ms)
+
+Red, caché y disco (§4.2–§4.4, §5.1): 4. Guardar 10 fichas nuevas (reescribe el archivo completo)
+  catálogo con 25 fichas                                             2.331  ms
+  catálogo con 200 fichas                                            9.941  ms
+  catálogo con 1000 fichas                                           10.459  ms
+
+Red, caché y disco (§4.2–§4.4, §5.1): 5. Planear la vecindad en una cripta de 1000 salas
+  salas_vecinas, 1 paso                                              18.6  µs
+  salas_vecinas, 2 pasos                                             46.6  µs
+  precargar_vecinas cuando no hace falta nada                        27.0  µs
+
+Red, caché y disco (§4.2–§4.4, §5.1): 6. Caché en una partida completa (150 pasos por una rejilla de 10x10)
+  capacidad    5                                                     83 aciertos / 1100 fallos (7.0 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad   10                                                     327 aciertos / 856 fallos (27.6 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad   25                                                     553 aciertos / 630 fallos (46.7 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad  100                                                     1112 aciertos / 71 fallos (94.0 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+  capacidad 1000                                                     1112 aciertos / 71 fallos (94.0 %)  64 solicitudes de red; de ellas, 45 disparadas por un cazador
+
+Red, caché y disco (§4.2–§4.4, §5.1): 2. Búsqueda en la caché (µs por operación)
+  lista enlazada propia, 25 fichas, acierto (descartada)             0.83  µs
+  lista enlazada propia, 100 fichas, acierto (descartada)            3.83  µs
+  lista enlazada propia, 1000 fichas, acierto (descartada)           23.61  µs
+  lista enlazada propia, 5000 fichas, acierto (descartada)           109.43  µs
+
+Resultados guardados en specs/012-revision-parte-i/bench-cache-M2-3.csv
+```
+
+### M2-1 · `guardado`
+
+- Fecha y hora: 2026-11-18 07:14:16 -0600
+- Comando: `PYTHONIOENCODING=utf-8 python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M2-1.csv`
+- Código de salida: 0
+
+```
+CRIPTA --bench · Python 3.12.10 · Windows AMD64 · 2026-11-18 07:14 · semilla 2026
+... midiendo guardado
+
+Guardado de la partida (§4.10): binario propio  vs  JSON
+  verificación: cargar el binario devuelve exactamente el estado guardado OK
+  verificación: un archivo de otra versión del formato se rechaza    OK
+     10 salas  tamaño en disco  [binario]                            12,414  bytes
+     10 salas  tamaño en disco  [JSON]                               28,363  bytes  (2.28× el binario)
+     10 salas  guardar la partida completa  [binario]                1.87 ms  (1.76 ms – 2.81 ms)  mediana (mín – máx)
+     10 salas  guardar la partida completa  [JSON]                   825.5 µs  (796.6 µs – 1.01 ms)  mediana (mín – máx)
+     10 salas  cargar la partida completa   [binario → DTO]          2.27 ms  (2.22 ms – 2.47 ms)  mediana (mín – máx)
+     10 salas  cargar la partida completa   [JSON, solo analiza el texto] 316.1 µs  (299.9 µs – 412.6 µs)  mediana (mín – máx)
+     10 salas  cargar UNA sala (la 6)    [binario, acceso directo]   73.5 µs  (71.3 µs – 90.9 µs)  mediana (mín – máx)
+     10 salas  conseguir UNA sala (la 6) [JSON: hay que leer todo]   279.5 µs  (270.6 µs – 300.3 µs)  mediana (mín – máx)
+    100 salas  tamaño en disco  [binario]                            46,646  bytes
+    100 salas  tamaño en disco  [JSON]                               133,318  bytes  (2.86× el binario)
+    100 salas  guardar la partida completa  [binario]                4.87 ms  (4.52 ms – 4.89 ms)  mediana (mín – máx)
+    100 salas  guardar la partida completa  [JSON]                   3.40 ms  (3.31 ms – 3.63 ms)  mediana (mín – máx)
+    100 salas  cargar la partida completa   [binario → DTO]          7.51 ms  (7.04 ms – 11.25 ms)  mediana (mín – máx)
+    100 salas  cargar la partida completa   [JSON, solo analiza el texto] 1.22 ms  (1.11 ms – 1.27 ms)  mediana (mín – máx)
+    100 salas  cargar UNA sala (la 51)    [binario, acceso directo]  78.7 µs  (73.3 µs – 98.9 µs)  mediana (mín – máx)
+    100 salas  conseguir UNA sala (la 51) [JSON: hay que leer todo]  1.13 ms  (1.11 ms – 1.19 ms)  mediana (mín – máx)
+   1000 salas  tamaño en disco  [binario]                            400,347  bytes
+   1000 salas  tamaño en disco  [JSON]                               1,199,809  bytes  (3.00× el binario)
+   1000 salas  guardar la partida completa  [binario]                37.19 ms  (36.07 ms – 40.16 ms)  mediana (mín – máx)
+   1000 salas  guardar la partida completa  [JSON]                   40.78 ms  (28.56 ms – 51.64 ms)  mediana (mín – máx)
+   1000 salas  cargar la partida completa   [binario → DTO]          59.97 ms  (58.60 ms – 65.44 ms)  mediana (mín – máx)
+   1000 salas  cargar la partida completa   [JSON, solo analiza el texto] 10.70 ms  (10.04 ms – 11.83 ms)  mediana (mín – máx)
+   1000 salas  cargar UNA sala (la 501)    [binario, acceso directo] 88.8 µs  (81.9 µs – 114.0 µs)  mediana (mín – máx)
+   1000 salas  conseguir UNA sala (la 501) [JSON: hay que leer todo] 10.13 ms  (9.63 ms – 13.68 ms)  mediana (mín – máx)
+  El binario ordena las salas en una tabla de entradas fijas y busca con búsqueda binaria; el JSON no puede saltar a una sala. 
+     10 salas  bytes leídos al cargar UNA sala (la primera, la 1)    239  bytes de 12,414 del archivo; 3 entradas de la tabla
+     10 salas  bytes leídos al cargar UNA sala (la del medio, la 6)  239  bytes de 12,414 del archivo; 3 entradas de la tabla
+     10 salas  bytes leídos al cargar UNA sala (la última, la 10)    262  bytes de 12,414 del archivo; 4 entradas de la tabla
+     10 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] 77.2 µs  (76.1 µs – 90.9 µs)  mediana (mín – máx)
+     10 salas  cargar UNA sala (la última, la 10)    [binario, acceso directo] 72.3 µs  (71.1 µs – 124.3 µs)  mediana (mín – máx)
+  verificación: 10 salas: leer UNA sala lee menos bytes que el archivo OK
+  verificación: 10 salas: entradas leídas (4) ≤ ⌊log₂ n⌋ + 1 = 4     OK
+    100 salas  bytes leídos al cargar UNA sala (la primera, la 1)    299  bytes de 46,646 del archivo; 6 entradas de la tabla
+    100 salas  bytes leídos al cargar UNA sala (la del medio, la 51) 304  bytes de 46,646 del archivo; 6 entradas de la tabla
+    100 salas  bytes leídos al cargar UNA sala (la última, la 100)   334  bytes de 46,646 del archivo; 7 entradas de la tabla
+    100 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] 85.5 µs  (84.0 µs – 90.2 µs)  mediana (mín – máx)
+    100 salas  cargar UNA sala (la última, la 100)    [binario, acceso directo] 77.0 µs  (74.4 µs – 79.0 µs)  mediana (mín – máx)
+  verificación: 100 salas: leer UNA sala lee menos bytes que el archivo OK
+  verificación: 100 salas: entradas leídas (7) ≤ ⌊log₂ n⌋ + 1 = 7    OK
+   1000 salas  bytes leídos al cargar UNA sala (la primera, la 1)    359  bytes de 400,347 del archivo; 9 entradas de la tabla
+   1000 salas  bytes leídos al cargar UNA sala (la del medio, la 501) 374  bytes de 400,347 del archivo; 9 entradas de la tabla
+   1000 salas  bytes leídos al cargar UNA sala (la última, la 1000)  397  bytes de 400,347 del archivo; 10 entradas de la tabla
+   1000 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] 99.0 µs  (93.9 µs – 108.7 µs)  mediana (mín – máx)
+   1000 salas  cargar UNA sala (la última, la 1000)    [binario, acceso directo] 81.7 µs  (79.8 µs – 94.6 µs)  mediana (mín – máx)
+  verificación: 1000 salas: leer UNA sala lee menos bytes que el archivo OK
+  verificación: 1000 salas: entradas leídas (10) ≤ ⌊log₂ n⌋ + 1 = 10 OK
+
+Resultados guardados en specs/012-revision-parte-i/bench-guardado-M2-1.csv
+```
+
+### M2-2 · `guardado`
+
+- Fecha y hora: 2026-11-18 07:14:18 -0600
+- Comando: `PYTHONIOENCODING=utf-8 python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M2-2.csv`
+- Código de salida: 0
+
+```
+CRIPTA --bench · Python 3.12.10 · Windows AMD64 · 2026-11-18 07:14 · semilla 2026
+... midiendo guardado
+
+Guardado de la partida (§4.10): binario propio  vs  JSON
+  verificación: cargar el binario devuelve exactamente el estado guardado OK
+  verificación: un archivo de otra versión del formato se rechaza    OK
+     10 salas  tamaño en disco  [binario]                            12,414  bytes
+     10 salas  tamaño en disco  [JSON]                               28,363  bytes  (2.28× el binario)
+     10 salas  guardar la partida completa  [binario]                1.96 ms  (1.80 ms – 3.14 ms)  mediana (mín – máx)
+     10 salas  guardar la partida completa  [JSON]                   880.9 µs  (822.9 µs – 1.10 ms)  mediana (mín – máx)
+     10 salas  cargar la partida completa   [binario → DTO]          1.90 ms  (1.87 ms – 1.97 ms)  mediana (mín – máx)
+     10 salas  cargar la partida completa   [JSON, solo analiza el texto] 289.7 µs  (272.4 µs – 388.3 µs)  mediana (mín – máx)
+     10 salas  cargar UNA sala (la 6)    [binario, acceso directo]   74.6 µs  (66.5 µs – 112.1 µs)  mediana (mín – máx)
+     10 salas  conseguir UNA sala (la 6) [JSON: hay que leer todo]   276.9 µs  (271.7 µs – 301.6 µs)  mediana (mín – máx)
+    100 salas  tamaño en disco  [binario]                            46,646  bytes
+    100 salas  tamaño en disco  [JSON]                               133,318  bytes  (2.86× el binario)
+    100 salas  guardar la partida completa  [binario]                4.56 ms  (4.46 ms – 5.01 ms)  mediana (mín – máx)
+    100 salas  guardar la partida completa  [JSON]                   2.96 ms  (2.88 ms – 3.17 ms)  mediana (mín – máx)
+    100 salas  cargar la partida completa   [binario → DTO]          6.71 ms  (6.44 ms – 7.64 ms)  mediana (mín – máx)
+    100 salas  cargar la partida completa   [JSON, solo analiza el texto] 1.12 ms  (1.09 ms – 1.18 ms)  mediana (mín – máx)
+    100 salas  cargar UNA sala (la 51)    [binario, acceso directo]  76.1 µs  (69.0 µs – 101.7 µs)  mediana (mín – máx)
+    100 salas  conseguir UNA sala (la 51) [JSON: hay que leer todo]  1.21 ms  (1.14 ms – 1.49 ms)  mediana (mín – máx)
+   1000 salas  tamaño en disco  [binario]                            400,347  bytes
+   1000 salas  tamaño en disco  [JSON]                               1,199,809  bytes  (3.00× el binario)
+   1000 salas  guardar la partida completa  [binario]                35.98 ms  (33.96 ms – 40.71 ms)  mediana (mín – máx)
+   1000 salas  guardar la partida completa  [JSON]                   27.61 ms  (27.09 ms – 29.72 ms)  mediana (mín – máx)
+   1000 salas  cargar la partida completa   [binario → DTO]          55.73 ms  (55.05 ms – 58.07 ms)  mediana (mín – máx)
+   1000 salas  cargar la partida completa   [JSON, solo analiza el texto] 11.31 ms  (9.11 ms – 11.55 ms)  mediana (mín – máx)
+   1000 salas  cargar UNA sala (la 501)    [binario, acceso directo] 73.3 µs  (68.5 µs – 111.3 µs)  mediana (mín – máx)
+   1000 salas  conseguir UNA sala (la 501) [JSON: hay que leer todo] 10.37 ms  (9.93 ms – 11.95 ms)  mediana (mín – máx)
+  El binario ordena las salas en una tabla de entradas fijas y busca con búsqueda binaria; el JSON no puede saltar a una sala. 
+     10 salas  bytes leídos al cargar UNA sala (la primera, la 1)    239  bytes de 12,414 del archivo; 3 entradas de la tabla
+     10 salas  bytes leídos al cargar UNA sala (la del medio, la 6)  239  bytes de 12,414 del archivo; 3 entradas de la tabla
+     10 salas  bytes leídos al cargar UNA sala (la última, la 10)    262  bytes de 12,414 del archivo; 4 entradas de la tabla
+     10 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] 78.5 µs  (76.0 µs – 80.2 µs)  mediana (mín – máx)
+     10 salas  cargar UNA sala (la última, la 10)    [binario, acceso directo] 73.4 µs  (72.7 µs – 77.1 µs)  mediana (mín – máx)
+  verificación: 10 salas: leer UNA sala lee menos bytes que el archivo OK
+  verificación: 10 salas: entradas leídas (4) ≤ ⌊log₂ n⌋ + 1 = 4     OK
+    100 salas  bytes leídos al cargar UNA sala (la primera, la 1)    299  bytes de 46,646 del archivo; 6 entradas de la tabla
+    100 salas  bytes leídos al cargar UNA sala (la del medio, la 51) 304  bytes de 46,646 del archivo; 6 entradas de la tabla
+    100 salas  bytes leídos al cargar UNA sala (la última, la 100)   334  bytes de 46,646 del archivo; 7 entradas de la tabla
+    100 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] 86.0 µs  (85.2 µs – 134.1 µs)  mediana (mín – máx)
+    100 salas  cargar UNA sala (la última, la 100)    [binario, acceso directo] 76.7 µs  (75.1 µs – 79.1 µs)  mediana (mín – máx)
+  verificación: 100 salas: leer UNA sala lee menos bytes que el archivo OK
+  verificación: 100 salas: entradas leídas (7) ≤ ⌊log₂ n⌋ + 1 = 7    OK
+   1000 salas  bytes leídos al cargar UNA sala (la primera, la 1)    359  bytes de 400,347 del archivo; 9 entradas de la tabla
+   1000 salas  bytes leídos al cargar UNA sala (la del medio, la 501) 374  bytes de 400,347 del archivo; 9 entradas de la tabla
+   1000 salas  bytes leídos al cargar UNA sala (la última, la 1000)  397  bytes de 400,347 del archivo; 10 entradas de la tabla
+   1000 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] 84.3 µs  (81.8 µs – 103.3 µs)  mediana (mín – máx)
+   1000 salas  cargar UNA sala (la última, la 1000)    [binario, acceso directo] 74.0 µs  (69.5 µs – 310.2 µs)  mediana (mín – máx)
+  verificación: 1000 salas: leer UNA sala lee menos bytes que el archivo OK
+  verificación: 1000 salas: entradas leídas (10) ≤ ⌊log₂ n⌋ + 1 = 10 OK
+
+Resultados guardados en specs/012-revision-parte-i/bench-guardado-M2-2.csv
+```
+
+### M2-3 · `guardado`
+
+- Fecha y hora: 2026-11-18 07:14:19 -0600
+- Comando: `PYTHONIOENCODING=utf-8 python main.py --bench guardado --bench-csv specs/012-revision-parte-i/bench-guardado-M2-3.csv`
+- Código de salida: 0
+
+```
+CRIPTA --bench · Python 3.12.10 · Windows AMD64 · 2026-11-18 07:14 · semilla 2026
+... midiendo guardado
+
+Guardado de la partida (§4.10): binario propio  vs  JSON
+  verificación: cargar el binario devuelve exactamente el estado guardado OK
+  verificación: un archivo de otra versión del formato se rechaza    OK
+     10 salas  tamaño en disco  [binario]                            12,414  bytes
+     10 salas  tamaño en disco  [JSON]                               28,363  bytes  (2.28× el binario)
+     10 salas  guardar la partida completa  [binario]                1.70 ms  (1.65 ms – 1.73 ms)  mediana (mín – máx)
+     10 salas  guardar la partida completa  [JSON]                   799.1 µs  (768.0 µs – 848.5 µs)  mediana (mín – máx)
+     10 salas  cargar la partida completa   [binario → DTO]          2.02 ms  (1.81 ms – 2.22 ms)  mediana (mín – máx)
+     10 salas  cargar la partida completa   [JSON, solo analiza el texto] 277.9 µs  (259.3 µs – 362.1 µs)  mediana (mín – máx)
+     10 salas  cargar UNA sala (la 6)    [binario, acceso directo]   65.3 µs  (63.2 µs – 81.4 µs)  mediana (mín – máx)
+     10 salas  conseguir UNA sala (la 6) [JSON: hay que leer todo]   265.3 µs  (253.0 µs – 281.4 µs)  mediana (mín – máx)
+    100 salas  tamaño en disco  [binario]                            46,646  bytes
+    100 salas  tamaño en disco  [JSON]                               133,318  bytes  (2.86× el binario)
+    100 salas  guardar la partida completa  [binario]                4.56 ms  (4.41 ms – 6.83 ms)  mediana (mín – máx)
+    100 salas  guardar la partida completa  [JSON]                   3.56 ms  (3.30 ms – 3.67 ms)  mediana (mín – máx)
+    100 salas  cargar la partida completa   [binario → DTO]          6.24 ms  (6.05 ms – 6.80 ms)  mediana (mín – máx)
+    100 salas  cargar la partida completa   [JSON, solo analiza el texto] 1.11 ms  (1.08 ms – 1.22 ms)  mediana (mín – máx)
+    100 salas  cargar UNA sala (la 51)    [binario, acceso directo]  66.0 µs  (64.2 µs – 86.3 µs)  mediana (mín – máx)
+    100 salas  conseguir UNA sala (la 51) [JSON: hay que leer todo]  1.09 ms  (1.02 ms – 1.16 ms)  mediana (mín – máx)
+   1000 salas  tamaño en disco  [binario]                            400,347  bytes
+   1000 salas  tamaño en disco  [JSON]                               1,199,809  bytes  (3.00× el binario)
+   1000 salas  guardar la partida completa  [binario]                34.93 ms  (33.37 ms – 38.13 ms)  mediana (mín – máx)
+   1000 salas  guardar la partida completa  [JSON]                   29.75 ms  (27.51 ms – 31.30 ms)  mediana (mín – máx)
+   1000 salas  cargar la partida completa   [binario → DTO]          57.61 ms  (53.82 ms – 58.52 ms)  mediana (mín – máx)
+   1000 salas  cargar la partida completa   [JSON, solo analiza el texto] 9.44 ms  (9.18 ms – 9.72 ms)  mediana (mín – máx)
+   1000 salas  cargar UNA sala (la 501)    [binario, acceso directo] 81.7 µs  (78.5 µs – 109.2 µs)  mediana (mín – máx)
+   1000 salas  conseguir UNA sala (la 501) [JSON: hay que leer todo] 10.02 ms  (8.46 ms – 11.96 ms)  mediana (mín – máx)
+  El binario ordena las salas en una tabla de entradas fijas y busca con búsqueda binaria; el JSON no puede saltar a una sala. 
+     10 salas  bytes leídos al cargar UNA sala (la primera, la 1)    239  bytes de 12,414 del archivo; 3 entradas de la tabla
+     10 salas  bytes leídos al cargar UNA sala (la del medio, la 6)  239  bytes de 12,414 del archivo; 3 entradas de la tabla
+     10 salas  bytes leídos al cargar UNA sala (la última, la 10)    262  bytes de 12,414 del archivo; 4 entradas de la tabla
+     10 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] 68.1 µs  (66.4 µs – 127.8 µs)  mediana (mín – máx)
+     10 salas  cargar UNA sala (la última, la 10)    [binario, acceso directo] 63.5 µs  (62.2 µs – 146.1 µs)  mediana (mín – máx)
+  verificación: 10 salas: leer UNA sala lee menos bytes que el archivo OK
+  verificación: 10 salas: entradas leídas (4) ≤ ⌊log₂ n⌋ + 1 = 4     OK
+    100 salas  bytes leídos al cargar UNA sala (la primera, la 1)    299  bytes de 46,646 del archivo; 6 entradas de la tabla
+    100 salas  bytes leídos al cargar UNA sala (la del medio, la 51) 304  bytes de 46,646 del archivo; 6 entradas de la tabla
+    100 salas  bytes leídos al cargar UNA sala (la última, la 100)   334  bytes de 46,646 del archivo; 7 entradas de la tabla
+    100 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] 74.9 µs  (72.3 µs – 89.8 µs)  mediana (mín – máx)
+    100 salas  cargar UNA sala (la última, la 100)    [binario, acceso directo] 65.3 µs  (64.2 µs – 79.7 µs)  mediana (mín – máx)
+  verificación: 100 salas: leer UNA sala lee menos bytes que el archivo OK
+  verificación: 100 salas: entradas leídas (7) ≤ ⌊log₂ n⌋ + 1 = 7    OK
+   1000 salas  bytes leídos al cargar UNA sala (la primera, la 1)    359  bytes de 400,347 del archivo; 9 entradas de la tabla
+   1000 salas  bytes leídos al cargar UNA sala (la del medio, la 501) 374  bytes de 400,347 del archivo; 9 entradas de la tabla
+   1000 salas  bytes leídos al cargar UNA sala (la última, la 1000)  397  bytes de 400,347 del archivo; 10 entradas de la tabla
+   1000 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] 95.4 µs  (86.6 µs – 101.7 µs)  mediana (mín – máx)
+   1000 salas  cargar UNA sala (la última, la 1000)    [binario, acceso directo] 71.7 µs  (69.6 µs – 80.7 µs)  mediana (mín – máx)
+  verificación: 1000 salas: leer UNA sala lee menos bytes que el archivo OK
+  verificación: 1000 salas: entradas leídas (10) ≤ ⌊log₂ n⌋ + 1 = 10 OK
+
+Resultados guardados en specs/012-revision-parte-i/bench-guardado-M2-3.csv
+```
 
 ## Comprobación de las filas de cuenta
 
 - **M0**: las 10 filas de cuenta de `cache` y las 8 de `guardado` son idénticas en las tres ejecuciones.
 - **M1**: las 10 filas de cuenta de `cache` y las 26 de `guardado` (8 existentes y 18 nuevas: bytes leídos y verificaciones) son idénticas en las tres ejecuciones.
-- **M2** (idénticas en las tres) y **M1 = M2** en las secciones 1 y 6 de `cache`: pendiente (T032).
+- **M2** (T032): las 10 filas de cuenta de `cache` y las 26 de `guardado` son idénticas en las tres ejecuciones.
+- **M1 = M2** (T032, FR-387): todas las filas de cuenta de los dos bloques son iguales en M1 y M2, incluidas las secciones 1 y 6 de `cache` (solicitudes, aciertos, fallos y disparadas por cazadores). D1 y D2 no cambian ninguna cuenta. Lo único que cambia entre M1 y M2 es el nombre de las filas 5, 6, 8, 9, 11, 12, 14 y 15 (T029).
 
 ## Medición manual
 
-Pendiente (T036).
+T036 (FR-382, segunda viñeta). Script temporal fuera del repositorio (ya borrado): copia `datos_cripta/` a una carpeta
+temporal, arma el servicio con `crear_servicio(offline=True)` sobre la copia y bloquea `requests.get` y
+`requests.post`. Arma la partida con el modelo real (`EstadoJuegoLogica`), entra en la sala inicial y carga las demás
+salas con `_cargarSala` (como cuando un enemigo entra en una sala: sin precarga), la exporta y la guarda en formato 8
+con `AlmacenPartidaBinario`. Mide con la subclase contadora `_AlmacenContador` de `bench/guardado.py` (T021).
+`datos_cripta/` quedó sin cambios (mismo md5 antes y después).
+
+```
+## Criptas en datos_cripta/
+- cripta-02: 20 salas; datos: sí; contenido de todas las salas: no; fichas de catálogo que faltan: 0 -> incompleta
+- cripta-03: 40 salas; datos: sí; contenido de todas las salas: no; fichas de catálogo que faltan: 0 -> incompleta
+- cripta-04: 50 salas; datos: sí; contenido de todas las salas: sí; fichas de catálogo que faltan: 0 -> COMPLETA
+- cripta-05: 24 salas; datos: sí; contenido de todas las salas: sí; fichas de catálogo que faltan: 0 -> COMPLETA
+- cripta-06: 300 salas; datos: sí; contenido de todas las salas: no; fichas de catálogo que faltan: 0 -> incompleta
+
+## Cripta elegida: cripta-04 (50 salas)
+- salas en la partida exportada: 50; solicitudes del servicio: 0
+- tamaño del archivo (formato 8): 25,004 bytes
+- ⌊log₂ n⌋ + 1 = 6 (n = 50)
+
+| Sala | Bytes leídos | Entradas de la tabla | Tiempo (mediana de 9) |
+|---|---|---|---|
+| la primera (1) | 222 de 25,004 | 5 | 100.6 µs |
+| la del medio (26) | 191 de 25,004 | 5 | 61.0 µs |
+| la última (50) | 322 de 25,004 | 6 | 71.5 µs |
+
+- carga completa: 3.83 ms (mediana de 5)
+- solicitudes al final: 0
+- fecha y hora: 2026-11-18 07:15:46
+```
+
+- **Criptas**: `criptas.bin` lista cripta-02 a cripta-06; cripta-01 tiene archivo pero no está en la lista. Solo
+  cripta-04 (50 salas) y cripta-05 (24) tienen esqueleto, datos, contenido de todas las salas y catálogo. cripta-06
+  (300 salas, la más grande) no tiene contenido de todas sus salas, como ya había visto la 003. **Se usó cripta-04.**
+  No se descargó nada.
+- **Resultado**: la partida de 50 salas pesa 25 004 bytes; leer UNA sala lee de 191 a 322 bytes y de 5 a 6 entradas
+  de la tabla (⌊log₂ 50⌋ + 1 = 6), y tarda de 61 a 101 µs frente a 3.83 ms de la carga completa. **0 solicitudes.**
+  Cumple FR-382 y SC-006.
 
 ## Pruebas
 
@@ -748,103 +1163,145 @@ Los dos fallos son los esperados: comprueban el principio I y el código vigente
 - Corrección de la referencia durante T013 (la prueba, no el código): en la cripta con la puerta cerrada, la sala 2 con profundidad 1 da `[3, 1]` y no `[1, 3]`, porque la salida E se recorre antes que la O (orden N, S, E, O).
 - Cobertura de las secuencias aleatorias de T010: hay expulsiones en las cuatro capacidades (de 6 021 a 8 116 por capacidad) e inserciones rechazadas con todo en uso en las capacidades 1 (3 029) y 2 (526). Con 5 y 25 no hay rechazos; el caso dirigido de T011 los cubre.
 
-**Contra el código revisado**: pendiente (T025, T028 y T030).
+**Contra el código revisado** (2026-11-18):
+
+| Tarea | Comando | Ejecutadas | Fallos | Errores |
+|---|---|---|---|---|
+| T025 (después de D1) | `python -m unittest test_vecindad_equivalencia -v` | 13 (con T047) | 0 | 0 |
+| T028 (después de D2) | `python -m unittest test_cache_equivalencia -v` | 9 | 0 | 0 |
+| T030 (07:05:14) | `python -m unittest discover -p "test_*.py"` | 733 | 0 | 0 |
+| T030 (07:05:30) | `python -m tests_labs.sin_red` | 180 | 0 | 0 |
+
+T009 y T012 pasan desde D1 y D2. `test_bench_puntos_control` no falló en ninguna de estas ejecuciones. Después del
+ajuste de margen de la caché (commit `70c9854`) se repitieron las tres: 9 de 9 en `test_cache_equivalencia`, 733 y
+180 sin fallos.
 
 ## Tabla por bloque
 
-Antes = M0 (mediana en las filas de tiempo). Carga (M1) = mediana de M1 en las filas de tiempo. En las filas nuevas (sin antes en M0) el antes es M1 y el límite es 2 × M1 (FR-377, FR-384). Las columnas de M2, diferencia, cumple y el límite de las demás filas se completan en T033.
+Antes = M0 y Carga = M1 (mediana en las filas de tiempo; valor común en las de cuenta). Después = M2, con el mismo criterio. **Límite** (T033, FR-383 y FR-384): 2 × M0; 2 × M1 en las filas nuevas (sin antes en M0) y en las filas de red que la carga ya llevó a más del doble de M0 (fila 4 y filas 26 a 30, corrección L1 de la spec). En las filas de cuenta de red el límite se aplica a las solicitudes. Los tamaños en disco no tienen límite (FR-384 limita guardar, cargar y leer). **Resultado: todas las filas cumplen.** La más cercana a su límite es la fila 3 (perezosa, prof. 2): 56 solicitudes contra 66 (2 × M0), 1.70 × M0, por la carga (+1 llaves y 44 disparadas por cazadores); el código no la mueve (M2 = M1).
 
 ### Bloque `cache`
 
 | # | Sección | Medición | Tipo | Antes (M0) | Carga (M1) | Después (M2) | Diferencia | Límite (2×) | Cumple | Causa |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 1 | 1. Solicitudes al recorrer un pasillo de 60 salas | sala por sala (sin precarga) | cuenta | 63 solicitudes (~25.2 s de espera) (igual en las tres) | 64 solicitudes (~25.6 s de espera); de ellas, 45 disparadas por un cazador (igual en las tres) | — | — | — | — | carga: +1 solicitudes; +1 consulta de llaves y 45 disparadas por cazadores (activos desde el inicio, peor caso), que además adelantan salas que el jugador ya no pide |
-| 2 | 1. Solicitudes al recorrer un pasillo de 60 salas | actual + vecinas en cada paso (prof. 2) | cuenta | 61 solicitudes (~24.4 s de espera) (igual en las tres) | 62 solicitudes (~24.8 s de espera); de ellas, 44 disparadas por un cazador (igual en las tres) | — | — | — | — | carga: +1 solicitudes; +1 consulta de llaves y 44 disparadas por cazadores (activos desde el inicio, peor caso), que además adelantan salas que el jugador ya no pide |
-| 3 | 1. Solicitudes al recorrer un pasillo de 60 salas | perezosa, prof. 2 | cuenta | 33 solicitudes (~13.2 s de espera) (igual en las tres) | 56 solicitudes (~22.4 s de espera); de ellas, 44 disparadas por un cazador (igual en las tres) | — | — | — | — | carga: +23 solicitudes; +1 consulta de llaves y 44 disparadas por cazadores (activos desde el inicio, peor caso), que además adelantan salas que el jugador ya no pide |
-| 4 | 1. Solicitudes al recorrer un pasillo de 60 salas | perezosa, por defecto (lote de 10) | cuenta | 9 solicitudes (~3.6 s de espera) (igual en las tres) | 46 solicitudes (~18.4 s de espera); de ellas, 39 disparadas por un cazador (igual en las tres) | — | — | — | — | carga: +37 solicitudes; +1 consulta de llaves y 39 disparadas por cazadores (activos desde el inicio, peor caso), que además adelantan salas que el jugador ya no pide |
-| 5 | 2. Búsqueda en la caché (µs por operación) | deque lineal, 25 fichas, acierto | tiempo | **1.1 µs** (mediana) | **1.05 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 6 | 2. Búsqueda en la caché (µs por operación) | deque lineal, 25 fichas, fallo | tiempo | **0.64 µs** (mediana) | **0.55 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 7 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 25 fichas, acierto (descartada) | tiempo | **0.2 µs** (mediana) | **0.2 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 8 | 2. Búsqueda en la caché (µs por operación) | deque lineal, 100 fichas, acierto | tiempo | **3.07 µs** (mediana) | **3.1 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 9 | 2. Búsqueda en la caché (µs por operación) | deque lineal, 100 fichas, fallo | tiempo | **2.13 µs** (mediana) | **1.96 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 10 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 100 fichas, acierto (descartada) | tiempo | **0.23 µs** (mediana) | **0.21 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 11 | 2. Búsqueda en la caché (µs por operación) | deque lineal, 1000 fichas, acierto | tiempo | **33.93 µs** (mediana) | **30.15 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 12 | 2. Búsqueda en la caché (µs por operación) | deque lineal, 1000 fichas, fallo | tiempo | **19.53 µs** (mediana) | **18.17 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 13 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 1000 fichas, acierto (descartada) | tiempo | **0.27 µs** (mediana) | **0.26 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 14 | 2. Búsqueda en la caché (µs por operación) | deque lineal, 5000 fichas, acierto | tiempo | **172.4 µs** (mediana) | **173.42 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 15 | 2. Búsqueda en la caché (µs por operación) | deque lineal, 5000 fichas, fallo | tiempo | **97.48 µs** (mediana) | **96.81 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 16 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 5000 fichas, acierto (descartada) | tiempo | **0.33 µs** (mediana) | **0.33 µs** (mediana) | — | — | — | — | sin carga (operación aislada); la diferencia depende de la máquina |
-| 17 | 3. Recuperar una ficha liberada desde disco | catálogo con 25 fichas | tiempo | **0.092 ms por lectura (una solicitud real: ~400 ms)** (mediana) | **0.071 ms por lectura (una solicitud real: ~400 ms)** (mediana) | — | — | — | — | carga: la ficha que se lee es de cazador; la diferencia depende de la máquina |
-| 18 | 3. Recuperar una ficha liberada desde disco | catálogo con 200 fichas | tiempo | **0.167 ms por lectura (una solicitud real: ~400 ms)** (mediana) | **0.149 ms por lectura (una solicitud real: ~400 ms)** (mediana) | — | — | — | — | carga: la ficha que se lee es de cazador; la diferencia depende de la máquina |
-| 19 | 3. Recuperar una ficha liberada desde disco | catálogo con 1000 fichas | tiempo | **0.42 ms por lectura (una solicitud real: ~400 ms)** (mediana) | **0.426 ms por lectura (una solicitud real: ~400 ms)** (mediana) | — | — | — | — | carga: la ficha que se lee es de cazador; la diferencia depende de la máquina |
-| 20 | 4. Guardar 10 fichas nuevas (reescribe el archivo completo) | catálogo con 25 fichas | tiempo | **2.216 ms** (mediana) | **2.165 ms** (mediana) | — | — | — | — | sin carga en esta sección; la diferencia depende de la máquina |
-| 21 | 4. Guardar 10 fichas nuevas (reescribe el archivo completo) | catálogo con 200 fichas | tiempo | **9.649 ms** (mediana) | **8.72 ms** (mediana) | — | — | — | — | sin carga en esta sección; la diferencia depende de la máquina |
-| 22 | 4. Guardar 10 fichas nuevas (reescribe el archivo completo) | catálogo con 1000 fichas | tiempo | **10.829 ms** (mediana) | **8.77 ms** (mediana) | — | — | — | — | sin carga en esta sección; la diferencia depende de la máquina |
-| 23 | 5. Planear la vecindad en una cripta de 1000 salas | salas_vecinas, 1 paso | tiempo | **20.2 µs** (mediana) | **19.2 µs** (mediana) | — | — | — | — | carga: esqueleto con costos; la diferencia depende de la máquina |
-| 24 | 5. Planear la vecindad en una cripta de 1000 salas | salas_vecinas, 2 pasos | tiempo | **48.6 µs** (mediana) | **45.0 µs** (mediana) | — | — | — | — | carga: esqueleto con costos; la diferencia depende de la máquina |
-| 25 | 5. Planear la vecindad en una cripta de 1000 salas | precargar_vecinas cuando no hace falta nada | tiempo | **30.6 µs** (mediana) | **27.2 µs** (mediana) | — | — | — | — | carga: esqueleto con costos; la diferencia depende de la máquina |
-| 26 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad    5 | cuenta | 82 aciertos / 938 fallos (8.0 %) 19 solicitudes de red (igual en las tres) | 83 aciertos / 1100 fallos (7.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador (igual en las tres) | — | — | — | — | carga: +45 solicitudes; +1 consulta de llaves y 45 disparadas por cazadores; la ficha del cazador y las salas que construyen los cazadores mueven aciertos y fallos |
-| 27 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad   10 | cuenta | 316 aciertos / 704 fallos (31.0 %) 19 solicitudes de red (igual en las tres) | 327 aciertos / 856 fallos (27.6 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador (igual en las tres) | — | — | — | — | carga: +45 solicitudes; +1 consulta de llaves y 45 disparadas por cazadores; la ficha del cazador y las salas que construyen los cazadores mueven aciertos y fallos |
-| 28 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad   25 | cuenta | 487 aciertos / 533 fallos (47.7 %) 19 solicitudes de red (igual en las tres) | 553 aciertos / 630 fallos (46.7 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador (igual en las tres) | — | — | — | — | carga: +45 solicitudes; +1 consulta de llaves y 45 disparadas por cazadores; la ficha del cazador y las salas que construyen los cazadores mueven aciertos y fallos |
-| 29 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad  100 | cuenta | 950 aciertos / 70 fallos (93.1 %) 19 solicitudes de red (igual en las tres) | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador (igual en las tres) | — | — | — | — | carga: +45 solicitudes; +1 consulta de llaves y 45 disparadas por cazadores; la ficha del cazador y las salas que construyen los cazadores mueven aciertos y fallos |
-| 30 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad 1000 | cuenta | 950 aciertos / 70 fallos (93.1 %) 19 solicitudes de red (igual en las tres) | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador (igual en las tres) | — | — | — | — | carga: +45 solicitudes; +1 consulta de llaves y 45 disparadas por cazadores; la ficha del cazador y las salas que construyen los cazadores mueven aciertos y fallos |
-| 31 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 25 fichas, acierto (descartada) | tiempo | sin antes en M0: fila nueva (FR-378) | **0.7 µs** (mediana) | — | — | 1.40 µs | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| 32 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 100 fichas, acierto (descartada) | tiempo | sin antes en M0: fila nueva (FR-378) | **2.18 µs** (mediana) | — | — | 4.36 µs | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| 33 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 1000 fichas, acierto (descartada) | tiempo | sin antes en M0: fila nueva (FR-378) | **20.82 µs** (mediana) | — | — | 41.64 µs | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| 34 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 5000 fichas, acierto (descartada) | tiempo | sin antes en M0: fila nueva (FR-378) | **96.78 µs** (mediana) | — | — | 193.56 µs | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
+| 1 | 1. Solicitudes al recorrer un pasillo de 60 salas | sala por sala (sin precarga) | cuenta | 63 solicitudes (~25.2 s de espera) | 64 solicitudes (~25.6 s de espera); de ellas, 45 disparadas por un cazador | 64 solicitudes (~25.6 s de espera); de ellas, 45 disparadas por un cazador | +1 solicitudes vs M0 (+1.6 %); +0 vs M1 | 126 solicitudes (2 × M0) | sí | carga (M0 → M1); código: ninguna diferencia (M2 = M1 en la cuenta, D1 y D2 no cambian cuentas) |
+| 2 | 1. Solicitudes al recorrer un pasillo de 60 salas | actual + vecinas en cada paso (prof. 2) | cuenta | 61 solicitudes (~24.4 s de espera) | 62 solicitudes (~24.8 s de espera); de ellas, 44 disparadas por un cazador | 62 solicitudes (~24.8 s de espera); de ellas, 44 disparadas por un cazador | +1 solicitudes vs M0 (+1.6 %); +0 vs M1 | 122 solicitudes (2 × M0) | sí | carga (M0 → M1); código: ninguna diferencia (M2 = M1 en la cuenta, D1 y D2 no cambian cuentas) |
+| 3 | 1. Solicitudes al recorrer un pasillo de 60 salas | perezosa, prof. 2 | cuenta | 33 solicitudes (~13.2 s de espera) | 56 solicitudes (~22.4 s de espera); de ellas, 44 disparadas por un cazador | 56 solicitudes (~22.4 s de espera); de ellas, 44 disparadas por un cazador | +23 solicitudes vs M0 (+69.7 %); +0 vs M1 | 66 solicitudes (2 × M0) | sí | carga (M0 → M1); código: ninguna diferencia (M2 = M1 en la cuenta, D1 y D2 no cambian cuentas) |
+| 4 | 1. Solicitudes al recorrer un pasillo de 60 salas | perezosa, por defecto (lote de 10) | cuenta | 9 solicitudes (~3.6 s de espera) | 46 solicitudes (~18.4 s de espera); de ellas, 39 disparadas por un cazador | 46 solicitudes (~18.4 s de espera); de ellas, 39 disparadas por un cazador | +37 solicitudes vs M0 (+411.1 %); +0 vs M1 | 92 solicitudes (2 × M1) | sí | carga (M0 → M1), que la llevó a más del doble de M0, por eso el límite es 2 × M1 (FR-383, corrección L1); código: ninguna diferencia (M2 = M1 en la cuenta, D1 y D2 no cambian cuentas) |
+| 5 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 25 fichas, acierto | tiempo | **1.1 µs** | **1.05 µs** | **0.8 µs** | −0.30 µs (-27.3 %) | 2.20 µs (2 × M0) | sí | código: la caché pasó a lista propia (D2, sin índice al recorrer); depende de la máquina |
+| 6 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 25 fichas, fallo | tiempo | **0.64 µs** | **0.55 µs** | **0.6 µs** | −0.04 µs (-6.3 %) | 1.28 µs (2 × M0) | sí | código: la caché pasó a lista propia (D2, sin índice al recorrer); depende de la máquina |
+| 7 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 25 fichas, acierto (descartada) | tiempo | **0.2 µs** | **0.2 µs** | **0.2 µs** | ±0.00 µs (+0.0 %) | 0.40 µs (2 × M0) | sí | sin cambio de código; depende de la máquina |
+| 8 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 100 fichas, acierto | tiempo | **3.07 µs** | **3.1 µs** | **2.25 µs** | −0.82 µs (-26.7 %) | 6.14 µs (2 × M0) | sí | código: la caché pasó a lista propia (D2, sin índice al recorrer); depende de la máquina |
+| 9 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 100 fichas, fallo | tiempo | **2.13 µs** | **1.96 µs** | **2.14 µs** | +0.01 µs (+0.5 %) | 4.26 µs (2 × M0) | sí | código: la caché pasó a lista propia (D2, sin índice al recorrer); depende de la máquina |
+| 10 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 100 fichas, acierto (descartada) | tiempo | **0.23 µs** | **0.21 µs** | **0.22 µs** | −0.01 µs (-4.3 %) | 0.46 µs (2 × M0) | sí | sin cambio de código; depende de la máquina |
+| 11 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 1000 fichas, acierto | tiempo | **33.93 µs** | **30.15 µs** | **18.46 µs** | −15.47 µs (-45.6 %) | 67.86 µs (2 × M0) | sí | código: la caché pasó a lista propia (D2, sin índice al recorrer); depende de la máquina |
+| 12 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 1000 fichas, fallo | tiempo | **19.53 µs** | **18.17 µs** | **19.12 µs** | −0.41 µs (-2.1 %) | 39.06 µs (2 × M0) | sí | código: la caché pasó a lista propia (D2, sin índice al recorrer); depende de la máquina |
+| 13 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 1000 fichas, acierto (descartada) | tiempo | **0.27 µs** | **0.26 µs** | **0.26 µs** | −0.01 µs (-3.7 %) | 0.54 µs (2 × M0) | sí | sin cambio de código; depende de la máquina |
+| 14 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 5000 fichas, acierto | tiempo | **172.4 µs** | **173.42 µs** | **107.81 µs** | −64.59 µs (-37.5 %) | 344.80 µs (2 × M0) | sí | código: la caché pasó a lista propia (D2, sin índice al recorrer); depende de la máquina |
+| 15 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 5000 fichas, fallo | tiempo | **97.48 µs** | **96.81 µs** | **96.46 µs** | −1.02 µs (-1.0 %) | 194.96 µs (2 × M0) | sí | código: la caché pasó a lista propia (D2, sin índice al recorrer); depende de la máquina |
+| 16 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 5000 fichas, acierto (descartada) | tiempo | **0.33 µs** | **0.33 µs** | **0.3 µs** | −0.03 µs (-9.1 %) | 0.66 µs (2 × M0) | sí | sin cambio de código; depende de la máquina |
+| 17 | 3. Recuperar una ficha liberada desde disco | catálogo con 25 fichas | tiempo | **0.092 ms por lectura (una solicitud real: ~400 ms)** | **0.071 ms por lectura (una solicitud real: ~400 ms)** | **0.071 ms por lectura (una solicitud real: ~400 ms)** | −21.00 µs (-22.8 %) | 184.00 µs (2 × M0) | sí | carga: la ficha leída es de cazador; sin cambio de código; depende de la máquina |
+| 18 | 3. Recuperar una ficha liberada desde disco | catálogo con 200 fichas | tiempo | **0.167 ms por lectura (una solicitud real: ~400 ms)** | **0.149 ms por lectura (una solicitud real: ~400 ms)** | **0.178 ms por lectura (una solicitud real: ~400 ms)** | +11.00 µs (+6.6 %) | 334.00 µs (2 × M0) | sí | carga: la ficha leída es de cazador; sin cambio de código; depende de la máquina |
+| 19 | 3. Recuperar una ficha liberada desde disco | catálogo con 1000 fichas | tiempo | **0.42 ms por lectura (una solicitud real: ~400 ms)** | **0.426 ms por lectura (una solicitud real: ~400 ms)** | **0.437 ms por lectura (una solicitud real: ~400 ms)** | +17.00 µs (+4.0 %) | 840.00 µs (2 × M0) | sí | carga: la ficha leída es de cazador; sin cambio de código; depende de la máquina |
+| 20 | 4. Guardar 10 fichas nuevas (reescribe el archivo completo) | catálogo con 25 fichas | tiempo | **2.216 ms** | **2.165 ms** | **2.331 ms** | +115.00 µs (+5.2 %) | 4.43 ms (2 × M0) | sí | sin cambio de código; depende de la máquina |
+| 21 | 4. Guardar 10 fichas nuevas (reescribe el archivo completo) | catálogo con 200 fichas | tiempo | **9.649 ms** | **8.72 ms** | **9.941 ms** | +292.00 µs (+3.0 %) | 19.30 ms (2 × M0) | sí | sin cambio de código; depende de la máquina |
+| 22 | 4. Guardar 10 fichas nuevas (reescribe el archivo completo) | catálogo con 1000 fichas | tiempo | **10.829 ms** | **8.77 ms** | **10.758 ms** | −71.00 µs (-0.7 %) | 21.66 ms (2 × M0) | sí | sin cambio de código; depende de la máquina |
+| 23 | 5. Planear la vecindad en una cripta de 1000 salas | salas_vecinas, 1 paso | tiempo | **20.2 µs** | **19.2 µs** | **18.6 µs** | −1.60 µs (-7.9 %) | 40.40 µs (2 × M0) | sí | código: la vecindad recorre su propia lista (D1); depende de la máquina |
+| 24 | 5. Planear la vecindad en una cripta de 1000 salas | salas_vecinas, 2 pasos | tiempo | **48.6 µs** | **45.0 µs** | **46.6 µs** | −2.00 µs (-4.1 %) | 97.20 µs (2 × M0) | sí | código: la vecindad recorre su propia lista (D1); depende de la máquina |
+| 25 | 5. Planear la vecindad en una cripta de 1000 salas | precargar_vecinas cuando no hace falta nada | tiempo | **30.6 µs** | **27.2 µs** | **27.4 µs** | −3.20 µs (-10.5 %) | 61.20 µs (2 × M0) | sí | sin cambio de código (precargar_vecinas no cambia; llama a salas_vecinas); depende de la máquina |
+| 26 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad    5 | cuenta | 82 aciertos / 938 fallos (8.0 %) 19 solicitudes de red | 83 aciertos / 1100 fallos (7.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 83 aciertos / 1100 fallos (7.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | +45 solicitudes vs M0 (+236.8 %); +0 vs M1 | 128 solicitudes (2 × M1) | sí | carga (M0 → M1), que la llevó a más del doble de M0, por eso el límite es 2 × M1 (FR-383, corrección L1); código: ninguna diferencia (M2 = M1 en la cuenta, D1 y D2 no cambian cuentas) |
+| 27 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad   10 | cuenta | 316 aciertos / 704 fallos (31.0 %) 19 solicitudes de red | 327 aciertos / 856 fallos (27.6 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 327 aciertos / 856 fallos (27.6 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | +45 solicitudes vs M0 (+236.8 %); +0 vs M1 | 128 solicitudes (2 × M1) | sí | carga (M0 → M1), que la llevó a más del doble de M0, por eso el límite es 2 × M1 (FR-383, corrección L1); código: ninguna diferencia (M2 = M1 en la cuenta, D1 y D2 no cambian cuentas) |
+| 28 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad   25 | cuenta | 487 aciertos / 533 fallos (47.7 %) 19 solicitudes de red | 553 aciertos / 630 fallos (46.7 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 553 aciertos / 630 fallos (46.7 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | +45 solicitudes vs M0 (+236.8 %); +0 vs M1 | 128 solicitudes (2 × M1) | sí | carga (M0 → M1), que la llevó a más del doble de M0, por eso el límite es 2 × M1 (FR-383, corrección L1); código: ninguna diferencia (M2 = M1 en la cuenta, D1 y D2 no cambian cuentas) |
+| 29 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad  100 | cuenta | 950 aciertos / 70 fallos (93.1 %) 19 solicitudes de red | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | +45 solicitudes vs M0 (+236.8 %); +0 vs M1 | 128 solicitudes (2 × M1) | sí | carga (M0 → M1), que la llevó a más del doble de M0, por eso el límite es 2 × M1 (FR-383, corrección L1); código: ninguna diferencia (M2 = M1 en la cuenta, D1 y D2 no cambian cuentas) |
+| 30 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad 1000 | cuenta | 950 aciertos / 70 fallos (93.1 %) 19 solicitudes de red | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | +45 solicitudes vs M0 (+236.8 %); +0 vs M1 | 128 solicitudes (2 × M1) | sí | carga (M0 → M1), que la llevó a más del doble de M0, por eso el límite es 2 × M1 (FR-383, corrección L1); código: ninguna diferencia (M2 = M1 en la cuenta, D1 y D2 no cambian cuentas) |
+| 31 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 25 fichas, acierto (descartada) | tiempo | sin antes en M0: fila nueva (FR-378) | **0.7 µs** | **0.72 µs** | +0.02 µs (+2.9 %) vs M1 | 1.40 µs (2 × M1) | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (prototipo de medición); depende de la máquina |
+| 32 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 100 fichas, acierto (descartada) | tiempo | sin antes en M0: fila nueva (FR-378) | **2.18 µs** | **2.17 µs** | −0.01 µs (-0.5 %) vs M1 | 4.36 µs (2 × M1) | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (prototipo de medición); depende de la máquina |
+| 33 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 1000 fichas, acierto (descartada) | tiempo | sin antes en M0: fila nueva (FR-378) | **20.82 µs** | **20.98 µs** | +0.16 µs (+0.8 %) vs M1 | 41.64 µs (2 × M1) | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (prototipo de medición); depende de la máquina |
+| 34 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 5000 fichas, acierto (descartada) | tiempo | sin antes en M0: fila nueva (FR-378) | **96.78 µs** | **108.04 µs** | +11.26 µs (+11.6 %) vs M1 | 193.56 µs (2 × M1) | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (prototipo de medición); depende de la máquina |
 
 ### Bloque `guardado`
 
 | # | Sección | Medición | Tipo | Antes (M0) | Carga (M1) | Después (M2) | Diferencia | Límite (2×) | Cumple | Causa |
 |---|---|---|---|---|---|---|---|---|---|---|
-| G1 | §4.10 | verificación: cargar el binario devuelve exactamente el estado guardado | cuenta | OK (igual en las tres) | OK (igual en las tres) | — | — | — | — | sin cambios |
-| G2 | §4.10 | verificación: un archivo de otra versión del formato se rechaza | cuenta | OK (igual en las tres) | OK (igual en las tres) | — | — | — | — | sin cambios |
-| G3 | §4.10 | 10 salas  tamaño en disco  [binario] | cuenta | 12,581 bytes (igual en las tres) | 12,414 bytes (igual en las tres) | — | — | — | — | carga: un cazador con rango por sala (nombre más corto que el de la rata), costos de 1 a 9 en lugar de 100 y el conocimiento de la mitad de las salas cambian el contenido guardado |
-| G4 | §4.10 | 10 salas  tamaño en disco  [JSON] | cuenta | 28,678 bytes  (2.28× el binario) (igual en las tres) | 28,363 bytes  (2.28× el binario) (igual en las tres) | — | — | — | — | carga: un cazador con rango por sala (nombre más corto que el de la rata), costos de 1 a 9 en lugar de 100 y el conocimiento de la mitad de las salas cambian el contenido guardado |
-| G5 | §4.10 | 10 salas  guardar la partida completa  [binario] | tiempo | **1.71 ms** (mediana) | **1.70 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G6 | §4.10 | 10 salas  guardar la partida completa  [JSON] | tiempo | **833.0 µs** (mediana) | **804.6 µs** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G7 | §4.10 | 10 salas  cargar la partida completa   [binario → DTO] | tiempo | **2.10 ms** (mediana) | **2.43 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G8 | §4.10 | 10 salas  cargar la partida completa   [JSON, solo analiza el texto] | tiempo | **300.9 µs** (mediana) | **286.7 µs** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G9 | §4.10 | 10 salas  cargar UNA sala (la 6)    [binario, acceso directo] | tiempo | **74.0 µs** (mediana) | **73.6 µs** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G10 | §4.10 | 10 salas  conseguir UNA sala (la 6) [JSON: hay que leer todo] | tiempo | **278.2 µs** (mediana) | **289.5 µs** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G11 | §4.10 | 100 salas  tamaño en disco  [binario] | cuenta | 47,943 bytes (igual en las tres) | 46,646 bytes (igual en las tres) | — | — | — | — | carga: un cazador con rango por sala (nombre más corto que el de la rata), costos de 1 a 9 en lugar de 100 y el conocimiento de la mitad de las salas cambian el contenido guardado |
-| G12 | §4.10 | 100 salas  tamaño en disco  [JSON] | cuenta | 134,896 bytes  (2.81× el binario) (igual en las tres) | 133,318 bytes  (2.86× el binario) (igual en las tres) | — | — | — | — | carga: un cazador con rango por sala (nombre más corto que el de la rata), costos de 1 a 9 en lugar de 100 y el conocimiento de la mitad de las salas cambian el contenido guardado |
-| G13 | §4.10 | 100 salas  guardar la partida completa  [binario] | tiempo | **4.97 ms** (mediana) | **5.00 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G14 | §4.10 | 100 salas  guardar la partida completa  [JSON] | tiempo | **3.31 ms** (mediana) | **3.31 ms** (mediana) | — | — | — | — | sin cambios |
-| G15 | §4.10 | 100 salas  cargar la partida completa   [binario → DTO] | tiempo | **6.94 ms** (mediana) | **7.02 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G16 | §4.10 | 100 salas  cargar la partida completa   [JSON, solo analiza el texto] | tiempo | **1.16 ms** (mediana) | **1.12 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G17 | §4.10 | 100 salas  cargar UNA sala (la 51)    [binario, acceso directo] | tiempo | **75.6 µs** (mediana) | **75.7 µs** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G18 | §4.10 | 100 salas  conseguir UNA sala (la 51) [JSON: hay que leer todo] | tiempo | **1.15 ms** (mediana) | **1.10 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G19 | §4.10 | 1000 salas  tamaño en disco  [binario] | cuenta | 412,440 bytes (igual en las tres) | 400,347 bytes (igual en las tres) | — | — | — | — | carga: un cazador con rango por sala (nombre más corto que el de la rata), costos de 1 a 9 en lugar de 100 y el conocimiento de la mitad de las salas cambian el contenido guardado |
-| G20 | §4.10 | 1000 salas  tamaño en disco  [JSON] | cuenta | 1,213,097 bytes  (2.94× el binario) (igual en las tres) | 1,199,809 bytes  (3.00× el binario) (igual en las tres) | — | — | — | — | carga: un cazador con rango por sala (nombre más corto que el de la rata), costos de 1 a 9 en lugar de 100 y el conocimiento de la mitad de las salas cambian el contenido guardado |
-| G21 | §4.10 | 1000 salas  guardar la partida completa  [binario] | tiempo | **36.23 ms** (mediana) | **36.70 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G22 | §4.10 | 1000 salas  guardar la partida completa  [JSON] | tiempo | **28.83 ms** (mediana) | **28.94 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G23 | §4.10 | 1000 salas  cargar la partida completa   [binario → DTO] | tiempo | **60.48 ms** (mediana) | **59.03 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G24 | §4.10 | 1000 salas  cargar la partida completa   [JSON, solo analiza el texto] | tiempo | **9.80 ms** (mediana) | **9.56 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G25 | §4.10 | 1000 salas  cargar UNA sala (la 501)    [binario, acceso directo] | tiempo | **83.6 µs** (mediana) | **75.3 µs** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
-| G26 | §4.10 | 1000 salas  conseguir UNA sala (la 501) [JSON: hay que leer todo] | tiempo | **9.46 ms** (mediana) | **9.69 ms** (mediana) | — | — | — | — | carga: la misma partida con la carga; la diferencia depende de la máquina |
+| G1 | §4.10 | verificación: cargar el binario devuelve exactamente el estado guardado | cuenta | OK | OK | OK | sin cambios | OK | sí | sin cambios |
+| G2 | §4.10 | verificación: un archivo de otra versión del formato se rechaza | cuenta | OK | OK | OK | sin cambios | OK | sí | sin cambios |
+| G3 | §4.10 | 10 salas  tamaño en disco  [binario] | cuenta | 12,581 bytes | 12,414 bytes | 12,414 bytes | -167 bytes (-1.3 %) | — (sin límite: FR-384 limita guardar, cargar y leer) | — | carga (M0 → M1): cazador con rango, costos de 1 a 9 y conocimiento; sin cambio de código (M2 = M1) |
+| G4 | §4.10 | 10 salas  tamaño en disco  [JSON] | cuenta | 28,678 bytes  (2.28× el binario) | 28,363 bytes  (2.28× el binario) | 28,363 bytes  (2.28× el binario) | -315 bytes (-1.1 %) | — (sin límite: FR-384 limita guardar, cargar y leer) | — | carga (M0 → M1): cazador con rango, costos de 1 a 9 y conocimiento; sin cambio de código (M2 = M1) |
+| G5 | §4.10 | 10 salas  guardar la partida completa  [binario] | tiempo | **1.71 ms** | **1.70 ms** | **1.87 ms** | +160.00 µs (+9.4 %) | 3.42 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G6 | §4.10 | 10 salas  guardar la partida completa  [JSON] | tiempo | **833.0 µs** | **804.6 µs** | **825.5 µs** | −7.50 µs (-0.9 %) | 1.67 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G7 | §4.10 | 10 salas  cargar la partida completa   [binario → DTO] | tiempo | **2.10 ms** | **2.43 ms** | **2.02 ms** | −80.00 µs (-3.8 %) | 4.20 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G8 | §4.10 | 10 salas  cargar la partida completa   [JSON, solo analiza el texto] | tiempo | **300.9 µs** | **286.7 µs** | **289.7 µs** | −11.20 µs (-3.7 %) | 601.80 µs (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G9 | §4.10 | 10 salas  cargar UNA sala (la 6)    [binario, acceso directo] | tiempo | **74.0 µs** | **73.6 µs** | **73.5 µs** | −0.50 µs (-0.7 %) | 148.00 µs (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G10 | §4.10 | 10 salas  conseguir UNA sala (la 6) [JSON: hay que leer todo] | tiempo | **278.2 µs** | **289.5 µs** | **276.9 µs** | −1.30 µs (-0.5 %) | 556.40 µs (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G11 | §4.10 | 100 salas  tamaño en disco  [binario] | cuenta | 47,943 bytes | 46,646 bytes | 46,646 bytes | -1,297 bytes (-2.7 %) | — (sin límite: FR-384 limita guardar, cargar y leer) | — | carga (M0 → M1): cazador con rango, costos de 1 a 9 y conocimiento; sin cambio de código (M2 = M1) |
+| G12 | §4.10 | 100 salas  tamaño en disco  [JSON] | cuenta | 134,896 bytes  (2.81× el binario) | 133,318 bytes  (2.86× el binario) | 133,318 bytes  (2.86× el binario) | -1,578 bytes (-1.2 %) | — (sin límite: FR-384 limita guardar, cargar y leer) | — | carga (M0 → M1): cazador con rango, costos de 1 a 9 y conocimiento; sin cambio de código (M2 = M1) |
+| G13 | §4.10 | 100 salas  guardar la partida completa  [binario] | tiempo | **4.97 ms** | **5.00 ms** | **4.56 ms** | −410.00 µs (-8.2 %) | 9.94 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G14 | §4.10 | 100 salas  guardar la partida completa  [JSON] | tiempo | **3.31 ms** | **3.31 ms** | **3.40 ms** | +90.00 µs (+2.7 %) | 6.62 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G15 | §4.10 | 100 salas  cargar la partida completa   [binario → DTO] | tiempo | **6.94 ms** | **7.02 ms** | **6.71 ms** | −230.00 µs (-3.3 %) | 13.88 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G16 | §4.10 | 100 salas  cargar la partida completa   [JSON, solo analiza el texto] | tiempo | **1.16 ms** | **1.12 ms** | **1.12 ms** | −40.00 µs (-3.4 %) | 2.32 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G17 | §4.10 | 100 salas  cargar UNA sala (la 51)    [binario, acceso directo] | tiempo | **75.6 µs** | **75.7 µs** | **76.1 µs** | +0.50 µs (+0.7 %) | 151.20 µs (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G18 | §4.10 | 100 salas  conseguir UNA sala (la 51) [JSON: hay que leer todo] | tiempo | **1.15 ms** | **1.10 ms** | **1.13 ms** | −20.00 µs (-1.7 %) | 2.30 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G19 | §4.10 | 1000 salas  tamaño en disco  [binario] | cuenta | 412,440 bytes | 400,347 bytes | 400,347 bytes | -12,093 bytes (-2.9 %) | — (sin límite: FR-384 limita guardar, cargar y leer) | — | carga (M0 → M1): cazador con rango, costos de 1 a 9 y conocimiento; sin cambio de código (M2 = M1) |
+| G20 | §4.10 | 1000 salas  tamaño en disco  [JSON] | cuenta | 1,213,097 bytes  (2.94× el binario) | 1,199,809 bytes  (3.00× el binario) | 1,199,809 bytes  (3.00× el binario) | -13,288 bytes (-1.1 %) | — (sin límite: FR-384 limita guardar, cargar y leer) | — | carga (M0 → M1): cazador con rango, costos de 1 a 9 y conocimiento; sin cambio de código (M2 = M1) |
+| G21 | §4.10 | 1000 salas  guardar la partida completa  [binario] | tiempo | **36.23 ms** | **36.70 ms** | **35.98 ms** | −250.00 µs (-0.7 %) | 72.46 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G22 | §4.10 | 1000 salas  guardar la partida completa  [JSON] | tiempo | **28.83 ms** | **28.94 ms** | **29.75 ms** | +920.00 µs (+3.2 %) | 57.66 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G23 | §4.10 | 1000 salas  cargar la partida completa   [binario → DTO] | tiempo | **60.48 ms** | **59.03 ms** | **57.61 ms** | −2.87 ms (-4.7 %) | 120.96 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G24 | §4.10 | 1000 salas  cargar la partida completa   [JSON, solo analiza el texto] | tiempo | **9.80 ms** | **9.56 ms** | **10.70 ms** | +900.00 µs (+9.2 %) | 19.60 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G25 | §4.10 | 1000 salas  cargar UNA sala (la 501)    [binario, acceso directo] | tiempo | **83.6 µs** | **75.3 µs** | **81.7 µs** | −1.90 µs (-2.3 %) | 167.20 µs (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G26 | §4.10 | 1000 salas  conseguir UNA sala (la 501) [JSON: hay que leer todo] | tiempo | **9.46 ms** | **9.69 ms** | **10.13 ms** | +670.00 µs (+7.1 %) | 18.92 ms (2 × M0) | sí | carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
 | G27 | §4.10 | (nota de la salida) El binario ordena las salas en una tabla de entradas fijas y busca con búsqueda binaria; el JSON no puede saltar a una sala. | nota | — | — | — | — | — | — | — |
-| G28 | §4.10 | 10 salas  bytes leídos al cargar UNA sala (la primera, la 1) | cuenta | sin antes en M0: fila nueva (FR-378) | 239 bytes de 12,414 del archivo; 3 entradas de la tabla (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G29 | §4.10 | 10 salas  bytes leídos al cargar UNA sala (la del medio, la 6) | cuenta | sin antes en M0: fila nueva (FR-378) | 239 bytes de 12,414 del archivo; 3 entradas de la tabla (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G30 | §4.10 | 10 salas  bytes leídos al cargar UNA sala (la última, la 10) | cuenta | sin antes en M0: fila nueva (FR-378) | 262 bytes de 12,414 del archivo; 4 entradas de la tabla (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G31 | §4.10 | 10 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **79.1 µs** (mediana) | — | — | 158.20 µs | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G32 | §4.10 | 10 salas  cargar UNA sala (la última, la 10)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **75.0 µs** (mediana) | — | — | 150.00 µs | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G33 | §4.10 | verificación: 10 salas: leer UNA sala lee menos bytes que el archivo | cuenta | sin antes en M0: fila nueva (FR-378) | OK (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G34 | §4.10 | verificación: 10 salas: entradas leídas (4) ≤ ⌊log₂ n⌋ + 1 = 4 | cuenta | sin antes en M0: fila nueva (FR-378) | OK (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G35 | §4.10 | 100 salas  bytes leídos al cargar UNA sala (la primera, la 1) | cuenta | sin antes en M0: fila nueva (FR-378) | 299 bytes de 46,646 del archivo; 6 entradas de la tabla (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G36 | §4.10 | 100 salas  bytes leídos al cargar UNA sala (la del medio, la 51) | cuenta | sin antes en M0: fila nueva (FR-378) | 304 bytes de 46,646 del archivo; 6 entradas de la tabla (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G37 | §4.10 | 100 salas  bytes leídos al cargar UNA sala (la última, la 100) | cuenta | sin antes en M0: fila nueva (FR-378) | 334 bytes de 46,646 del archivo; 7 entradas de la tabla (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G38 | §4.10 | 100 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **85.5 µs** (mediana) | — | — | 171.00 µs | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G39 | §4.10 | 100 salas  cargar UNA sala (la última, la 100)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **75.4 µs** (mediana) | — | — | 150.80 µs | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G40 | §4.10 | verificación: 100 salas: leer UNA sala lee menos bytes que el archivo | cuenta | sin antes en M0: fila nueva (FR-378) | OK (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G41 | §4.10 | verificación: 100 salas: entradas leídas (7) ≤ ⌊log₂ n⌋ + 1 = 7 | cuenta | sin antes en M0: fila nueva (FR-378) | OK (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G42 | §4.10 | 1000 salas  bytes leídos al cargar UNA sala (la primera, la 1) | cuenta | sin antes en M0: fila nueva (FR-378) | 359 bytes de 400,347 del archivo; 9 entradas de la tabla (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G43 | §4.10 | 1000 salas  bytes leídos al cargar UNA sala (la del medio, la 501) | cuenta | sin antes en M0: fila nueva (FR-378) | 374 bytes de 400,347 del archivo; 9 entradas de la tabla (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G44 | §4.10 | 1000 salas  bytes leídos al cargar UNA sala (la última, la 1000) | cuenta | sin antes en M0: fila nueva (FR-378) | 397 bytes de 400,347 del archivo; 10 entradas de la tabla (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G45 | §4.10 | 1000 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **97.9 µs** (mediana) | — | — | 195.80 µs | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G46 | §4.10 | 1000 salas  cargar UNA sala (la última, la 1000)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **80.6 µs** (mediana) | — | — | 161.20 µs | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G47 | §4.10 | verificación: 1000 salas: leer UNA sala lee menos bytes que el archivo | cuenta | sin antes en M0: fila nueva (FR-378) | OK (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
-| G48 | §4.10 | verificación: 1000 salas: entradas leídas (10) ≤ ⌊log₂ n⌋ + 1 = 10 | cuenta | sin antes en M0: fila nueva (FR-378) | OK (igual en las tres) | — | — | — | — | sin antes en M0: fila nueva (FR-378); su antes es M1 |
+| G28 | §4.10 | 10 salas  bytes leídos al cargar UNA sala (la primera, la 1) | cuenta | sin antes en M0: fila nueva (FR-378) | 239 bytes de 12,414 del archivo; 3 entradas de la tabla | 239 bytes de 12,414 del archivo; 3 entradas de la tabla | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G29 | §4.10 | 10 salas  bytes leídos al cargar UNA sala (la del medio, la 6) | cuenta | sin antes en M0: fila nueva (FR-378) | 239 bytes de 12,414 del archivo; 3 entradas de la tabla | 239 bytes de 12,414 del archivo; 3 entradas de la tabla | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G30 | §4.10 | 10 salas  bytes leídos al cargar UNA sala (la última, la 10) | cuenta | sin antes en M0: fila nueva (FR-378) | 262 bytes de 12,414 del archivo; 4 entradas de la tabla | 262 bytes de 12,414 del archivo; 4 entradas de la tabla | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G31 | §4.10 | 10 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **79.1 µs** | **77.2 µs** | −1.90 µs (-2.4 %) vs M1 | 158.20 µs (2 × M1) | sí | fila nueva (FR-378), su antes es M1; carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G32 | §4.10 | 10 salas  cargar UNA sala (la última, la 10)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **75.0 µs** | **72.3 µs** | −2.70 µs (-3.6 %) vs M1 | 150.00 µs (2 × M1) | sí | fila nueva (FR-378), su antes es M1; carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G33 | §4.10 | verificación: 10 salas: leer UNA sala lee menos bytes que el archivo | cuenta | sin antes en M0: fila nueva (FR-378) | OK | OK | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G34 | §4.10 | verificación: 10 salas: entradas leídas (4) ≤ ⌊log₂ n⌋ + 1 = 4 | cuenta | sin antes en M0: fila nueva (FR-378) | OK | OK | — (igual a M1) | OK | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G35 | §4.10 | 100 salas  bytes leídos al cargar UNA sala (la primera, la 1) | cuenta | sin antes en M0: fila nueva (FR-378) | 299 bytes de 46,646 del archivo; 6 entradas de la tabla | 299 bytes de 46,646 del archivo; 6 entradas de la tabla | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G36 | §4.10 | 100 salas  bytes leídos al cargar UNA sala (la del medio, la 51) | cuenta | sin antes en M0: fila nueva (FR-378) | 304 bytes de 46,646 del archivo; 6 entradas de la tabla | 304 bytes de 46,646 del archivo; 6 entradas de la tabla | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G37 | §4.10 | 100 salas  bytes leídos al cargar UNA sala (la última, la 100) | cuenta | sin antes en M0: fila nueva (FR-378) | 334 bytes de 46,646 del archivo; 7 entradas de la tabla | 334 bytes de 46,646 del archivo; 7 entradas de la tabla | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G38 | §4.10 | 100 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **85.5 µs** | **85.5 µs** | ±0.00 µs (+0.0 %) vs M1 | 171.00 µs (2 × M1) | sí | fila nueva (FR-378), su antes es M1; carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G39 | §4.10 | 100 salas  cargar UNA sala (la última, la 100)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **75.4 µs** | **76.7 µs** | +1.30 µs (+1.7 %) vs M1 | 150.80 µs (2 × M1) | sí | fila nueva (FR-378), su antes es M1; carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G40 | §4.10 | verificación: 100 salas: leer UNA sala lee menos bytes que el archivo | cuenta | sin antes en M0: fila nueva (FR-378) | OK | OK | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G41 | §4.10 | verificación: 100 salas: entradas leídas (7) ≤ ⌊log₂ n⌋ + 1 = 7 | cuenta | sin antes en M0: fila nueva (FR-378) | OK | OK | — (igual a M1) | OK | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G42 | §4.10 | 1000 salas  bytes leídos al cargar UNA sala (la primera, la 1) | cuenta | sin antes en M0: fila nueva (FR-378) | 359 bytes de 400,347 del archivo; 9 entradas de la tabla | 359 bytes de 400,347 del archivo; 9 entradas de la tabla | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G43 | §4.10 | 1000 salas  bytes leídos al cargar UNA sala (la del medio, la 501) | cuenta | sin antes en M0: fila nueva (FR-378) | 374 bytes de 400,347 del archivo; 9 entradas de la tabla | 374 bytes de 400,347 del archivo; 9 entradas de la tabla | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G44 | §4.10 | 1000 salas  bytes leídos al cargar UNA sala (la última, la 1000) | cuenta | sin antes en M0: fila nueva (FR-378) | 397 bytes de 400,347 del archivo; 10 entradas de la tabla | 397 bytes de 400,347 del archivo; 10 entradas de la tabla | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G45 | §4.10 | 1000 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **97.9 µs** | **95.4 µs** | −2.50 µs (-2.6 %) vs M1 | 195.80 µs (2 × M1) | sí | fila nueva (FR-378), su antes es M1; carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G46 | §4.10 | 1000 salas  cargar UNA sala (la última, la 1000)    [binario, acceso directo] | tiempo | sin antes en M0: fila nueva (FR-378) | **80.6 µs** | **74.0 µs** | −6.60 µs (-8.2 %) vs M1 | 161.20 µs (2 × M1) | sí | fila nueva (FR-378), su antes es M1; carga: la misma partida con cazador, costos y conocimiento; sin cambio de código; depende de la máquina |
+| G47 | §4.10 | verificación: 1000 salas: leer UNA sala lee menos bytes que el archivo | cuenta | sin antes en M0: fila nueva (FR-378) | OK | OK | — (igual a M1) | < tamaño del archivo; entradas ≤ ⌊log₂ n⌋ + 1 | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+| G48 | §4.10 | verificación: 1000 salas: entradas leídas (10) ≤ ⌊log₂ n⌋ + 1 = 10 | cuenta | sin antes en M0: fila nueva (FR-378) | OK | OK | — (igual a M1) | OK | sí | fila nueva (FR-378), su antes es M1; sin cambio de código (M2 = M1) |
+
+### T034 · Criterio de cambio de D2: no aplica
+
+Ninguna fila «lista propia lineal» de la sección 2 pasa de 2 × su antes (M0). La más cercana es la **fila 9** (100
+fichas, fallo): 2.14 µs en M2 contra 2.13 µs en M0 (1.00 ×, límite 4.26 µs). Las de acierto bajan entre 0.54 × y
+0.73 × M0 (por ejemplo, la fila 11, 1 000 fichas: de 33.93 a 18.46 µs). No se pasa a la lista enlazada; la caché
+queda como lista propia con la más reciente al final (D2), con la búsqueda sin índice del ajuste de margen
+(commit `70c9854`).
+
+### T035 · Leer UNA sala del binario (FR-382, FR-384)
+
+M2, mediana de tres ejecuciones; entre paréntesis, las tres ejecuciones.
+
+| Salas | Archivo | Bytes leídos: primera / medio / última | Entradas (≤ ⌊log₂ n⌋ + 1) | Verificaciones T021 | Una sala: primera | del medio | última | Carga completa |
+|---|---|---|---|---|---|---|---|---|
+| 10 | 12,414 bytes | 239 / 239 / 262 | 3 / 3 / 4 (≤ 4) | OK, OK | 77.2 µs (77.2 µs / 78.5 µs / 68.1 µs) | 73.5 µs (73.5 µs / 74.6 µs / 65.3 µs) | 72.3 µs (72.3 µs / 73.4 µs / 63.5 µs) | 2.02 ms (2.27 ms / 1.90 ms / 2.02 ms) |
+| 100 | 46,646 bytes | 299 / 304 / 334 | 6 / 6 / 7 (≤ 7) | OK, OK | 85.5 µs (85.5 µs / 86.0 µs / 74.9 µs) | 76.1 µs (78.7 µs / 76.1 µs / 66.0 µs) | 76.7 µs (77.0 µs / 76.7 µs / 65.3 µs) | 6.71 ms (7.51 ms / 6.71 ms / 6.24 ms) |
+| 1,000 | 400,347 bytes | 359 / 374 / 397 | 9 / 9 / 10 (≤ 10) | OK, OK | 95.4 µs (99.0 µs / 84.3 µs / 95.4 µs) | 81.7 µs (88.8 µs / 73.3 µs / 81.7 µs) | 74.0 µs (81.7 µs / 74.0 µs / 71.7 µs) | 57.61 ms (59.97 ms / 55.73 ms / 57.61 ms) |
+
+- **Bytes leídos**: siempre mucho menos que el archivo (397 de 400 347 bytes en el peor caso) y con crecimiento
+  logarítmico: de 239–262 bytes con 10 salas a 359–397 con 1 000, y las entradas leídas suben de 3–4 a 9–10, nunca
+  más de ⌊log₂ n⌋ + 1. Las seis verificaciones de T021 dan OK.
+- **Una sala contra la carga completa**: leer una sala tarda de 72 a 95 µs y cargar la partida, de 2.02 ms (10 salas) a
+  57.61 ms (1 000); la lectura de una sala es siempre más rápida.
+- **Tiempo de una sala al crecer n** (Historia 4, escenario 3): la del medio (73.5 → 81.7 µs) y la última
+  (72.3 → 74.0 µs) quedan dentro de la variación entre las tres ejecuciones (los rangos de 10 y de 1 000 salas se
+  solapan). **La primera crece algo más**: de 77.2 µs (68.1–78.5) con 10 salas a 95.4 µs (84.3–99.0) con 1 000, +24 %
+  para 100 veces más salas, y los rangos no se solapan. Es el crecimiento logarítmico de H2 (3 entradas leídas con 10
+  salas, 9 con 1 000), no un crecimiento con n: el escenario 3 de la Historia 4 dice «no crece más allá de la variación
+  de la máquina», y la primera sala lo cumple solo si ese escenario admite el crecimiento logarítmico que ya fija
+  FR-382. Se anota como hallazgo para la sección 012 de `DECISIONES.md`.
 
 ## Detalle de M0: las tres ejecuciones
 
@@ -1007,5 +1464,100 @@ Antes = M0 (mediana en las filas de tiempo). Carga (M1) = mediana de M1 en las f
 | G44 | §4.10 | 1000 salas  bytes leídos al cargar UNA sala (la última, la 1000) | cuenta | 397 bytes de 400,347 del archivo; 10 entradas de la tabla | 397 bytes de 400,347 del archivo; 10 entradas de la tabla | 397 bytes de 400,347 del archivo; 10 entradas de la tabla | 397 bytes de 400,347 del archivo; 10 entradas de la tabla (igual en las tres) |
 | G45 | §4.10 | 1000 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] | tiempo | 103.2 µs | 97.9 µs | 97.9 µs | **97.9 µs** (mediana) |
 | G46 | §4.10 | 1000 salas  cargar UNA sala (la última, la 1000)    [binario, acceso directo] | tiempo | 74.3 µs | 83.0 µs | 80.6 µs | **80.6 µs** (mediana) |
+| G47 | §4.10 | verificación: 1000 salas: leer UNA sala lee menos bytes que el archivo | cuenta | OK | OK | OK | OK (igual en las tres) |
+| G48 | §4.10 | verificación: 1000 salas: entradas leídas (10) ≤ ⌊log₂ n⌋ + 1 = 10 | cuenta | OK | OK | OK | OK (igual en las tres) |
+
+## Detalle de M2: las tres ejecuciones
+
+
+### Bloque `cache`
+
+| # | Sección | Medición | Tipo | M2-1 | M2-2 | M2-3 | Después (M2) |
+|---|---|---|---|---|---|---|---|
+| 1 | 1. Solicitudes al recorrer un pasillo de 60 salas | sala por sala (sin precarga) | cuenta | 64 solicitudes (~25.6 s de espera); de ellas, 45 disparadas por un cazador | 64 solicitudes (~25.6 s de espera); de ellas, 45 disparadas por un cazador | 64 solicitudes (~25.6 s de espera); de ellas, 45 disparadas por un cazador | 64 solicitudes (~25.6 s de espera); de ellas, 45 disparadas por un cazador (igual en las tres) |
+| 2 | 1. Solicitudes al recorrer un pasillo de 60 salas | actual + vecinas en cada paso (prof. 2) | cuenta | 62 solicitudes (~24.8 s de espera); de ellas, 44 disparadas por un cazador | 62 solicitudes (~24.8 s de espera); de ellas, 44 disparadas por un cazador | 62 solicitudes (~24.8 s de espera); de ellas, 44 disparadas por un cazador | 62 solicitudes (~24.8 s de espera); de ellas, 44 disparadas por un cazador (igual en las tres) |
+| 3 | 1. Solicitudes al recorrer un pasillo de 60 salas | perezosa, prof. 2 | cuenta | 56 solicitudes (~22.4 s de espera); de ellas, 44 disparadas por un cazador | 56 solicitudes (~22.4 s de espera); de ellas, 44 disparadas por un cazador | 56 solicitudes (~22.4 s de espera); de ellas, 44 disparadas por un cazador | 56 solicitudes (~22.4 s de espera); de ellas, 44 disparadas por un cazador (igual en las tres) |
+| 4 | 1. Solicitudes al recorrer un pasillo de 60 salas | perezosa, por defecto (lote de 10) | cuenta | 46 solicitudes (~18.4 s de espera); de ellas, 39 disparadas por un cazador | 46 solicitudes (~18.4 s de espera); de ellas, 39 disparadas por un cazador | 46 solicitudes (~18.4 s de espera); de ellas, 39 disparadas por un cazador | 46 solicitudes (~18.4 s de espera); de ellas, 39 disparadas por un cazador (igual en las tres) |
+| 5 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 25 fichas, acierto | tiempo | 0.7 µs | 0.85 µs | 0.8 µs | 0.8 µs (mediana) |
+| 6 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 25 fichas, fallo | tiempo | 0.6 µs | 0.66 µs | 0.57 µs | 0.6 µs (mediana) |
+| 7 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 25 fichas, acierto (descartada) | tiempo | 0.2 µs | 0.24 µs | 0.19 µs | 0.2 µs (mediana) |
+| 8 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 100 fichas, acierto | tiempo | 1.98 µs | 2.25 µs | 2.71 µs | 2.25 µs (mediana) |
+| 9 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 100 fichas, fallo | tiempo | 1.91 µs | 2.18 µs | 2.14 µs | 2.14 µs (mediana) |
+| 10 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 100 fichas, acierto (descartada) | tiempo | 0.22 µs | 0.23 µs | 0.2 µs | 0.22 µs (mediana) |
+| 11 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 1000 fichas, acierto | tiempo | 18.46 µs | 20.26 µs | 18.14 µs | 18.46 µs (mediana) |
+| 12 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 1000 fichas, fallo | tiempo | 18.29 µs | 20.16 µs | 19.12 µs | 19.12 µs (mediana) |
+| 13 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 1000 fichas, acierto (descartada) | tiempo | 0.24 µs | 0.28 µs | 0.26 µs | 0.26 µs (mediana) |
+| 14 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 5000 fichas, acierto | tiempo | 104.45 µs | 116.68 µs | 107.81 µs | 107.81 µs (mediana) |
+| 15 | 2. Búsqueda en la caché (µs por operación) | lista propia lineal, 5000 fichas, fallo | tiempo | 95.16 µs | 101.23 µs | 96.46 µs | 96.46 µs (mediana) |
+| 16 | 2. Búsqueda en la caché (µs por operación) | tabla hash propia, 5000 fichas, acierto (descartada) | tiempo | 0.31 µs | 0.3 µs | 0.29 µs | 0.3 µs (mediana) |
+| 17 | 3. Recuperar una ficha liberada desde disco | catálogo con 25 fichas | tiempo | 0.071 ms por lectura (una solicitud real: ~400 ms) | 0.071 ms por lectura (una solicitud real: ~400 ms) | 0.073 ms por lectura (una solicitud real: ~400 ms) | 0.071 ms por lectura (una solicitud real: ~400 ms) (mediana) |
+| 18 | 3. Recuperar una ficha liberada desde disco | catálogo con 200 fichas | tiempo | 0.178 ms por lectura (una solicitud real: ~400 ms) | 0.277 ms por lectura (una solicitud real: ~400 ms) | 0.167 ms por lectura (una solicitud real: ~400 ms) | 0.178 ms por lectura (una solicitud real: ~400 ms) (mediana) |
+| 19 | 3. Recuperar una ficha liberada desde disco | catálogo con 1000 fichas | tiempo | 0.456 ms por lectura (una solicitud real: ~400 ms) | 0.437 ms por lectura (una solicitud real: ~400 ms) | 0.436 ms por lectura (una solicitud real: ~400 ms) | 0.437 ms por lectura (una solicitud real: ~400 ms) (mediana) |
+| 20 | 4. Guardar 10 fichas nuevas (reescribe el archivo completo) | catálogo con 25 fichas | tiempo | 3.319 ms | 2.087 ms | 2.331 ms | 2.331 ms (mediana) |
+| 21 | 4. Guardar 10 fichas nuevas (reescribe el archivo completo) | catálogo con 200 fichas | tiempo | 9.793 ms | 9.975 ms | 9.941 ms | 9.941 ms (mediana) |
+| 22 | 4. Guardar 10 fichas nuevas (reescribe el archivo completo) | catálogo con 1000 fichas | tiempo | 11.038 ms | 10.758 ms | 10.459 ms | 10.758 ms (mediana) |
+| 23 | 5. Planear la vecindad en una cripta de 1000 salas | salas_vecinas, 1 paso | tiempo | 17.6 µs | 20.0 µs | 18.6 µs | 18.6 µs (mediana) |
+| 24 | 5. Planear la vecindad en una cripta de 1000 salas | salas_vecinas, 2 pasos | tiempo | 44.2 µs | 54.5 µs | 46.6 µs | 46.6 µs (mediana) |
+| 25 | 5. Planear la vecindad en una cripta de 1000 salas | precargar_vecinas cuando no hace falta nada | tiempo | 27.4 µs | 31.8 µs | 27.0 µs | 27.4 µs (mediana) |
+| 26 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad    5 | cuenta | 83 aciertos / 1100 fallos (7.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 83 aciertos / 1100 fallos (7.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 83 aciertos / 1100 fallos (7.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 83 aciertos / 1100 fallos (7.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador (igual en las tres) |
+| 27 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad   10 | cuenta | 327 aciertos / 856 fallos (27.6 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 327 aciertos / 856 fallos (27.6 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 327 aciertos / 856 fallos (27.6 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 327 aciertos / 856 fallos (27.6 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador (igual en las tres) |
+| 28 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad   25 | cuenta | 553 aciertos / 630 fallos (46.7 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 553 aciertos / 630 fallos (46.7 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 553 aciertos / 630 fallos (46.7 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 553 aciertos / 630 fallos (46.7 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador (igual en las tres) |
+| 29 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad  100 | cuenta | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador (igual en las tres) |
+| 30 | 6. Caché en una partida completa (150 pasos por una rejilla de 10x10) | capacidad 1000 | cuenta | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador | 1112 aciertos / 71 fallos (94.0 %) 64 solicitudes de red; de ellas, 45 disparadas por un cazador (igual en las tres) |
+| 31 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 25 fichas, acierto (descartada) | tiempo | 0.72 µs | 0.71 µs | 0.83 µs | 0.72 µs (mediana) |
+| 32 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 100 fichas, acierto (descartada) | tiempo | 2.17 µs | 2.08 µs | 3.83 µs | 2.17 µs (mediana) |
+| 33 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 1000 fichas, acierto (descartada) | tiempo | 18.94 µs | 20.98 µs | 23.61 µs | 20.98 µs (mediana) |
+| 34 | 2. Búsqueda en la caché (µs por operación) | lista enlazada propia, 5000 fichas, acierto (descartada) | tiempo | 108.04 µs | 103.79 µs | 109.43 µs | 108.04 µs (mediana) |
+
+### Bloque `guardado`
+
+| # | Sección | Medición | Tipo | M2-1 | M2-2 | M2-3 | Después (M2) |
+|---|---|---|---|---|---|---|---|
+| G1 | §4.10 | verificación: cargar el binario devuelve exactamente el estado guardado | cuenta | OK | OK | OK | OK (igual en las tres) |
+| G2 | §4.10 | verificación: un archivo de otra versión del formato se rechaza | cuenta | OK | OK | OK | OK (igual en las tres) |
+| G3 | §4.10 | 10 salas  tamaño en disco  [binario] | cuenta | 12,414 bytes | 12,414 bytes | 12,414 bytes | 12,414 bytes (igual en las tres) |
+| G4 | §4.10 | 10 salas  tamaño en disco  [JSON] | cuenta | 28,363 bytes  (2.28× el binario) | 28,363 bytes  (2.28× el binario) | 28,363 bytes  (2.28× el binario) | 28,363 bytes  (2.28× el binario) (igual en las tres) |
+| G5 | §4.10 | 10 salas  guardar la partida completa  [binario] | tiempo | 1.87 ms | 1.96 ms | 1.70 ms | 1.87 ms (mediana) |
+| G6 | §4.10 | 10 salas  guardar la partida completa  [JSON] | tiempo | 825.5 µs | 880.9 µs | 799.1 µs | 825.5 µs (mediana) |
+| G7 | §4.10 | 10 salas  cargar la partida completa   [binario → DTO] | tiempo | 2.27 ms | 1.90 ms | 2.02 ms | 2.02 ms (mediana) |
+| G8 | §4.10 | 10 salas  cargar la partida completa   [JSON, solo analiza el texto] | tiempo | 316.1 µs | 289.7 µs | 277.9 µs | 289.7 µs (mediana) |
+| G9 | §4.10 | 10 salas  cargar UNA sala (la 6)    [binario, acceso directo] | tiempo | 73.5 µs | 74.6 µs | 65.3 µs | 73.5 µs (mediana) |
+| G10 | §4.10 | 10 salas  conseguir UNA sala (la 6) [JSON: hay que leer todo] | tiempo | 279.5 µs | 276.9 µs | 265.3 µs | 276.9 µs (mediana) |
+| G11 | §4.10 | 100 salas  tamaño en disco  [binario] | cuenta | 46,646 bytes | 46,646 bytes | 46,646 bytes | 46,646 bytes (igual en las tres) |
+| G12 | §4.10 | 100 salas  tamaño en disco  [JSON] | cuenta | 133,318 bytes  (2.86× el binario) | 133,318 bytes  (2.86× el binario) | 133,318 bytes  (2.86× el binario) | 133,318 bytes  (2.86× el binario) (igual en las tres) |
+| G13 | §4.10 | 100 salas  guardar la partida completa  [binario] | tiempo | 4.87 ms | 4.56 ms | 4.56 ms | 4.56 ms (mediana) |
+| G14 | §4.10 | 100 salas  guardar la partida completa  [JSON] | tiempo | 3.40 ms | 2.96 ms | 3.56 ms | 3.40 ms (mediana) |
+| G15 | §4.10 | 100 salas  cargar la partida completa   [binario → DTO] | tiempo | 7.51 ms | 6.71 ms | 6.24 ms | 6.71 ms (mediana) |
+| G16 | §4.10 | 100 salas  cargar la partida completa   [JSON, solo analiza el texto] | tiempo | 1.22 ms | 1.12 ms | 1.11 ms | 1.12 ms (mediana) |
+| G17 | §4.10 | 100 salas  cargar UNA sala (la 51)    [binario, acceso directo] | tiempo | 78.7 µs | 76.1 µs | 66.0 µs | 76.1 µs (mediana) |
+| G18 | §4.10 | 100 salas  conseguir UNA sala (la 51) [JSON: hay que leer todo] | tiempo | 1.13 ms | 1.21 ms | 1.09 ms | 1.13 ms (mediana) |
+| G19 | §4.10 | 1000 salas  tamaño en disco  [binario] | cuenta | 400,347 bytes | 400,347 bytes | 400,347 bytes | 400,347 bytes (igual en las tres) |
+| G20 | §4.10 | 1000 salas  tamaño en disco  [JSON] | cuenta | 1,199,809 bytes  (3.00× el binario) | 1,199,809 bytes  (3.00× el binario) | 1,199,809 bytes  (3.00× el binario) | 1,199,809 bytes  (3.00× el binario) (igual en las tres) |
+| G21 | §4.10 | 1000 salas  guardar la partida completa  [binario] | tiempo | 37.19 ms | 35.98 ms | 34.93 ms | 35.98 ms (mediana) |
+| G22 | §4.10 | 1000 salas  guardar la partida completa  [JSON] | tiempo | 40.78 ms | 27.61 ms | 29.75 ms | 29.75 ms (mediana) |
+| G23 | §4.10 | 1000 salas  cargar la partida completa   [binario → DTO] | tiempo | 59.97 ms | 55.73 ms | 57.61 ms | 57.61 ms (mediana) |
+| G24 | §4.10 | 1000 salas  cargar la partida completa   [JSON, solo analiza el texto] | tiempo | 10.70 ms | 11.31 ms | 9.44 ms | 10.70 ms (mediana) |
+| G25 | §4.10 | 1000 salas  cargar UNA sala (la 501)    [binario, acceso directo] | tiempo | 88.8 µs | 73.3 µs | 81.7 µs | 81.7 µs (mediana) |
+| G26 | §4.10 | 1000 salas  conseguir UNA sala (la 501) [JSON: hay que leer todo] | tiempo | 10.13 ms | 10.37 ms | 10.02 ms | 10.13 ms (mediana) |
+| G27 | §4.10 | (nota de la salida) El binario ordena las salas en una tabla de entradas fijas y busca con búsqueda binaria; el JSON no puede saltar a una sala. | nota | — | — | — | — |
+| G28 | §4.10 | 10 salas  bytes leídos al cargar UNA sala (la primera, la 1) | cuenta | 239 bytes de 12,414 del archivo; 3 entradas de la tabla | 239 bytes de 12,414 del archivo; 3 entradas de la tabla | 239 bytes de 12,414 del archivo; 3 entradas de la tabla | 239 bytes de 12,414 del archivo; 3 entradas de la tabla (igual en las tres) |
+| G29 | §4.10 | 10 salas  bytes leídos al cargar UNA sala (la del medio, la 6) | cuenta | 239 bytes de 12,414 del archivo; 3 entradas de la tabla | 239 bytes de 12,414 del archivo; 3 entradas de la tabla | 239 bytes de 12,414 del archivo; 3 entradas de la tabla | 239 bytes de 12,414 del archivo; 3 entradas de la tabla (igual en las tres) |
+| G30 | §4.10 | 10 salas  bytes leídos al cargar UNA sala (la última, la 10) | cuenta | 262 bytes de 12,414 del archivo; 4 entradas de la tabla | 262 bytes de 12,414 del archivo; 4 entradas de la tabla | 262 bytes de 12,414 del archivo; 4 entradas de la tabla | 262 bytes de 12,414 del archivo; 4 entradas de la tabla (igual en las tres) |
+| G31 | §4.10 | 10 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] | tiempo | 77.2 µs | 78.5 µs | 68.1 µs | 77.2 µs (mediana) |
+| G32 | §4.10 | 10 salas  cargar UNA sala (la última, la 10)    [binario, acceso directo] | tiempo | 72.3 µs | 73.4 µs | 63.5 µs | 72.3 µs (mediana) |
+| G33 | §4.10 | verificación: 10 salas: leer UNA sala lee menos bytes que el archivo | cuenta | OK | OK | OK | OK (igual en las tres) |
+| G34 | §4.10 | verificación: 10 salas: entradas leídas (4) ≤ ⌊log₂ n⌋ + 1 = 4 | cuenta | OK | OK | OK | OK (igual en las tres) |
+| G35 | §4.10 | 100 salas  bytes leídos al cargar UNA sala (la primera, la 1) | cuenta | 299 bytes de 46,646 del archivo; 6 entradas de la tabla | 299 bytes de 46,646 del archivo; 6 entradas de la tabla | 299 bytes de 46,646 del archivo; 6 entradas de la tabla | 299 bytes de 46,646 del archivo; 6 entradas de la tabla (igual en las tres) |
+| G36 | §4.10 | 100 salas  bytes leídos al cargar UNA sala (la del medio, la 51) | cuenta | 304 bytes de 46,646 del archivo; 6 entradas de la tabla | 304 bytes de 46,646 del archivo; 6 entradas de la tabla | 304 bytes de 46,646 del archivo; 6 entradas de la tabla | 304 bytes de 46,646 del archivo; 6 entradas de la tabla (igual en las tres) |
+| G37 | §4.10 | 100 salas  bytes leídos al cargar UNA sala (la última, la 100) | cuenta | 334 bytes de 46,646 del archivo; 7 entradas de la tabla | 334 bytes de 46,646 del archivo; 7 entradas de la tabla | 334 bytes de 46,646 del archivo; 7 entradas de la tabla | 334 bytes de 46,646 del archivo; 7 entradas de la tabla (igual en las tres) |
+| G38 | §4.10 | 100 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] | tiempo | 85.5 µs | 86.0 µs | 74.9 µs | 85.5 µs (mediana) |
+| G39 | §4.10 | 100 salas  cargar UNA sala (la última, la 100)    [binario, acceso directo] | tiempo | 77.0 µs | 76.7 µs | 65.3 µs | 76.7 µs (mediana) |
+| G40 | §4.10 | verificación: 100 salas: leer UNA sala lee menos bytes que el archivo | cuenta | OK | OK | OK | OK (igual en las tres) |
+| G41 | §4.10 | verificación: 100 salas: entradas leídas (7) ≤ ⌊log₂ n⌋ + 1 = 7 | cuenta | OK | OK | OK | OK (igual en las tres) |
+| G42 | §4.10 | 1000 salas  bytes leídos al cargar UNA sala (la primera, la 1) | cuenta | 359 bytes de 400,347 del archivo; 9 entradas de la tabla | 359 bytes de 400,347 del archivo; 9 entradas de la tabla | 359 bytes de 400,347 del archivo; 9 entradas de la tabla | 359 bytes de 400,347 del archivo; 9 entradas de la tabla (igual en las tres) |
+| G43 | §4.10 | 1000 salas  bytes leídos al cargar UNA sala (la del medio, la 501) | cuenta | 374 bytes de 400,347 del archivo; 9 entradas de la tabla | 374 bytes de 400,347 del archivo; 9 entradas de la tabla | 374 bytes de 400,347 del archivo; 9 entradas de la tabla | 374 bytes de 400,347 del archivo; 9 entradas de la tabla (igual en las tres) |
+| G44 | §4.10 | 1000 salas  bytes leídos al cargar UNA sala (la última, la 1000) | cuenta | 397 bytes de 400,347 del archivo; 10 entradas de la tabla | 397 bytes de 400,347 del archivo; 10 entradas de la tabla | 397 bytes de 400,347 del archivo; 10 entradas de la tabla | 397 bytes de 400,347 del archivo; 10 entradas de la tabla (igual en las tres) |
+| G45 | §4.10 | 1000 salas  cargar UNA sala (la primera, la 1)    [binario, acceso directo] | tiempo | 99.0 µs | 84.3 µs | 95.4 µs | 95.4 µs (mediana) |
+| G46 | §4.10 | 1000 salas  cargar UNA sala (la última, la 1000)    [binario, acceso directo] | tiempo | 81.7 µs | 74.0 µs | 71.7 µs | 74.0 µs (mediana) |
 | G47 | §4.10 | verificación: 1000 salas: leer UNA sala lee menos bytes que el archivo | cuenta | OK | OK | OK | OK (igual en las tres) |
 | G48 | §4.10 | verificación: 1000 salas: entradas leídas (10) ≤ ⌊log₂ n⌋ + 1 = 10 | cuenta | OK | OK | OK | OK (igual en las tres) |

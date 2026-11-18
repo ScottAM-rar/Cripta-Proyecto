@@ -227,19 +227,19 @@
 
 ### Historia 3
 
-- [ ] T031 [US3] Ejecutar tres veces cada bloque, con `--bench-csv specs/012-revision-parte-i/bench-cache-M2-1.csv` y `bench-guardado-M2-1.csv` (y lo mismo con `-2` y `-3`). Copiar, para cada ejecución, la salida, los comandos, la fecha, el commit (más «árbol con cambios») y el código de salida (0) en la sección M2 de `specs/012-revision-parte-i/mediciones.md`; cada fila de tiempo registra la mediana de las tres. (FR-377, FR-378, FR-383, FR-384)
-- [ ] T032 [US3] Comprobar en `mediciones.md`:
+- [X] T031 [US3] Ejecutar tres veces cada bloque, con `--bench-csv specs/012-revision-parte-i/bench-cache-M2-1.csv` y `bench-guardado-M2-1.csv` (y lo mismo con `-2` y `-3`). Copiar, para cada ejecución, la salida, los comandos, la fecha, el commit (más «árbol con cambios») y el código de salida (0) en la sección M2 de `specs/012-revision-parte-i/mediciones.md`; cada fila de tiempo registra la mediana de las tres. (FR-377, FR-378, FR-383, FR-384)
+- [X] T032 [US3] Comprobar en `mediciones.md`:
   - las filas de cuenta son idénticas en las tres ejecuciones de M2;
   - las secciones 1 y 6 del bloque `cache` son iguales en M1 y M2.
 
   Si algo difiere, se investiga antes de seguir. (FR-379, FR-387)
-- [ ] T033 [US3] Completar en `specs/012-revision-parte-i/mediciones.md`, para cada fila: «Después (M2)» (la mediana en las filas de tiempo), la diferencia absoluta y en %, el límite (2 × M0, o 2 × M1 en las filas nuevas y en las que la carga ya llevó a más del doble de M0, con la causa «carga» escrita), «Cumple» y la causa («código: …», «depende de la máquina» o «sin cambios»). (FR-379, FR-383, FR-384)
-- [ ] T034 [US5] **Solo si** en T033 una fila «lista propia lineal» de la sección 2 sigue pasando 2 × su antes: aplicar el criterio de cambio de D2 (pasar `adaptadores/cache.py` a la lista enlazada propia del prototipo de T019), repetir T028, T030 y T031 a T033, y anotarlo como cambio respecto del plan. Si no hace falta, marcar la tarea con «no aplica» y la fila que lo demuestra. (FR-383, FR-386, FR-387)
+- [X] T033 [US3] Completar en `specs/012-revision-parte-i/mediciones.md`, para cada fila: «Después (M2)» (la mediana en las filas de tiempo), la diferencia absoluta y en %, el límite (2 × M0, o 2 × M1 en las filas nuevas y en las que la carga ya llevó a más del doble de M0, con la causa «carga» escrita), «Cumple» y la causa («código: …», «depende de la máquina» o «sin cambios»). (FR-379, FR-383, FR-384)
+- [X] T034 [US5] **No aplica** (fila 9, 100 fichas, fallo: 2.14 µs en M2 contra 2.13 µs en M0, 1.00 ×; ver `mediciones.md`, T034). **Solo si** en T033 una fila «lista propia lineal» de la sección 2 sigue pasando 2 × su antes: aplicar el criterio de cambio de D2 (pasar `adaptadores/cache.py` a la lista enlazada propia del prototipo de T019), repetir T028, T030 y T031 a T033, y anotarlo como cambio respecto del plan. Si no hace falta, marcar la tarea con «no aplica» y la fila que lo demuestra. (FR-383, FR-386, FR-387)
 
 ### Historia 4
 
-- [ ] T035 [US4] En `specs/012-revision-parte-i/mediciones.md`, registrar para 10, 100 y 1 000 salas los bytes leídos (primera, del medio y última), el tamaño del archivo y las entradas leídas frente a ⌊log₂ n⌋ + 1, y confirmar que las verificaciones de T021 dieron «ok» y que la lectura de una sala tarda menos que la carga completa. Comparar además entre 10, 100 y 1 000 salas el tiempo de leer la primera, la del medio y la última sala, y confirmar que no crece con el número de salas más allá de la variación entre las tres ejecuciones (Historia 4, escenario 3). (FR-382, FR-384)
-- [ ] T036 [US4] Medición manual:
+- [X] T035 [US4] En `specs/012-revision-parte-i/mediciones.md`, registrar para 10, 100 y 1 000 salas los bytes leídos (primera, del medio y última), el tamaño del archivo y las entradas leídas frente a ⌊log₂ n⌋ + 1, y confirmar que las verificaciones de T021 dieron «ok» y que la lectura de una sala tarda menos que la carga completa. Comparar además entre 10, 100 y 1 000 salas el tiempo de leer la primera, la del medio y la última sala, y confirmar que no crece con el número de salas más allá de la variación entre las tres ejecuciones (Historia 4, escenario 3). (FR-382, FR-384)
+- [X] T036 [US4] Medición manual:
   1. Revisar qué criptas de `datos_cripta/` tienen esqueleto, contenido y catálogo, y elegir la más grande.
   2. Sin red (`--offline`, o armando el estado con `FuenteSoloLocal`), generar y guardar una partida de formato 8 en una carpeta temporal.
   3. Medirla con la subclase contadora de T021 (tamaño, bytes, entradas y tiempo de la primera, la del medio y la última sala, y la carga completa) y comprobar 0 solicitudes.
