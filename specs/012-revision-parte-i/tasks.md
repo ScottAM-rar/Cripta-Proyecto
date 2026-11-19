@@ -306,7 +306,7 @@
 
 ## Fase 9: corrección L3 — sin `collections` en producción
 
-- [ ] T048 [US5] Corrección L3 (spec, 2026-11-18): quitar todo `collections` del código de producción sin cambiar el comportamiento.
+- [X] T048 [US5] Corrección L3 (spec, 2026-11-18): quitar todo `collections` del código de producción sin cambiar el comportamiento.
   - `DTO/SalaDTO.py`: quitar `from collections import deque`; `salidas: list[SalidaDTO] = field(default_factory=list)`;
   - `adaptadores/servicioCripta.py`: quitar `from collections import deque`; `_armar_salidas` devuelve `list[SalidaDTO]`, arma `salidas: list[SalidaDTO] = []` y su docstring dice «en una lista»;
   - `Logica/EstadoGuardadoLogica.py`: quitar la importación; `sala.salidas = [SalidaDTO(...) for s in g.salidas]`, sin `maxlen`;

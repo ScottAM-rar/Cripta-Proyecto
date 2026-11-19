@@ -1,5 +1,5 @@
 import random
-from collections.abc import Callable
+from typing import Callable
 from DTO.EventoDTO import EventoDTO
 from DTO.ActorDTO import *
 from DTO.SalaDTO import *

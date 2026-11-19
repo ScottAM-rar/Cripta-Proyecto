@@ -11,7 +11,7 @@ class SalaLogica :
         self.mapa_puertas = None               # MapaCripta cuya versión de puertas sube con cada cambio
 
     def _obtener_salida(self, direccion: Direccion) -> SalidaDTO | None:
-        """Recorre la deque del DTO externamente y devuelve la salida o None."""
+        """Recorre la lista de salidas del DTO y devuelve la salida o None."""
         return next((s for s in self.sala.salidas if s.direccion == direccion), None)
 
     

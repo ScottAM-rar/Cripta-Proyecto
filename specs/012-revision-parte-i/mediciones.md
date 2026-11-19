@@ -1203,6 +1203,44 @@ comandos se ejecutaron uno por uno, en primer plano y con `PYTHONIOENCODING=utf-
 - **`adaptadores/servicioCripta.py`**: `git diff --stat 0b031ec` da 11 líneas agregadas y 7 quitadas, todas en el cuerpo
   de `salas_vecinas` (D1). La importación de la línea 2 sigue, porque la usa `_armar_salidas` (uso 4, justificado).
 
+### Corrección L3 (T048)
+
+Código: el commit de T048 (las salidas de la sala con `list`, `typing.Callable` en `GestorEventos` y tres pruebas nuevas
+en `test_vecindad_equivalencia.py`). Las mediciones M0, M1 y M2 no se repiten. Los comandos se ejecutaron uno por uno, en
+primer plano y con `PYTHONIOENCODING=utf-8`, el 2026-11-18:
+
+| Comando | Ejecutadas | Fallos | Errores | Código de salida |
+|---|---|---|---|---|
+| `python -m unittest discover -p "test_*.py"` | 742 | 0 | 0 | 0 |
+| `python -m tests_labs.sin_red` | 205 | 0 | 0 | 0 |
+| `python main.py --bench` (primera corrida completa) | — | — | — | **1** |
+| `python main.py --bench resolubilidad` (dos repeticiones del bloque) | — | — | — | 0 y 0 |
+| `python main.py --bench` (segunda corrida completa, 19:38 -0600) | — | — | — | 0 |
+
+- **`discover`**: 742 = 739 de antes + 3 de `SinCollectionsEnProduccion` (FR-389): los cuatro archivos de los usos 3 a 6
+  no nombran `deque` ni `collections` en su código; `_armar_salidas` devuelve una lista en el orden N, S, E, O aunque
+  la API entregue las salidas en el orden O, E, S, N; y una partida guardada en binario y cargada rearma una lista con
+  las mismas salidas en el mismo orden (N, S, E, O). Contra el código anterior, la primera de las tres falla en los
+  cuatro archivos.
+- **`sin_red`**: 205 = 202 + las 3 nuevas, con `requests.get` bloqueado.
+- **Primera corrida completa de `--bench`: código de salida 1.** La única fila que decide el veredicto y no cumple es
+  «Resolubilidad (D)»: la razón t(3 000) / t(300) del incremental dio **23.4** (límite 20), porque t(3 000) salió en
+  61.6 ms contra 31 a 39 ms en las corridas anteriores (t(300) = 2.63 ms, en su rango de siempre). 0 Traceback. El
+  otro NO CUMPLE es el conocido de 1 000 esbirros (prueba de estrés, no decide el veredicto).
+- **Repeticiones del bloque `resolubilidad`**: 12.0 (2.68 ms y 32.21 ms) y 13.5 (2.38 ms y 32.22 ms): **CUMPLE**,
+  código de salida 0 las dos veces.
+- **Es ruido de tiempo, no efecto del cambio.** La verificación de resolubilidad recorre las aristas con
+  `mapa.salidas(sala)` del mapa armado desde el esqueleto JSON (`Logica/VerificacionResolubilidad.py:98, 153, 203`), y
+  el bloque arma sus criptas como esqueletos JSON (`bench/resolubilidad.py`). Ninguno usa `SalaDTO.salidas`, que es lo
+  único que cambió de tipo. Las dos repeticiones y la segunda corrida completa vuelven a los 32 ms de siempre con el
+  mismo código.
+- **Segunda corrida completa de `--bench`**: código de salida 0, 0 Traceback, 146 verificaciones OK y 0 fallidas. El
+  único NO CUMPLE es el conocido de 1 000 esbirros (máx. 42.32 ms, prueba de estrés, no decide el veredicto).
+  Resolubilidad (D): 6.2 (CUMPLE). Esta vez el que salió alto fue t(300), 5.15 ms, y t(3 000) dio 31.97 ms: el ruido
+  también va en la otra dirección. Las filas de cuenta coinciden con M2: con capacidad 25, 553 aciertos, 630 fallos y
+  64 solicitudes (45 disparadas por un cazador). Los tamaños del binario (12,414, 46,646 y 400,347 bytes) también
+  coinciden.
+
 ## Tabla por bloque
 
 Antes = M0 y Carga = M1 (mediana en las filas de tiempo; valor común en las de cuenta). Después = M2, con el mismo criterio. **Límite** (T033, FR-383 y FR-384): 2 × M0; 2 × M1 en las filas nuevas (sin antes en M0) y en las filas de red que la carga ya llevó a más del doble de M0 (fila 4 y filas 26 a 30, corrección L1 de la spec). En las filas de cuenta de red el límite se aplica a las solicitudes. Los tamaños en disco no tienen límite (FR-384 limita guardar, cargar y leer). **Resultado: todas las filas cumplen.** La más cercana a su límite es la fila 3 (perezosa, prof. 2): 56 solicitudes contra 66 (2 × M0), 1.70 × M0, por la carga (+1 llaves y 44 disparadas por cazadores); el código no la mueve (M2 = M1).
@@ -1671,7 +1709,7 @@ adaptadores/servicioCripta.py:523:    def _armar_salidas(salidas_api: dict | Non
   (líneas 391 a 415) no menciona ninguna estructura de la lista (D1).
 - La búsqueda 2 solo encuentra dos docstrings que dicen que el archivo **no** usa `sorted()` ni `.sort()`. No son usos.
 
-> **Corrección L3 (2026-11-18, FR-389, T048).** Las cuatro líneas de la búsqueda 1 son los usos 3 a 6. T048 los reemplaza: las salidas de la sala usan una lista (`SalaDTO`, `_armar_salidas` y la carga de partida) y `GestorEventos` toma `Callable` de `typing`. La salida de arriba se conserva tal como se tomó en `aeb25a0`; la búsqueda repetida después de T048 se anota aquí al cerrarla.
+> **Corrección L3 (2026-11-18, FR-389, T048).** Las cuatro líneas de la búsqueda 1 son los usos 3 a 6. T048 los reemplaza: las salidas de la sala usan una lista (`SalaDTO`, `_armar_salidas` y la carga de partida) y `GestorEventos` toma `Callable` de `typing`. La salida de arriba se conserva tal como se tomó en `aeb25a0`. Repetida después de T048 con los mismos comandos, la búsqueda 1 da **0 líneas**. `grep -rnwE "deque|collections"` sobre las mismas carpetas solo encuentra tres docstrings que dicen que el archivo **no** los usa (`Logica/ColaCircular.py:3`, `Logica/VerificacionResolubilidad.py:25`, `Logica/ViajeLogica.py:10`). Las búsquedas 2 a 4 no cambian, salvo la línea 18 de la búsqueda 4, que ahora anota `-> list[SalidaDTO]` y sube a la línea 522.
 
 ### T038 · Revisión a mano
 

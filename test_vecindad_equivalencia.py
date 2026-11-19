@@ -1,4 +1,4 @@
-"""Capacidad 012 · Equivalencia de la planeación de la vecindad (FR-370 a FR-375).
+"""Capacidad 012 · Equivalencia de la planeación de la vecindad (FR-370 a FR-375) y salidas sin `collections` (FR-389).
 
 Compara `ServicioCripta.salas_vecinas` con una referencia escrita aquí: salas, orden, errores, búsquedas en el
 esqueleto y descargas del esqueleto. Las pruebas de equivalencia pasan contra el código de `0b031ec` antes de
@@ -8,12 +8,21 @@ Solo listas (principio I): sin dict ni set como índice, sin sorted ni .sort, si
 networkx. Los esqueletos son la forma del JSON de la API (lectura de JSON, permitida).
 """
 import inspect
+import io
+import os
 import random
+import tempfile
+import tokenize
 import unittest
 
+from adaptadores.AlmacenPartidaBinario import AlmacenPartidaBinario
 from adaptadores.cache import CacheLRU
 from adaptadores.servicioCripta import ServicioCripta
+from DTO.SalaDTO import Direccion, SalaDTO
+from Logica.EstadoJuegoLogica import EstadoJuegoLogica
+from tests_labs.api_falsa import HttpConfigurable
 from tests_labs.cripta_sintetica import esqueleto_de_conexiones, esqueleto_dirigido_aleatorio
+from tests_labs.partida_prueba import nueva_partida
 
 CRIPTA = "c012"
 LETRAS = ("N", "S", "E", "O")        # el orden vigente de las salidas (FR-371)
@@ -340,13 +349,79 @@ class PrincipioI(unittest.TestCase):
 
     Es la excepción de la fase 2: FALLA contra `0b031ec` a propósito, porque el código vigente recorre con una
     cola de biblioteca, y tiene que pasar después de T024 (D1). Se mira el código fuente del método y no el
-    archivo, porque `_armar_salidas` sigue usando la cola (uso justificado en el inventario)."""
+    archivo, porque `_armar_salidas` seguía usando la cola (uso justificado entonces). Desde T048 (corrección L3) el
+    archivo entero queda sin `collections`, y eso lo comprueba `SinCollectionsEnProduccion`."""
 
     def test_fr375_salas_vecinas_sin_estructuras_prohibidas(self):
         """FR-375 (Historia 2, escenario 1)."""
         fuente = inspect.getsource(ServicioCripta.salas_vecinas)
         encontrados = [nombre for nombre in PROHIBIDOS if nombre in fuente]
         self.assertEqual(encontrados, [], f"salas_vecinas usa {encontrados} (principio I)")
+
+
+# ---------------------------------------------------------------- corrección L3 (T048)
+
+ARCHIVOS_SALIDAS = ("DTO/SalaDTO.py", "adaptadores/servicioCripta.py", "Logica/EstadoGuardadoLogica.py",
+                    "Logica/GestorEventos.py")
+NOMBRES_L3 = ("deque", "collections")
+ORDEN_SALIDAS = [Direccion.NORTE, Direccion.SUR, Direccion.ESTE, Direccion.OESTE]
+
+
+def nombres_en_codigo(ruta: str) -> list:
+    """Las apariciones de `NOMBRES_L3` como nombre en el código (no en cadenas ni comentarios): (línea, nombre)."""
+    raiz = os.path.dirname(os.path.abspath(__file__))
+    with open(os.path.join(raiz, ruta), encoding="utf-8") as archivo:
+        texto = archivo.read()
+    encontrados = []
+    for token in tokenize.generate_tokens(io.StringIO(texto).readline):
+        if token.type == tokenize.NAME and token.string in NOMBRES_L3:
+            encontrados.append((token.start[0], token.string))
+    return encontrados
+
+
+def cripta_cruz() -> list:
+    """La sala 1 tiene las cuatro salidas. Se declaran en el orden O, E, S, N para que la API las entregue al revés."""
+    return esqueleto_de_conexiones([(1, 5, None, "O", "E"), (1, 4, None, "E", "O"),
+                                    (1, 3, None, "S", "N"), (1, 2, None, "N", "S")])
+
+
+class SinCollectionsEnProduccion(unittest.TestCase):
+    """FR-389 (corrección L3 de la spec 012, T048): las salidas de la sala usan una lista y el código de producción no
+    nombra `deque` ni `collections`. Mismo comportamiento: orden N, S, E, O al armar y al guardar y cargar."""
+
+    def test_fr389_archivos_de_salidas_sin_deque_ni_collections(self):
+        """FR-389: ninguno de los cuatro archivos de los usos 3 a 6 nombra `deque` ni `collections` en su código."""
+        for ruta in ARCHIVOS_SALIDAS:
+            with self.subTest(archivo=ruta):
+                encontrados = nombres_en_codigo(ruta)
+                self.assertEqual(encontrados, [], f"{ruta} usa {encontrados} (FR-389, corrección L3)")
+
+    def test_fr389_armar_salidas_devuelve_lista_en_orden(self):
+        """FR-389, FR-387: `_armar_salidas` y el DTO usan una lista, en el orden N, S, E, O aunque la API no lo traiga."""
+        self.assertIs(type(SalaDTO(id=1, nombre="x").salidas), list)
+        salidas_api = cripta_cruz()[0]["salidas"]
+        self.assertEqual(list(salidas_api), ["O", "E", "S", "N"])
+        salidas = ServicioCripta._armar_salidas(salidas_api)
+        self.assertIs(type(salidas), list)
+        self.assertEqual([s.direccion for s in salidas], ORDEN_SALIDAS)
+        self.assertEqual([s.sala_destino for s in salidas], [2, 3, 4, 5])
+        self.assertEqual(ServicioCripta._armar_salidas(None), [])
+
+    def test_fr389_partida_guardada_y_cargada_conserva_el_orden(self):
+        """FR-389, FR-387: guardar en binario y cargar rearma una lista con las mismas salidas en el mismo orden."""
+        logica = nueva_partida(cripta_cruz())
+        antes = logica.estadoJuego.salas[1].salidas
+        self.assertEqual([s.direccion for s in antes], ORDEN_SALIDAS)
+        with tempfile.TemporaryDirectory() as carpeta:
+            archivo = os.path.join(carpeta, "partida.bin")
+            AlmacenPartidaBinario(archivo).guardar(logica.exportar_estado())
+            cargada = EstadoJuegoLogica()
+            cargada.comunicacion = ServicioCripta(HttpConfigurable(cripta_cruz(), sala_salida=1000), CacheLRU(25))
+            cargada.restaurar_estado(AlmacenPartidaBinario(archivo).cargar())
+        despues = cargada.estadoJuego.salas[1].salidas
+        self.assertIs(type(despues), list)
+        self.assertEqual([(s.direccion, s.sala_destino, s.cerrada, s.llave, s.cierre_automatico, s.costo) for s in despues],
+                         [(s.direccion, s.sala_destino, s.cerrada, s.llave, s.cierre_automatico, s.costo) for s in antes])
 
 
 if __name__ == "__main__":

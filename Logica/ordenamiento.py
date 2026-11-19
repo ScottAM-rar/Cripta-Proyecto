@@ -70,7 +70,7 @@ def ordenar_adaptativo(lista, key = lambda x:x):
           ambas son estables). Más allá de ese tamaño la mezcla ya gana incluso con datos casi ordenados
           (medido con --bench), así que va directo a ella."""
 
-    # Convertimos a lista por si entra un deque o iterable
+    # Convertimos a lista por si entra otro iterable
     lista_trabajo = list(lista)
 
     if len(lista_trabajo) <= 15:

@@ -1,7 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
-from collections import deque
 from  DTO.ActorDTO import EnemigoDTO
 from DTO.TrampaDTO import Trampa
 
@@ -30,7 +29,7 @@ class SalaDTO:
     id: int                            # ID único de la sala[cite: 1]
     nombre: str                        # Nombre devuelto por el API[cite: 1]
     #Las salidas son un vector de 4 espacios, SIEMPRE usan este orden, [NORTE,SUR,ESTE,OESTE]
-    salidas: deque[SalidaDTO] = field(default_factory=lambda: deque(maxlen=4))
+    salidas: list[SalidaDTO] = field(default_factory=list)
     enemigos: list[EnemigoDTO] = field(default_factory=list) # Reutiliza el DTO de enemigos TODO revisar si es el mejor tipo de arreglo
     objetos: list[str] = field(default_factory=list)          # IDs de catálogo en el suelo (ej: "itm_antorcha")[cite: 1] TODO revisar si es el mejor tipo de arreglo
     trampas: list[Trampa] = field(default_factory=list) # TODO revisar si es el mejor tipo de arreglo

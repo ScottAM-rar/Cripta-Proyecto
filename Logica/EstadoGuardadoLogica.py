@@ -7,7 +7,6 @@ posición; al restaurar, todas las referencias vuelven a apuntar al mismo objeto
 from __future__ import annotations
 
 import dataclasses
-from collections import deque
 
 from DTO.ActorDTO import JugadorDTO, EnemigoDTO
 from DTO.EstadoGuardadoDTO import (
@@ -282,10 +281,9 @@ def restaurar(logica, estado: EstadoGuardadoDTO) -> None:
         if not 0 <= g.id < len(salas):
             raise ValueError(f"La sala guardada {g.id} no cabe en la cripta")
         sala = SalaDTO(id=g.id, nombre=g.nombre)
-        sala.salidas = deque(
-            [SalidaDTO(s.direccion, s.sala_destino, s.cerrada, s.llave, s.cierre_automatico, s.costo) for s in g.salidas],
-            maxlen=4,
-        )
+        sala.salidas = [
+            SalidaDTO(s.direccion, s.sala_destino, s.cerrada, s.llave, s.cierre_automatico, s.costo) for s in g.salidas
+        ]
         sala.enemigos = [enemigos[i] for i in g.enemigos]
         sala.objetos = [_leer_objeto(o) for o in g.objetos]
         sala.trampas = [trampas[i] for i in g.trampas]

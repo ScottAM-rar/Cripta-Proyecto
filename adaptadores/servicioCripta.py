@@ -1,5 +1,4 @@
 from __future__ import annotations
-from collections import deque
 from dataclasses import dataclass
  
 from DTO.ActorDTO import JugadorDTO
@@ -520,12 +519,12 @@ class ServicioCripta:
         return sala
  
     @staticmethod
-    def _armar_salidas(salidas_api: dict | None) -> deque[SalidaDTO]:
-        """Convierte el objeto 'salidas' de la API en un deque de SalidaDTO.
+    def _armar_salidas(salidas_api: dict | None) -> list[SalidaDTO]:
+        """Convierte el objeto 'salidas' de la API en una lista de SalidaDTO.
  
         Solo se agregan las salidas que existen, en el orden N, S, E, O.
         """
-        salidas: deque[SalidaDTO] = deque(maxlen=4)
+        salidas: list[SalidaDTO] = []
         if salidas_api is None:          # sala sin salidas
             return salidas
         for letra in _LETRAS_EN_ORDEN:
