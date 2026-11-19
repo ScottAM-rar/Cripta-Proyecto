@@ -6,7 +6,8 @@
      en rejilla (frontera angosta).
   C. Lo mismo en un árbol de ramificación 3 de 29 524 salas (frontera ancha), donde pop(0) debería degradarse.
   D. Orden dentro del nivel: ordenar_adaptativo por nivel (elegida) frente a un montículo con clave (nivel, id).
-  E. Referencia de lo que hay hoy, ServicioCripta.salas_vecinas (deque y búsqueda lineal). SOLO INFORMATIVA.
+  E. Referencia de lo que hay hoy, ServicioCripta.salas_vecinas (lista de alcanzadas con índice de lectura y búsqueda lineal).
+     SOLO INFORMATIVA.
   F. Equivalencia: el recorrido coincide con la referencia ingenua en criptas aleatorias.
 
 Las alternativas descartadas existen SOLO aquí. Criptas sintéticas deterministas por semilla; sin red ni vista.
