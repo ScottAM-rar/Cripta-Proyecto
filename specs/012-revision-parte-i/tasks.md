@@ -43,6 +43,7 @@
 | T024 | No | Lista `alcanzadas`, un índice de lectura y una marca de fin de nivel. La pertenencia se comprueba recorriendo la lista. `.get("salidas") or {}` es lectura de JSON |
 | T027 | No | Lista propia de listas, con `del` y `append`; se quita la importación de `collections` |
 | T039 | Quita o justifica | Pasar los conjuntos literales a tuplas quita dos usos de la lista. Si se dejan, quedan en el inventario con su justificación (FR-386) |
+| T048 | No (quita) | Corrección L3: las salidas pasan a `list` y `Callable` a `typing`; se quitan las tres importaciones de `collections` y la de `collections.abc`. La prueba nueva lee el código con `tokenize`, sin estructuras de la lista |
 | T047 | No | Usa la infraestructura de T005. La cripta de 1 000 salas se arma con `esqueleto_de_conexiones` a partir de una lista de conexiones |
 
 ---
@@ -198,7 +199,7 @@
   - mientras `lectura < len(alcanzadas)` y `nivel < profundidad`: expandir `alcanzadas[lectura]` (una llamada a `_buscar_esqueleto`, salidas en `_LETRAS_EN_ORDEN`, agregar los destinos que no están en `alcanzadas`) y avanzar `lectura`; cuando `lectura == fin_nivel`, `nivel += 1` y `fin_nivel = len(alcanzadas)`;
   - devolver `alcanzadas[1:]`.
 
-  No quitar `from collections import deque` (lo usa `_armar_salidas`, uso justificado) y no tocar `precargar_vecinas`. (FR-370, FR-371, FR-372, FR-373, FR-374, FR-375, FR-376)
+  No quitar `from collections import deque` (lo usa `_armar_salidas`, uso justificado; la quita después T048, corrección L3) y no tocar `precargar_vecinas`. (FR-370, FR-371, FR-372, FR-373, FR-374, FR-375, FR-376)
 - [X] T025 [US1] Ejecutar `python -m unittest test_vecindad_equivalencia -v`: todo pasa, **incluidas T009 y T047**. (FR-370, FR-371, FR-372, FR-373, FR-374, FR-375, FR-376)
 - [X] T026 [US2] Ejecutar `python main.py --bench cache` una vez y comprobar en la sección 5 que `salas_vecinas` a 1 y 2 pasos no supera 2 × su valor de M1. Es un control preliminar contra M1; el límite final de FR-383 se comprueba en T033 contra M0, con la mediana de las tres ejecuciones de M2. (FR-376, FR-383)
 
@@ -253,7 +254,7 @@
 
 ### Historia 5 — Inventario
 
-- [X] T037 [US5] Repetir la búsqueda de la sección «Inventario» de [quickstart.md](quickstart.md) sobre `adaptadores Controlador DTO Logica model Servicio main.py`, excluyendo `bench_red.py` y `bench_red_mejorado.py`, y pegar la salida en un anexo de `specs/012-revision-parte-i/mediciones.md`. `adaptadores/cache.py` ya no aparece. `adaptadores/servicioCripta.py` aparece solo por `_armar_salidas`. (FR-385, FR-375)
+- [X] T037 [US5] Repetir la búsqueda de la sección «Inventario» de [quickstart.md](quickstart.md) sobre `adaptadores Controlador DTO Logica model Servicio main.py`, excluyendo `bench_red.py` y `bench_red_mejorado.py`, y pegar la salida en un anexo de `specs/012-revision-parte-i/mediciones.md`. `adaptadores/cache.py` ya no aparece. `adaptadores/servicioCripta.py` aparece solo por `_armar_salidas` (hasta T048, que quita esa importación). (FR-385, FR-375)
 - [X] T038 [US5] Revisar a mano cada aparición de `dict(`, `= {}` o `: dict` (18 en `0b031ec`) y de los conjuntos literales. Clasificar cada una como «índice, caché o tabla de búsqueda» o como «lectura de JSON» (respuesta de la API o copia con su misma forma), con una línea de motivo, en el anexo de `mediciones.md`. Toda aparición que sea índice o caché pasa a la tabla del inventario con el criterio de FR-386. Las apariciones que la búsqueda de conjuntos literales encuentra en marcadores de f-string (`{x}` dentro de una cadena con prefijo `f`) se descartan con el criterio «marcador de f-string no cuenta», que se escribe en el anexo junto con cuántas líneas descartó. (FR-385, FR-386)
 - [X] T039 [US5] **Se justifican tal cual** (constantes de solo lectura de 2 o 3 elementos; sin cambio de código, T030 no se repite; ver `mediciones.md`, anexo, T039). Para los usos 9 y 10 de research D5 (`adaptadores/extension.py:20` y `Logica/EstadoJuegoLogica.py:884, 900, 1248`), decidir si se justifican tal cual o se pasan a tuplas. Si se pasan a tuplas, cambiar solo esas líneas y repetir T030. Anotar la decisión. (FR-386, FR-387)
 
@@ -296,10 +297,26 @@
 - [X] T045 Cierre:
   - ejecutar `python -m unittest discover -p "test_*.py"`, `python -m tests_labs.sin_red`, `python main.py --bench cache` y `python main.py --bench guardado`, todos con código de salida 0;
   - anotar los totales y los códigos en la sección «Pruebas» de `specs/012-revision-parte-i/mediciones.md`;
-  - confirmar que ninguna tarea tocó `DTO/SalaDTO.py`, `DTO/EstadoGuardadoDTO.py`, `Logica/EstadoGuardadoLogica.py`, `adaptadores/AlmacenPartidaBinario.py` ni `codec_partida` (`git diff --stat 0b031ec --` sobre esos archivos no muestra nada).
+  - confirmar que ninguna tarea tocó `DTO/SalaDTO.py`, `DTO/EstadoGuardadoDTO.py`, `Logica/EstadoGuardadoLogica.py`, `adaptadores/AlmacenPartidaBinario.py` ni `codec_partida` (`git diff --stat 0b031ec --` sobre esos archivos no muestra nada). Vale hasta el cierre: después, T048 (corrección L3) cambia `DTO/SalaDTO.py` y `Logica/EstadoGuardadoLogica.py` sin tocar el formato ni `codec_partida`.
 
   Depende de T044. (FR-377, FR-383, FR-384, FR-387)
 - [X] T046 En `specs/012-revision-parte-i/spec.md`, cambiar `**Estado**: Borrador` por `**Estado**: Implementada (T001 a T047)`. Depende de T045. (FR-370 a FR-388, cierre)
+
+---
+
+## Fase 9: corrección L3 — sin `collections` en producción
+
+- [ ] T048 [US5] Corrección L3 (spec, 2026-11-18): quitar todo `collections` del código de producción sin cambiar el comportamiento.
+  - `DTO/SalaDTO.py`: quitar `from collections import deque`; `salidas: list[SalidaDTO] = field(default_factory=list)`;
+  - `adaptadores/servicioCripta.py`: quitar `from collections import deque`; `_armar_salidas` devuelve `list[SalidaDTO]`, arma `salidas: list[SalidaDTO] = []` y su docstring dice «en una lista»;
+  - `Logica/EstadoGuardadoLogica.py`: quitar la importación; `sala.salidas = [SalidaDTO(...) for s in g.salidas]`, sin `maxlen`;
+  - `Logica/GestorEventos.py`: `from typing import Callable` en lugar de `from collections.abc import Callable`;
+  - `Logica/SalasLogica.py`: el docstring de `_obtener_salida` dice «lista» en lugar de «deque»;
+  - en `test_vecindad_equivalencia.py`: una prueba que falla si alguno de los cuatro archivos nombra `deque` o `collections` en su código (fuera de cadenas y comentarios), una que comprueba que `_armar_salidas` devuelve una lista en el orden N, S, E, O aunque la API las entregue en otro orden, y una que guarda una partida en binario, la carga y compara el orden de las salidas;
+  - `git grep -n -E "deque|collections"` sobre el código de producción solo encuentra texto que dice «sin deque/collections» y las filas de medición «deque lineal»;
+  - ejecutar `python -m unittest discover -p "test_*.py"`, `python -m tests_labs.sin_red` y `python main.py --bench`, todos con código de salida 0, y anotar los totales en la sección «Pruebas» de `mediciones.md`.
+
+  Depende de T046. Las mediciones M0, M1 y M2 no se repiten. (FR-386, FR-387, FR-389)
 
 ---
 
@@ -317,6 +334,7 @@ T025 ─► T030                                     (T030 espera también a D1)
 T026, T030 ─► T031 ─► T032 ─► T033 ─► T034 (condicional) ─► T035 ─► T036
 T036 ─► T037 ─► T038 ─► T039 ─► T040 ─► T041 ─► T042 ─► T043
 T043, T044 ─► T045 ─► T046
+T046 ─► T048                                    (corrección L3, después del cierre)
 ```
 
 - **Por historia**: US1 (T005–T008, T013, T024, T025) y US2 (T009, T047, T024, T026) dependen de M0 y de M1. US5 (T010–T012, T014, T027–T030, T034, T037–T040) depende de M0 y de M1 para D2. US3 y US4 (T015–T023, T031–T036, T041–T043) dependen de que D1 y D2 estén hechos para M2.
@@ -377,5 +395,6 @@ T015..T019 [US3] adaptadores/bench_red_mejorado.py   |   T020..T021 [US4] bench/
 | FR-386 | T010, T011, T012, T014, T027, T028, T034, T038, T039, T040 |
 | FR-387 | T003, T010, T011, T014, T027, T028, T030, T032, T034, T039, T044, T045 |
 | FR-388 | T040, T041, T042, T043 |
+| FR-389 | T048 |
 
-Los 19 requisitos (FR-370 a FR-388) tienen al menos una tarea, y todas las tareas citan al menos un requisito. T046 los cierra todos.
+Los 20 requisitos (FR-370 a FR-389) tienen al menos una tarea, y todas las tareas citan al menos un requisito. T046 cerró FR-370 a FR-388; FR-389 (corrección L3) lo cierra T048.

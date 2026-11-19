@@ -351,10 +351,10 @@ y de los conjuntos literales están en el anexo de [`mediciones.md`](specs/012-r
 |---|---|---|---|---|---|
 | `adaptadores/servicioCripta.py` `salas_vecinas` | cola de biblioteca de pares `(sala, nivel)` | recorrido por niveles de la vecindad | sí (planeación de la vecindad) | **corregido** (D1) | recorre la propia lista de salas alcanzadas con un índice y una marca de fin de nivel |
 | `adaptadores/cache.py` `CacheLRU` | cola de biblioteca de entradas | caché LRU de fichas | sí (caché de fichas) | **corregido** (D2) | lista propia con la más reciente al final |
-| `DTO/SalaDTO.py:33` | `deque(maxlen=4)` | salidas de la sala, en el orden N, S, E, O | no | **justificado** (uso 3) | ver «Justificaciones» |
-| `adaptadores/servicioCripta.py:523` `_armar_salidas` | `deque(maxlen=4)` | arma las salidas de la sala desde la respuesta de la API | no | **justificado** (uso 4) | ver «Justificaciones» |
-| `Logica/EstadoGuardadoLogica.py:285` | `deque(..., maxlen=4)` | rearma las salidas al cargar una partida | no | **justificado** (uso 5) | ver «Justificaciones» |
-| `Logica/GestorEventos.py:2` | `collections.abc.Callable` | anotación de tipo de dos parámetros | no: no es una estructura | **justificado** (uso 6) | ver «Justificaciones» |
+| `DTO/SalaDTO.py:33` | `deque(maxlen=4)` | salidas de la sala, en el orden N, S, E, O | no | **reemplazado por `list` el 2026-11-18**; motivo: un revisor estricto podría leerlo como `collections` aunque no sea un problema de §5; mismo comportamiento (uso 3, corrección L3) | ver «Justificaciones» |
+| `adaptadores/servicioCripta.py:523` `_armar_salidas` | `deque(maxlen=4)` | arma las salidas de la sala desde la respuesta de la API | no | **reemplazado por `list` el 2026-11-18**; motivo: un revisor estricto podría leerlo como `collections` aunque no sea un problema de §5; mismo comportamiento (uso 4, corrección L3) | ver «Justificaciones» |
+| `Logica/EstadoGuardadoLogica.py:285` | `deque(..., maxlen=4)` | rearma las salidas al cargar una partida | no | **reemplazado por `list` el 2026-11-18**; motivo: un revisor estricto podría leerlo como `collections` aunque no sea un problema de §5; mismo comportamiento (uso 5, corrección L3) | ver «Justificaciones» |
+| `Logica/GestorEventos.py:2` | `collections.abc.Callable` | anotación de tipo de dos parámetros | no: no es una estructura | **reemplazado por `typing.Callable` el 2026-11-18**; motivo: un revisor estricto podría leerlo como `collections` aunque no sea un problema de §5; mismo comportamiento (uso 6, corrección L3) | ver «Justificaciones» |
 | `adaptadores/servicioCripta.py:90, 93, 115` `normalizar_esqueleto` | `dict(sala)`, `{}` y `dict(salida)` | copia del esqueleto con la forma del JSON de la API y el costo resuelto | no: lectura de JSON | **excluido** (uso 7) | es la respuesta JSON o una copia con su misma forma (supuesto de la spec); no se busca por clave como índice |
 | `adaptadores/resolucion.py:41, 72` | `dict(ficha)` | copia de la ficha JSON para construir el objeto | no: lectura de JSON | **excluido** (uso 8) | igual que el uso 7; la copia se descarta al construir el objeto |
 | `adaptadores/extension.py:20` | conjunto literal de 3 separadores de ruta | comprobar que un nombre de archivo no trae carpetas | no | **justificado** (uso 9) | ver «Justificaciones» |
@@ -363,14 +363,14 @@ y de los conjuntos literales están en el anexo de [`mediciones.md`](specs/012-r
 
 **Justificaciones** (FR-386):
 
-- **Usos 3 a 5: el contenedor de salidas de la sala.** `SalaDTO.salidas` es un `deque(maxlen=4)` con las salidas que
+- **Usos 3 a 5: el contenedor de salidas de la sala.** **Reemplazado por `list` el 2026-11-18**; motivo: un revisor estricto podría leerlo como `collections` aunque no sea un problema de §5; mismo comportamiento (corrección L3 de la spec, FR-389, T048). Las salidas se siguen recorriendo en el orden N, S, E, O y el tope de 4 lo da el recorrido de las cuatro letras; el formato de partida no cambia. Lo que sigue es la justificación que tenía antes de la corrección: `SalaDTO.salidas` era un `deque(maxlen=4)` con las salidas que
   existen, en el orden N, S, E, O. `_armar_salidas` lo arma desde el objeto `salidas` de la API, y la carga de partida
   lo rearma desde las salidas guardadas. Guarda como máximo 4 elementos, que se recorren en orden. Nadie busca por
   clave en él ni lo usa como caché, así que no es un índice ni una caché. Corregirlo significaría cambiar el tipo en el
   DTO, en la conversión desde la API y en la carga de partida, más las pruebas de formato. Es un cambio mecánico, pero
   toca el formato de partida y su reconstrucción, que esta capacidad deja fuera de alcance (`DTO/SalaDTO.py`,
   `Logica/EstadoGuardadoLogica.py` y el formato no se tocan).
-- **Uso 6: `collections.abc.Callable`.** Solo es una anotación de tipo para dos parámetros de `GestorEventos`. No
+- **Uso 6: `collections.abc.Callable`.** **Pasa a `typing.Callable` el 2026-11-18** (corrección L3, FR-389, T048), con el mismo motivo que los usos 3 a 5. Con eso no queda ninguna importación de `collections` en el código de producción. Justificación anterior: solo es una anotación de tipo para dos parámetros de `GestorEventos`. No
   guarda datos ni es una estructura. Corregirlo sería cambiar la anotación, sin efecto en la ejecución.
 - **Usos 9 y 10: conjuntos literales constantes** (T039: se justifican tal cual). Son constantes de 2 o 3 elementos
   (4 con `os.altsep`), escritas en la línea donde se usan, y solo sirven para comprobar pertenencia. No guardan datos

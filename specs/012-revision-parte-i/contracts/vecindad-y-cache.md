@@ -14,7 +14,7 @@ Las dos interfaces se conservan tal cual. Este contrato fija el comportamiento o
 
 **Quién la llama** (sin cambios): `precargar_vecinas` (con profundidad 1 y con `alcance`) y los scripts de `tests_labs/`. **No se modifica** `precargar_vecinas` (FR-324).
 
-**Principio I (FR-375)**: el código del método no menciona `deque`, `collections`, `heapq`, `bisect`, `set`, `dict(` ni `sorted`/`.sort`. Se comprueba sobre el código fuente del método, no sobre el archivo, porque `_armar_salidas` sigue usando la cola de biblioteca (uso justificado).
+**Principio I (FR-375)**: el código del método no menciona `deque`, `collections`, `heapq`, `bisect`, `set`, `dict(` ni `sorted`/`.sort`. Se comprueba sobre el código fuente del método, no sobre el archivo, porque `_armar_salidas` seguía usando la cola de biblioteca (uso justificado entonces). Desde la corrección L3 (FR-389, T048) usa una lista y el archivo ya no importa `collections`.
 
 ## `CacheLRU` (`adaptadores/cache.py`)
 

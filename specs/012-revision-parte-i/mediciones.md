@@ -1671,6 +1671,8 @@ adaptadores/servicioCripta.py:523:    def _armar_salidas(salidas_api: dict | Non
   (líneas 391 a 415) no menciona ninguna estructura de la lista (D1).
 - La búsqueda 2 solo encuentra dos docstrings que dicen que el archivo **no** usa `sorted()` ni `.sort()`. No son usos.
 
+> **Corrección L3 (2026-11-18, FR-389, T048).** Las cuatro líneas de la búsqueda 1 son los usos 3 a 6. T048 los reemplaza: las salidas de la sala usan una lista (`SalaDTO`, `_armar_salidas` y la carga de partida) y `GestorEventos` toma `Callable` de `typing`. La salida de arriba se conserva tal como se tomó en `aeb25a0`; la búsqueda repetida después de T048 se anota aquí al cerrarla.
+
 ### T038 · Revisión a mano
 
 **Las 18 apariciones de `dict`**. Ninguna es índice, caché ni tabla de búsqueda. Todas son la respuesta JSON de la

@@ -4,7 +4,7 @@
 
 **Creada**: 2026-11-17
 
-**Estado**: Implementada (T001 a T047)
+**Estado**: Implementada (T001 a T047); corrección L3 pendiente (T048)
 
 **Entrada**: Revisión de la Parte I con la carga nueva (§5.6 del enunciado): red, caché, guardado y planeación de la vecindad. Requisitos con prefijo FR-370 en adelante (comprobado con búsqueda: los FR-3xx existentes llegan a FR-346 en la 003 y FR-360 en la 009; FR-370 a FR-399 están libres).
 
@@ -45,6 +45,10 @@ Hoy la planeación de la vecindad (qué salas rodean a una sala hasta cierta pro
 
 - L2 (originada en la medición M2): el escenario 3 de la Historia 4 pedía que el tiempo de leer una sala no creciera con la cantidad de salas. La medición muestra que la primera sala crece cerca de 24 % de 10 a 1 000 salas (77 a 95 µs), de acuerdo con las entradas de la tabla que se leen (de 3 a 9) con la búsqueda binaria, y es de 26 a 604 veces menor que la carga completa (26, 78 y 604 veces con 10, 100 y 1 000 salas). Se alinea el escenario con FR-382, que ya exigía un crecimiento no mayor que logarítmico para los bytes (corrección H2), y no se toca el código.
 - L1: con los cazadores activos desde el inicio (peor caso, research D3), la carga nueva sube varias filas de solicitudes por encima de 2 × M0 (sección 1, fila 4: de 9 a 46; sección 6: de 19 a 64). La causa es la carga, no el código. FR-383, el caso límite de la carga nueva y SC-004 pasan a medir el límite de esas filas contra M1 (misma carga), de modo que el límite sigue midiendo el efecto del código de la revisión. El aumento de M0 a M1 queda documentado con su causa y es un hallazgo de la revisión.
+
+### Corrección 2026-11-18 (originada en la revisión previa a la entrega, principio X)
+
+- L3: el contenedor de salidas de cada sala, su conversión desde la respuesta de la API y su reconstrucción al cargar una partida (usos 3 a 5 del inventario, research D5) dejan de justificarse y pasan a una lista de Python. La anotación `collections.abc.Callable` de `GestorEventos` (uso 6) pasa a `typing.Callable`. Ninguno resuelve un problema evaluado en §5 y su justificación sigue siendo cierta, pero un revisor estricto o una búsqueda de `collections` los marcaría igual, y una lista hace exactamente lo mismo: las salidas se recorren en el orden N, S, E, O, nadie busca por clave en ellas y el tope de 4 ya lo da el recorrido de las cuatro letras. Ningún código usa las operaciones propias de la cola (`appendleft`, `popleft`, `rotate`, `maxlen`) ni pregunta por su tipo, y ninguna prueba depende de él. Con esto, el inventario D5 queda sin ningún `deque` ni importación de `collections` (ni `collections.abc`) en el código de producción. El formato de partida no cambia: guarda las salidas como una secuencia y la carga las rearma en el mismo orden. Se agrega FR-389, se ajustan FR-386, el escenario 3 de la Historia 5 y SC-002, y la tarea es T048. Las mediciones M0, M1 y M2 no se repiten ni se corrigen: sus filas «deque lineal» son del código anterior.
 
 ## Escenarios de usuario y pruebas *(obligatorio)*
 
@@ -148,7 +152,7 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 
 1. **Dado** el código de producción, **cuando** se buscan las estructuras prohibidas por el principio I, **entonces** cada aparición está en la tabla del inventario con su ubicación y su destino (corregida o justificada). *(FR-385, FR-386)*
 2. **Dado** la caché de fichas corregida, **cuando** se vuelven a pasar las pruebas existentes y el bloque de red/caché, **entonces** el comportamiento observable no cambia y las filas de cuenta (solicitudes, aciertos y fallos por capacidad) salen idénticas. *(FR-386, FR-387)*
-3. **Dado** el contenedor de salidas de cada sala, su conversión desde la API y su reconstrucción al cargar una partida, **cuando** se lee el Documento de Decisiones, **entonces** cada uno está justificado: guarda hasta 4 salidas que solo se recorren en orden, no es un índice, caché ni tabla de búsqueda, y se dice qué costaría corregirlo. *(FR-386)*
+3. **Dado** el contenedor de salidas de cada sala, su conversión desde la API y su reconstrucción al cargar una partida, **cuando** se busca `deque` o `collections` en el código de producción, **entonces** no aparece ningún uso: los tres usan una lista con las salidas en el orden N, S, E, O, y el Documento de Decisiones dice que la justificación anterior se reemplazó por la lista y por qué (corrección L3). *(FR-386, FR-389)*
 4. **Dado** el inventario terminado, **cuando** se repite la búsqueda, **entonces** no aparece ningún uso que no esté en la tabla. *(FR-385)*
 
 ---
@@ -202,8 +206,9 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 **Inventario de usos prohibidos**
 
 - **FR-385**: DEBE inventariarse cada uso de estructuras de biblioteca prohibidas por el principio I en el código de producción, con su ubicación y para qué sirve. Quedan fuera las pruebas y el código de medición, y el criterio de exclusión DEBE escribirse.
-- **FR-386**: Los usos en código que resuelve un problema evaluado en §5 (la caché de fichas y la planeación de la vecindad) DEBEN corregirse en esta capacidad. Los demás DEBEN justificarse por escrito en el Documento de Decisiones (qué hacen, por qué no son índice, caché ni tabla de búsqueda y qué costaría corregirlos). Entre ellos están el contenedor de salidas de cada sala (hasta 4, solo se recorre en orden), su conversión desde la respuesta de la API y su reconstrucción al cargar una partida. Un uso nuevo que aparezca en el inventario se clasifica con este mismo criterio.
+- **FR-386**: Los usos en código que resuelve un problema evaluado en §5 (la caché de fichas y la planeación de la vecindad) DEBEN corregirse en esta capacidad. Los demás DEBEN justificarse por escrito en el Documento de Decisiones (qué hacen, por qué no son índice, caché ni tabla de búsqueda y qué costaría corregirlos). El contenedor de salidas de cada sala (hasta 4, solo se recorre en orden), su conversión desde la respuesta de la API y su reconstrucción al cargar una partida se justificaron así y después se reemplazaron por una lista (corrección L3, FR-389). Un uso nuevo que aparezca en el inventario se clasifica con este mismo criterio.
 - **FR-387**: Corregir un uso NO DEBE cambiar el comportamiento observable. Las pruebas existentes DEBEN seguir pasando, y las filas de cuenta de los bloques afectados DEBEN salir idénticas.
+- **FR-389** (corrección L3): El código de producción NO DEBE contener ningún `deque` ni ninguna importación de `collections` (incluido `collections.abc`). El contenedor de salidas de cada sala, su conversión desde la respuesta de la API y su reconstrucción al cargar una partida DEBEN usar una lista de Python con las salidas en el orden N, S, E, O, y las anotaciones de tipo de funciones DEBEN tomarse de `typing`. El cambio NO DEBE cambiar el comportamiento observable (FR-387): una partida guardada y cargada conserva sus salidas en el mismo orden. Una prueba DEBE fallar si `DTO/SalaDTO.py`, `adaptadores/servicioCripta.py`, `Logica/EstadoGuardadoLogica.py` o `Logica/GestorEventos.py` vuelven a nombrar `deque` o `collections` en su código.
 
 **Documentación**
 
@@ -223,7 +228,7 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 ### Resultados medibles
 
 - **SC-001**: En las 4 criptas de los escenarios × las profundidades 0, 1, 2 y 5 × todas sus salas, y en una cripta sintética de 1 000 salas, el 100 % de las respuestas, errores y cuentas de lecturas del esqueleto coinciden con la versión vigente.
-- **SC-002**: La búsqueda de estructuras prohibidas no encuentra ninguna en la planeación de la vecindad, y cada uso que encuentra en el resto del código de producción está en el inventario (0 sin registrar).
+- **SC-002**: La búsqueda de estructuras prohibidas no encuentra ninguna en la planeación de la vecindad, y cada uso que encuentra en el resto del código de producción está en el inventario (0 sin registrar). Después de la corrección L3, la búsqueda de `deque` y `collections` en el código de producción no encuentra ningún uso (FR-389).
 - **SC-003**: El 100 % de las filas de los bloques de red/caché y guardado tienen su antes, su después, la diferencia y la causa (o la marca «sin antes comparable» con su motivo).
 - **SC-004**: Ninguna fila de red del después supera el doble de su antes (M0; M1 en las filas que la carga nueva ya llevó a más del doble de M0, con la causa escrita).
 - **SC-005**: Guardar y cargar una partida de formato 8 con 10, 100 y 1 000 salas no superan el doble de su antes en ninguna fila (FR-384).
@@ -238,5 +243,5 @@ El grupo lista todos los usos de estructuras de biblioteca que prohíbe el princ
 - «Código de producción» es todo lo que ejecuta el juego, sin contar las pruebas, el código de medición ni los scripts de descarga auxiliares.
 - La respuesta en formato JSON de la API puede seguir usándose solo para leer JSON (lo permite el principio I). No cuenta como índice ni entra en el inventario si solo se usa así.
 - «Cripta de referencia (§6.1)» fija el tamaño de la cripta sintética que generan los bloques de medición, como en la 004 y la 007. No es una cripta publicada concreta (principio V). La cripta de referencia (§6.1) mide 1 000 salas.
-- FR-3xx es el prefijo que el reparto del grupo asigna a Scott. Esta capacidad usa FR-370 a FR-388 dentro de ese prefijo, igual que la 009.
+- FR-3xx es el prefijo que el reparto del grupo asigna a Scott. Esta capacidad usa FR-370 a FR-389 dentro de ese prefijo, igual que la 009 (FR-389 viene de la corrección L3).
 - Fuera de alcance: cambiar la regla de precarga (por costo, FR-324), el formato de partida y su rechazo de versiones anteriores, la verificación de resolubilidad y el replay.

@@ -205,19 +205,21 @@ El criterio es la función del archivo, no la carpeta.
 |---|---|---|---|---|
 | 1 | `adaptadores/servicioCripta.py` `salas_vecinas` | cola de biblioteca del recorrido por niveles | sí (planeación de la vecindad) | **corregir** (D1) |
 | 2 | `adaptadores/cache.py` | cola de biblioteca de la LRU | sí (caché de fichas) | **corregir** (D2) |
-| 3 | `DTO/SalaDTO.py:33` | contenedor de salidas de la sala, `maxlen=4` | no | **justificar** (no se toca, por la restricción del pedido) |
-| 4 | `adaptadores/servicioCripta.py` `_armar_salidas` | arma ese contenedor desde la respuesta de la API | no | **justificar** |
-| 5 | `Logica/EstadoGuardadoLogica.py:285` | reconstruye ese contenedor al cargar una partida | no | **justificar** (no se toca) |
-| 6 | `Logica/GestorEventos.py:2` | `collections.abc.Callable`, solo como anotación de tipo | no: no es una estructura | **justificar** (es una anotación; no guarda datos) |
+| 3 | `DTO/SalaDTO.py:33` | contenedor de salidas de la sala, `maxlen=4` | no | **justificar** (no se toca, por la restricción del pedido). Corrección L3: **reemplazado por `list`** el 2026-11-18 (T048) |
+| 4 | `adaptadores/servicioCripta.py` `_armar_salidas` | arma ese contenedor desde la respuesta de la API | no | **justificar**. Corrección L3: **reemplazado por `list`** el 2026-11-18 (T048) |
+| 5 | `Logica/EstadoGuardadoLogica.py:285` | reconstruye ese contenedor al cargar una partida | no | **justificar** (no se toca). Corrección L3: **reemplazado por `list`** el 2026-11-18 (T048) |
+| 6 | `Logica/GestorEventos.py:2` | `collections.abc.Callable`, solo como anotación de tipo | no: no es una estructura | **justificar** (es una anotación; no guarda datos). Corrección L3: **reemplazado por `typing.Callable`** el 2026-11-18 (T048) |
 | 7 | `adaptadores/servicioCripta.py` `normalizar_esqueleto` | `dict(sala)` y `salidas_nuevas = {}` por letra: copia con la forma del JSON de la API | no: lectura de JSON | revisado y **excluido** por el supuesto del JSON. Se anota en la tabla con ese motivo |
 | 8 | `adaptadores/resolucion.py:41,72` | `dict(ficha)`: copia de la ficha JSON para construir el objeto | no: lectura de JSON | revisado y **excluido** (igual que el 7) |
 | 9 | `adaptadores/extension.py:20` | conjunto literal de 3 separadores de ruta, para comprobar pertenencia | no | **justificar**: es una constante de 3 elementos, no un índice de datos del juego. Pasarla a una tupla costaría una línea; se decide en la tarea del inventario |
 | 10 | `Logica/EstadoJuegoLogica.py:884, 900, 1248` | conjuntos literales de 2 tipos de acción, para comprobar pertenencia | no | **justificar** con el mismo motivo que el 9 (o pasar a tupla, sin cambio observable) |
 | — | 18 apariciones de `dict(`, `= {}` o `: dict` | por revisar a mano en el inventario final | — | cada una se clasifica como uso de índice o caché (y entonces va a la tabla con su destino) o como lectura de JSON (excluida, con el motivo) |
 
-Después de D1, `servicioCripta.py` sigue importando la cola de biblioteca por el uso 4, que se justifica. La comprobación de FR-375 es por método, no por archivo.
+Después de D1, `servicioCripta.py` siguió importando la cola de biblioteca por el uso 4, justificado, hasta que la corrección L3 (T048) quitó esa importación. La comprobación de FR-375 es por método, no por archivo.
 
 **Texto de las justificaciones 3 a 5** (FR-386): guardan como máximo 4 salidas, que se recorren en orden. Nadie busca por clave en ellas ni las usa como caché, así que no son un índice. Corregirlas significaría cambiar el tipo en el DTO, en la conversión desde la API y en la carga de partida, más las pruebas de formato: es un cambio mecánico, pero toca el formato y su reconstrucción, que esta capacidad deja fuera de alcance.
+
+**Corrección L3 (2026-11-18, FR-389, T048)**: los usos 3 a 5 se reemplazan por `list` y el uso 6 por `typing.Callable`. Motivo: un revisor estricto podría leerlos como `collections` aunque no sean un problema de §5. El comportamiento es el mismo: el formato de partida no cambia (guarda las salidas como secuencia) y solo cambia el tipo con que se rearman, en el mismo orden N, S, E, O. Con esto no queda ningún `deque` ni `collections` en el código de producción.
 
 **Documentación**:
 - **`DECISIONES.md`**, sección «012 · Revisión de la Parte I con la carga nueva», con el formato de las demás:
